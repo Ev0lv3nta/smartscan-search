@@ -22,7 +22,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.fpf.smartscan.R
@@ -30,8 +29,6 @@ import com.fpf.smartscan.constants.mediaTypeOptions
 import com.fpf.smartscan.data.MediaType
 import com.fpf.smartscan.data.ProcessorStatus
 import com.fpf.smartscan.data.QueryType
-import com.fpf.smartscan.services.MediaIndexForegroundService
-import com.fpf.smartscan.services.startIndexing
 import com.fpf.smartscan.ui.components.LoadingIndicator
 import com.fpf.smartscan.ui.components.media.MediaViewer
 import com.fpf.smartscan.ui.components.ProgressBar
@@ -48,7 +45,6 @@ fun SearchScreen(
     searchViewModel: SearchViewModel = viewModel(),
     settingsViewModel: SettingsViewModel = viewModel()
 ) {
-    val context = LocalContext.current
     val appSettings by settingsViewModel.appSettings.collectAsState()
 
     // Index state
@@ -56,8 +52,8 @@ fun SearchScreen(
     val videoIndexProgress by searchViewModel.videoIndexProgress.collectAsState(initial = 0f)
     val imageIndexStatus by searchViewModel.imageIndexStatus.collectAsState()
     val videoIndexStatus by searchViewModel.videoIndexStatus.collectAsState()
-    val isImageIndexAlertVisible by searchViewModel.isImageIndexAlertVisible.collectAsState(false)
-    val isVideoIndexAlertVisible by searchViewModel.isVideoIndexAlertVisible.collectAsState(false)
+    val alertTitle by searchViewModel.alertTitle.collectAsState()
+    val alertDescription by searchViewModel.alertDescription.collectAsState()
 
     // Search state
     val state by searchViewModel.state.collectAsState()
@@ -69,9 +65,9 @@ fun SearchScreen(
 
     LaunchedEffect(state.hasIndexedImages, state.hasIndexedVideos, hasStoragePermission, state.mediaType) {
         if(hasStoragePermission && state.hasIndexedImages == false && (state.mediaType == MediaType.IMAGE)){
-            searchViewModel.toggleAlert(MediaType.IMAGE)
+            searchViewModel.showIndexAlert()
         }else if(hasStoragePermission && state.hasIndexedVideos == false && (state.mediaType == MediaType.VIDEO)){
-            searchViewModel.toggleAlert(MediaType.VIDEO)
+            searchViewModel.showIndexAlert()
         }
     }
 
@@ -87,48 +83,22 @@ fun SearchScreen(
         }
     }
 
-    val label = if (state.mediaType == MediaType.IMAGE) "image" else "video"
-    val message = stringResource(R.string.first_indexing, label)
-
-    if ( isImageIndexAlertVisible) {
+    if ( !alertTitle.isNullOrBlank() && !alertDescription.isNullOrBlank()) {
         AlertDialog(
             onDismissRequest = { },
-            title = { Text("Start Indexing Images") },
-            text = { Text(message) },
+            title = { Text(alertTitle!!) },
+            text = { Text(alertDescription!!) },
             dismissButton = {
                 TextButton(onClick = {
-                    searchViewModel.toggleAlert(MediaType.IMAGE)
+                    searchViewModel.clearIndexAlert()
                 }) {
                     Text("Cancel")
                 }
             },
             confirmButton = {
                 TextButton(onClick = {
-                    searchViewModel.toggleAlert(MediaType.IMAGE)
-                    startIndexing(context, MediaIndexForegroundService.TYPE_IMAGE)
-                }) {
-                    Text("OK")
-                }
-            }
-        )
-    }
-
-    if ( isVideoIndexAlertVisible) {
-        AlertDialog(
-            onDismissRequest = { },
-            title = { Text("Start Indexing Videos") },
-            text = { Text(message) },
-            dismissButton = {
-                TextButton(onClick = {
-                    searchViewModel.toggleAlert(MediaType.VIDEO)
-                }) {
-                    Text("Cancel")
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    searchViewModel.toggleAlert(MediaType.VIDEO)
-                    startIndexing(context, MediaIndexForegroundService.TYPE_VIDEO)
+                    searchViewModel.clearIndexAlert()
+                    searchViewModel.onIndex()
                 }) {
                     Text("OK")
                 }
@@ -137,8 +107,7 @@ fun SearchScreen(
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = Modifier.fillMaxSize()
     ) {
 
         Column(

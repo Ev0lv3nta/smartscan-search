@@ -19,6 +19,8 @@ import com.fpf.smartscan.lib.canOpenUri
 import com.fpf.smartscan.lib.getVideoUriFromId
 import com.fpf.smartscan.lib.ImageIndexListener
 import com.fpf.smartscan.lib.VideoIndexListener
+import com.fpf.smartscan.services.MediaIndexForegroundService
+import com.fpf.smartscan.services.startIndexing
 import com.fpf.smartscansdk.core.data.Embedding
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
@@ -78,15 +80,14 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     private val _hasRefreshedVideoIndex = MutableStateFlow(false)
     private val _hasShownImageIndexAlert = MutableStateFlow(false)
     private val _hasShownVideoIndexAlert = MutableStateFlow(false)
-    private val _isVideoIndexAlertVisible = MutableStateFlow(false)
-    val isVideoIndexAlertVisible: StateFlow<Boolean> = _isVideoIndexAlertVisible
-    private val _isImageIndexAlertVisible = MutableStateFlow(false)
-    val isImageIndexAlertVisible: StateFlow<Boolean> = _isImageIndexAlertVisible
+    private val _alertTitle = MutableStateFlow<String?>(null)
+    val alertTitle: StateFlow<String?> = _alertTitle
+    private val _alertDescription = MutableStateFlow<String?>(null)
+    val alertDescription: StateFlow<String?> = _alertDescription
     private val isLoadingMoreSearchResults = AtomicBoolean(false)
 
     var imageEmbedderLastUsage: Long? = null
     var textEmbedderLastUsage: Long? = null
-
     var hasLoadVideoIndex: Boolean = false
 
     init {
@@ -147,7 +148,6 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
         reset()
 
         // saves memory by lazy loading video index
-        // This check is only valid if useCache true, which is default
         if(type == MediaType.VIDEO && !hasLoadVideoIndex){
             viewModelScope.launch(Dispatchers.IO){loadVideoIndex()}
         }
@@ -246,14 +246,25 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
         _state.value = _state.value.copy(resultToView =uri)
     }
 
-    fun toggleAlert(mode: MediaType){
-        val isVisible = if (mode == MediaType.IMAGE) _isImageIndexAlertVisible else _isVideoIndexAlertVisible
-        val hasShown = if (mode == MediaType.IMAGE) _hasShownImageIndexAlert else _hasShownVideoIndexAlert
-
-        if (!isVisible.value && hasShown.value) return
-
-        isVisible.value = !isVisible.value
+    fun showIndexAlert(){
+        val hasShown = if (_state.value.mediaType == MediaType.IMAGE) _hasShownImageIndexAlert else _hasShownVideoIndexAlert
+        if (hasShown.value) return
+        when(_state.value.mediaType){
+            MediaType.IMAGE -> {
+                _alertTitle.value = application.getString(R.string.search_start_indexing_alert, "images")
+                _alertDescription.value = application.getString(R.string.first_indexing, "image")
+            }
+            MediaType.VIDEO -> {
+                _alertTitle.value = application.getString(R.string.search_start_indexing_alert, "videos")
+                _alertDescription.value = application.getString(R.string.first_indexing, "video")
+            }
+        }
         hasShown.value = true
+    }
+
+    fun clearIndexAlert(){
+        _alertTitle.value = null
+        _alertDescription.value = null
     }
 
     fun updateQueryType(type: QueryType){
@@ -299,6 +310,14 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
             }
         }
     }
+
+    fun onIndex(){
+        when(_state.value.mediaType){
+            MediaType.IMAGE -> startIndexing(application, MediaIndexForegroundService.TYPE_IMAGE)
+            MediaType.VIDEO -> startIndexing(application, MediaIndexForegroundService.TYPE_VIDEO)
+        }
+    }
+    
 
     override fun onCleared() {
         textEmbedder.closeSession()
