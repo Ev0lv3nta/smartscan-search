@@ -20,7 +20,6 @@ import com.fpf.smartscan.lib.getVideoUriFromId
 import com.fpf.smartscan.lib.ImageIndexListener
 import com.fpf.smartscan.lib.VideoIndexListener
 import com.fpf.smartscansdk.core.data.Embedding
-import com.fpf.smartscansdk.core.embeddings.FileEmbeddingRetriever
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer
@@ -54,10 +53,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     private val imageEmbedder = ClipImageEmbedder(application, ResourceId(R.raw.clip_image_encoder_quant))
 
     val imageStore = FileEmbeddingStore(File(application.filesDir, ImageIndexer.INDEX_FILENAME), imageEmbedder.embeddingDim)
-    val imageRetriever = FileEmbeddingRetriever(imageStore)
-
     val videoStore = FileEmbeddingStore(File(application.filesDir, VideoIndexer.INDEX_FILENAME), imageEmbedder.embeddingDim )
-    val videoRetriever = FileEmbeddingRetriever(videoStore)
 
     private val repository: ImageEmbeddingRepository = ImageEmbeddingRepository(
         ImageEmbeddingDatabase.getDatabase(application).imageEmbeddingDao()
@@ -130,6 +126,8 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     var imageEmbedderLastUsage: Long? = null
     var textEmbedderLastUsage: Long? = null
 
+    var hasLoadVideoIndex: Boolean = false
+
     init {
         loadImageIndex()
     }
@@ -191,7 +189,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
 
         // saves memory by lazy loading video index
         // This check is only valid if useCache true, which is default
-        if(type == MediaType.VIDEO && !videoStore.isCached){
+        if(type == MediaType.VIDEO && !hasLoadVideoIndex){
             viewModelScope.launch(Dispatchers.IO){loadVideoIndex()}
         }
     }
@@ -265,8 +263,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     }
 
     private suspend fun search(store: FileEmbeddingStore, embedding: FloatArray, threshold: Float = 0.2f) {
-        val retriever = if(_mediaType.value == MediaType.VIDEO) videoRetriever else imageRetriever
-        var results = retriever.query(embedding, Int.MAX_VALUE, threshold)
+        var results = store.query(embedding, Int.MAX_VALUE, threshold)
         _totalResults.emit( results.size)
         results = results.take(RESULTS_BATCH_SIZE) // initial results the result loaded dynamically
 
@@ -321,7 +318,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
 
     fun onLoadMore() {
         if (isLoadingMoreSearchResults.getAndSet(true)) return
-        val retriever = if (_mediaType.value == MediaType.VIDEO) videoRetriever else imageRetriever
+        val store = if (_mediaType.value == MediaType.VIDEO) videoStore else imageStore
         val currentItemsCount = _searchResults.value.size
         if (currentItemsCount >= _totalResults.value) return
 
@@ -329,7 +326,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
             try {
 
                 val end = (currentItemsCount + RESULTS_BATCH_SIZE).coerceAtMost(_totalResults.value)
-                val batch = retriever.query(currentItemsCount, end).take(RESULTS_BATCH_SIZE)
+                val batch = store.query(currentItemsCount, end).take(RESULTS_BATCH_SIZE)
 
                 val (filteredUris, idsToPurge) = batch.map { embed ->
                     embed.id to if (_mediaType.value == MediaType.VIDEO) getVideoUriFromId(embed.id) else getImageUriFromId(
