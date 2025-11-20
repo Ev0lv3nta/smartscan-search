@@ -32,6 +32,7 @@
     <string name="search_error_empty_query">Query cannot be empty.</string>
     <string name="search_error_unknown">An unknown error occurred.</string>
     <string name="search_error_index_loading">Error loading index.</string>
+    <string name="search_start_indexing_alert">Start indexing %1$s</string>
 
     <!-- Donate screen -->
     <string name="label_btc">Bitcoin</string>
