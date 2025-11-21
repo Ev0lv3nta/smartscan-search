@@ -10,14 +10,14 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import com.fpf.smartscan.data.AppSettings
+import com.fpf.smartscan.settings.AppSettings
 import com.fpf.smartscan.lib.ImageIndexListener
 import com.fpf.smartscan.lib.VideoIndexListener
 import com.fpf.smartscan.lib.copyFromUri
 import com.fpf.smartscan.lib.copyToUri
 import com.fpf.smartscan.lib.hashFile
-import com.fpf.smartscan.lib.loadSettings
-import com.fpf.smartscan.lib.saveSettings
+import com.fpf.smartscan.settings.loadSettings
+import com.fpf.smartscan.settings.saveSettings
 import com.fpf.smartscan.lib.unzipFiles
 import com.fpf.smartscan.lib.zipFiles
 import com.fpf.smartscan.models.ImportedModel
