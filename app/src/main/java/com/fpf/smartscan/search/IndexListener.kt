@@ -5,9 +5,8 @@ import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import com.fpf.smartscan.R
-import com.fpf.smartscan.search.ProcessorStatus
-import com.fpf.smartscan.lib.getTimeInMinutesAndSeconds
-import com.fpf.smartscan.lib.showNotification
+import com.fpf.smartscan.utils.getTimeInMinutesAndSeconds
+import com.fpf.smartscan.utils.showNotification
 import com.fpf.smartscansdk.core.data.Embedding
 import com.fpf.smartscansdk.core.data.Metrics
 import com.fpf.smartscansdk.core.processors.IProcessorListener

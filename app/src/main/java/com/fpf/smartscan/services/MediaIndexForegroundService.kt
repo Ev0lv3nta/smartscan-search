@@ -15,8 +15,8 @@ import com.fpf.smartscan.MainActivity
 import com.fpf.smartscan.search.ImageIndexListener
 import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.settings.loadSettings
-import com.fpf.smartscan.lib.queryImageIds
-import com.fpf.smartscan.lib.queryVideoIds
+import com.fpf.smartscan.media.queryImageIds
+import com.fpf.smartscan.media.queryVideoIds
 import com.fpf.smartscansdk.ml.data.ResourceId
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.indexers.ImageIndexer

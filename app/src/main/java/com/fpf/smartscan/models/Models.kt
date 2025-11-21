@@ -9,9 +9,9 @@ import com.fpf.smartscan.constants.MODEL_DIR
 import com.fpf.smartscan.constants.downloadableModels
 import com.fpf.smartscan.constants.facialRecognitionModel
 import com.fpf.smartscan.constants.miniLmTextEmbedderModel
-import com.fpf.smartscan.lib.copyFromUri
-import com.fpf.smartscan.lib.getFileName
-import com.fpf.smartscan.lib.unzipFiles
+import com.fpf.smartscan.utils.copyFromUri
+import com.fpf.smartscan.utils.getFileName
+import com.fpf.smartscan.utils.unzipFiles
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File

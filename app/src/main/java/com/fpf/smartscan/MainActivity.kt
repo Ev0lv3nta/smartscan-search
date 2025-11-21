@@ -16,7 +16,7 @@ import coil3.disk.DiskCache
 import coil3.disk.directory
 import coil3.memory.MemoryCache
 import coil3.request.crossfade
-import com.fpf.smartscan.lib.isServiceRunning
+import com.fpf.smartscan.utils.isServiceRunning
 import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscan.services.MediaIndexForegroundService
 import com.fpf.smartscan.services.startIndexing

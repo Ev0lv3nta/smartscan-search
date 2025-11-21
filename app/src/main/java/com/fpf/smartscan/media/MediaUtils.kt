@@ -1,21 +1,13 @@
-package com.fpf.smartscan.lib
+package com.fpf.smartscan.media
 
 import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
-import android.graphics.*
 import android.net.Uri
 import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.MediaStore
-import android.util.Log
-import androidx.documentfile.provider.DocumentFile
-import com.fpf.smartscansdk.core.media.getBitmapFromUri
-import com.fpf.smartscansdk.ml.models.providers.embeddings.clip.ClipConfig
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.File
-import java.util.Locale
 
 const val DEFAULT_IMAGE_DISPLAY_SIZE = 1024
 
@@ -24,32 +16,6 @@ fun getImageUriFromId(id: Long): Uri {
         MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
         id
     )
-}
-
-suspend fun fetchBitmapsFromDirectory(context: Context, directoryUri: Uri, maxSize: Int = ClipConfig.IMAGE_SIZE_X, limit: Int? = null): List<Bitmap> = withContext(Dispatchers.IO) {
-    val directory = DocumentFile.fromTreeUri(context, directoryUri)
-        ?: throw IllegalArgumentException("Invalid directory URI: $directoryUri")
-
-    val validExtensions = listOf("png", "jpg", "jpeg", "bmp", "gif")
-    val imageFiles = directory.listFiles()
-        .filter { doc ->
-            doc.isFile && (doc.name?.substringAfterLast('.', "")?.lowercase(Locale.getDefault()) in validExtensions)
-        }
-        .shuffled()
-        .let { if (limit != null) it.take(limit) else it }
-
-    if (imageFiles.isEmpty()) {
-        throw IllegalStateException("No valid image files found in directory: $directoryUri")
-    }
-
-    imageFiles.mapNotNull { doc ->
-        try {
-            getBitmapFromUri(context, doc.uri, maxSize)
-        } catch (e: Exception) {
-            Log.e("BitmapFetch", "Failed to load image: ${doc.uri}", e)
-            null
-        }
-    }
 }
 
 fun openImageInGallery(context: Context, uri: Uri) {
