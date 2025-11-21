@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.smartScanModelTypeOptions
-import com.fpf.smartscan.data.ImportedModel
+import com.fpf.smartscan.models.ImportedModel
 
 @Composable
 fun ImportedModelCard(

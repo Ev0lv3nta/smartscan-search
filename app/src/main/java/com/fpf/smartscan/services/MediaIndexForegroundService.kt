@@ -4,7 +4,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import android.util.Log
@@ -13,11 +12,11 @@ import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.fpf.smartscan.R
 import com.fpf.smartscan.MainActivity
-import com.fpf.smartscan.lib.ImageIndexListener
-import com.fpf.smartscan.lib.VideoIndexListener
-import com.fpf.smartscan.lib.loadSettings
-import com.fpf.smartscan.lib.queryImageIds
-import com.fpf.smartscan.lib.queryVideoIds
+import com.fpf.smartscan.search.ImageIndexListener
+import com.fpf.smartscan.search.VideoIndexListener
+import com.fpf.smartscan.settings.loadSettings
+import com.fpf.smartscan.media.queryImageIds
+import com.fpf.smartscan.media.queryVideoIds
 import com.fpf.smartscansdk.ml.data.ResourceId
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.indexers.ImageIndexer

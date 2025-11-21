@@ -22,7 +22,7 @@ import androidx.core.net.toUri
 import com.fpf.smartscan.constants.SettingTypes
 import com.fpf.smartscan.constants.downloadableModels
 import com.fpf.smartscan.ui.components.BackupAndRestore
-import com.fpf.smartscan.ui.components.models.ModelManager
+import com.fpf.smartscan.ui.components.models.ModelManagerView
 import com.fpf.smartscan.ui.components.models.ModelsList
 import com.fpf.smartscan.ui.screens.settings.SettingsViewModel.Companion.BACKUP_FILENAME
 
@@ -72,7 +72,7 @@ fun SettingsDetailScreen(
                     )
                 }
                 SettingTypes.MANAGE_MODELS -> {
-                    ModelManager(models=models, onDelete = viewModel::onDeleteModel, onImport=viewModel::onImportModel)
+                    ModelManagerView(models=models, onDelete = viewModel::onDeleteModel, onImport=viewModel::onImportModel)
                 }
                 SettingTypes.SEARCHABLE_IMG_DIRS -> {
                     DirectoryPicker(

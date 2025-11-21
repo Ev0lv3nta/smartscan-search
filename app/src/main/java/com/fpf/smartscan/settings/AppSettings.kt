@@ -1,4 +1,4 @@
-package com.fpf.smartscan.data
+package com.fpf.smartscan.settings
 
 import com.fpf.smartscan.ui.theme.ColorSchemeType
 import com.fpf.smartscan.ui.theme.ThemeMode
@@ -12,4 +12,4 @@ data class AppSettings(
     val searchableVideoDirectories: List<String> = emptyList(),
     val theme: ThemeMode = ThemeMode.SYSTEM,
     val color: ColorSchemeType = ColorSchemeType.SMARTSCAN
-    )
+)

@@ -13,7 +13,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.fpf.smartscan.R
-import com.fpf.smartscan.data.ModelInfo
+import com.fpf.smartscan.models.ModelInfo
 
 @Composable
 fun ModelsList(

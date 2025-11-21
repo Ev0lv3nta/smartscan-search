@@ -3,14 +3,12 @@ package com.fpf.smartscan.services
 import android.app.Service
 import android.content.Intent
 import android.os.IBinder
-import android.os.RemoteException
 import android.util.Log
 import com.fpf.smartscan.ITextEmbedderService
 import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.miniLmTextEmbedderModel
-import com.fpf.smartscan.data.SmartScanModelType
-import com.fpf.smartscan.lib.getImportedModels
-import com.fpf.smartscan.lib.getModelPathMap
+import com.fpf.smartscan.models.ModelManager
+import com.fpf.smartscan.models.SmartScanModelType
 import com.fpf.smartscansdk.core.embeddings.TextEmbeddingProvider
 import com.fpf.smartscansdk.core.embeddings.flattenEmbeddings
 import com.fpf.smartscansdk.ml.data.FilePath
@@ -83,7 +81,7 @@ class TextEmbedderAidlService: Service() {
         }
 
         override fun listModels(): List<String> {
-            return getImportedModels(application).filter { it.type == SmartScanModelType.TEXT_ENCODER }.map { it.name }
+            return ModelManager.getImportedModels(application).filter { it.type == SmartScanModelType.TEXT_ENCODER }.map { it.name }
         }
 
         override fun selectModel(model: String): Boolean {
@@ -94,7 +92,7 @@ class TextEmbedderAidlService: Service() {
 
             selectedModel = model
 
-            val modelPathsMap = getModelPathMap()
+            val modelPathsMap = ModelManager.getModelPathMap()
             val pathInfo = modelPathsMap[model]
 
             textEmbedder = when(model){

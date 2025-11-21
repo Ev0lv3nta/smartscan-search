@@ -1,4 +1,4 @@
-package com.fpf.smartscan.data
+package com.fpf.smartscan.models
 
 enum class SmartScanModelType(val tag: String) {
     FACE("facial"),

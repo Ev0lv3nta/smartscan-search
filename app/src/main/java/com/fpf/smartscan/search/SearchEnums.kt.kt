@@ -1,8 +1,5 @@
-package com.fpf.smartscan.data
+package com.fpf.smartscan.search
 
-enum class MediaType {
-    IMAGE, VIDEO
-}
 
 enum class QueryType {
     TEXT, IMAGE

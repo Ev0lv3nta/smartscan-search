@@ -28,9 +28,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.fpf.smartscan.lib.DEFAULT_IMAGE_DISPLAY_SIZE
-import com.fpf.smartscan.lib.openImageInGallery
-import com.fpf.smartscan.lib.openVideoInGallery
+import com.fpf.smartscan.media.DEFAULT_IMAGE_DISPLAY_SIZE
+import com.fpf.smartscan.media.openImageInGallery
+import com.fpf.smartscan.media.openVideoInGallery
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -40,8 +40,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import com.fpf.smartscan.data.MediaType
-import com.fpf.smartscan.lib.canOpenUri
+import com.fpf.smartscan.media.MediaType
+import com.fpf.smartscan.utils.canOpenUri
 
 @Composable
 fun MediaViewer(

@@ -1,4 +1,4 @@
-package com.fpf.smartscan.lib
+package com.fpf.smartscan.utils
 
 import android.Manifest
 import android.app.ActivityManager

@@ -17,8 +17,8 @@ import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.toBitmap
 import coil3.video.VideoFrameDecoder
-import com.fpf.smartscan.data.MediaType
-import com.fpf.smartscan.lib.DEFAULT_IMAGE_DISPLAY_SIZE
+import com.fpf.smartscan.media.MediaType
+import com.fpf.smartscan.media.DEFAULT_IMAGE_DISPLAY_SIZE
 
 @Composable
 fun ImageDisplay(

@@ -26,9 +26,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.mediaTypeOptions
-import com.fpf.smartscan.data.MediaType
-import com.fpf.smartscan.data.ProcessorStatus
-import com.fpf.smartscan.data.QueryType
+import com.fpf.smartscan.media.MediaType
+import com.fpf.smartscan.search.ProcessorStatus
+import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.ui.components.LoadingIndicator
 import com.fpf.smartscan.ui.components.media.MediaViewer
 import com.fpf.smartscan.ui.components.ProgressBar

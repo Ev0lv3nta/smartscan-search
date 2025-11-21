@@ -30,8 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.smartScanModelTypeOptions
-import com.fpf.smartscan.data.ModelInfo
-
+import com.fpf.smartscan.models.ModelInfo
 
 @Composable
 fun DownloadableModelCard(
