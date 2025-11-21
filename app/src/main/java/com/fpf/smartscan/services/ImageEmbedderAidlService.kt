@@ -9,8 +9,8 @@ import android.os.IBinder
 import android.util.Log
 import com.fpf.smartscan.IImageEmbedderService
 import com.fpf.smartscan.R
-import com.fpf.smartscan.data.SmartScanModelType
-import com.fpf.smartscan.lib.getImportedModels
+import com.fpf.smartscan.models.SmartScanModelType
+import com.fpf.smartscan.models.ModelManager
 import com.fpf.smartscansdk.core.embeddings.ImageEmbeddingProvider
 import com.fpf.smartscansdk.core.embeddings.flattenEmbeddings
 import com.fpf.smartscansdk.ml.data.ResourceId
@@ -79,7 +79,7 @@ class ImageEmbedderAidlService: Service() {
         }
 
         override fun listModels(): List<String> {
-            return getImportedModels(application).filter { it.type == SmartScanModelType.IMAGE_ENCODER }.map { it.name }
+            return ModelManager.getImportedModels(application).filter { it.type == SmartScanModelType.IMAGE_ENCODER }.map { it.name }
         }
 
         override fun selectModel(model: String): Boolean {

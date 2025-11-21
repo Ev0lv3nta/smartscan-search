@@ -11,19 +11,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import com.fpf.smartscan.data.AppSettings
-import com.fpf.smartscan.data.ImportedModel
 import com.fpf.smartscan.lib.ImageIndexListener
 import com.fpf.smartscan.lib.VideoIndexListener
 import com.fpf.smartscan.lib.copyFromUri
 import com.fpf.smartscan.lib.copyToUri
-import com.fpf.smartscan.lib.deleteModel
-import com.fpf.smartscan.lib.getImportedModels
 import com.fpf.smartscan.lib.hashFile
-import com.fpf.smartscan.lib.importModel
 import com.fpf.smartscan.lib.loadSettings
 import com.fpf.smartscan.lib.saveSettings
 import com.fpf.smartscan.lib.unzipFiles
 import com.fpf.smartscan.lib.zipFiles
+import com.fpf.smartscan.models.ImportedModel
+import com.fpf.smartscan.models.ModelManager
 import com.fpf.smartscan.ui.theme.ColorSchemeType
 import com.fpf.smartscan.ui.theme.ThemeManager
 import com.fpf.smartscan.ui.theme.ThemeMode
@@ -40,7 +38,7 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
     private val _appSettings = MutableStateFlow(AppSettings())
     val appSettings: StateFlow<AppSettings> = _appSettings
 
-    private val _importedModels = MutableStateFlow(getImportedModels(application))
+    private val _importedModels = MutableStateFlow(ModelManager.getImportedModels(application))
     val importedModels: StateFlow<List<ImportedModel>> = _importedModels
     private val _event = MutableSharedFlow<String>()
     val event = _event.asSharedFlow()
@@ -79,8 +77,8 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
     fun onImportModel( uri: Uri) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                importModel(application, uri)
-                _importedModels.value = getImportedModels(application)
+                ModelManager.importModel(application, uri)
+                _importedModels.value = ModelManager.getImportedModels(application)
                 _event.emit("Model imported successfully")
             } catch (e: Exception) {
                 val defaultErrorMessage = "Error importing model"
@@ -93,7 +91,7 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
     }
 
     fun onDeleteModel(model: ImportedModel){
-        if(deleteModel(application, model)) _importedModels.value = _importedModels.value - model
+        if(ModelManager.deleteModel(application, model)) _importedModels.value = _importedModels.value - model
     }
 
     fun addSearchableImageDirectory(dir: String) {

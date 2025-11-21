@@ -22,7 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.fpf.smartscan.data.ImportedModel
+import com.fpf.smartscan.models.ImportedModel
 
 @Composable
 fun ModelManager(

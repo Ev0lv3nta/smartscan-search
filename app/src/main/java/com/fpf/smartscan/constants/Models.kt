@@ -1,7 +1,7 @@
 package com.fpf.smartscan.constants
 
-import com.fpf.smartscan.data.ModelInfo
-import com.fpf.smartscan.data.SmartScanModelType
+import com.fpf.smartscan.models.ModelInfo
+import com.fpf.smartscan.models.SmartScanModelType
 
 val smartScanModelTypeOptions = mapOf (
     SmartScanModelType.FACE to  "Facial recognition",
