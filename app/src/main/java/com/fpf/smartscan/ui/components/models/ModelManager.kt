@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.fpf.smartscan.models.ImportedModel
 
 @Composable
-fun ModelManager(
+fun ModelManagerView(
     models: List<ImportedModel>,
     onImport: (uri: Uri) -> Unit,
     onDelete: (model: ImportedModel) -> Unit
