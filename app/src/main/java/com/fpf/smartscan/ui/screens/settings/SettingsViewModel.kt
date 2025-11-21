@@ -11,8 +11,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import com.fpf.smartscan.settings.AppSettings
-import com.fpf.smartscan.lib.ImageIndexListener
-import com.fpf.smartscan.lib.VideoIndexListener
+import com.fpf.smartscan.search.ImageIndexListener
+import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.lib.copyFromUri
 import com.fpf.smartscan.lib.copyToUri
 import com.fpf.smartscan.lib.hashFile

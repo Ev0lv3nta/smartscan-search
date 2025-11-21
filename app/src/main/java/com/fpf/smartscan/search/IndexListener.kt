@@ -1,11 +1,13 @@
-package com.fpf.smartscan.lib
+package com.fpf.smartscan.search
 
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import com.fpf.smartscan.R
-import com.fpf.smartscan.data.ProcessorStatus
+import com.fpf.smartscan.search.ProcessorStatus
+import com.fpf.smartscan.lib.getTimeInMinutesAndSeconds
+import com.fpf.smartscan.lib.showNotification
 import com.fpf.smartscansdk.core.data.Embedding
 import com.fpf.smartscansdk.core.data.Metrics
 import com.fpf.smartscansdk.core.processors.IProcessorListener
@@ -34,7 +36,12 @@ abstract class BaseIndexListener(private val notificationId: Int, private val ta
             if (metrics.totalProcessed == 0) return
             val (minutes, seconds) = getTimeInMinutesAndSeconds(metrics.timeElapsed)
             val notificationText = "Total ${itemName.lowercase()}s indexed: ${metrics.totalProcessed}, Time: ${minutes}m ${seconds}s"
-            showNotification(context, context.getString(R.string.notif_title_index_complete), notificationText, notificationId)
+            showNotification(
+                context,
+                context.getString(R.string.notif_title_index_complete),
+                notificationText,
+                notificationId
+            )
         } catch (e: Exception) {
             Log.e(tag, "Error in onComplete: ${e.message}", e)
         }

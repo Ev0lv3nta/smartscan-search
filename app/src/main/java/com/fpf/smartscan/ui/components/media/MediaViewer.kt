@@ -40,7 +40,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import com.fpf.smartscan.data.MediaType
+import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.lib.canOpenUri
 
 @Composable

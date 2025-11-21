@@ -12,8 +12,8 @@ import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.fpf.smartscan.R
 import com.fpf.smartscan.MainActivity
-import com.fpf.smartscan.lib.ImageIndexListener
-import com.fpf.smartscan.lib.VideoIndexListener
+import com.fpf.smartscan.search.ImageIndexListener
+import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscan.lib.queryImageIds
 import com.fpf.smartscan.lib.queryVideoIds
