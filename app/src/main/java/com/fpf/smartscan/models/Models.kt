@@ -6,6 +6,7 @@ import android.util.Log
 import com.fpf.smartscan.constants.INCEPTION_RESNET_DEP_FACE_DETECTOR
 import com.fpf.smartscan.constants.INCEPTION_RESNET_DEP_INCEPTION
 import com.fpf.smartscan.constants.MODEL_DIR
+import com.fpf.smartscan.constants.dinoV2SmallImageEmbedderModel
 import com.fpf.smartscan.constants.downloadableModels
 import com.fpf.smartscan.constants.facialRecognitionModel
 import com.fpf.smartscan.constants.miniLmTextEmbedderModel
@@ -32,7 +33,9 @@ object ModelManager{
                 )
             ),
             miniLmTextEmbedderModel.name to ModelPathInfo("$MODEL_DIR/${filenameFromUrl(miniLmTextEmbedderModel.url)}"),
-        )
+            dinoV2SmallImageEmbedderModel.name to ModelPathInfo("$MODEL_DIR/${filenameFromUrl(dinoV2SmallImageEmbedderModel.url)}"),
+
+            )
         return modelsPathMap
     }
 

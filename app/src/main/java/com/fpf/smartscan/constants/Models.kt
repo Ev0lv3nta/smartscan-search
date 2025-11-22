@@ -27,5 +27,11 @@ val miniLmTextEmbedderModel = ModelInfo(
     url = "https://github.com/dev-diaries41/smartscan-models/releases/download/1.0.0/minilm_sentence_transformer_quant.onnx",
 )
 
-val downloadableModels = listOf(facialRecognitionModel, miniLmTextEmbedderModel)
+val dinoV2SmallImageEmbedderModel = ModelInfo(
+    type = SmartScanModelType.IMAGE_ENCODER,
+    name = "DinoV2-Small",
+    url = "https://github.com/dev-diaries41/smartscan-models/releases/download/1.0.0/dinov2_small_quant.onnx",
+)
+
+val downloadableModels = listOf(facialRecognitionModel, miniLmTextEmbedderModel, dinoV2SmallImageEmbedderModel)
 
