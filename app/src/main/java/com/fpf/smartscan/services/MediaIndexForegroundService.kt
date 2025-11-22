@@ -21,8 +21,9 @@ import com.fpf.smartscansdk.ml.data.ResourceId
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer
-import com.fpf.smartscansdk.ml.models.providers.embeddings.clip.ClipConfig
 import com.fpf.smartscansdk.ml.models.providers.embeddings.clip.ClipImageEmbedder
+import com.fpf.smartscansdk.ml.models.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_X
+import com.fpf.smartscansdk.ml.models.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_Y
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -103,7 +104,7 @@ class MediaIndexForegroundService : Service() {
 
                 if (mediaType == TYPE_VIDEO || mediaType == TYPE_BOTH) {
                     val videoStore = FileEmbeddingStore(File(application.filesDir,  VideoIndexer.INDEX_FILENAME), embeddingHandler.embeddingDim, useCache = false )
-                    val videoIndexer = VideoIndexer(embeddingHandler, context=application, listener = VideoIndexListener, store = videoStore, width = ClipConfig.IMAGE_SIZE_X, height = ClipConfig.IMAGE_SIZE_Y)
+                    val videoIndexer = VideoIndexer(embeddingHandler, context=application, listener = VideoIndexListener, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
                     val ids = queryVideoIds(application, appSettings.searchableVideoDirectories.map { it.toUri() })
                     val existingIds = if(videoStore.exists) videoStore.get().map{it.id}.toSet() else emptySet()
                     val filteredIds = ids.filterNot { existingIds.contains(it) }

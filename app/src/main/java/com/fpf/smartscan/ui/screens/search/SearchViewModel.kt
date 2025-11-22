@@ -27,8 +27,8 @@ import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer
 import com.fpf.smartscansdk.core.media.getBitmapFromUri
 import com.fpf.smartscansdk.ml.data.ResourceId
-import com.fpf.smartscansdk.ml.models.providers.embeddings.clip.ClipConfig
 import com.fpf.smartscansdk.ml.models.providers.embeddings.clip.ClipImageEmbedder
+import com.fpf.smartscansdk.ml.models.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_X
 import com.fpf.smartscansdk.ml.models.providers.embeddings.clip.ClipTextEmbedder
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -200,7 +200,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
             try {
                 if(!imageEmbedder.isInitialized()) imageEmbedder.initialize()
                 if(shouldShutdownModel(textEmbedderLastUsage)) textEmbedder.closeSession() // prevent keeping both models open
-                val bitmap = getBitmapFromUri(application, queryImage, ClipConfig.IMAGE_SIZE_X)
+                val bitmap = getBitmapFromUri(application, queryImage, IMAGE_SIZE_X)
                 val embedding = imageEmbedder.embed(bitmap)
                 search(store, embedding, threshold)
             } catch (e: Exception) {
