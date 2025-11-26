@@ -11,10 +11,10 @@ import com.fpf.smartscan.models.ModelManager
 import com.fpf.smartscan.models.SmartScanModelType
 import com.fpf.smartscansdk.core.embeddings.TextEmbeddingProvider
 import com.fpf.smartscansdk.core.embeddings.flattenEmbeddings
-import com.fpf.smartscansdk.ml.data.FilePath
-import com.fpf.smartscansdk.ml.data.ResourceId
-import com.fpf.smartscansdk.ml.models.providers.embeddings.clip.ClipTextEmbedder
-import com.fpf.smartscansdk.ml.models.providers.embeddings.minilm.MiniLMTextEmbedder
+import com.fpf.smartscansdk.ml.models.loaders.FilePath
+import com.fpf.smartscansdk.ml.models.loaders.ResourceId
+import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
+import com.fpf.smartscansdk.ml.providers.embeddings.minilm.MiniLMTextEmbedder
 import kotlinx.coroutines.runBlocking
 import java.io.File
 

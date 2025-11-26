@@ -7,8 +7,8 @@ import kotlinx.coroutines.flow.StateFlow
 import com.fpf.smartscan.R
 import com.fpf.smartscan.utils.getTimeInMinutesAndSeconds
 import com.fpf.smartscan.utils.showNotification
-import com.fpf.smartscansdk.core.data.Embedding
-import com.fpf.smartscansdk.core.data.Metrics
+import com.fpf.smartscansdk.core.embeddings.Embedding
+import com.fpf.smartscansdk.core.processors.Metrics
 import com.fpf.smartscansdk.core.processors.IProcessorListener
 
 abstract class BaseIndexListener(private val notificationId: Int, private val tag: String) : IProcessorListener<Long, Embedding> {
