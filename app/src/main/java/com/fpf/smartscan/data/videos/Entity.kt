@@ -1,7 +1,7 @@
 package com.fpf.smartscan.data.videos
 
 import androidx.room.*
-import com.fpf.smartscansdk.core.data.Embedding
+import com.fpf.smartscansdk.core.embeddings.Embedding
 
 @Entity(tableName = "video_embeddings")
 data class VideoEmbeddingEntity(

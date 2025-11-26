@@ -13,8 +13,8 @@ import com.fpf.smartscan.models.SmartScanModelType
 import com.fpf.smartscan.models.ModelManager
 import com.fpf.smartscansdk.core.embeddings.ImageEmbeddingProvider
 import com.fpf.smartscansdk.core.embeddings.flattenEmbeddings
-import com.fpf.smartscansdk.ml.data.ResourceId
-import com.fpf.smartscansdk.ml.models.providers.embeddings.clip.ClipImageEmbedder
+import com.fpf.smartscansdk.ml.models.loaders.ResourceId
+import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
 import kotlinx.coroutines.runBlocking
 
 

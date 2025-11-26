@@ -25,7 +25,7 @@ import com.fpf.smartscan.models.ModelManager
 import com.fpf.smartscan.ui.theme.ColorSchemeType
 import com.fpf.smartscan.ui.theme.ThemeManager
 import com.fpf.smartscan.ui.theme.ThemeMode
-import com.fpf.smartscansdk.core.data.Metrics
+import com.fpf.smartscansdk.core.processors.Metrics
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer
 import kotlinx.coroutines.Dispatchers
