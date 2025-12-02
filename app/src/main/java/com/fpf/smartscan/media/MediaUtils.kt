@@ -9,7 +9,6 @@ import android.provider.DocumentsContract
 import android.provider.MediaStore
 import java.io.File
 
-const val DEFAULT_IMAGE_DISPLAY_SIZE = 1024
 
 fun getImageUriFromId(id: Long): Uri {
     return ContentUris.withAppendedId(

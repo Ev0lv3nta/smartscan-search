@@ -28,7 +28,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.fpf.smartscan.media.DEFAULT_IMAGE_DISPLAY_SIZE
 import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
 import androidx.compose.animation.core.animateFloatAsState
@@ -49,7 +48,7 @@ fun MediaViewer(
     type: MediaType,
     onClose: () -> Unit,
     onUpdateSearchImage: (uri: Uri) -> Unit,
-    maxSize: Int = DEFAULT_IMAGE_DISPLAY_SIZE
+    maxSize: Int = 2048
 ){
     var isActionsVisible by remember { mutableStateOf(true) }
 
