@@ -16,6 +16,7 @@ import coil3.disk.DiskCache
 import coil3.disk.directory
 import coil3.memory.MemoryCache
 import coil3.request.crossfade
+import coil3.video.VideoFrameDecoder
 import com.fpf.smartscan.utils.isServiceRunning
 import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscan.services.MediaIndexForegroundService
@@ -53,7 +54,9 @@ class MainActivity : ComponentActivity() {
         }
 
         SingletonImageLoader.setSafe {
-            ImageLoader.Builder(this)
+            ImageLoader.Builder(this).components {
+                add(VideoFrameDecoder.Factory())
+            }
                 .crossfade(true)
                 .memoryCache { MemoryCache.Builder().maxSizePercent(this, 0.25).build() }
                 .diskCache { DiskCache.Builder().directory(cacheDir.resolve("image_cache")).maxSizePercent(0.02).build() }

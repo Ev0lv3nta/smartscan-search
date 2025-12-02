@@ -12,30 +12,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import coil3.ImageLoader
+import coil3.SingletonImageLoader
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.toBitmap
-import coil3.video.VideoFrameDecoder
 import com.fpf.smartscan.media.MediaType
-import com.fpf.smartscan.media.DEFAULT_IMAGE_DISPLAY_SIZE
 
 @Composable
 fun ImageDisplay(
     uri: Uri,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
-    maxSize: Int = DEFAULT_IMAGE_DISPLAY_SIZE,
+    maxSize: Int = 512,
     type: MediaType
 ) {
     val context = LocalContext.current
     val bitmapState = produceState<Bitmap?>(initialValue = null, key1 = uri, key2 = type) {
-        val loader = ImageLoader.Builder(context).components {
-                if (type == MediaType.VIDEO) {
-                    add(VideoFrameDecoder.Factory())
-                }
-            }
-            .build()
 
         val request = ImageRequest.Builder(context)
             .data(uri)
@@ -46,7 +38,7 @@ fun ImageDisplay(
             }
             .build()
 
-        loader.enqueue(request)
+        SingletonImageLoader.get(context).enqueue(request)
     }
 
     val bitmap = bitmapState.value
