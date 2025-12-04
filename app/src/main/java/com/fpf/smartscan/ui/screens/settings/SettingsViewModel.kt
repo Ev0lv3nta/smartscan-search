@@ -81,7 +81,7 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
                 _importedModels.value = ModelManager.getImportedModels(application)
                 _event.emit("Model imported successfully")
             } catch (e: Exception) {
-                val defaultErrorMessage = "Error importing model"
+                val defaultErrorMessage = "Model import failed"
                 val invalidFileError = "Invalid model file"
                 Log.e(TAG, "$defaultErrorMessage: ${e.message}")
                 val errorMessage = if(e.message == invalidFileError) invalidFileError else defaultErrorMessage
@@ -145,6 +145,7 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
 
         viewModelScope.launch(Dispatchers.IO){
             try {
+                if(!imageIndexFile.exists() && !videoIndexFile.exists()) error("Media not indexed")
                 val hashes: List<String> = listOf(imageIndexFile, videoIndexFile).filter { it.exists() }.map{hashFile(it)}
                 hashFile.writeText(hashes.joinToString("\n") )
 
@@ -153,7 +154,7 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
                 _event.emit("Backup successful")
             }catch (e: Exception){
                 Log.e(TAG, "Error backing up: ${e.message}")
-                _event.emit("Backup error")
+                if(e.message == "Media not indexed") _event.emit(e.message!!) else _event.emit("Backup failed")
             }finally {
                 indexZipFile.delete()
                 hashFile.delete()
@@ -180,7 +181,7 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
                 sharedPrefs.edit { putString("lastIndexed", System.currentTimeMillis().toString()) } // so scheduling can be triggered
             }catch (e: Exception){
                 Log.e(TAG, "Error restoring: ${e.message}")
-                _event.emit("Restore error")
+                _event.emit("Restore failed")
             }finally {
                 indexZipFile.delete()
                 _isRestoreLoading.emit(false)
