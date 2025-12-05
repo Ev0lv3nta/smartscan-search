@@ -181,7 +181,7 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
                 sharedPrefs.edit { putString("lastIndexed", System.currentTimeMillis().toString()) } // so scheduling can be triggered
             }catch (e: Exception){
                 Log.e(TAG, "Error restoring: ${e.message}")
-                _event.emit("Restore failed")
+                if (e.message == "Invalid backup file") _event.emit(e.message!!) else _event.emit("Restore failed")
             }finally {
                 indexZipFile.delete()
                 _isRestoreLoading.emit(false)
