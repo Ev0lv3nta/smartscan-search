@@ -334,7 +334,11 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
 
     fun toggleSelectionMode(){
         val currentState = _state.value
-        _state.value = currentState.copy(isSelecting = !currentState.isSelecting)
+        if(currentState.isSelecting){
+            _state.value = currentState.copy(isSelecting = false)
+        }else{
+            _state.value = currentState.copy(isSelecting = true, selectedResults = emptyList())
+        }
     }
     
 
