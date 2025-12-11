@@ -33,8 +33,11 @@ import com.fpf.smartscan.ui.components.media.ImageDisplay
 import kotlinx.coroutines.launch
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalDensity
 import com.fpf.smartscan.ui.components.CircularCheckbox
+import kotlinx.coroutines.flow.drop
 
 @Composable
 fun SearchResults(
@@ -47,6 +50,7 @@ fun SearchResults(
     totalResults: Int,
     onToggleSelected: (Uri) -> Unit,
     onToggleSelectionMode: () -> Unit,
+    onBottomBarFraction: (Float) -> Unit,
     numGridColumns: Int = 3,
     loadMoreBuffer: Int = 5,
     isSelecting: Boolean = false,
@@ -58,13 +62,30 @@ fun SearchResults(
     var showScrollToTop by remember { mutableStateOf(false) }
     val scrollThreshold = 10
 
+    val density = LocalDensity.current
+    val actionBarHeight = 70
+    val sensitivityPx = with(density) { actionBarHeight.dp.toPx() }
+    var accumulatedPx by remember { mutableFloatStateOf(0f) }
+
     // Detect scroll to show/hide button
     LaunchedEffect(gridState) {
         var lastIndex = 0
         var lastScrollOffset = 0
+
         snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }
+            .drop(1)
             .collect { (index, offset) ->
                 val scrollingUp = index < lastIndex || (index == lastIndex && offset < lastScrollOffset)
+
+                val layoutInfo = gridState.layoutInfo
+
+                // calculate bottom bar visibility fraction
+                val firstItemSize = layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height?: 0
+                val deltaPx = (lastIndex - index) * firstItemSize + (lastScrollOffset - offset)
+                accumulatedPx = (accumulatedPx + deltaPx).coerceIn(0f, sensitivityPx)
+                val fraction = (accumulatedPx / sensitivityPx).coerceIn(0f, 1f)
+                onBottomBarFraction(fraction)
+
                 showScrollToTop = !scrollingUp && index > scrollThreshold
                 lastIndex = index
                 lastScrollOffset = offset
