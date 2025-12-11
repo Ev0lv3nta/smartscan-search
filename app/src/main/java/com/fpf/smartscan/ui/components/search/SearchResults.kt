@@ -34,19 +34,23 @@ import kotlinx.coroutines.launch
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.ui.Alignment
+import com.fpf.smartscan.ui.components.CircularCheckbox
 
 @Composable
 fun SearchResults(
     isVisible: Boolean,
     searchResults: List<Uri>,
-    toggleViewResult: (uri: Uri?) -> Unit,
-    updateSearchImage: (uri: Uri) -> Unit,
+    selectedResults: List<Uri>,
+    onViewResult: (uri: Uri?) -> Unit,
     type: MediaType,
     onLoadMore: () -> Unit,
     totalResults: Int,
+    onToggleSelected: (Uri) -> Unit,
+    onToggleSelectionMode: () -> Unit,
     numGridColumns: Int = 3,
-    loadMoreBuffer: Int = 5
-) {
+    loadMoreBuffer: Int = 5,
+    isSelecting: Boolean = false,
+    ) {
     if (!isVisible) return
 
     val gridState = rememberLazyGridState()
@@ -94,8 +98,7 @@ fun SearchResults(
                 contentPadding = PaddingValues(4.dp)
             ) {
                 items(searchResults) { uri ->
-                    ImageDisplay(
-                        uri = uri,
+                    Box(
                         modifier = Modifier
                             .aspectRatio(1f)
                             .padding(1.dp)
@@ -103,19 +106,40 @@ fun SearchResults(
                             .combinedClickable(
                                 indication = null,
                                 interactionSource = remember { MutableInteractionSource() },
-                                onClick = { toggleViewResult(uri) },
-                                onLongClick = {
-                                    if(type == MediaType.IMAGE){
-                                        updateSearchImage(uri)
+                                onClick = {
+                                    if(isSelecting){
+                                        onToggleSelected(uri)
+                                    }else{
+                                        onViewResult(uri)
                                     }
+                                          },
+                                onLongClick = {
+                                    onToggleSelectionMode()
                                 }
-                            ),
-                        contentScale = ContentScale.Crop,
-                        type = type
-                    )
+                            )
+                        ) {
+
+                            ImageDisplay(
+                                uri = uri,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop,
+                                type = type
+                            )
+                            if(isSelecting) {
+                                CircularCheckbox(
+                                    checked = uri in selectedResults,
+                                    onCheckedChange = {
+                                        onToggleSelected(uri)
+                                    },
+                                    modifier = Modifier
+                                        .offset(x = 8.dp, y = 8.dp)
+                                        .align(Alignment.TopStart),
+                                )
+                            }
+                        }
+                    }
                 }
             }
-        }
 
         AnimatedVisibility(
             visible = showScrollToTop,

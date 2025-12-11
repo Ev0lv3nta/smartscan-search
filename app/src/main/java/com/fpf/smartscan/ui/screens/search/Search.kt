@@ -1,5 +1,7 @@
 package com.fpf.smartscan.ui.screens.search
 
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -59,6 +61,8 @@ fun SearchScreen(
     val state by searchViewModel.state.collectAsState()
     var hasStoragePermission by remember { mutableStateOf(false) }
 
+    val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
+
     RequestPermissions { _, storageGranted ->
         hasStoragePermission = storageGranted
     }
@@ -109,6 +113,9 @@ fun SearchScreen(
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
+        BackHandler(enabled = state.isSelecting) {
+            searchViewModel.toggleSelectionMode()
+        }
 
         Column(
             modifier = Modifier
@@ -203,14 +210,14 @@ fun SearchScreen(
                 isVisible = !state.loading && state.searchResults.isNotEmpty(),
                 type = state.mediaType,
                 searchResults = state.searchResults,
-                toggleViewResult = searchViewModel::toggleViewResult,
-                updateSearchImage = {
-                    searchViewModel.updateSearchImageUri(it)
-                    searchViewModel.updateQueryType(QueryType.IMAGE)
-                                    },
-                onLoadMore = searchViewModel::onLoadMore,
                 totalResults=state.totalResults,
-                loadMoreBuffer = (RESULTS_BATCH_SIZE * 0.2).toInt()
+                isSelecting = state.isSelecting,
+                selectedResults = state.selectedResults,
+                loadMoreBuffer = (RESULTS_BATCH_SIZE * 0.2).toInt(),
+                onViewResult = searchViewModel::toggleViewResult,
+                onLoadMore = searchViewModel::onLoadMore,
+                onToggleSelected = searchViewModel::toggleSelectedResult,
+                onToggleSelectionMode = searchViewModel::toggleSelectionMode
             )
         }
         state.resultToView?.let { uri ->
