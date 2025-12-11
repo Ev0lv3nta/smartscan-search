@@ -46,7 +46,9 @@ data class SearchState(
     val hasIndexedVideos: Boolean? = false,
     val loading: Boolean = false,
     val error: String? = null,
-    val resultToView: Uri? = null
+    val resultToView: Uri? = null,
+    val isSelecting: Boolean = false,
+    val selectedResults: List<Uri> = emptyList()
 )
 
 class SearchViewModel(private val application: Application) : AndroidViewModel(application) {
@@ -316,6 +318,23 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
             MediaType.IMAGE -> startIndexing(application, MediaIndexForegroundService.TYPE_IMAGE)
             MediaType.VIDEO -> startIndexing(application, MediaIndexForegroundService.TYPE_VIDEO)
         }
+    }
+
+    fun toggleSelectedResult(item: Uri){
+        val currentState = _state.value
+
+        if (item in currentState.selectedResults){
+            val updatedSelectedResults = currentState.selectedResults - item
+            _state.value = currentState.copy(selectedResults = updatedSelectedResults)
+        }else{
+            val updatedSelectedResults = currentState.selectedResults + item
+            _state.value = currentState.copy(selectedResults = updatedSelectedResults)
+        }
+    }
+
+    fun toggleSelectionMode(){
+        val currentState = _state.value
+        _state.value = currentState.copy(isSelecting = !currentState.isSelecting)
     }
     
 
