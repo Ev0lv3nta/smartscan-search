@@ -136,6 +136,7 @@ fun SearchResults(
                                           },
                                 onLongClick = {
                                     onToggleSelectionMode()
+                                    onToggleSelected(uri)
                                 }
                             )
                         ) {
