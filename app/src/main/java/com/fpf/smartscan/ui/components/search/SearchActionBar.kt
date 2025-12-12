@@ -23,13 +23,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
@@ -46,8 +43,8 @@ fun SearchActionBar(
 ) {
     if(!isVisible) return
 
-    var heightPx by remember { mutableIntStateOf(0) }
-
+    val density = LocalDensity.current
+    val heightPx = with(density) { 70.dp.toPx() }
     val animatedPct by animateFloatAsState(
         targetValue = visibilityPercent,
         animationSpec = spring(
@@ -59,7 +56,6 @@ fun SearchActionBar(
     Box(
         modifier = modifier
             .height(70.dp)
-            .onGloballyPositioned { coords -> heightPx = coords.size.height }
             .offset { IntOffset(0, ((1f - animatedPct) * heightPx).roundToInt()) }
             .background(MaterialTheme.colorScheme.surfaceContainerLowest)
             .fillMaxWidth()
