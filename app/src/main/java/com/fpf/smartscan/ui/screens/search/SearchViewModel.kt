@@ -142,7 +142,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     }
 
     fun clearResults(){
-        _state.value = _state.value.copy(searchResults = emptyList())
+        _state.value = _state.value.copy(searchResults = emptyList(), isSelecting = false, selectedResults = emptyList())
     }
 
     fun setMediaType(type: MediaType) {
@@ -335,7 +335,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     fun toggleSelectionMode(){
         val currentState = _state.value
         if(currentState.isSelecting){
-            _state.value = currentState.copy(isSelecting = false)
+            _state.value = currentState.copy(isSelecting = false, selectedResults = emptyList())
         }else{
             _state.value = currentState.copy(isSelecting = true, selectedResults = emptyList())
         }
