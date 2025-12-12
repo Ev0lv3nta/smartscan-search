@@ -142,8 +142,10 @@ fun SearchResults(
                                     }
                                           },
                                 onLongClick = {
-                                    onToggleSelectionMode()
-                                    onToggleSelected(uri)
+                                    if(!isSelecting) {
+                                        onToggleSelectionMode()
+                                        onToggleSelected(uri)
+                                    }
                                 }
                             )
                         ) {
