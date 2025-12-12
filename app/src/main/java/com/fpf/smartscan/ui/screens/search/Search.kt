@@ -1,13 +1,14 @@
 package com.fpf.smartscan.ui.screens.search
 
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.Icons
@@ -24,11 +25,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.zIndex
 import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.mediaTypeOptions
 import com.fpf.smartscan.media.MediaType
+import com.fpf.smartscan.media.shareMediaMulti
 import com.fpf.smartscan.search.ProcessorStatus
 import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.ui.components.LoadingIndicator
@@ -36,6 +40,7 @@ import com.fpf.smartscan.ui.components.media.MediaViewer
 import com.fpf.smartscan.ui.components.ProgressBar
 import com.fpf.smartscan.ui.components.SelectorIconItem
 import com.fpf.smartscan.ui.components.search.ImageSearcher
+import com.fpf.smartscan.ui.components.search.SearchActionBar
 import com.fpf.smartscan.ui.components.search.SearchBar
 import com.fpf.smartscan.ui.components.search.SearchResults
 import com.fpf.smartscan.ui.permissions.RequestPermissions
@@ -48,7 +53,7 @@ fun SearchScreen(
     settingsViewModel: SettingsViewModel = viewModel()
 ) {
     val appSettings by settingsViewModel.appSettings.collectAsState()
-
+    val context = LocalContext.current
     // Index state
     val imageIndexProgress by searchViewModel.imageIndexProgress.collectAsState(initial = 0f)
     val videoIndexProgress by searchViewModel.videoIndexProgress.collectAsState(initial = 0f)
@@ -60,8 +65,8 @@ fun SearchScreen(
     // Search state
     val state by searchViewModel.state.collectAsState()
     var hasStoragePermission by remember { mutableStateOf(false) }
+    var bottomBarVisibilityPercent by remember { mutableStateOf(1f) }
 
-    val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
     RequestPermissions { _, storageGranted ->
         hasStoragePermission = storageGranted
@@ -109,14 +114,13 @@ fun SearchScreen(
             }
         )
     }
+    BackHandler(enabled = state.isSelecting) {
+        searchViewModel.toggleSelectionMode()
+    }
 
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        BackHandler(enabled = state.isSelecting) {
-            searchViewModel.toggleSelectionMode()
-        }
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -217,9 +221,35 @@ fun SearchScreen(
                 onViewResult = searchViewModel::toggleViewResult,
                 onLoadMore = searchViewModel::onLoadMore,
                 onToggleSelected = searchViewModel::toggleSelectedResult,
-                onToggleSelectionMode = searchViewModel::toggleSelectionMode
+                onToggleSelectionMode = searchViewModel::toggleSelectionMode,
+                onBottomBarFraction = { visibility -> bottomBarVisibilityPercent = visibility }
             )
         }
+        SearchActionBar(
+            isVisible = state.isSelecting && state.selectedResults.isNotEmpty(),
+            visibilityPercent = bottomBarVisibilityPercent,
+            searchEnabled = state.selectedResults.size == 1,
+            onSearch = {
+                if(state.selectedResults.size == 1){
+                    searchViewModel.updateSearchImageUri(state.selectedResults[0])
+                    searchViewModel.updateQueryType(QueryType.IMAGE)
+                    searchViewModel.toggleSelectionMode()
+                    searchViewModel.imageSearch(appSettings.similarityThreshold)
+                }
+            },
+            onShare = {
+                shareMediaMulti(context, state.selectedResults)
+                searchViewModel.toggleSelectionMode()
+            },
+            onDelete = {
+                searchViewModel.toggleSelectionMode()
+            },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .zIndex(1f)
+                .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) {} // consume clicks to prevent clicking result
+            ,
+        )
         state.resultToView?.let { uri ->
             AnimatedVisibility(
                 visible = true,
@@ -239,9 +269,7 @@ fun SearchScreen(
             }
         }
     }
-
 }
-
 
 @Composable
 fun SearchPlaceholderDisplay(isVisible: Boolean) {
