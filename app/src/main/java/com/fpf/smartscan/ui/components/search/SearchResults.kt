@@ -67,13 +67,6 @@ fun SearchResults(
     val sensitivityPx = with(density) { actionBarHeight.dp.toPx() }
     var accumulatedPx by remember { mutableFloatStateOf(0f) }
 
-    LaunchedEffect(isSelecting, selectedResults.size) {
-        if (isSelecting && selectedResults.isNotEmpty()) {
-            accumulatedPx = sensitivityPx
-            onBottomBarFraction(1f)
-        }
-    }
-
     // Detect scroll to show/hide button
     LaunchedEffect(gridState) {
         var lastIndex = 0
@@ -84,10 +77,8 @@ fun SearchResults(
             .collect { (index, offset) ->
                 val scrollingUp = index < lastIndex || (index == lastIndex && offset < lastScrollOffset)
 
-                val layoutInfo = gridState.layoutInfo
-
                 // calculate bottom bar visibility
-                val firstItemSize = layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height?: 0
+                val firstItemSize = gridState.layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height?: 0
                 val deltaPx = (lastIndex - index) * firstItemSize + (lastScrollOffset - offset)
                 accumulatedPx = (accumulatedPx + deltaPx).coerceIn(0f, sensitivityPx)
                 val fraction = (accumulatedPx / sensitivityPx).coerceIn(0f, 1f)
