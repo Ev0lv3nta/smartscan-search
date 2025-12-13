@@ -34,6 +34,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalDensity
 import com.fpf.smartscan.ui.components.CircularCheckbox
@@ -50,7 +51,7 @@ fun SearchResults(
     totalResults: Int,
     onToggleSelected: (Uri) -> Unit,
     onToggleSelectionMode: () -> Unit,
-    onBottomBarFraction: (Float) -> Unit,
+    onActionBarVisibilityPctChange: (Float) -> Unit,
     numGridColumns: Int = 3,
     loadMoreBuffer: Int = 5,
     isSelecting: Boolean = false,
@@ -63,9 +64,19 @@ fun SearchResults(
     val scrollThreshold = 10
 
     val density = LocalDensity.current
-    val actionBarHeight = 70
-    val sensitivityPx = with(density) { actionBarHeight.dp.toPx() }
+    val actionBarHeight = with(density) { 70.dp.toPx() }
     var accumulatedPx by remember { mutableFloatStateOf(0f) }
+    var lastSize by remember { mutableIntStateOf(0) }
+
+    // Ensure the initial selection always makes the bar visible
+    LaunchedEffect(selectedResults, isSelecting){
+        if(isSelecting && lastSize == 0 && selectedResults.isNotEmpty()){
+            accumulatedPx = actionBarHeight
+            onActionBarVisibilityPctChange(1f)
+            lastSize = selectedResults.size
+        }
+        if(!isSelecting) lastSize = 0
+    }
 
     // Detect scroll to show/hide button
     LaunchedEffect(gridState) {
@@ -80,9 +91,9 @@ fun SearchResults(
                 // calculate bottom bar visibility
                 val firstItemSize = gridState.layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height?: 0
                 val deltaPx = (lastIndex - index) * firstItemSize + (lastScrollOffset - offset)
-                accumulatedPx = (accumulatedPx + deltaPx).coerceIn(0f, sensitivityPx)
-                val fraction = (accumulatedPx / sensitivityPx).coerceIn(0f, 1f)
-                onBottomBarFraction(fraction)
+                accumulatedPx = (accumulatedPx + deltaPx).coerceIn(0f, actionBarHeight)
+                val visibilityPct = (accumulatedPx / actionBarHeight).coerceIn(0f, 1f)
+                onActionBarVisibilityPctChange(visibilityPct)
 
                 showScrollToTop = !scrollingUp && index > scrollThreshold
                 lastIndex = index

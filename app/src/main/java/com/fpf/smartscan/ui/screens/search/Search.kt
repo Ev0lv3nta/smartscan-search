@@ -222,7 +222,7 @@ fun SearchScreen(
                 onLoadMore = searchViewModel::onLoadMore,
                 onToggleSelected = searchViewModel::toggleSelectedResult,
                 onToggleSelectionMode = searchViewModel::toggleSelectionMode,
-                onBottomBarFraction = { visibility -> bottomBarVisibilityPercent = visibility }
+                onActionBarVisibilityPctChange = { visibility -> bottomBarVisibilityPercent = visibility }
             )
         }
         SearchActionBar(
