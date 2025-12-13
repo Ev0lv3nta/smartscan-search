@@ -101,6 +101,10 @@ fun SearchScreen(
         }
     }
 
+    LaunchedEffect(isSelecting) {
+        if(!isSelecting) searchViewModel.clearSelectedResults()
+    }
+
     if ( !alertTitle.isNullOrBlank() && !alertDescription.isNullOrBlank()) {
         AlertDialog(
             onDismissRequest = { },
@@ -164,7 +168,6 @@ fun SearchScreen(
 
     BackHandler(enabled = isSelecting) {
         isSelecting = false
-        searchViewModel.clearSelectedResults()
     }
 
     Box(
