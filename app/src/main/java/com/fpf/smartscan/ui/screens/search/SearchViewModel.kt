@@ -1,6 +1,7 @@
 package com.fpf.smartscan.ui.screens.search
 
 import android.app.Application
+import android.content.ContentUris
 import android.net.Uri
 import android.util.Log
 import kotlinx.coroutines.launch
@@ -32,6 +33,7 @@ import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder.Compa
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -47,8 +49,7 @@ data class SearchState(
     val loading: Boolean = false,
     val error: String? = null,
     val resultToView: Uri? = null,
-    val isSelecting: Boolean = false,
-    val selectedResults: List<Uri> = emptyList()
+    val selectedResults: List<Uri> = emptyList(),
 )
 
 class SearchViewModel(private val application: Application) : AndroidViewModel(application) {
@@ -142,7 +143,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     }
 
     fun clearResults(){
-        _state.value = _state.value.copy(searchResults = emptyList(), isSelecting = false, selectedResults = emptyList())
+        _state.value = _state.value.copy(searchResults = emptyList(), selectedResults = emptyList())
     }
 
     fun setMediaType(type: MediaType) {
@@ -324,26 +325,25 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     }
 
     fun toggleSelectedResult(item: Uri){
-        val currentState = _state.value
-
-        if (item in currentState.selectedResults){
-            val updatedSelectedResults = currentState.selectedResults - item
-            _state.value = currentState.copy(selectedResults = updatedSelectedResults)
-        }else{
-            val updatedSelectedResults = currentState.selectedResults + item
-            _state.value = currentState.copy(selectedResults = updatedSelectedResults)
+        _state.update { currentState ->
+            if (item in currentState.selectedResults) {
+                val updatedSelectedResults = currentState.selectedResults - item
+                currentState.copy(selectedResults = updatedSelectedResults)
+            } else {
+                val updatedSelectedResults = currentState.selectedResults + item
+                currentState.copy(selectedResults = updatedSelectedResults)
+            }
         }
     }
 
-    fun toggleSelectionMode(){
-        val currentState = _state.value
-        if(currentState.isSelecting){
-            _state.value = currentState.copy(isSelecting = false, selectedResults = emptyList())
-        }else{
-            _state.value = currentState.copy(isSelecting = true, selectedResults = emptyList())
-        }
+    fun clearSelectedResults(){
+        _state.update{currentState -> currentState.copy(selectedResults = emptyList())}
     }
-    
+
+    fun addTag(tag: String){
+        val ids = _state.value.selectedResults.map{ ContentUris.parseId(it)}
+        //TODO: add metadata to room
+    }
 
     override fun onCleared() {
         textEmbedder.closeSession()
