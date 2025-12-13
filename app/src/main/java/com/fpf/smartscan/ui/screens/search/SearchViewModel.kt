@@ -6,22 +6,17 @@ import android.util.Log
 import kotlinx.coroutines.launch
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.fpf.smartscan.data.images.ImageEmbeddingDatabase
-import com.fpf.smartscan.data.images.ImageEmbeddingRepository
 import com.fpf.smartscan.media.getImageUriFromId
 import kotlinx.coroutines.Dispatchers
 import com.fpf.smartscan.R
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.search.QueryType
-import com.fpf.smartscan.data.videos.VideoEmbeddingDatabase
-import com.fpf.smartscan.data.videos.VideoEmbeddingRepository
 import com.fpf.smartscan.utils.canOpenUri
 import com.fpf.smartscan.media.getVideoUriFromId
 import com.fpf.smartscan.search.ImageIndexListener
 import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.services.MediaIndexForegroundService
 import com.fpf.smartscan.services.startIndexing
-import com.fpf.smartscansdk.core.embeddings.Embedding
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer
@@ -67,12 +62,6 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     val imageStore = FileEmbeddingStore(File(application.filesDir, ImageIndexer.INDEX_FILENAME), imageEmbedder.embeddingDim)
     val videoStore = FileEmbeddingStore(File(application.filesDir, VideoIndexer.INDEX_FILENAME), imageEmbedder.embeddingDim )
 
-    private val repository: ImageEmbeddingRepository = ImageEmbeddingRepository(
-        ImageEmbeddingDatabase.getDatabase(application).imageEmbeddingDao()
-    )
-    private val videoRepository: VideoEmbeddingRepository = VideoEmbeddingRepository(
-        VideoEmbeddingDatabase.getDatabase(application).videoEmbeddingDao()
-    )
     private val _state = MutableStateFlow(SearchState())
     val state: StateFlow<SearchState> = _state
 
@@ -95,26 +84,19 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     }
 
     private fun loadImageIndex(){
-        loadIndex(imageStore, { repository.getAllEmbeddingsWithFileSync() })
+        loadIndex(imageStore)
     }
 
     private fun loadVideoIndex(){
-        loadIndex(videoStore, { videoRepository.getAllEmbeddingsWithFileSync() })
+        loadIndex(videoStore)
     }
 
-    private fun loadIndex(store: FileEmbeddingStore, fetchFromRoom: suspend () -> List<Embedding>){
+    private fun loadIndex(store: FileEmbeddingStore){
         viewModelScope.launch(Dispatchers.IO){
             try {
                 _state.emit(_state.value.copy(error = null, loading = true))
 
-                val embeddings = if(store.exists) {
-                    store.get()
-                } else  {
-                    // For backwards compatibility with old Room storage
-                    val embs = fetchFromRoom()
-                    store.add(embs)
-                    embs
-                }
+                val embeddings = if(store.exists) store.get() else emptyList()
                 val hasIndexed = embeddings.isNotEmpty()
                 when(_state.value.mediaType){
                     MediaType.VIDEO -> _state.emit(_state.value.copy(hasIndexedVideos = hasIndexed))
