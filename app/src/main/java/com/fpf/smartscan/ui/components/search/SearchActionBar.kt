@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -37,7 +38,7 @@ fun SearchActionBar(
     searchEnabled: Boolean,
     onSearch: () -> Unit,
     onShare: () -> Unit,
-    onDelete: () -> Unit,
+    onAddTag: () -> Unit,
     modifier: Modifier = Modifier,
     visibilityPercent: Float = 1f,
 ) {
@@ -67,6 +68,24 @@ fun SearchActionBar(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Button (
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Transparent,
+                    disabledContainerColor = Color.Transparent,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                onClick = { onShare() }
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Filled.Share,
+                        contentDescription = "Share",
+                    )
+                    Text("Share", style = MaterialTheme.typography.labelMedium)
+                }
+            }
             Button(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.Transparent,
@@ -90,42 +109,22 @@ fun SearchActionBar(
                     )
                 }
             }
-
             Button (
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.Transparent,
                     disabledContainerColor = Color.Transparent,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                onClick = { onShare() }
-            ) {
-                Column(
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Filled.Share,
-                        contentDescription = "Share",
-                    )
-                    Text("Share", style = MaterialTheme.typography.labelMedium)
-                }
-            }
-
-            Button (
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Transparent,
-                    disabledContainerColor = Color.Transparent,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                onClick = { onDelete() }
+                onClick = { onAddTag() }
             ) {
                 Column(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally){
                     Icon(
-                        Icons.Filled.Delete,
-                        contentDescription = "Delete",
+                        Icons.Filled.Tag,
+                        contentDescription = "Add tag",
                     )
-                    Text("Delete", style = MaterialTheme.typography.labelMedium)
+                    Text("Add tag", style = MaterialTheme.typography.labelMedium)
                 }
             }
         }
