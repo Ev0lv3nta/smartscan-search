@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ImageSearch
+import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -23,6 +24,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.Icon
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
@@ -54,6 +57,7 @@ fun SearchScreen(
 ) {
     val appSettings by settingsViewModel.appSettings.collectAsState()
     val context = LocalContext.current
+
     // Index state
     val imageIndexProgress by searchViewModel.imageIndexProgress.collectAsState(initial = 0f)
     val videoIndexProgress by searchViewModel.videoIndexProgress.collectAsState(initial = 0f)
@@ -62,10 +66,15 @@ fun SearchScreen(
     val alertTitle by searchViewModel.alertTitle.collectAsState()
     val alertDescription by searchViewModel.alertDescription.collectAsState()
 
+
     // Search state
     val state by searchViewModel.state.collectAsState()
     var hasStoragePermission by remember { mutableStateOf(false) }
-    var bottomBarVisibilityPercent by remember { mutableStateOf(1f) }
+    var bottomBarVisibilityPercent by remember { mutableFloatStateOf(1f) }
+
+    // Tag
+    var isAddingTag by remember { mutableStateOf(false) }
+    var isSelecting by remember { mutableStateOf(false) }
 
 
     RequestPermissions { _, storageGranted ->
@@ -109,13 +118,53 @@ fun SearchScreen(
                     searchViewModel.clearIndexAlert()
                     searchViewModel.onIndex()
                 }) {
-                    Text("OK")
+                    Text("Confirm")
                 }
             }
         )
     }
-    BackHandler(enabled = state.isSelecting) {
-        searchViewModel.toggleSelectionMode()
+
+
+    if(isAddingTag) {
+        var newTag by remember { mutableStateOf("") }
+
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text("Add tag") },
+            text = {
+                Column {
+                    TextField(
+                        value = newTag,
+                        onValueChange = { newTag = it },
+                        placeholder = { Text( "Enter new tag",) },
+                        modifier= Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.small,
+                        colors = TextFieldDefaults.colors(focusedIndicatorColor = MaterialTheme.colorScheme.primary, unfocusedIndicatorColor = Color.Transparent, disabledIndicatorColor = Color.Transparent),
+                        leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) }
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    isAddingTag = false
+                }) {
+                    Text("Cancel")
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    isAddingTag = false
+                    searchViewModel.addTag(newTag)
+                }) {
+                    Text("Confirm")
+                }
+            }
+        )
+    }
+
+    BackHandler(enabled = isSelecting) {
+        isSelecting = false
+        searchViewModel.clearSelectedResults()
     }
 
     Box(
@@ -215,34 +264,35 @@ fun SearchScreen(
                 type = state.mediaType,
                 searchResults = state.searchResults,
                 totalResults=state.totalResults,
-                isSelecting = state.isSelecting,
+                isSelecting = isSelecting,
                 selectedResults = state.selectedResults,
                 loadMoreBuffer = (RESULTS_BATCH_SIZE * 0.2).toInt(),
                 onViewResult = searchViewModel::toggleViewResult,
                 onLoadMore = searchViewModel::onLoadMore,
                 onToggleSelected = searchViewModel::toggleSelectedResult,
-                onToggleSelectionMode = searchViewModel::toggleSelectionMode,
+                onToggleSelectionMode = { isSelecting = !isSelecting },
                 onActionBarVisibilityPctChange = { visibility -> bottomBarVisibilityPercent = visibility }
             )
         }
         SearchActionBar(
-            isVisible = state.isSelecting && state.selectedResults.isNotEmpty(),
+            isVisible = isSelecting && state.selectedResults.isNotEmpty(),
             visibilityPercent = bottomBarVisibilityPercent,
             searchEnabled = state.selectedResults.size == 1,
             onSearch = {
                 if(state.selectedResults.size == 1){
                     searchViewModel.updateSearchImageUri(state.selectedResults[0])
                     searchViewModel.updateQueryType(QueryType.IMAGE)
-                    searchViewModel.toggleSelectionMode()
+                    isSelecting = false
                     searchViewModel.imageSearch(appSettings.similarityThreshold)
                 }
             },
             onShare = {
                 shareMediaMulti(context, state.selectedResults)
-                searchViewModel.toggleSelectionMode()
+                isSelecting = false
             },
-            onDelete = {
-                searchViewModel.toggleSelectionMode()
+            onAddTag = {
+                isAddingTag = true
+                isSelecting = false
             },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
