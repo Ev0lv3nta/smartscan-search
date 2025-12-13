@@ -247,8 +247,15 @@ fun SearchScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .zIndex(1f)
-                .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) {} // consume clicks to prevent clicking result
-            ,
+                .then(
+                    if (bottomBarVisibilityPercent > 0f)
+                        Modifier.clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) {}
+                    else Modifier
+                )
+
         )
         state.resultToView?.let { uri ->
             AnimatedVisibility(
