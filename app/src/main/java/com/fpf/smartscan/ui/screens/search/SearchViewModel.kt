@@ -171,6 +171,8 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
             _state.value = _state.value.copy(error = application.getString(R.string.search_error_not_indexed))
             return
         }
+        clearResults()
+
         _state.value = _state.value.copy(error = null , loading = true)
 
         viewModelScope.launch((Dispatchers.IO)) {
@@ -196,6 +198,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
             _state.value = _state.value.copy(error = application.getString(R.string.search_error_not_indexed))
             return
         }
+        clearResults()
         _state.value = _state.value.copy(error = null , loading = true)
 
         viewModelScope.launch((Dispatchers.IO)) {
