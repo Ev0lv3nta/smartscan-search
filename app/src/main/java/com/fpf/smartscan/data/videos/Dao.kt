@@ -1,30 +1,24 @@
 package com.fpf.smartscan.data.videos
 
-import androidx.lifecycle.LiveData
 import androidx.room.*
-import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface VideoEmbeddingDao {
+interface VideoMetadataDao {
+    @Query("SELECT * FROM video_metadata")
+    suspend fun getAll(): List<VideoMetadata>
 
-    @Query("SELECT * FROM video_embeddings ORDER BY date DESC")
-    fun getAllVideoEmbeddings(): LiveData<List<VideoEmbeddingEntity>>
-
-    @Query("SELECT * FROM video_embeddings ORDER BY date DESC")
-    suspend fun getAllEmbeddingsSync(): List<VideoEmbeddingEntity>
+    @Query("SELECT * FROM video_metadata WHERE id IN (:ids)")
+    suspend fun get(ids: List<Long>): List<VideoMetadata>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertVideoEmbedding(videoEmbeddingEntity: VideoEmbeddingEntity)
+    suspend fun insert(metadata: VideoMetadata)
 
-    @Query("DELETE FROM video_embeddings WHERE id = :id")
-    suspend fun deleteById(id: Long)
+    @Query("DELETE FROM video_metadata WHERE id = :id")
+    suspend fun delete(id: Long)
 
-    @Query("DELETE FROM video_embeddings WHERE id IN (:ids)")
-    suspend fun deleteByIds(ids: List<Long>)
+    @Query("DELETE FROM video_metadata WHERE id IN (:ids)")
+    suspend fun delete(ids: List<Long>)
 
-    @Query("DELETE FROM video_embeddings")
+    @Query("DELETE FROM video_metadata")
     suspend fun deleteAll()
-
-    @Query("SELECT EXISTS(SELECT 1 FROM video_embeddings)")
-    fun hasAnyVideoEmbeddings(): Flow<Boolean>
 }

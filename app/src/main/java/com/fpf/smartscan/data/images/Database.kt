@@ -3,21 +3,20 @@ package com.fpf.smartscan.data.images
 import android.app.Application
 import androidx.room.*
 
-@Database(entities = [ImageEmbeddingEntity::class], version = 1, exportSchema = false)
-@TypeConverters(Converters::class)
-abstract class ImageEmbeddingDatabase : RoomDatabase() {
-    abstract fun imageEmbeddingDao(): ImageEmbeddingDao
+@Database(entities = [ImageMetadata::class], version = 1, exportSchema = false)
+abstract class ImageMetadataDatabase : RoomDatabase() {
+    abstract fun imageMetadataDao(): ImageMetadataDao
 
     companion object {
         @Volatile
-        private var INSTANCE: ImageEmbeddingDatabase? = null
+        private var INSTANCE: ImageMetadataDatabase? = null
 
-        fun getDatabase(application: Application): ImageEmbeddingDatabase {
+        fun getDatabase(application: Application): ImageMetadataDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     application,
-                    ImageEmbeddingDatabase::class.java,
-                    "image_embedding_database"
+                    ImageMetadataDatabase::class.java,
+                    "image_metadata_database"
                 ).build()
                 INSTANCE = instance
                 instance
