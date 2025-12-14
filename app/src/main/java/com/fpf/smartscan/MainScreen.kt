@@ -22,6 +22,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.fpf.smartscan.constants.Routes
 import com.fpf.smartscan.constants.SettingTypes
+import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.services.MediaIndexForegroundService
 import com.fpf.smartscan.services.refreshIndex
 import com.fpf.smartscan.ui.components.OverflowMenu
@@ -38,7 +39,7 @@ import com.fpf.smartscan.ui.screens.settings.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen() {
+fun MainScreen(intentSearchQuery: SearchQuery?) {
     val context = LocalContext.current
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -161,7 +162,8 @@ fun MainScreen() {
                 composable(Routes.SEARCH) {
                     SearchScreen(
                         searchViewModel = searchViewModel,
-                        settingsViewModel = settingsViewModel
+                        settingsViewModel = settingsViewModel,
+                        intentSearchQuery = intentSearchQuery
                     )
                 }
                 composable(Routes.SETTINGS) {

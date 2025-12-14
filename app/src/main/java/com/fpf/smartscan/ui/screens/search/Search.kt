@@ -38,6 +38,7 @@ import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.shareMediaMulti
 import com.fpf.smartscan.search.ProcessorStatus
 import com.fpf.smartscan.search.QueryType
+import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.ui.components.LoadingIndicator
 import com.fpf.smartscan.ui.components.media.MediaViewer
 import com.fpf.smartscan.ui.components.ProgressBar
@@ -53,7 +54,8 @@ import com.fpf.smartscan.ui.screens.settings.SettingsViewModel
 @Composable
 fun SearchScreen(
     searchViewModel: SearchViewModel = viewModel(),
-    settingsViewModel: SettingsViewModel = viewModel()
+    settingsViewModel: SettingsViewModel = viewModel(),
+    intentSearchQuery: SearchQuery? = null
 ) {
     val appSettings by settingsViewModel.appSettings.collectAsState()
     val context = LocalContext.current
@@ -98,6 +100,22 @@ fun SearchScreen(
     LaunchedEffect(videoIndexStatus) {
         if (videoIndexStatus == ProcessorStatus.COMPLETE) {
             searchViewModel.refreshIndex(MediaType.VIDEO)
+        }
+    }
+
+    LaunchedEffect(intentSearchQuery) {
+        if(intentSearchQuery == null) return@LaunchedEffect
+
+        when(intentSearchQuery) {
+            is SearchQuery.ImageQuery -> {
+                searchViewModel.updateSearchImageUri(intentSearchQuery.uri)
+                searchViewModel.updateQueryType(QueryType.IMAGE)
+                searchViewModel.imageSearch(appSettings.similarityThreshold)
+            }
+
+            is SearchQuery.TextQuery -> {
+                searchViewModel.textSearch(intentSearchQuery.text, appSettings.similarityThreshold)
+            }
         }
     }
 
@@ -240,7 +258,9 @@ fun SearchScreen(
                 )
             }
 
-            LoadingIndicator(isVisible = state.loading, size = 48.dp, strokeWidth = 4.dp, modifier = Modifier.fillMaxWidth().padding(top = 16.dp))
+            LoadingIndicator(isVisible = state.loading, size = 48.dp, strokeWidth = 4.dp, modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp))
 
             state.error?.let {
                 Text(text = it, color = Color.Red, modifier = Modifier.padding(top=16.dp))
