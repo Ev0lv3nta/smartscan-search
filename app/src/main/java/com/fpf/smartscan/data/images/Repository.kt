@@ -1,32 +1,28 @@
 package com.fpf.smartscan.data.images
 
-class ImageMetadataRepository(private val dao: ImageMetadataDao) {
-
-    suspend fun getAllMetadata(): List<ImageMetadata> {
-        return dao.getAll()
+class ImageTagRepository(private val dao: ImageTagDao) {
+    suspend fun getTags(): List<String> {
+        return dao.getTags()
     }
 
-    suspend fun getMetadata(ids: List<Long>): List<ImageMetadata> {
-        return dao.get(ids)
+    suspend fun getImageIds(tag: String): List<Long> {
+        return dao.getImageIds(tag)
     }
 
-    suspend fun insertMetadata(metadata: ImageMetadata) {
-        dao.insert(metadata)
+    suspend fun addTags(tags: List<ImageTag>) {
+        dao.add(tags)
     }
 
-    suspend fun addTag(id: Long, tag: String ){
-        val results = getMetadata(listOf(id))
-        if (results.isEmpty()) return
-
-        val currentMetadata = results[0]
-        insertMetadata(currentMetadata.copy(tags = currentMetadata.tags + tag))
-    }
-
-    suspend fun deleteMetadata(ids: List<Long>) {
+    suspend fun deleteByImageIds(ids: List<Long>) {
         dao.delete(ids)
     }
 
-    suspend fun deleteAllMetadata() {
-        dao.deleteAll()
+    suspend fun deleteByTags(tags: List<String>) {
+        dao.delete(tags)
     }
+
+    suspend fun clear() {
+        dao.clear()
+    }
+
 }

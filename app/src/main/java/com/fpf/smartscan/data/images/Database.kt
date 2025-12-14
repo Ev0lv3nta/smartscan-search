@@ -3,20 +3,20 @@ package com.fpf.smartscan.data.images
 import android.app.Application
 import androidx.room.*
 
-@Database(entities = [ImageMetadata::class], version = 1, exportSchema = false)
-abstract class ImageMetadataDatabase : RoomDatabase() {
-    abstract fun imageMetadataDao(): ImageMetadataDao
+@Database(entities = [ImageTag::class], version = 1, exportSchema = false)
+abstract class ImageTagsDatabase : RoomDatabase() {
+    abstract fun imageTagsDao(): ImageTagDao
 
     companion object {
         @Volatile
-        private var INSTANCE: ImageMetadataDatabase? = null
+        private var INSTANCE: ImageTagsDatabase? = null
 
-        fun getDatabase(application: Application): ImageMetadataDatabase {
+        fun getDatabase(application: Application): ImageTagsDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     application,
-                    ImageMetadataDatabase::class.java,
-                    "image_metadata_database"
+                    ImageTagsDatabase::class.java,
+                    "image_tags_database"
                 ).build()
                 INSTANCE = instance
                 instance

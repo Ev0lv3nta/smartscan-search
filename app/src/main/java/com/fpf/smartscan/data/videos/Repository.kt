@@ -1,32 +1,28 @@
 package com.fpf.smartscan.data.videos
 
-class VideoMetadataRepository(private val dao: VideoMetadataDao) {
+class VideoTagRepository(private val dao: VideoTagDao) {
 
-    suspend fun getAllMetadata(): List<VideoMetadata> {
-        return dao.getAll()
+    suspend fun getTags(): List<String> {
+        return dao.getTags()
     }
 
-    suspend fun getMetadata(ids: List<Long>): List<VideoMetadata> {
-        return dao.get(ids)
+    suspend fun getVideoIds(tag: String): List<Long> {
+        return dao.getVideoIds(tag)
     }
 
-    suspend fun insertMetadata(metadata: VideoMetadata) {
-        dao.insert(metadata)
+    suspend fun addTags(tags: List<VideoTag>) {
+        dao.add(tags)
     }
 
-    suspend fun addTag(id: Long, tag: String ){
-        val results = getMetadata(listOf(id))
-        if (results.isEmpty()) return
-
-        val currentMetadata = results[0]
-        insertMetadata(currentMetadata.copy(tags = currentMetadata.tags + tag))
-    }
-
-    suspend fun deleteMetadata(ids: List<Long>) {
+    suspend fun deleteByVideoIds(ids: List<Long>) {
         dao.delete(ids)
     }
 
-    suspend fun deleteAllMetadata() {
-        dao.deleteAll()
+    suspend fun deleteByTags(tags: List<String>) {
+        dao.delete(tags)
+    }
+
+    suspend fun clear() {
+        dao.clear()
     }
 }
