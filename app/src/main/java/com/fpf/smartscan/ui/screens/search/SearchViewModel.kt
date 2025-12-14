@@ -1,6 +1,7 @@
 package com.fpf.smartscan.ui.screens.search
 
 import android.app.Application
+import android.content.ContentUris
 import android.net.Uri
 import android.util.Log
 import kotlinx.coroutines.launch
@@ -9,6 +10,12 @@ import androidx.lifecycle.viewModelScope
 import com.fpf.smartscan.media.getImageUriFromId
 import kotlinx.coroutines.Dispatchers
 import com.fpf.smartscan.R
+import com.fpf.smartscan.data.images.ImageTag
+import com.fpf.smartscan.data.images.ImageTagRepository
+import com.fpf.smartscan.data.images.ImageTagsDatabase
+import com.fpf.smartscan.data.videos.VideoTag
+import com.fpf.smartscan.data.videos.VideoTagRepository
+import com.fpf.smartscan.data.videos.VideoTagsDatabase
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.utils.canOpenUri
@@ -27,6 +34,7 @@ import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder.Compa
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -41,7 +49,8 @@ data class SearchState(
     val hasIndexedVideos: Boolean? = false,
     val loading: Boolean = false,
     val error: String? = null,
-    val resultToView: Uri? = null
+    val resultToView: Uri? = null,
+    val selectedResults: List<Uri> = emptyList(),
 )
 
 class SearchViewModel(private val application: Application) : AndroidViewModel(application) {
@@ -61,6 +70,9 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
 
     val imageStore = FileEmbeddingStore(File(application.filesDir, ImageIndexer.INDEX_FILENAME), imageEmbedder.embeddingDim)
     val videoStore = FileEmbeddingStore(File(application.filesDir, VideoIndexer.INDEX_FILENAME), imageEmbedder.embeddingDim )
+
+    val imageTagsRepository = ImageTagRepository(ImageTagsDatabase.getDatabase(application).imageTagsDao())
+    val videoTagsRepository = VideoTagRepository(VideoTagsDatabase.getDatabase(application).videoTagDao())
 
     private val _state = MutableStateFlow(SearchState())
     val state: StateFlow<SearchState> = _state
@@ -122,7 +134,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     }
 
     fun clearResults(){
-        _state.value = _state.value.copy(searchResults = emptyList())
+        _state.value = _state.value.copy(searchResults = emptyList(), selectedResults = emptyList())
     }
 
     fun setMediaType(type: MediaType) {
@@ -151,6 +163,8 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
             _state.value = _state.value.copy(error = application.getString(R.string.search_error_not_indexed))
             return
         }
+        clearResults()
+
         _state.value = _state.value.copy(error = null , loading = true)
 
         viewModelScope.launch((Dispatchers.IO)) {
@@ -176,6 +190,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
             _state.value = _state.value.copy(error = application.getString(R.string.search_error_not_indexed))
             return
         }
+        clearResults()
         _state.value = _state.value.copy(error = null , loading = true)
 
         viewModelScope.launch((Dispatchers.IO)) {
@@ -299,7 +314,43 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
             MediaType.VIDEO -> startIndexing(application, MediaIndexForegroundService.TYPE_VIDEO)
         }
     }
-    
+
+    fun toggleSelectedResult(item: Uri){
+        _state.update { currentState ->
+            if (item in currentState.selectedResults) {
+                val updatedSelectedResults = currentState.selectedResults - item
+                currentState.copy(selectedResults = updatedSelectedResults)
+            } else {
+                val updatedSelectedResults = currentState.selectedResults + item
+                currentState.copy(selectedResults = updatedSelectedResults)
+            }
+        }
+    }
+
+    fun clearSelectedResults(){
+        _state.update{currentState -> currentState.copy(selectedResults = emptyList())}
+    }
+
+    fun addTag(tag: String){
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val ids = _state.value.selectedResults.map { ContentUris.parseId(it) }
+
+                when (_state.value.mediaType) {
+                    MediaType.IMAGE -> {
+                        val tagEntries = ids.map { ImageTag(imageId = it, tag = tag) }
+                        imageTagsRepository.addTags(tagEntries)
+                    }
+                    MediaType.VIDEO -> {
+                        val tagEntries = ids.map { VideoTag(videoId = it, tag = tag) }
+                        videoTagsRepository.addTags(tagEntries)
+                    }
+                }
+            }finally {
+                clearSelectedResults()
+            }
+        }
+    }
 
     override fun onCleared() {
         textEmbedder.closeSession()

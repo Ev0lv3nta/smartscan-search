@@ -1,15 +1,19 @@
 package com.fpf.smartscan.ui.screens.search
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ImageSearch
+import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -20,13 +24,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.Icon
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.zIndex
 import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.mediaTypeOptions
 import com.fpf.smartscan.media.MediaType
+import com.fpf.smartscan.media.shareMediaMulti
 import com.fpf.smartscan.search.ProcessorStatus
 import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.ui.components.LoadingIndicator
@@ -34,6 +43,7 @@ import com.fpf.smartscan.ui.components.media.MediaViewer
 import com.fpf.smartscan.ui.components.ProgressBar
 import com.fpf.smartscan.ui.components.SelectorIconItem
 import com.fpf.smartscan.ui.components.search.ImageSearcher
+import com.fpf.smartscan.ui.components.search.SearchActionBar
 import com.fpf.smartscan.ui.components.search.SearchBar
 import com.fpf.smartscan.ui.components.search.SearchResults
 import com.fpf.smartscan.ui.permissions.RequestPermissions
@@ -46,6 +56,7 @@ fun SearchScreen(
     settingsViewModel: SettingsViewModel = viewModel()
 ) {
     val appSettings by settingsViewModel.appSettings.collectAsState()
+    val context = LocalContext.current
 
     // Index state
     val imageIndexProgress by searchViewModel.imageIndexProgress.collectAsState(initial = 0f)
@@ -55,9 +66,16 @@ fun SearchScreen(
     val alertTitle by searchViewModel.alertTitle.collectAsState()
     val alertDescription by searchViewModel.alertDescription.collectAsState()
 
+
     // Search state
     val state by searchViewModel.state.collectAsState()
     var hasStoragePermission by remember { mutableStateOf(false) }
+    var bottomBarVisibilityPercent by remember { mutableFloatStateOf(1f) }
+
+    // Tag
+    var isAddingTag by remember { mutableStateOf(false) }
+    var isSelecting by remember { mutableStateOf(false) }
+
 
     RequestPermissions { _, storageGranted ->
         hasStoragePermission = storageGranted
@@ -100,16 +118,58 @@ fun SearchScreen(
                     searchViewModel.clearIndexAlert()
                     searchViewModel.onIndex()
                 }) {
-                    Text("OK")
+                    Text("Confirm")
                 }
             }
         )
     }
 
+
+    if(isAddingTag) {
+        var newTag by remember { mutableStateOf("") }
+
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text("Add tag") },
+            text = {
+                Column {
+                    TextField(
+                        value = newTag,
+                        onValueChange = { newTag = it },
+                        placeholder = { Text( "Enter new tag",) },
+                        modifier= Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.small,
+                        colors = TextFieldDefaults.colors(focusedIndicatorColor = MaterialTheme.colorScheme.primary, unfocusedIndicatorColor = Color.Transparent, disabledIndicatorColor = Color.Transparent),
+                        leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) }
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    isAddingTag = false
+                }) {
+                    Text("Cancel")
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    searchViewModel.addTag(newTag)
+                    isAddingTag = false
+                }) {
+                    Text("Confirm")
+                }
+            }
+        )
+    }
+
+    BackHandler(enabled = isSelecting) {
+        isSelecting = false
+        searchViewModel.clearSelectedResults()
+    }
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -203,16 +263,52 @@ fun SearchScreen(
                 isVisible = !state.loading && state.searchResults.isNotEmpty(),
                 type = state.mediaType,
                 searchResults = state.searchResults,
-                toggleViewResult = searchViewModel::toggleViewResult,
-                updateSearchImage = {
-                    searchViewModel.updateSearchImageUri(it)
-                    searchViewModel.updateQueryType(QueryType.IMAGE)
-                                    },
-                onLoadMore = searchViewModel::onLoadMore,
                 totalResults=state.totalResults,
-                loadMoreBuffer = (RESULTS_BATCH_SIZE * 0.2).toInt()
+                isSelecting = isSelecting,
+                selectedResults = state.selectedResults,
+                loadMoreBuffer = (RESULTS_BATCH_SIZE * 0.2).toInt(),
+                onViewResult = searchViewModel::toggleViewResult,
+                onLoadMore = searchViewModel::onLoadMore,
+                onToggleSelected = searchViewModel::toggleSelectedResult,
+                onToggleSelectionMode = { isSelecting = !isSelecting },
+                onActionBarVisibilityPctChange = { visibility -> bottomBarVisibilityPercent = visibility }
             )
         }
+        SearchActionBar(
+            isVisible = isSelecting && state.selectedResults.isNotEmpty(),
+            visibilityPercent = bottomBarVisibilityPercent,
+            searchEnabled = state.selectedResults.size == 1,
+            onSearch = {
+                if(state.selectedResults.size == 1){
+                    searchViewModel.updateSearchImageUri(state.selectedResults[0])
+                    searchViewModel.updateQueryType(QueryType.IMAGE)
+                    isSelecting = false
+                    searchViewModel.clearSelectedResults()
+                    searchViewModel.imageSearch(appSettings.similarityThreshold)
+                }
+            },
+            onShare = {
+                shareMediaMulti(context, state.selectedResults)
+                isSelecting = false
+                searchViewModel.clearSelectedResults()
+            },
+            onAddTag = {
+                isAddingTag = true
+                isSelecting = false
+            },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .zIndex(1f)
+                .then(
+                    if (bottomBarVisibilityPercent > 0f)
+                        Modifier.clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) {}
+                    else Modifier
+                )
+
+        )
         state.resultToView?.let { uri ->
             AnimatedVisibility(
                 visible = true,
@@ -225,16 +321,15 @@ fun SearchScreen(
                     onClose = { searchViewModel.toggleViewResult(null) },
                     onUpdateSearchImage = {
                         searchViewModel.updateSearchImageUri(uri)
-                        searchViewModel.toggleViewResult(null)
                         searchViewModel.updateQueryType(QueryType.IMAGE)
+                        searchViewModel.imageSearch(appSettings.similarityThreshold)
+                        searchViewModel.toggleViewResult(null)
                     }
                 )
             }
         }
     }
-
 }
-
 
 @Composable
 fun SearchPlaceholderDisplay(isVisible: Boolean) {

@@ -1,22 +1,28 @@
 package com.fpf.smartscan.data.images
 
-import com.fpf.smartscansdk.core.embeddings.Embedding
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.withContext
+class ImageTagRepository(private val dao: ImageTagDao) {
+    suspend fun getTags(): List<String> {
+        return dao.getTags()
+    }
 
-class ImageEmbeddingRepository(private val dao: ImageEmbeddingDao) {
-    val hasAnyEmbedding: Flow<Boolean> = dao.hasAnyImageEmbedding()
+    suspend fun getImageIds(tag: String): List<Long> {
+        return dao.getImageIds(tag)
+    }
 
-    suspend fun getAllEmbeddingsWithFileSync(): List<Embedding> {
-        val embeddings = dao.getAllEmbeddingsSync()
-        val mappedEmbeddings = embeddings.map { it.toEmbedding() }
-        if (mappedEmbeddings.isNotEmpty()) {
-            withContext(Dispatchers.IO) {
-                dao.deleteAll() // room db no longer needed
-            }
-        }
-        return mappedEmbeddings
+    suspend fun addTags(tags: List<ImageTag>) {
+        dao.add(tags)
+    }
+
+    suspend fun deleteByIds(ids: List<Long>) {
+        dao.deleteByIds(ids)
+    }
+
+    suspend fun deleteByTags(tags: List<String>) {
+        dao.deleteByTags(tags)
+    }
+
+    suspend fun clear() {
+        dao.clear()
     }
 
 }

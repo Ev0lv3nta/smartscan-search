@@ -1,16 +1,12 @@
 package com.fpf.smartscan.data.videos
 
 import androidx.room.*
-import com.fpf.smartscansdk.core.embeddings.Embedding
 
-@Entity(tableName = "video_embeddings")
-data class VideoEmbeddingEntity(
-    @PrimaryKey
-    val id: Long,     // Mediastore id
-    val date: Long,
-    val embeddings: FloatArray
+@Entity(
+    tableName = "video_tag",
+    primaryKeys = ["videoId", "tag"]
 )
-
-fun VideoEmbeddingEntity.toEmbedding() = Embedding(id, date, embeddings)
-
-fun Embedding.toEntity() = VideoEmbeddingEntity(id, date, embeddings)
+data class VideoTag(
+    val videoId: Long,
+    val tag: String
+)

@@ -1,30 +1,24 @@
 package com.fpf.smartscan.data.images
 
-import androidx.lifecycle.LiveData
 import androidx.room.*
-import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface ImageEmbeddingDao {
+interface ImageTagDao {
+    @Query("SELECT imageId FROM image_tag WHERE tag = :tag")
+    suspend fun getImageIds(tag: String): List<Long>
 
-    @Query("SELECT * FROM image_embeddings ORDER BY date DESC")
-    fun getAllImageEmbeddings(): LiveData<List<ImageEmbeddingEntity>>
-
-    @Query("SELECT * FROM image_embeddings ORDER BY date DESC")
-    suspend fun getAllEmbeddingsSync(): List<ImageEmbeddingEntity>
+    @Query("SELECT DISTINCT tag FROM image_tag")
+    suspend fun getTags(): List<String>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertImageEmbedding(imageEmbedding: ImageEmbeddingEntity)
+    suspend fun add(tags: List<ImageTag>)
 
-    @Query("DELETE FROM image_embeddings WHERE id = :id")
-    suspend fun deleteById(id: Long)
-
-    @Query("DELETE FROM image_embeddings WHERE id IN (:ids)")
+    @Query("DELETE FROM image_tag WHERE imageId IN (:ids)")
     suspend fun deleteByIds(ids: List<Long>)
 
-    @Query("DELETE FROM image_embeddings")
-    suspend fun deleteAll()
+    @Query("DELETE FROM image_tag WHERE tag IN (:tags)")
+    suspend fun deleteByTags(tags: List<String>)
 
-    @Query("SELECT EXISTS(SELECT 1 FROM image_embeddings)")
-    fun hasAnyImageEmbedding(): Flow<Boolean>
+    @Query("DELETE FROM image_tag")
+    suspend fun clear()
 }

@@ -33,20 +33,29 @@ import com.fpf.smartscan.ui.components.media.ImageDisplay
 import kotlinx.coroutines.launch
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalDensity
+import com.fpf.smartscan.ui.components.CircularCheckbox
+import kotlinx.coroutines.flow.drop
 
 @Composable
 fun SearchResults(
     isVisible: Boolean,
     searchResults: List<Uri>,
-    toggleViewResult: (uri: Uri?) -> Unit,
-    updateSearchImage: (uri: Uri) -> Unit,
+    selectedResults: List<Uri>,
+    onViewResult: (uri: Uri?) -> Unit,
     type: MediaType,
     onLoadMore: () -> Unit,
     totalResults: Int,
+    onToggleSelected: (Uri) -> Unit,
+    onToggleSelectionMode: () -> Unit,
+    onActionBarVisibilityPctChange: (Float) -> Unit,
     numGridColumns: Int = 3,
-    loadMoreBuffer: Int = 5
-) {
+    loadMoreBuffer: Int = 5,
+    isSelecting: Boolean = false,
+    ) {
     if (!isVisible) return
 
     val gridState = rememberLazyGridState()
@@ -54,13 +63,38 @@ fun SearchResults(
     var showScrollToTop by remember { mutableStateOf(false) }
     val scrollThreshold = 10
 
+    val density = LocalDensity.current
+    val actionBarHeight = with(density) { 70.dp.toPx() }
+    var accumulatedPx by remember { mutableFloatStateOf(0f) }
+    var lastSize by remember { mutableIntStateOf(0) }
+
+    // Ensure the initial selection always makes the bar visible
+    LaunchedEffect(selectedResults, isSelecting){
+        if(isSelecting && lastSize == 0 && selectedResults.isNotEmpty()){
+            accumulatedPx = actionBarHeight
+            onActionBarVisibilityPctChange(1f)
+            lastSize = selectedResults.size
+        }
+        if(!isSelecting) lastSize = 0
+    }
+
     // Detect scroll to show/hide button
     LaunchedEffect(gridState) {
         var lastIndex = 0
         var lastScrollOffset = 0
+
         snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }
+            .drop(1)
             .collect { (index, offset) ->
                 val scrollingUp = index < lastIndex || (index == lastIndex && offset < lastScrollOffset)
+
+                // calculate bottom bar visibility
+                val firstItemSize = gridState.layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height?: 0
+                val deltaPx = (lastIndex - index) * firstItemSize + (lastScrollOffset - offset)
+                accumulatedPx = (accumulatedPx + deltaPx).coerceIn(0f, actionBarHeight)
+                val visibilityPct = (accumulatedPx / actionBarHeight).coerceIn(0f, 1f)
+                onActionBarVisibilityPctChange(visibilityPct)
+
                 showScrollToTop = !scrollingUp && index > scrollThreshold
                 lastIndex = index
                 lastScrollOffset = offset
@@ -94,8 +128,7 @@ fun SearchResults(
                 contentPadding = PaddingValues(4.dp)
             ) {
                 items(searchResults) { uri ->
-                    ImageDisplay(
-                        uri = uri,
+                    Box(
                         modifier = Modifier
                             .aspectRatio(1f)
                             .padding(1.dp)
@@ -103,19 +136,43 @@ fun SearchResults(
                             .combinedClickable(
                                 indication = null,
                                 interactionSource = remember { MutableInteractionSource() },
-                                onClick = { toggleViewResult(uri) },
+                                onClick = {
+                                    if(isSelecting){
+                                        onToggleSelected(uri)
+                                    }else{
+                                        onViewResult(uri)
+                                    }
+                                          },
                                 onLongClick = {
-                                    if(type == MediaType.IMAGE){
-                                        updateSearchImage(uri)
+                                    if(!isSelecting) {
+                                        onToggleSelectionMode()
+                                        onToggleSelected(uri)
                                     }
                                 }
-                            ),
-                        contentScale = ContentScale.Crop,
-                        type = type
-                    )
+                            )
+                        ) {
+
+                            ImageDisplay(
+                                uri = uri,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop,
+                                type = type
+                            )
+                            if(isSelecting) {
+                                CircularCheckbox(
+                                    checked = uri in selectedResults,
+                                    onCheckedChange = {
+                                        onToggleSelected(uri)
+                                    },
+                                    modifier = Modifier
+                                        .offset(x = 8.dp, y = 8.dp)
+                                        .align(Alignment.TopStart),
+                                )
+                            }
+                        }
+                    }
                 }
             }
-        }
 
         AnimatedVisibility(
             visible = showScrollToTop,

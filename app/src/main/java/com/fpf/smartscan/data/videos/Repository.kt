@@ -1,22 +1,28 @@
 package com.fpf.smartscan.data.videos
 
+class VideoTagRepository(private val dao: VideoTagDao) {
 
-import com.fpf.smartscansdk.core.embeddings.Embedding
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.withContext
+    suspend fun getTags(): List<String> {
+        return dao.getTags()
+    }
 
-class VideoEmbeddingRepository(private val dao: VideoEmbeddingDao) {
-    val hasAnyVideoEmbeddings: Flow<Boolean> = dao.hasAnyVideoEmbeddings()
+    suspend fun getVideoIds(tag: String): List<Long> {
+        return dao.getVideoIds(tag)
+    }
 
-    suspend fun getAllEmbeddingsWithFileSync(): List<Embedding> {
-        val embeddings = dao.getAllEmbeddingsSync()
-        val mappedEmbeddings = embeddings.map { it.toEmbedding() }
-        if (mappedEmbeddings.isNotEmpty()) {
-            withContext(Dispatchers.IO) {
-                dao.deleteAll() // room db no longer needed
-            }
-        }
-        return mappedEmbeddings
+    suspend fun addTags(tags: List<VideoTag>) {
+        dao.add(tags)
+    }
+
+    suspend fun deleteByIds(ids: List<Long>) {
+        dao.deleteByIds(ids)
+    }
+
+    suspend fun deleteByTags(tags: List<String>) {
+        dao.deleteByTags(tags)
+    }
+
+    suspend fun clear() {
+        dao.clear()
     }
 }

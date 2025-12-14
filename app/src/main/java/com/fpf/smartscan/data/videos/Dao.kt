@@ -1,30 +1,24 @@
 package com.fpf.smartscan.data.videos
 
-import androidx.lifecycle.LiveData
 import androidx.room.*
-import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface VideoEmbeddingDao {
+interface VideoTagDao {
+    @Query("SELECT videoId FROM video_tag WHERE tag = :tag")
+    suspend fun getVideoIds(tag: String): List<Long>
 
-    @Query("SELECT * FROM video_embeddings ORDER BY date DESC")
-    fun getAllVideoEmbeddings(): LiveData<List<VideoEmbeddingEntity>>
-
-    @Query("SELECT * FROM video_embeddings ORDER BY date DESC")
-    suspend fun getAllEmbeddingsSync(): List<VideoEmbeddingEntity>
+    @Query("SELECT DISTINCT tag FROM video_tag")
+    suspend fun getTags(): List<String>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertVideoEmbedding(videoEmbeddingEntity: VideoEmbeddingEntity)
+    suspend fun add(tags: List<VideoTag>)
 
-    @Query("DELETE FROM video_embeddings WHERE id = :id")
-    suspend fun deleteById(id: Long)
-
-    @Query("DELETE FROM video_embeddings WHERE id IN (:ids)")
+    @Query("DELETE FROM video_tag WHERE videoId IN (:ids)")
     suspend fun deleteByIds(ids: List<Long>)
 
-    @Query("DELETE FROM video_embeddings")
-    suspend fun deleteAll()
+    @Query("DELETE FROM video_tag WHERE tag IN (:tags)")
+    suspend fun deleteByTags(tags: List<String>)
 
-    @Query("SELECT EXISTS(SELECT 1 FROM video_embeddings)")
-    fun hasAnyVideoEmbeddings(): Flow<Boolean>
+    @Query("DELETE FROM video_tag")
+    suspend fun clear()
 }
