@@ -89,7 +89,6 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
 
     var imageEmbedderLastUsage: Long? = null
     var textEmbedderLastUsage: Long? = null
-    var hasLoadVideoIndex: Boolean = false
 
     init {
         loadImageIndex()
@@ -142,7 +141,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
         reset()
 
         // saves memory by lazy loading video index
-        if(type == MediaType.VIDEO && !hasLoadVideoIndex){
+        if(type == MediaType.VIDEO && _state.value.hasIndexedVideos == null){
             viewModelScope.launch(Dispatchers.IO){loadVideoIndex()}
         }
     }
