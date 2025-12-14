@@ -115,7 +115,7 @@ fun SearchResults(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().padding(top = 16.dp)) {
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(),
