@@ -13,9 +13,6 @@ interface VideoMetadataDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(metadata: VideoMetadata)
 
-    @Query("DELETE FROM video_metadata WHERE id = :id")
-    suspend fun delete(id: Long)
-
     @Query("DELETE FROM video_metadata WHERE id IN (:ids)")
     suspend fun delete(ids: List<Long>)
 

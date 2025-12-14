@@ -14,8 +14,12 @@ class VideoMetadataRepository(private val dao: VideoMetadataDao) {
         dao.insert(metadata)
     }
 
-    suspend fun deleteMetadata(id: Long) {
-        dao.delete(id)
+    suspend fun addTag(id: Long, tag: String ){
+        val results = getMetadata(listOf(id))
+        if (results.isEmpty()) return
+
+        val currentMetadata = results[0]
+        insertMetadata(currentMetadata.copy(tags = currentMetadata.tags + tag))
     }
 
     suspend fun deleteMetadata(ids: List<Long>) {
