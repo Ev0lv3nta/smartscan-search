@@ -3,6 +3,10 @@ package com.fpf.smartscan
 import android.os.Bundle
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.os.Parcelable
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -17,6 +21,7 @@ import coil3.disk.directory
 import coil3.memory.MemoryCache
 import coil3.request.crossfade
 import coil3.video.VideoFrameDecoder
+import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.utils.isServiceRunning
 import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscan.services.MediaIndexForegroundService
@@ -62,10 +67,28 @@ class MainActivity : ComponentActivity() {
                 .diskCache { DiskCache.Builder().directory(cacheDir.resolve("image_cache")).maxSizePercent(0.02).build() }
                 .build()
         }
+        var intentSearchQuery: SearchQuery? = null
 
-    setContent {
+        if (intent?.action == Intent.ACTION_SEND && intent?.type?.startsWith("image/") == true) {
+           if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ){
+               (intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java))?.let {
+                   intentSearchQuery = SearchQuery.ImageQuery(uri = it)
+               }
+           }else{
+               (intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM))?.let {
+                   if(it is Uri) intentSearchQuery = SearchQuery.ImageQuery(uri = it)
+               }
+           }
+
+        } else if (intent?.action == Intent.ACTION_SEND && intent?.type == "text/plain") {
+                intent.getStringExtra(Intent.EXTRA_TEXT)?.let {
+                    intentSearchQuery = SearchQuery.TextQuery(text = it)
+                }
+        }
+
+        setContent {
             App {
-                MainScreen()
+                MainScreen(intentSearchQuery)
             }
         }
     }
