@@ -14,12 +14,12 @@ class VideoTagRepository(private val dao: VideoTagDao) {
         dao.add(tags)
     }
 
-    suspend fun deleteByVideoIds(ids: List<Long>) {
-        dao.delete(ids)
+    suspend fun deleteByIds(ids: List<Long>) {
+        dao.deleteByIds(ids)
     }
 
     suspend fun deleteByTags(tags: List<String>) {
-        dao.delete(tags)
+        dao.deleteByTags(tags)
     }
 
     suspend fun clear() {

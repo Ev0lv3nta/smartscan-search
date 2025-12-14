@@ -14,10 +14,10 @@ interface VideoTagDao {
     suspend fun add(tags: List<VideoTag>)
 
     @Query("DELETE FROM video_tag WHERE videoId IN (:ids)")
-    suspend fun delete(ids: List<Long>)
+    suspend fun deleteByIds(ids: List<Long>)
 
     @Query("DELETE FROM video_tag WHERE tag IN (:tags)")
-    suspend fun delete(tags: List<String>)
+    suspend fun deleteByTags(tags: List<String>)
 
     @Query("DELETE FROM video_tag")
     suspend fun clear()

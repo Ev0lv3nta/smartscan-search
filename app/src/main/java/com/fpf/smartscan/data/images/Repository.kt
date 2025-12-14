@@ -13,12 +13,12 @@ class ImageTagRepository(private val dao: ImageTagDao) {
         dao.add(tags)
     }
 
-    suspend fun deleteByImageIds(ids: List<Long>) {
-        dao.delete(ids)
+    suspend fun deleteByIds(ids: List<Long>) {
+        dao.deleteByIds(ids)
     }
 
     suspend fun deleteByTags(tags: List<String>) {
-        dao.delete(tags)
+        dao.deleteByTags(tags)
     }
 
     suspend fun clear() {

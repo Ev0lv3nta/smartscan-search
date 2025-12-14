@@ -14,10 +14,10 @@ interface ImageTagDao {
     suspend fun add(tags: List<ImageTag>)
 
     @Query("DELETE FROM image_tag WHERE imageId IN (:ids)")
-    suspend fun delete(ids: List<Long>)
+    suspend fun deleteByIds(ids: List<Long>)
 
     @Query("DELETE FROM image_tag WHERE tag IN (:tags)")
-    suspend fun delete(tags: List<String>)
+    suspend fun deleteByTags(tags: List<String>)
 
     @Query("DELETE FROM image_tag")
     suspend fun clear()
