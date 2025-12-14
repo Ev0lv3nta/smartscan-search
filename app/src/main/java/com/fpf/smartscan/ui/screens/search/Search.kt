@@ -78,6 +78,7 @@ fun SearchScreen(
     // Tag
     var isAddingTag by remember { mutableStateOf(false) }
     var isSelecting by remember { mutableStateOf(false) }
+    var searchBarPadding = if(visibilityPercent > 0 ) 16 else 0
 
 
     RequestPermissions { _, storageGranted ->
@@ -214,7 +215,7 @@ fun SearchScreen(
                 SlideRevealBox(
                     reverse = true,
                     visibilityPercent = visibilityPercent,
-                    modifier = Modifier.zIndex(1f)
+                    modifier = Modifier.zIndex(1f).padding(bottom = searchBarPadding.dp)
                 ) {
                     ImageSearcher(
                         uri = state.queryImage,
@@ -235,7 +236,7 @@ fun SearchScreen(
                 SlideRevealBox(
                     reverse = true,
                     visibilityPercent = visibilityPercent,
-                    modifier = Modifier.zIndex(1f)
+                    modifier = Modifier.zIndex(1f).padding(bottom = searchBarPadding.dp)
                 ) {
                     SearchBar(
                         enabled = hasStoragePermission && !state.loading,
