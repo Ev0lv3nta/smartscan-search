@@ -1,6 +1,7 @@
 package com.fpf.smartscan.data.videos
 
 import androidx.room.*
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface VideoTagDao {
@@ -9,6 +10,9 @@ interface VideoTagDao {
 
     @Query("SELECT DISTINCT tag FROM video_tag")
     suspend fun getTags(): List<String>
+
+    @Query("SELECT DISTINCT tag FROM video_tag")
+    fun getTagsFlow(): Flow<List<String>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun add(tags: List<VideoTag>)

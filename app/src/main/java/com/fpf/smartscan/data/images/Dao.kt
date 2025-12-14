@@ -1,6 +1,7 @@
 package com.fpf.smartscan.data.images
 
 import androidx.room.*
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ImageTagDao {
@@ -9,6 +10,9 @@ interface ImageTagDao {
 
     @Query("SELECT DISTINCT tag FROM image_tag")
     suspend fun getTags(): List<String>
+
+    @Query("SELECT DISTINCT tag FROM image_tag")
+    fun getTagsFlow(): Flow<List<String>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun add(tags: List<ImageTag>)
