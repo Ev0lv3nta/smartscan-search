@@ -7,7 +7,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -74,7 +73,7 @@ fun SearchScreen(
     // Search state
     val state by searchViewModel.state.collectAsState()
     var hasStoragePermission by remember { mutableStateOf(false) }
-    var bottomBarVisibilityPercent by remember { mutableFloatStateOf(1f) }
+    var visibilityPercent by remember { mutableFloatStateOf(1f) }
 
     // Tag
     var isAddingTag by remember { mutableStateOf(false) }
@@ -211,66 +210,76 @@ fun SearchScreen(
                 progress = videoIndexProgress
             )
 
-            if(state.queryType == QueryType.IMAGE){
-                ImageSearcher(
-                    uri = state.queryImage,
-                    threshold = appSettings.similarityThreshold,
-                    mediaType = state.mediaType,
-                    imageSize = 120.dp,
-                    searchEnabled = state.queryImage != null,
-                    mediaTypeSelectorEnabled = (videoIndexStatus != ProcessorStatus.ACTIVE && imageIndexStatus != ProcessorStatus.ACTIVE), // prevent switching modes when indexing in progress
-                    onSearch = searchViewModel::imageSearch,
-                    onMediaTypeChange = searchViewModel::setMediaType,
-                    onRemoveImage = {
-                        searchViewModel.updateSearchImageUri(null)
-                        searchViewModel.updateQueryType(QueryType.TEXT)
-                    }
-                )
+            if(state.queryType == QueryType.IMAGE) {
+                SlideRevealBox(
+                    reverse = true,
+                    visibilityPercent = visibilityPercent,
+                    modifier = Modifier.zIndex(1f)
+                ) {
+                    ImageSearcher(
+                        uri = state.queryImage,
+                        threshold = appSettings.similarityThreshold,
+                        mediaType = state.mediaType,
+                        imageSize = 120.dp,
+                        searchEnabled = state.queryImage != null,
+                        mediaTypeSelectorEnabled = (videoIndexStatus != ProcessorStatus.ACTIVE && imageIndexStatus != ProcessorStatus.ACTIVE), // prevent switching modes when indexing in progress
+                        onSearch = searchViewModel::imageSearch,
+                        onMediaTypeChange = searchViewModel::setMediaType,
+                        onRemoveImage = {
+                            searchViewModel.updateSearchImageUri(null)
+                            searchViewModel.updateQueryType(QueryType.TEXT)
+                        }
+                    )
+                }
             }else{
-                SearchBar(
-                    enabled =  hasStoragePermission && !state.loading,
-                    onSearch = searchViewModel::textSearch,
-                    onImageSelected = {
-                        searchViewModel.updateSearchImageUri(it)
-                        searchViewModel.updateQueryType(QueryType.IMAGE)
-                                      },
-                    onImagePasted = {
-                        searchViewModel.updateSearchImageUri(it)
-                        searchViewModel.updateQueryType(QueryType.IMAGE)
-                    },
-                    onClearResults = {searchViewModel.clearResults()},
-                    label = when (state.mediaType) {
-                        MediaType.IMAGE -> "Search images..."
-                        MediaType.VIDEO -> "Search videos..."
-                    },
-                    threshold = appSettings.similarityThreshold,
-                    trailingIcon = {
-                        SelectorIconItem(
-                            enabled = (videoIndexStatus != ProcessorStatus.ACTIVE && imageIndexStatus != ProcessorStatus.ACTIVE), // prevent switching modes when indexing in progress
-                            label = "Media type",
-                            options = mediaTypeOptions.values.toList(),
-                            selectedOption = mediaTypeOptions[state.mediaType]!!,
-                            onOptionSelected = { selected ->
-                                val newMode = mediaTypeOptions.entries
-                                    .find { it.value == selected }
-                                    ?.key ?: MediaType.IMAGE
-                                searchViewModel.setMediaType(newMode)
-                            }
-                        )
-                    }
-                )
+                SlideRevealBox(
+                    reverse = true,
+                    visibilityPercent = visibilityPercent,
+                    modifier = Modifier.zIndex(1f)
+                ) {
+                    SearchBar(
+                        enabled = hasStoragePermission && !state.loading,
+                        onSearch = searchViewModel::textSearch,
+                        onImageSelected = {
+                            searchViewModel.updateSearchImageUri(it)
+                            searchViewModel.updateQueryType(QueryType.IMAGE)
+                        },
+                        onImagePasted = {
+                            searchViewModel.updateSearchImageUri(it)
+                            searchViewModel.updateQueryType(QueryType.IMAGE)
+                        },
+                        onClearResults = { searchViewModel.clearResults() },
+                        label = when (state.mediaType) {
+                            MediaType.IMAGE -> "Search images..."
+                            MediaType.VIDEO -> "Search videos..."
+                        },
+                        threshold = appSettings.similarityThreshold,
+                        trailingIcon = {
+                            SelectorIconItem(
+                                enabled = (videoIndexStatus != ProcessorStatus.ACTIVE && imageIndexStatus != ProcessorStatus.ACTIVE), // prevent switching modes when indexing in progress
+                                label = "Media type",
+                                options = mediaTypeOptions.values.toList(),
+                                selectedOption = mediaTypeOptions[state.mediaType]!!,
+                                onOptionSelected = { selected ->
+                                    val newMode = mediaTypeOptions.entries
+                                        .find { it.value == selected }
+                                        ?.key ?: MediaType.IMAGE
+                                    searchViewModel.setMediaType(newMode)
+                                }
+                            )
+                        }
+                    )
+                }
             }
 
-            LoadingIndicator(isVisible = state.loading, size = 48.dp, strokeWidth = 4.dp, modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp))
+            LoadingIndicator(isVisible = state.loading, size = 48.dp, strokeWidth = 4.dp, modifier = Modifier.fillMaxWidth().padding(top = 16.dp))
 
             state.error?.let {
-                Text(text = it, color = Color.Red, modifier = Modifier.padding(top=16.dp))
+                Text(text = it, color = Color.Red, modifier = Modifier.padding(vertical=8.dp))
             }
 
             if(!hasStoragePermission && !state.loading){
-                Text(text = stringResource(R.string.storage_permissions), color = Color.Red, modifier = Modifier.padding(top=16.dp))
+                Text(text = stringResource(R.string.storage_permissions), color = Color.Red, modifier = Modifier.padding(vertical=8.dp))
             }
 
             SearchPlaceholderDisplay(isVisible = state.searchResults.isEmpty())
@@ -287,18 +296,17 @@ fun SearchScreen(
                 onLoadMore = searchViewModel::onLoadMore,
                 onToggleSelected = searchViewModel::toggleSelectedResult,
                 onToggleSelectionMode = { isSelecting = !isSelecting },
-                onActionBarVisibilityPctChange = { visibility -> bottomBarVisibilityPercent = visibility }
+                onActionBarVisibilityPctChange = { visibility -> visibilityPercent = visibility }
             )
         }
         SlideRevealBox(
             isVisible = isSelecting && state.selectedResults.isNotEmpty(),
-            visibilityPercent = bottomBarVisibilityPercent,
-            height = 70,
+            visibilityPercent = visibilityPercent,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .zIndex(1f)
                 .then(
-                    if (bottomBarVisibilityPercent > 0f)
+                    if (visibilityPercent > 0f)
                         Modifier.clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
@@ -307,6 +315,7 @@ fun SearchScreen(
                 )
             ) {
             SearchActionBar(
+                modifier = Modifier.height(70.dp),
                 searchEnabled = state.selectedResults.size == 1,
                 onSearch = {
                     if (state.selectedResults.size == 1) {
