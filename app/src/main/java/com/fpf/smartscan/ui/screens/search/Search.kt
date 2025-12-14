@@ -30,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.zIndex
 import com.fpf.smartscan.R
@@ -156,7 +157,8 @@ fun SearchScreen(
                     TextField(
                         value = newTag,
                         onValueChange = { newTag = it },
-                        placeholder = { Text( "Enter new tag",) },
+                        placeholder = { Text( "Enter new tag", style = MaterialTheme.typography.bodyLarge) },
+                        textStyle = MaterialTheme.typography.bodyLarge,
                         modifier= Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.small,
                         colors = TextFieldDefaults.colors(focusedIndicatorColor = MaterialTheme.colorScheme.primary, unfocusedIndicatorColor = Color.Transparent, disabledIndicatorColor = Color.Transparent),
