@@ -51,6 +51,8 @@ data class SearchState(
     val error: String? = null,
     val resultToView: Uri? = null,
     val selectedResults: List<Uri> = emptyList(),
+    val imageEmbedderLastUsage: Long? = null,
+    val textEmbedderLastUsage: Long? = null
 )
 
 class SearchViewModel(private val application: Application) : AndroidViewModel(application) {
@@ -86,9 +88,6 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     private val _alertDescription = MutableStateFlow<String?>(null)
     val alertDescription: StateFlow<String?> = _alertDescription
     private val isLoadingMoreSearchResults = AtomicBoolean(false)
-
-    var imageEmbedderLastUsage: Long? = null
-    var textEmbedderLastUsage: Long? = null
 
     init {
         loadImageIndex()
@@ -169,15 +168,14 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
         viewModelScope.launch((Dispatchers.IO)) {
             try {
                 if(!textEmbedder.isInitialized())textEmbedder.initialize()
-                if(shouldShutdownModel(imageEmbedderLastUsage)) imageEmbedder.closeSession() // prevent keeping both models open
+                if(shouldShutdownModel(_state.value.imageEmbedderLastUsage)) imageEmbedder.closeSession() // prevent keeping both models open
                 val embedding = textEmbedder.embed(query)
                 search(store, embedding, threshold)
             } catch (e: Exception) {
                 Log.e(TAG, "$e")
                 _state.emit(_state.value.copy(error = application.getString(R.string.search_error_unknown)))
             } finally {
-                _state.emit(_state.value.copy(loading = false))
-                textEmbedderLastUsage = System.currentTimeMillis()
+                _state.emit(_state.value.copy(loading = false, textEmbedderLastUsage = System.currentTimeMillis()))
             }
         }
     }
@@ -195,7 +193,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
         viewModelScope.launch((Dispatchers.IO)) {
             try {
                 if(!imageEmbedder.isInitialized()) imageEmbedder.initialize()
-                if(shouldShutdownModel(textEmbedderLastUsage)) textEmbedder.closeSession() // prevent keeping both models open
+                if(shouldShutdownModel(_state.value.textEmbedderLastUsage)) textEmbedder.closeSession() // prevent keeping both models open
                 val bitmap = getBitmapFromUri(application, queryImage, IMAGE_SIZE_X)
                 val embedding = imageEmbedder.embed(bitmap)
                 search(store, embedding, threshold)
@@ -203,8 +201,8 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
                 Log.e(TAG, "$e")
                 _state.emit(_state.value.copy(error = application.getString(R.string.search_error_unknown)))
             } finally {
-                _state.emit(_state.value.copy(loading = false))
-                imageEmbedderLastUsage = System.currentTimeMillis()
+                _state.emit(_state.value.copy(loading = false, imageEmbedderLastUsage = System.currentTimeMillis()))
+
             }
         }
     }
