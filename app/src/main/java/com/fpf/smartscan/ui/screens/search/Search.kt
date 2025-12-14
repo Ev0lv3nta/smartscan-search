@@ -263,7 +263,7 @@ fun SearchScreen(
                             searchViewModel.updateSearchImageUri(it)
                             searchViewModel.updateQueryType(QueryType.IMAGE)
                         },
-                        onClearResults = { searchViewModel.clearResults() },
+                        onClearResults = { searchViewModel.reset() },
                         label = when (state.mediaType) {
                             MediaType.IMAGE -> "Search images..."
                             MediaType.VIDEO -> "Search videos..."
