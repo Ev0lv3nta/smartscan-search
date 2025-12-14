@@ -7,10 +7,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ImageSearch
 import androidx.compose.material.icons.filled.Tag
@@ -28,10 +30,13 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.zIndex
 import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.mediaTypeOptions
@@ -45,6 +50,7 @@ import com.fpf.smartscan.ui.components.media.MediaViewer
 import com.fpf.smartscan.ui.components.ProgressBar
 import com.fpf.smartscan.ui.components.SelectorIconItem
 import com.fpf.smartscan.ui.components.SlideRevealBox
+import com.fpf.smartscan.ui.components.search.AutoCompleter
 import com.fpf.smartscan.ui.components.search.ImageSearcher
 import com.fpf.smartscan.ui.components.search.SearchActionBar
 import com.fpf.smartscan.ui.components.search.SearchBar
@@ -52,6 +58,7 @@ import com.fpf.smartscan.ui.components.search.SearchResults
 import com.fpf.smartscan.ui.permissions.RequestPermissions
 import com.fpf.smartscan.ui.screens.search.SearchViewModel.Companion.RESULTS_BATCH_SIZE
 import com.fpf.smartscan.ui.screens.settings.SettingsViewModel
+import kotlin.text.indexOf
 
 @Composable
 fun SearchScreen(
@@ -213,11 +220,13 @@ fun SearchScreen(
                 progress = videoIndexProgress
             )
 
-            if(state.queryType == QueryType.IMAGE) {
+            if (state.queryType == QueryType.IMAGE) {
                 SlideRevealBox(
                     reverse = true,
                     visibilityPercent = visibilityPercent,
-                    modifier = Modifier.zIndex(1f).padding(bottom = searchBarPadding.dp)
+                    modifier = Modifier
+                        .zIndex(1f)
+                        .padding(bottom = searchBarPadding.dp)
                 ) {
                     ImageSearcher(
                         uri = state.queryImage,
@@ -234,11 +243,13 @@ fun SearchScreen(
                         }
                     )
                 }
-            }else{
+            } else {
                 SlideRevealBox(
                     reverse = true,
                     visibilityPercent = visibilityPercent,
-                    modifier = Modifier.zIndex(1f).padding(bottom = searchBarPadding.dp)
+                    modifier = Modifier
+                        .zIndex(1f)
+                        .padding(bottom = searchBarPadding.dp)
                 ) {
                     SearchBar(
                         searchFieldState = searchViewModel.searchFieldState,
@@ -274,9 +285,17 @@ fun SearchScreen(
                         }
                     )
                 }
+                AutoCompleter(
+                    autoCompleteResults = state.autoCompleteTagResults,
+                    query = searchViewModel.searchFieldState.text.toString(),
+                    onSelect = searchViewModel::onSelectAutoCompleteResult,
+                    label = "Matching tags",
+                )
             }
 
-            LoadingIndicator(isVisible = state.loading, size = 48.dp, strokeWidth = 4.dp, modifier = Modifier.fillMaxWidth().padding(top = 16.dp))
+                LoadingIndicator(isVisible = state.loading, size = 48.dp, strokeWidth = 4.dp, modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp))
 
             state.error?.let {
                 Text(text = it, color = Color.Red, modifier = Modifier.padding(vertical=8.dp))

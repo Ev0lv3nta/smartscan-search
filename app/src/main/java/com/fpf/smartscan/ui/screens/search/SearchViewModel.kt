@@ -3,12 +3,14 @@ package com.fpf.smartscan.ui.screens.search
 import android.app.Application
 import android.content.ContentUris
 import android.net.Uri
+import android.provider.MediaStore
 import android.util.Log
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.launch
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.room.util.copy
 import com.fpf.smartscan.media.getImageUriFromId
 import kotlinx.coroutines.Dispatchers
 import com.fpf.smartscan.R
@@ -34,9 +36,12 @@ import com.fpf.smartscansdk.ml.models.loaders.ResourceId
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_X
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import java.io.File
@@ -55,7 +60,8 @@ data class SearchState(
     val resultToView: Uri? = null,
     val selectedResults: List<Uri> = emptyList(),
     val imageEmbedderLastUsage: Long? = null,
-    val textEmbedderLastUsage: Long? = null
+    val textEmbedderLastUsage: Long? = null,
+    val autoCompleteTagResults: List<String> = emptyList()
 )
 
 class SearchViewModel(private val application: Application) : AndroidViewModel(application) {
@@ -99,6 +105,9 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
 
     init {
         loadImageIndex()
+        viewModelScope.launch(){
+            processQuery()
+        }
     }
 
     private fun loadImageIndex(){
@@ -357,8 +366,45 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
         }
     }
 
+    @OptIn(FlowPreview::class)
+    suspend fun processQuery() {
+        snapshotFlow { searchFieldState.text }
+            .debounce(50)
+            .collectLatest { query: CharSequence ->
+                val text = query.toString()
+                val cursor = searchFieldState.selection.end
+                val prefix = text.substring(0, cursor)
 
+                // Regex: find #tag at the end of prefix
+                val match = Regex("""^#([a-zA-Z0-9_]*)$""").find(prefix)
 
+                if (match != null) {
+                    val partialTag = match.groupValues[1]
+                    // Track autocomplete only while typing the tag
+                        when (_state.value.mediaType) {
+                            MediaType.IMAGE -> {
+                                _state.emit(_state.value.copy(autoCompleteTagResults = allImageTags.value.filter {
+                                    it.startsWith(partialTag, ignoreCase = true)
+                                }))
+                            }
+
+                            MediaType.VIDEO -> {
+                                _state.emit(_state.value.copy(autoCompleteTagResults = allVideoTags.value.filter {
+                                    it.startsWith(partialTag, ignoreCase = true
+                                    )
+                                }))
+                            }
+                        }
+                    }
+                else {
+                    _state.emit(_state.value.copy(autoCompleteTagResults = emptyList()))
+                }
+            }
+    }
+
+    fun onSelectAutoCompleteResult(tag: String){
+        searchFieldState.edit { replace(0, searchFieldState.text.length, "#$tag ") }
+    }
 
     override fun onCleared() {
         textEmbedder.closeSession()
