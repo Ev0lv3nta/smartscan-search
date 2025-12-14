@@ -259,7 +259,7 @@ fun SearchScreen(
                 totalResults=state.totalResults,
                 isSelecting = isSelecting,
                 selectedResults = state.selectedResults,
-                loadMoreBuffer = (RESULTS_BATCH_SIZE * 0.2).toInt(),
+                loadMoreBuffer = (RESULTS_BATCH_SIZE * 0.4).toInt(),
                 onViewResult = searchViewModel::toggleViewResult,
                 onLoadMore = searchViewModel::onLoadMore,
                 onToggleSelected = searchViewModel::toggleSelectedResult,
