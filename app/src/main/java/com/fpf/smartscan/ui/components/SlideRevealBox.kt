@@ -39,7 +39,7 @@ fun SlideRevealBox(
         contentHeight = placeables.maxOfOrNull { it.height } ?: 0
         val animatedHeight = (contentHeight * animatedPct).roundToInt()
         layout(constraints.maxWidth, animatedHeight) {
-            val animatedY = ((1f - animatedPct) * constraints.maxHeight * direction).roundToInt()
+            val animatedY = direction * (contentHeight - animatedHeight)
 
             placeables.forEach {
                 it.place(
