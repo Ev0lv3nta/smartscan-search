@@ -56,7 +56,7 @@ data class SearchState(
 class SearchViewModel(private val application: Application) : AndroidViewModel(application) {
     companion object {
         private const val TAG = "SearchViewModel"
-        const val RESULTS_BATCH_SIZE = 30
+        const val RESULTS_BATCH_SIZE = 48
         private const val MODEL_SHUTDOWN_DURATION_THRESHOLD = 60_000L
     }
 

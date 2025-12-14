@@ -9,6 +9,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -114,13 +115,30 @@ fun SearchResults(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().padding(top = 16.dp)) {
         Column(modifier = Modifier.fillMaxSize()) {
-            Text(
-                text = "${searchResults.size} Results",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(4.dp)
-            )
+            Row(
+                modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ){
+                Box(modifier = Modifier
+                    .weight(1f)
+                    .height(0.5.dp)
+                    .border(1.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha=0.5f))
+                )
+                Text(
+                    text = "$totalResults Results",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+                Box(modifier = Modifier
+                    .weight(1f)
+                    .height(0.5.dp)
+                    .border(1.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha=0.5f))
+                )
+            }
+
             LazyVerticalGrid(
                 state = gridState,
                 columns = GridCells.Fixed(numGridColumns),
@@ -131,7 +149,7 @@ fun SearchResults(
                     Box(
                         modifier = Modifier
                             .aspectRatio(1f)
-                            .padding(1.dp)
+                            .padding(2.dp)
                             .border(1.dp, Color.Gray.copy(alpha = 0.2f))
                             .combinedClickable(
                                 indication = null,
