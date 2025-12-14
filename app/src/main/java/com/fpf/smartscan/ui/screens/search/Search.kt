@@ -321,8 +321,9 @@ fun SearchScreen(
                     onClose = { searchViewModel.toggleViewResult(null) },
                     onUpdateSearchImage = {
                         searchViewModel.updateSearchImageUri(uri)
-                        searchViewModel.toggleViewResult(null)
                         searchViewModel.updateQueryType(QueryType.IMAGE)
+                        searchViewModel.imageSearch(appSettings.similarityThreshold)
+                        searchViewModel.toggleViewResult(null)
                     }
                 )
             }
