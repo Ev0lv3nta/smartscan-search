@@ -241,7 +241,7 @@ fun SearchScreen(
                     modifier = Modifier.zIndex(1f).padding(bottom = searchBarPadding.dp)
                 ) {
                     SearchBar(
-                        textFieldState = searchViewModel.textFieldState,
+                        searchFieldState = searchViewModel.searchFieldState,
                         enabled = hasStoragePermission && !state.loading,
                         onSearch = searchViewModel::textSearch,
                         onImageSelected = {

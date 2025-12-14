@@ -49,7 +49,7 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SearchBar(
-    textFieldState: TextFieldState,
+    searchFieldState: TextFieldState,
     enabled: Boolean,
     threshold: Float,
     onSearch: (query: String, threshold: Float) -> Unit,
@@ -95,14 +95,14 @@ fun SearchBar(
             .contentReceiver(receiveContentListener)
     ) {
         BasicTextField(
-            state = textFieldState,
+            state = searchFieldState,
             interactionSource = interactionSource,
             enabled = enabled,
             textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
             keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
             onKeyboardAction = {
-                if (textFieldState.text.isNotBlank()) {
-                    onSearch(textFieldState.text.toString(), threshold)
+                if (searchFieldState.text.isNotBlank()) {
+                    onSearch(searchFieldState.text.toString(), threshold)
                 } else {
                     it()
                 }
@@ -132,7 +132,7 @@ fun SearchBar(
                         modifier = Modifier.weight(1f).padding(vertical = 16.dp)
                     ) {
                         innerTextField()
-                        if (textFieldState.text.isEmpty()) {
+                        if (searchFieldState.text.isEmpty()) {
                             Text(
                                 text = label,
                                 style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)),
@@ -140,11 +140,11 @@ fun SearchBar(
                         }
                     }
 
-                    if (textFieldState.text.isNotBlank()) {
+                    if (searchFieldState.text.isNotBlank()) {
                         IconButton(
                             enabled = enabled,
                             onClick = {
-                                textFieldState.clearText()
+                                searchFieldState.clearText()
                                 onClearResults()
                                       },
                             modifier = Modifier.align(Alignment.Top).padding(top = 4.dp)
