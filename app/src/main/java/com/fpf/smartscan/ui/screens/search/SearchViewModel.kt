@@ -10,6 +10,12 @@ import androidx.lifecycle.viewModelScope
 import com.fpf.smartscan.media.getImageUriFromId
 import kotlinx.coroutines.Dispatchers
 import com.fpf.smartscan.R
+import com.fpf.smartscan.data.images.ImageTag
+import com.fpf.smartscan.data.images.ImageTagRepository
+import com.fpf.smartscan.data.images.ImageTagsDatabase
+import com.fpf.smartscan.data.videos.VideoTag
+import com.fpf.smartscan.data.videos.VideoTagRepository
+import com.fpf.smartscan.data.videos.VideoTagsDatabase
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.utils.canOpenUri
@@ -64,6 +70,9 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
 
     val imageStore = FileEmbeddingStore(File(application.filesDir, ImageIndexer.INDEX_FILENAME), imageEmbedder.embeddingDim)
     val videoStore = FileEmbeddingStore(File(application.filesDir, VideoIndexer.INDEX_FILENAME), imageEmbedder.embeddingDim )
+
+    val imageTagsRepository = ImageTagRepository(ImageTagsDatabase.getDatabase(application).imageTagsDao())
+    val videoTagsRepository = VideoTagRepository(VideoTagsDatabase.getDatabase(application).videoTagDao())
 
     private val _state = MutableStateFlow(SearchState())
     val state: StateFlow<SearchState> = _state
@@ -323,8 +332,19 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     }
 
     fun addTag(tag: String){
-        val ids = _state.value.selectedResults.map{ ContentUris.parseId(it)}
-        //TODO: add metadata to room
+        viewModelScope.launch(Dispatchers.IO) {
+            val ids = _state.value.selectedResults.map { ContentUris.parseId(it) }
+            when (_state.value.mediaType) {
+                MediaType.IMAGE -> {
+                    val tagEntries = ids.map { ImageTag(imageId = it, tag = tag) }
+                    imageTagsRepository.addTags(tagEntries)
+                }
+                MediaType.VIDEO -> {
+                    val tagEntries = ids.map { VideoTag(videoId = it, tag = tag) }
+                    videoTagsRepository.addTags(tagEntries)
+                }
+            }
+        }
     }
 
     override fun onCleared() {
