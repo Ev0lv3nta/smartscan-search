@@ -73,7 +73,7 @@ fun SearchScreen(
     // Search state
     val state by searchViewModel.state.collectAsState()
     val imageTags by searchViewModel.allImageTags.collectAsState()
-    val videoTags by searchViewModel.allImageTags.collectAsState()
+    val videoTags by searchViewModel.allVideoTags.collectAsState()
 
     var hasStoragePermission by remember { mutableStateOf(false) }
     var visibilityPercent by remember { mutableFloatStateOf(1f) }
@@ -241,6 +241,7 @@ fun SearchScreen(
                     modifier = Modifier.zIndex(1f).padding(bottom = searchBarPadding.dp)
                 ) {
                     SearchBar(
+                        textFieldState = searchViewModel.textFieldState,
                         enabled = hasStoragePermission && !state.loading,
                         onSearch = searchViewModel::textSearch,
                         onImageSelected = {

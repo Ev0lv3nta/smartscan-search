@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SearchBar(
+    textFieldState: TextFieldState,
     enabled: Boolean,
     threshold: Float,
     onSearch: (query: String, threshold: Float) -> Unit,
@@ -79,7 +81,6 @@ fun SearchBar(
         }
     }
 
-    val textFieldState = rememberTextFieldState()
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     val outlineColor = if(isFocused) MaterialTheme.colorScheme.primary else Color.Transparent

@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.ContentUris
 import android.net.Uri
 import android.util.Log
+import androidx.compose.foundation.text.input.TextFieldState
 import kotlinx.coroutines.launch
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -46,7 +47,6 @@ data class SearchState(
     val mediaType: MediaType = MediaType.IMAGE,
     val queryType: QueryType = QueryType.TEXT,
     val queryImage: Uri? = null,
-    val query: String = "",
     val hasIndexedImages: Boolean? = false,
     val hasIndexedVideos: Boolean? = false,
     val loading: Boolean = false,
@@ -83,6 +83,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
 
     private val _state = MutableStateFlow(SearchState())
     val state: StateFlow<SearchState> = _state
+    val textFieldState: TextFieldState = TextFieldState()
 
     private val _hasRefreshedImageIndex = MutableStateFlow(false)
     private val _hasRefreshedVideoIndex = MutableStateFlow(false)
