@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.SubcomposeLayout
 import kotlin.math.roundToInt
 
@@ -34,7 +35,7 @@ fun SlideRevealBox(
 
     val direction = if (reverse) -1 else 1
 
-    SubcomposeLayout(modifier = modifier) { constraints ->
+    SubcomposeLayout(modifier = modifier.clipToBounds()) { constraints ->
         val placeables = subcompose("content", content).map { it.measure(constraints) }
         contentHeight = placeables.maxOfOrNull { it.height } ?: 0
         val animatedHeight = (contentHeight * animatedPct).roundToInt()
