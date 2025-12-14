@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -43,6 +44,7 @@ import com.fpf.smartscan.ui.components.LoadingIndicator
 import com.fpf.smartscan.ui.components.media.MediaViewer
 import com.fpf.smartscan.ui.components.ProgressBar
 import com.fpf.smartscan.ui.components.SelectorIconItem
+import com.fpf.smartscan.ui.components.SlideRevealBox
 import com.fpf.smartscan.ui.components.search.ImageSearcher
 import com.fpf.smartscan.ui.components.search.SearchActionBar
 import com.fpf.smartscan.ui.components.search.SearchBar
@@ -165,6 +167,7 @@ fun SearchScreen(
             dismissButton = {
                 TextButton(onClick = {
                     isAddingTag = false
+                    searchViewModel.clearSelectedResults()
                 }) {
                     Text("Cancel")
                 }
@@ -287,28 +290,10 @@ fun SearchScreen(
                 onActionBarVisibilityPctChange = { visibility -> bottomBarVisibilityPercent = visibility }
             )
         }
-        SearchActionBar(
+        SlideRevealBox(
             isVisible = isSelecting && state.selectedResults.isNotEmpty(),
             visibilityPercent = bottomBarVisibilityPercent,
-            searchEnabled = state.selectedResults.size == 1,
-            onSearch = {
-                if(state.selectedResults.size == 1){
-                    searchViewModel.updateSearchImageUri(state.selectedResults[0])
-                    searchViewModel.updateQueryType(QueryType.IMAGE)
-                    isSelecting = false
-                    searchViewModel.clearSelectedResults()
-                    searchViewModel.imageSearch(appSettings.similarityThreshold)
-                }
-            },
-            onShare = {
-                shareMediaMulti(context, state.selectedResults)
-                isSelecting = false
-                searchViewModel.clearSelectedResults()
-            },
-            onAddTag = {
-                isAddingTag = true
-                isSelecting = false
-            },
+            height = 70,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .zIndex(1f)
@@ -320,8 +305,29 @@ fun SearchScreen(
                         ) {}
                     else Modifier
                 )
-
-        )
+            ) {
+            SearchActionBar(
+                searchEnabled = state.selectedResults.size == 1,
+                onSearch = {
+                    if (state.selectedResults.size == 1) {
+                        searchViewModel.updateSearchImageUri(state.selectedResults[0])
+                        searchViewModel.updateQueryType(QueryType.IMAGE)
+                        isSelecting = false
+                        searchViewModel.clearSelectedResults()
+                        searchViewModel.imageSearch(appSettings.similarityThreshold)
+                    }
+                },
+                onShare = {
+                    shareMediaMulti(context, state.selectedResults)
+                    isSelecting = false
+                    searchViewModel.clearSelectedResults()
+                },
+                onAddTag = {
+                    isAddingTag = true
+                    isSelecting = false
+                },
+            )
+        }
         state.resultToView?.let { uri ->
             AnimatedVisibility(
                 visible = true,
