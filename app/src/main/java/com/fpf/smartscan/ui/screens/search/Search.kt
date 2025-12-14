@@ -101,10 +101,6 @@ fun SearchScreen(
         }
     }
 
-    LaunchedEffect(isSelecting) {
-        if(!isSelecting) searchViewModel.clearSelectedResults()
-    }
-
     if ( !alertTitle.isNullOrBlank() && !alertDescription.isNullOrBlank()) {
         AlertDialog(
             onDismissRequest = { },
@@ -157,8 +153,8 @@ fun SearchScreen(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    isAddingTag = false
                     searchViewModel.addTag(newTag)
+                    isAddingTag = false
                 }) {
                     Text("Confirm")
                 }
@@ -168,6 +164,7 @@ fun SearchScreen(
 
     BackHandler(enabled = isSelecting) {
         isSelecting = false
+        searchViewModel.clearSelectedResults()
     }
 
     Box(
@@ -286,12 +283,14 @@ fun SearchScreen(
                     searchViewModel.updateSearchImageUri(state.selectedResults[0])
                     searchViewModel.updateQueryType(QueryType.IMAGE)
                     isSelecting = false
+                    searchViewModel.clearSelectedResults()
                     searchViewModel.imageSearch(appSettings.similarityThreshold)
                 }
             },
             onShare = {
                 shareMediaMulti(context, state.selectedResults)
                 isSelecting = false
+                searchViewModel.clearSelectedResults()
             },
             onAddTag = {
                 isAddingTag = true

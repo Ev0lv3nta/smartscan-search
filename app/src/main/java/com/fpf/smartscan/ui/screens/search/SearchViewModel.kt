@@ -333,16 +333,21 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
 
     fun addTag(tag: String){
         viewModelScope.launch(Dispatchers.IO) {
-            val ids = _state.value.selectedResults.map { ContentUris.parseId(it) }
-            when (_state.value.mediaType) {
-                MediaType.IMAGE -> {
-                    val tagEntries = ids.map { ImageTag(imageId = it, tag = tag) }
-                    imageTagsRepository.addTags(tagEntries)
+            try {
+                val ids = _state.value.selectedResults.map { ContentUris.parseId(it) }
+
+                when (_state.value.mediaType) {
+                    MediaType.IMAGE -> {
+                        val tagEntries = ids.map { ImageTag(imageId = it, tag = tag) }
+                        imageTagsRepository.addTags(tagEntries)
+                    }
+                    MediaType.VIDEO -> {
+                        val tagEntries = ids.map { VideoTag(videoId = it, tag = tag) }
+                        videoTagsRepository.addTags(tagEntries)
+                    }
                 }
-                MediaType.VIDEO -> {
-                    val tagEntries = ids.map { VideoTag(videoId = it, tag = tag) }
-                    videoTagsRepository.addTags(tagEntries)
-                }
+            }finally {
+                clearSelectedResults()
             }
         }
     }
