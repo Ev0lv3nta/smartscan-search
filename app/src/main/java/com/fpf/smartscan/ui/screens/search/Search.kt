@@ -217,6 +217,7 @@ fun SearchScreen(
                         searchViewModel.updateSearchImageUri(it)
                         searchViewModel.updateQueryType(QueryType.IMAGE)
                     },
+                    onClearResults = {searchViewModel.clearResults()},
                     label = when (state.mediaType) {
                         MediaType.IMAGE -> "Search images..."
                         MediaType.VIDEO -> "Search videos..."
@@ -239,15 +240,7 @@ fun SearchScreen(
                 )
             }
 
-
-            if(state.searchResults.isNotEmpty()){
-                TextButton(onClick = {searchViewModel.clearResults() },  modifier = Modifier.align(Alignment.End)) {
-                    Text("Clear results")
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-            LoadingIndicator(isVisible = state.loading, size = 48.dp, strokeWidth = 4.dp, modifier = Modifier.fillMaxWidth())
+            LoadingIndicator(isVisible = state.loading, size = 48.dp, strokeWidth = 4.dp, modifier = Modifier.fillMaxWidth().padding(top = 16.dp))
 
             state.error?.let {
                 Text(text = it, color = Color.Red, modifier = Modifier.padding(top=16.dp))

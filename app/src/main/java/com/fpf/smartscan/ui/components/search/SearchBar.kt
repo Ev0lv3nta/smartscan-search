@@ -53,6 +53,7 @@ fun SearchBar(
     onSearch: (query: String, threshold: Float) -> Unit,
     onImageSelected: (Uri?) -> Unit,
     onImagePasted: (Uri?) -> Unit,
+    onClearResults : () -> Unit,
     label: String,
     trailingIcon: @Composable (() -> Unit)? = null
 ) {
@@ -141,7 +142,10 @@ fun SearchBar(
                     if (textFieldState.text.isNotBlank()) {
                         IconButton(
                             enabled = enabled,
-                            onClick = { textFieldState.clearText() },
+                            onClick = {
+                                textFieldState.clearText()
+                                onClearResults()
+                                      },
                             modifier = Modifier.align(Alignment.Top).padding(top = 4.dp)
                         ) {
                             Icon(
