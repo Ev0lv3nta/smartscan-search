@@ -70,13 +70,13 @@ fun SearchScreen(
     val alertTitle by searchViewModel.alertTitle.collectAsState()
     val alertDescription by searchViewModel.alertDescription.collectAsState()
 
-
     // Search state
     val state by searchViewModel.state.collectAsState()
+    val imageTags by searchViewModel.allImageTags.collectAsState()
+    val videoTags by searchViewModel.allImageTags.collectAsState()
+
     var hasStoragePermission by remember { mutableStateOf(false) }
     var visibilityPercent by remember { mutableFloatStateOf(1f) }
-
-    // Tag
     var isAddingTag by remember { mutableStateOf(false) }
     var isSelecting by remember { mutableStateOf(false) }
     var searchBarPadding = if(visibilityPercent > 0 ) 16 else 0

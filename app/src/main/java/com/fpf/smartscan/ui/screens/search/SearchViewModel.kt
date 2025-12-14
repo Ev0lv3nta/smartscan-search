@@ -33,7 +33,9 @@ import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_X
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
@@ -76,6 +78,9 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     val imageTagsRepository = ImageTagRepository(ImageTagsDatabase.getDatabase(application).imageTagsDao())
     val videoTagsRepository = VideoTagRepository(VideoTagsDatabase.getDatabase(application).videoTagDao())
 
+    val allImageTags: StateFlow<List<String>> = imageTagsRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val allVideoTags: StateFlow<List<String>> = videoTagsRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
     private val _state = MutableStateFlow(SearchState())
     val state: StateFlow<SearchState> = _state
 
@@ -88,6 +93,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     private val _alertDescription = MutableStateFlow<String?>(null)
     val alertDescription: StateFlow<String?> = _alertDescription
     private val isLoadingMoreSearchResults = AtomicBoolean(false)
+
 
     init {
         loadImageIndex()
