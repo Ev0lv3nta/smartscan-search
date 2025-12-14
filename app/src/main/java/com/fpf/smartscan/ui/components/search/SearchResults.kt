@@ -11,6 +11,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -115,83 +116,77 @@ fun SearchResults(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().padding(top = 16.dp)) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Row(
-                modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-            ){
-                Box(modifier = Modifier
-                    .weight(1f)
-                    .height(0.5.dp)
-                    .border(1.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha=0.5f))
-                )
-                Text(
-                    text = "$totalResults Results",
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(horizontal = 4.dp)
-                )
-                Box(modifier = Modifier
-                    .weight(1f)
-                    .height(0.5.dp)
-                    .border(1.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha=0.5f))
-                )
-            }
-
-            LazyVerticalGrid(
-                state = gridState,
-                columns = GridCells.Fixed(numGridColumns),
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(4.dp)
-            ) {
-                items(searchResults) { uri ->
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyVerticalGrid(
+            state = gridState,
+            columns = GridCells.Fixed(numGridColumns),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(4.dp)
+        ) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Row(
+                    modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
                     Box(
                         modifier = Modifier
-                            .aspectRatio(1f)
-                            .padding(2.dp)
-                            .border(1.dp, Color.Gray.copy(alpha = 0.2f))
-                            .combinedClickable(
-                                indication = null,
-                                interactionSource = remember { MutableInteractionSource() },
-                                onClick = {
-                                    if(isSelecting){
-                                        onToggleSelected(uri)
-                                    }else{
-                                        onViewResult(uri)
-                                    }
-                                          },
-                                onLongClick = {
-                                    if(!isSelecting) {
-                                        onToggleSelectionMode()
-                                        onToggleSelected(uri)
-                                    }
-                                }
-                            )
-                        ) {
-
-                            ImageDisplay(
-                                uri = uri,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop,
-                                type = type
-                            )
-                            if(isSelecting) {
-                                CircularCheckbox(
-                                    checked = uri in selectedResults,
-                                    onCheckedChange = {
-                                        onToggleSelected(uri)
-                                    },
-                                    modifier = Modifier
-                                        .offset(x = 8.dp, y = 8.dp)
-                                        .align(Alignment.TopStart),
-                                )
-                            }
-                        }
-                    }
+                            .weight(1f)
+                            .height(0.5.dp)
+                            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha=0.5f))
+                    )
+                    Text(
+                        text = "$totalResults Results",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(0.5.dp)
+                            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha=0.5f))
+                    )
                 }
             }
 
+            items(searchResults) { uri ->
+                Box(
+                    modifier = Modifier
+                        .aspectRatio(1f)
+                        .padding(2.dp)
+                        .border(1.dp, Color.Gray.copy(alpha = 0.2f))
+                        .combinedClickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() },
+                            onClick = {
+                                if(isSelecting) onToggleSelected(uri) else onViewResult(uri)
+                            },
+                            onLongClick = {
+                                if(!isSelecting) {
+                                    onToggleSelectionMode()
+                                    onToggleSelected(uri)
+                                }
+                            }
+                        )
+                ) {
+                    ImageDisplay(
+                        uri = uri,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        type = type
+                    )
+                    if(isSelecting) {
+                        CircularCheckbox(
+                            checked = uri in selectedResults,
+                            onCheckedChange = { onToggleSelected(uri) },
+                            modifier = Modifier
+                                .offset(x = 8.dp, y = 8.dp)
+                                .align(Alignment.TopStart),
+                        )
+                    }
+                }
+            }
+        }
         AnimatedVisibility(
             visible = showScrollToTop,
             enter = fadeIn(animationSpec = tween(300)),

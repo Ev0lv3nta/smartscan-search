@@ -43,6 +43,7 @@ import com.fpf.smartscan.ui.components.LoadingIndicator
 import com.fpf.smartscan.ui.components.media.MediaViewer
 import com.fpf.smartscan.ui.components.ProgressBar
 import com.fpf.smartscan.ui.components.SelectorIconItem
+import com.fpf.smartscan.ui.components.SlideRevealBox
 import com.fpf.smartscan.ui.components.search.ImageSearcher
 import com.fpf.smartscan.ui.components.search.SearchActionBar
 import com.fpf.smartscan.ui.components.search.SearchBar
@@ -72,11 +73,12 @@ fun SearchScreen(
     // Search state
     val state by searchViewModel.state.collectAsState()
     var hasStoragePermission by remember { mutableStateOf(false) }
-    var bottomBarVisibilityPercent by remember { mutableFloatStateOf(1f) }
+    var visibilityPercent by remember { mutableFloatStateOf(1f) }
 
     // Tag
     var isAddingTag by remember { mutableStateOf(false) }
     var isSelecting by remember { mutableStateOf(false) }
+    var searchBarPadding = if(visibilityPercent > 0 ) 16 else 0
 
 
     RequestPermissions { _, storageGranted ->
@@ -165,6 +167,7 @@ fun SearchScreen(
             dismissButton = {
                 TextButton(onClick = {
                     isAddingTag = false
+                    searchViewModel.clearSelectedResults()
                 }) {
                     Text("Cancel")
                 }
@@ -208,66 +211,76 @@ fun SearchScreen(
                 progress = videoIndexProgress
             )
 
-            if(state.queryType == QueryType.IMAGE){
-                ImageSearcher(
-                    uri = state.queryImage,
-                    threshold = appSettings.similarityThreshold,
-                    mediaType = state.mediaType,
-                    imageSize = 120.dp,
-                    searchEnabled = state.queryImage != null,
-                    mediaTypeSelectorEnabled = (videoIndexStatus != ProcessorStatus.ACTIVE && imageIndexStatus != ProcessorStatus.ACTIVE), // prevent switching modes when indexing in progress
-                    onSearch = searchViewModel::imageSearch,
-                    onMediaTypeChange = searchViewModel::setMediaType,
-                    onRemoveImage = {
-                        searchViewModel.updateSearchImageUri(null)
-                        searchViewModel.updateQueryType(QueryType.TEXT)
-                    }
-                )
+            if(state.queryType == QueryType.IMAGE) {
+                SlideRevealBox(
+                    reverse = true,
+                    visibilityPercent = visibilityPercent,
+                    modifier = Modifier.zIndex(1f).padding(bottom = searchBarPadding.dp)
+                ) {
+                    ImageSearcher(
+                        uri = state.queryImage,
+                        threshold = appSettings.similarityThreshold,
+                        mediaType = state.mediaType,
+                        imageSize = 120.dp,
+                        searchEnabled = state.queryImage != null,
+                        mediaTypeSelectorEnabled = (videoIndexStatus != ProcessorStatus.ACTIVE && imageIndexStatus != ProcessorStatus.ACTIVE), // prevent switching modes when indexing in progress
+                        onSearch = searchViewModel::imageSearch,
+                        onMediaTypeChange = searchViewModel::setMediaType,
+                        onRemoveImage = {
+                            searchViewModel.updateSearchImageUri(null)
+                            searchViewModel.updateQueryType(QueryType.TEXT)
+                        }
+                    )
+                }
             }else{
-                SearchBar(
-                    enabled =  hasStoragePermission && !state.loading,
-                    onSearch = searchViewModel::textSearch,
-                    onImageSelected = {
-                        searchViewModel.updateSearchImageUri(it)
-                        searchViewModel.updateQueryType(QueryType.IMAGE)
-                                      },
-                    onImagePasted = {
-                        searchViewModel.updateSearchImageUri(it)
-                        searchViewModel.updateQueryType(QueryType.IMAGE)
-                    },
-                    onClearResults = {searchViewModel.clearResults()},
-                    label = when (state.mediaType) {
-                        MediaType.IMAGE -> "Search images..."
-                        MediaType.VIDEO -> "Search videos..."
-                    },
-                    threshold = appSettings.similarityThreshold,
-                    trailingIcon = {
-                        SelectorIconItem(
-                            enabled = (videoIndexStatus != ProcessorStatus.ACTIVE && imageIndexStatus != ProcessorStatus.ACTIVE), // prevent switching modes when indexing in progress
-                            label = "Media type",
-                            options = mediaTypeOptions.values.toList(),
-                            selectedOption = mediaTypeOptions[state.mediaType]!!,
-                            onOptionSelected = { selected ->
-                                val newMode = mediaTypeOptions.entries
-                                    .find { it.value == selected }
-                                    ?.key ?: MediaType.IMAGE
-                                searchViewModel.setMediaType(newMode)
-                            }
-                        )
-                    }
-                )
+                SlideRevealBox(
+                    reverse = true,
+                    visibilityPercent = visibilityPercent,
+                    modifier = Modifier.zIndex(1f).padding(bottom = searchBarPadding.dp)
+                ) {
+                    SearchBar(
+                        enabled = hasStoragePermission && !state.loading,
+                        onSearch = searchViewModel::textSearch,
+                        onImageSelected = {
+                            searchViewModel.updateSearchImageUri(it)
+                            searchViewModel.updateQueryType(QueryType.IMAGE)
+                        },
+                        onImagePasted = {
+                            searchViewModel.updateSearchImageUri(it)
+                            searchViewModel.updateQueryType(QueryType.IMAGE)
+                        },
+                        onClearResults = { searchViewModel.clearResults() },
+                        label = when (state.mediaType) {
+                            MediaType.IMAGE -> "Search images..."
+                            MediaType.VIDEO -> "Search videos..."
+                        },
+                        threshold = appSettings.similarityThreshold,
+                        trailingIcon = {
+                            SelectorIconItem(
+                                enabled = (videoIndexStatus != ProcessorStatus.ACTIVE && imageIndexStatus != ProcessorStatus.ACTIVE), // prevent switching modes when indexing in progress
+                                label = "Media type",
+                                options = mediaTypeOptions.values.toList(),
+                                selectedOption = mediaTypeOptions[state.mediaType]!!,
+                                onOptionSelected = { selected ->
+                                    val newMode = mediaTypeOptions.entries
+                                        .find { it.value == selected }
+                                        ?.key ?: MediaType.IMAGE
+                                    searchViewModel.setMediaType(newMode)
+                                }
+                            )
+                        }
+                    )
+                }
             }
 
-            LoadingIndicator(isVisible = state.loading, size = 48.dp, strokeWidth = 4.dp, modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp))
+            LoadingIndicator(isVisible = state.loading, size = 48.dp, strokeWidth = 4.dp, modifier = Modifier.fillMaxWidth().padding(top = 16.dp))
 
             state.error?.let {
-                Text(text = it, color = Color.Red, modifier = Modifier.padding(top=16.dp))
+                Text(text = it, color = Color.Red, modifier = Modifier.padding(vertical=8.dp))
             }
 
             if(!hasStoragePermission && !state.loading){
-                Text(text = stringResource(R.string.storage_permissions), color = Color.Red, modifier = Modifier.padding(top=16.dp))
+                Text(text = stringResource(R.string.storage_permissions), color = Color.Red, modifier = Modifier.padding(vertical=8.dp))
             }
 
             SearchPlaceholderDisplay(isVisible = state.searchResults.isEmpty())
@@ -284,44 +297,47 @@ fun SearchScreen(
                 onLoadMore = searchViewModel::onLoadMore,
                 onToggleSelected = searchViewModel::toggleSelectedResult,
                 onToggleSelectionMode = { isSelecting = !isSelecting },
-                onActionBarVisibilityPctChange = { visibility -> bottomBarVisibilityPercent = visibility }
+                onActionBarVisibilityPctChange = { visibility -> visibilityPercent = visibility }
             )
         }
-        SearchActionBar(
+        SlideRevealBox(
             isVisible = isSelecting && state.selectedResults.isNotEmpty(),
-            visibilityPercent = bottomBarVisibilityPercent,
-            searchEnabled = state.selectedResults.size == 1,
-            onSearch = {
-                if(state.selectedResults.size == 1){
-                    searchViewModel.updateSearchImageUri(state.selectedResults[0])
-                    searchViewModel.updateQueryType(QueryType.IMAGE)
-                    isSelecting = false
-                    searchViewModel.clearSelectedResults()
-                    searchViewModel.imageSearch(appSettings.similarityThreshold)
-                }
-            },
-            onShare = {
-                shareMediaMulti(context, state.selectedResults)
-                isSelecting = false
-                searchViewModel.clearSelectedResults()
-            },
-            onAddTag = {
-                isAddingTag = true
-                isSelecting = false
-            },
+            visibilityPercent = visibilityPercent,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .zIndex(1f)
                 .then(
-                    if (bottomBarVisibilityPercent > 0f)
+                    if (visibilityPercent > 0f)
                         Modifier.clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
                         ) {}
                     else Modifier
                 )
-
-        )
+            ) {
+            SearchActionBar(
+                modifier = Modifier.height(70.dp),
+                searchEnabled = state.selectedResults.size == 1,
+                onSearch = {
+                    if (state.selectedResults.size == 1) {
+                        searchViewModel.updateSearchImageUri(state.selectedResults[0])
+                        searchViewModel.updateQueryType(QueryType.IMAGE)
+                        isSelecting = false
+                        searchViewModel.clearSelectedResults()
+                        searchViewModel.imageSearch(appSettings.similarityThreshold)
+                    }
+                },
+                onShare = {
+                    shareMediaMulti(context, state.selectedResults)
+                    isSelecting = false
+                    searchViewModel.clearSelectedResults()
+                },
+                onAddTag = {
+                    isAddingTag = true
+                    isSelecting = false
+                },
+            )
+        }
         state.resultToView?.let { uri ->
             AnimatedVisibility(
                 visible = true,
