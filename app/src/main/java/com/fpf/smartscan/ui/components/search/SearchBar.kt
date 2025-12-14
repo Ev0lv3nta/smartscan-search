@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
@@ -98,6 +99,7 @@ fun SearchBar(
             state = searchFieldState,
             interactionSource = interactionSource,
             enabled = enabled,
+            lineLimits = TextFieldLineLimits.SingleLine,
             textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
             keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
             onKeyboardAction = {
