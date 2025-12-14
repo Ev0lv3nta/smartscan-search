@@ -55,7 +55,8 @@ fun CircularCheckbox(
                 enabled = enabled && onCheckedChange != null,
                 onClick = { onCheckedChange?.invoke(!checked) },
                 role = Role.Checkbox,
-                interactionSource = remember { MutableInteractionSource() }
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
             )
             .semantics {
                 if (contentDescription != null) this.contentDescription = contentDescription
