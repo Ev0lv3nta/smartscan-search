@@ -98,7 +98,6 @@ fun SearchResults(
 
             val itemHeightPx = gridState.layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height ?: 0
             val deltaPx = ( lastIndex - index) * itemHeightPx + ( lastOffset - offset)
-            println(deltaPx)
 
             // prevent jitters due to small changes
             if(abs(deltaPx) < 3) return@collect
