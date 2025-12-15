@@ -40,7 +40,7 @@ fun CircularCheckbox(
     checkmarkColor: Color = MaterialTheme.colorScheme.onPrimary,
     contentDescription: String? = null
 ) {
-    val bgColor by animateColorAsState(targetValue = if (checked) checkedColor else Color.Transparent)
+    val bgColor by animateColorAsState(targetValue = if (checked) checkedColor else MaterialTheme.colorScheme.surfaceDim.copy(alpha = 0.5f))
     val borderColor by animateColorAsState(targetValue = if (checked) checkedColor else uncheckedBorderColor)
     val iconAlpha by animateFloatAsState(targetValue = if (checked) 1f else 0f)
     val iconScale by animateFloatAsState(targetValue = if (checked) 1f else 0.9f)
