@@ -18,6 +18,7 @@ fun SlideRevealBox(
     modifier: Modifier = Modifier,
     isVisible: Boolean = true,
     visibilityPercent: Float = 1f,
+    animationDuration: Int = 500,
     reverse: Boolean = false,
     content: @Composable () -> Unit,
     ) {
@@ -28,7 +29,7 @@ fun SlideRevealBox(
     val animatedPct by animateFloatAsState(
         targetValue = visibilityPercent,
         animationSpec = tween(
-            durationMillis = 600,
+            durationMillis = animationDuration,
             easing = FastOutSlowInEasing
         )
     )
