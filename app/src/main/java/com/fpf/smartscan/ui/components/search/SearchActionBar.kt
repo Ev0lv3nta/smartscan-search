@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Tag
@@ -27,6 +28,7 @@ fun SearchActionBar(
     onSearch: () -> Unit,
     onShare: () -> Unit,
     onAddTag: () -> Unit,
+    onCopy: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -55,27 +57,47 @@ fun SearchActionBar(
                 Text("Share", style = MaterialTheme.typography.labelMedium)
             }
         }
-        Button(
+        if(searchEnabled) {
+            Button(
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Transparent,
+                    disabledContainerColor = Color.Transparent,
+                    disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(0.5f),
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                onClick = { onSearch() }
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        Icons.Filled.Search,
+                        contentDescription = "Search",
+                    )
+                    Text(
+                        "Search",
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
+            }
+        }
+        Button (
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.Transparent,
                 disabledContainerColor = Color.Transparent,
-                disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(0.5f),
                 contentColor = MaterialTheme.colorScheme.onSurface
             ),
-            enabled = searchEnabled,
-            onClick = { onSearch() }
+            onClick = { onCopy() }
         ) {
             Column(
                 verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally) {
+                horizontalAlignment = Alignment.CenterHorizontally){
                 Icon(
-                    Icons.Filled.Search,
-                    contentDescription = "Search",
+                    Icons.Filled.ContentCopy,
+                    contentDescription = "Copy",
                 )
-                Text(
-                    "Search",
-                    style = MaterialTheme.typography.labelMedium,
-                )
+                Text("Copy", style = MaterialTheme.typography.labelMedium)
             }
         }
         Button (
