@@ -56,8 +56,7 @@ import androidx.compose.ui.unit.dp
 fun SearchBar(
     searchFieldState: TextFieldState,
     enabled: Boolean,
-    threshold: Float,
-    onSearch: ( threshold: Float) -> Unit,
+    onSearch: () -> Unit,
     onImageSelected: (Uri?) -> Unit,
     onImagePasted: (Uri?) -> Unit,
     onClearResults : () -> Unit,
@@ -123,7 +122,7 @@ fun SearchBar(
             keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
             onKeyboardAction = {
                 if (searchFieldState.text.isNotBlank()) {
-                    onSearch(threshold)
+                    onSearch()
                 } else {
                     it()
                 }

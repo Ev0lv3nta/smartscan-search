@@ -226,12 +226,14 @@ fun SearchScreen(
                 ) {
                     ImageSearcher(
                         uri = state.queryImage,
-                        threshold = appSettings.similarityThreshold,
                         mediaType = state.mediaType,
                         imageSize = 120.dp,
                         searchEnabled = state.queryImage != null,
                         mediaTypeSelectorEnabled = (videoIndexStatus != ProcessorStatus.ACTIVE && imageIndexStatus != ProcessorStatus.ACTIVE), // prevent switching modes when indexing in progress
-                        onSearch = searchViewModel::search,
+                        onSearch = {
+                            searchViewModel.search(appSettings.similarityThreshold)
+                            isSelecting = false
+                        },
                         onMediaTypeChange = searchViewModel::setMediaType,
                         onRemoveImage = {
                             searchViewModel.updateSearchImageUri(null)
@@ -250,7 +252,11 @@ fun SearchScreen(
                     SearchBar(
                         searchFieldState = searchViewModel.searchFieldState,
                         enabled = hasStoragePermission && !state.loading,
-                        onSearch = searchViewModel::search,
+                        onSearch = {
+                            searchViewModel.search(appSettings.similarityThreshold)
+                            isSelecting = false
+
+                        },
                         onImageSelected = {
                             searchViewModel.updateSearchImageUri(it)
                             searchViewModel.updateQueryType(QueryType.IMAGE)
@@ -264,7 +270,6 @@ fun SearchScreen(
                             MediaType.IMAGE -> "Search images..."
                             MediaType.VIDEO -> "Search videos..."
                         },
-                        threshold = appSettings.similarityThreshold,
                         trailingIcon = {
                             SelectorIconItem(
                                 enabled = (videoIndexStatus != ProcessorStatus.ACTIVE && imageIndexStatus != ProcessorStatus.ACTIVE), // prevent switching modes when indexing in progress
@@ -290,8 +295,8 @@ fun SearchScreen(
             }
 
                 LoadingIndicator(isVisible = state.loading, size = 48.dp, strokeWidth = 4.dp, modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp))
+                    .fillMaxWidth()
+                    .padding(top = 16.dp))
 
             state.error?.let {
                 Text(text = it, color = Color.Red, modifier = Modifier.padding(vertical=8.dp))
