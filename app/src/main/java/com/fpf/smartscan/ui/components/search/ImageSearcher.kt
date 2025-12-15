@@ -6,29 +6,27 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.ImageSearch
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.fpf.smartscan.constants.mediaTypeOptions
 import com.fpf.smartscan.media.MediaType
@@ -40,91 +38,76 @@ import com.fpf.smartscan.ui.components.media.ImageDisplay
 fun ImageSearcher(
     uri: Uri?,
     mediaType: MediaType,
-    searchEnabled: Boolean,
     mediaTypeSelectorEnabled: Boolean,
     onMediaTypeChange: (type: MediaType) -> Unit,
     onSearch: () -> Unit,
     onRemoveImage: () -> Unit,
     imageSize: Dp = 150.dp
 ){
-    Row(
-        modifier = Modifier.fillMaxWidth().background(
-            color = MaterialTheme.colorScheme.surfaceContainer,
-            shape = MaterialTheme.shapes.medium
-        ).padding(12.dp),
+    if(uri == null) return
 
-        horizontalArrangement = Arrangement.SpaceBetween
+    LaunchedEffect(mediaType) {
+        onSearch()
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(4.dp),
+
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
             modifier = Modifier
                 .size(imageSize)
-                .border(1.dp, MaterialTheme.colorScheme.outline)
-                .background(MaterialTheme.colorScheme.surfaceContainerLow)
-        ) {
-            if (uri != null) {
-                ImageDisplay(
-                    uri = uri,
-                    modifier = Modifier.matchParentSize(),
-                    contentScale = ContentScale.Crop,
-                    type = MediaType.IMAGE
+                .border(0.5.dp, MaterialTheme.colorScheme.outline)
+                .dropShadow(
+                    shape = RoundedCornerShape(4.dp),
+                    shadow = Shadow(
+                        radius = 4.dp,
+                        spread = 2.dp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(0.15f),
+                        offset = DpOffset(x = 2.dp, 2.dp)
+                    )
                 )
-                IconButton(
-                    onClick = { onRemoveImage() },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = (-6).dp, y = 6.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.onSurfaceVariant)
-                        .size(18.dp)
-                        .padding(2.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Close,
-                        contentDescription = "Remove Image",
-                        tint = MaterialTheme.colorScheme.inversePrimary
-                    )
-                }
-            } else {
-                Column (
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Image,
-                        contentDescription = "Image icon",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.fillMaxSize().weight(1f)
-                    )
-                }
-            }
-        }
-
-        Column(
-            horizontalAlignment = Alignment.End,
-            modifier = Modifier.padding(horizontal = 12.dp))
-        {
-            SelectorItem(
-                enabled = mediaTypeSelectorEnabled, // prevent switching modes when indexing in progress
-                label = "Media type",
-                showLabel = false,
-                options = mediaTypeOptions.values.toList(),
-                selectedOption = mediaTypeOptions[mediaType]!!,
-                onOptionSelected = { selected ->
-                    val newMode = mediaTypeOptions.entries
-                        .find { it.value == selected }
-                        ?.key ?: MediaType.IMAGE
-                    onMediaTypeChange(newMode)
-                }
+        ) {
+            ImageDisplay(
+                maxSize = 1024,
+                uri = uri,
+                modifier = Modifier.matchParentSize(),
+                contentScale = ContentScale.Crop,
+                type = MediaType.IMAGE
             )
-            Button(
-                modifier = Modifier.width(140.dp),
-                enabled = searchEnabled ,
-                onClick = {onSearch() }
+            IconButton(
+                onClick = { onRemoveImage() },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = (-6).dp, y = 6.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
+                    .size(16.dp)
+                    .padding(2.dp)
             ) {
-                Icon(Icons.Default.ImageSearch, contentDescription = "Image search icon", modifier = Modifier.padding(end = 4.dp))
-                Text(text = "Search")
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = "Remove Image",
+                    tint = MaterialTheme.colorScheme.inversePrimary
+                )
             }
         }
+        SelectorItem(
+            enabled = mediaTypeSelectorEnabled, // prevent switching modes when indexing in progress
+            label = "Media type",
+            showLabel = false,
+            options = mediaTypeOptions.values.toList(),
+            selectedOption = mediaTypeOptions[mediaType]!!,
+            onOptionSelected = { selected ->
+                val newMode = mediaTypeOptions.entries
+                    .find { it.value == selected }
+                    ?.key ?: MediaType.IMAGE
+                onMediaTypeChange(newMode)
+            }
+        )
     }
 }

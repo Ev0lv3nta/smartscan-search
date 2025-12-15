@@ -222,13 +222,11 @@ fun SearchScreen(
                     visibilityPercent = searchActionBarVisibilityPct,
                     modifier = Modifier
                         .zIndex(1f)
-                        .padding(bottom = searchBarPadding.dp)
                 ) {
                     ImageSearcher(
                         uri = state.queryImage,
                         mediaType = state.mediaType,
-                        imageSize = 120.dp,
-                        searchEnabled = state.queryImage != null,
+                        imageSize = 140.dp,
                         mediaTypeSelectorEnabled = (videoIndexStatus != ProcessorStatus.ACTIVE && imageIndexStatus != ProcessorStatus.ACTIVE), // prevent switching modes when indexing in progress
                         onSearch = {
                             searchViewModel.search(appSettings.similarityThreshold)
@@ -260,10 +258,14 @@ fun SearchScreen(
                         onImageSelected = {
                             searchViewModel.updateSearchImageUri(it)
                             searchViewModel.updateQueryType(QueryType.IMAGE)
+                            searchViewModel.search(appSettings.similarityThreshold)
+                            isSelecting = false
                         },
                         onImagePasted = {
                             searchViewModel.updateSearchImageUri(it)
                             searchViewModel.updateQueryType(QueryType.IMAGE)
+                            searchViewModel.search(appSettings.similarityThreshold)
+                            isSelecting = false
                         },
                         onClearResults = { searchViewModel.reset() },
                         label = when (state.mediaType) {
