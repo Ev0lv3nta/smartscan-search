@@ -260,10 +260,14 @@ fun SearchScreen(
                         onImageSelected = {
                             searchViewModel.updateSearchImageUri(it)
                             searchViewModel.updateQueryType(QueryType.IMAGE)
+                            searchViewModel.search(appSettings.similarityThreshold)
+                            isSelecting = false
                         },
                         onImagePasted = {
                             searchViewModel.updateSearchImageUri(it)
                             searchViewModel.updateQueryType(QueryType.IMAGE)
+                            searchViewModel.search(appSettings.similarityThreshold)
+                            isSelecting = false
                         },
                         onClearResults = { searchViewModel.reset() },
                         label = when (state.mediaType) {
