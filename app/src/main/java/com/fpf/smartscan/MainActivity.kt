@@ -21,6 +21,7 @@ import coil3.disk.directory
 import coil3.memory.MemoryCache
 import coil3.request.crossfade
 import coil3.video.VideoFrameDecoder
+import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.utils.isServiceRunning
 import com.fpf.smartscan.settings.loadSettings
@@ -69,20 +70,22 @@ class MainActivity : ComponentActivity() {
         }
         var intentSearchQuery: SearchQuery? = null
 
+        val mediaType = intent.getStringExtra("media_type")?.let { MediaType.valueOf(it) } ?: MediaType.IMAGE
+
         if (intent?.action == Intent.ACTION_SEND && intent?.type?.startsWith("image/") == true) {
            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ){
                (intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java))?.let {
-                   intentSearchQuery = SearchQuery.ImageQuery(uri = it)
+                   intentSearchQuery = SearchQuery.ImageQuery(uri = it, mediaType=mediaType)
                }
            }else{
                (intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM))?.let {
-                   if(it is Uri) intentSearchQuery = SearchQuery.ImageQuery(uri = it)
+                   if(it is Uri) intentSearchQuery = SearchQuery.ImageQuery(uri = it, mediaType=mediaType)
                }
            }
 
         } else if (intent?.action == Intent.ACTION_SEND && intent?.type == "text/plain") {
                 intent.getStringExtra(Intent.EXTRA_TEXT)?.let {
-                    intentSearchQuery = SearchQuery.TextQuery(text = it)
+                    intentSearchQuery = SearchQuery.TextQuery(text = it, mediaType=mediaType)
                 }
         }
 

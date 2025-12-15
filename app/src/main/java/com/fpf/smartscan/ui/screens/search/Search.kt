@@ -84,7 +84,7 @@ fun SearchScreen(
 
     var isAddingTag by remember { mutableStateOf(false) }
     var isSelecting by remember { mutableStateOf(false) }
-    var searchBarPadding = if(searchBarVisibilityPercent > 0 ) 16 else 0
+    val searchBarPadding = if(searchBarVisibilityPercent > 0 ) 16 else 0
 
 
     RequestPermissions { _, storageGranted ->
@@ -116,12 +116,14 @@ fun SearchScreen(
 
         when(intentSearchQuery) {
             is SearchQuery.ImageQuery -> {
+                searchViewModel.setMediaType(intentSearchQuery.mediaType)
                 searchViewModel.updateSearchImageUri(intentSearchQuery.uri)
                 searchViewModel.updateQueryType(QueryType.IMAGE)
                 searchViewModel.search(appSettings.similarityThreshold)
             }
 
             is SearchQuery.TextQuery -> {
+                searchViewModel.setMediaType(intentSearchQuery.mediaType)
                 searchViewModel.searchFieldState.edit { replace(0, searchViewModel.searchFieldState.text.length, intentSearchQuery.text) }
                 searchViewModel.search( appSettings.similarityThreshold)
             }
