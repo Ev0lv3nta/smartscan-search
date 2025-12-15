@@ -61,6 +61,7 @@ fun SearchBar(
     onImagePasted: (Uri?) -> Unit,
     onClearResults : () -> Unit,
     label: String,
+    modifier: Modifier = Modifier,
     trailingIcon: @Composable (() -> Unit)? = null
 ) {
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -99,7 +100,7 @@ fun SearchBar(
 
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
             .border( width = 1.dp, color = outlineColor, shape = RoundedCornerShape(8.dp) )
