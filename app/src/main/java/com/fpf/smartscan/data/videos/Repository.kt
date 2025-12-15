@@ -1,6 +1,7 @@
 package com.fpf.smartscan.data.videos
 
 class VideoTagRepository(private val dao: VideoTagDao) {
+    val allTags = dao.getTagsFlow()
 
     suspend fun getTags(): List<String> {
         return dao.getTags()

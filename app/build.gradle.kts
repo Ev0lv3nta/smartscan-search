@@ -77,6 +77,9 @@ android {
 }
 
 dependencies {
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.documentfile)
+
     implementation(libs.coil.compose)
     implementation(libs.coil.video)
 

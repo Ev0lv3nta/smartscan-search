@@ -39,12 +39,11 @@ import com.fpf.smartscan.ui.components.media.ImageDisplay
 @Composable
 fun ImageSearcher(
     uri: Uri?,
-    threshold: Float,
     mediaType: MediaType,
     searchEnabled: Boolean,
     mediaTypeSelectorEnabled: Boolean,
     onMediaTypeChange: (type: MediaType) -> Unit,
-    onSearch: (threshold: Float) -> Unit,
+    onSearch: () -> Unit,
     onRemoveImage: () -> Unit,
     imageSize: Dp = 150.dp
 ){
@@ -121,7 +120,7 @@ fun ImageSearcher(
             Button(
                 modifier = Modifier.width(140.dp),
                 enabled = searchEnabled ,
-                onClick = {onSearch(threshold) }
+                onClick = {onSearch() }
             ) {
                 Icon(Icons.Default.ImageSearch, contentDescription = "Image search icon", modifier = Modifier.padding(end = 4.dp))
                 Text(text = "Search")

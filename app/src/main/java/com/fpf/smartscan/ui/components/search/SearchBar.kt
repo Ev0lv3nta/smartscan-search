@@ -16,7 +16,6 @@ import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -25,8 +24,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.OutputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Close
@@ -42,19 +43,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SearchBar(
+    searchFieldState: TextFieldState,
     enabled: Boolean,
-    threshold: Float,
-    onSearch: (query: String, threshold: Float) -> Unit,
+    onSearch: () -> Unit,
     onImageSelected: (Uri?) -> Unit,
     onImagePasted: (Uri?) -> Unit,
     onClearResults : () -> Unit,
     label: String,
+    modifier: Modifier = Modifier,
     trailingIcon: @Composable (() -> Unit)? = null
 ) {
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -79,13 +86,21 @@ fun SearchBar(
         }
     }
 
-    val textFieldState = rememberTextFieldState()
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     val outlineColor = if(isFocused) MaterialTheme.colorScheme.primary else Color.Transparent
+    val tagColor =  MaterialTheme.colorScheme.onSurface.copy(0.5f)
+    val ot = OutputTransformation {
+        val regex = Regex("^#\\w+")
+        regex.findAll(searchFieldState.text).forEach {
+            match ->
+            addStyle( SpanStyle(color = tagColor, fontStyle = FontStyle.Italic), match.range.first, match.range.last + 1 )
+        }
+    }
+
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
             .border( width = 1.dp, color = outlineColor, shape = RoundedCornerShape(8.dp) )
@@ -94,14 +109,16 @@ fun SearchBar(
             .contentReceiver(receiveContentListener)
     ) {
         BasicTextField(
-            state = textFieldState,
+            state = searchFieldState,
             interactionSource = interactionSource,
             enabled = enabled,
+            lineLimits = TextFieldLineLimits.SingleLine,
+            outputTransformation = ot,
             textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
             keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
             onKeyboardAction = {
-                if (textFieldState.text.isNotBlank()) {
-                    onSearch(textFieldState.text.toString(), threshold)
+                if (searchFieldState.text.isNotBlank()) {
+                    onSearch()
                 } else {
                     it()
                 }
@@ -131,7 +148,7 @@ fun SearchBar(
                         modifier = Modifier.weight(1f).padding(vertical = 16.dp)
                     ) {
                         innerTextField()
-                        if (textFieldState.text.isEmpty()) {
+                        if (searchFieldState.text.isEmpty()) {
                             Text(
                                 text = label,
                                 style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)),
@@ -139,11 +156,11 @@ fun SearchBar(
                         }
                     }
 
-                    if (textFieldState.text.isNotBlank()) {
+                    if (searchFieldState.text.isNotBlank()) {
                         IconButton(
                             enabled = enabled,
                             onClick = {
-                                textFieldState.clearText()
+                                searchFieldState.clearText()
                                 onClearResults()
                                       },
                             modifier = Modifier.align(Alignment.Top).padding(top = 4.dp)
