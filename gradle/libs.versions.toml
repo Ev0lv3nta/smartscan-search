@@ -2,6 +2,7 @@
 activityCompose = "1.12.1"
 agp = "8.13.2"
 coilCompose = "3.3.0"
+composeBom = "2025.12.00"
 core = "1.7.0"
 documentfile = "1.1.0"
 junitJupiterApi = "5.10.0"
@@ -28,6 +29,7 @@ workRuntimeKtx = "2.10.3"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 androidx-core = { module = "androidx.test:core", version.ref = "core" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentfile" }

@@ -90,16 +90,11 @@ fun SearchBar(
     val outlineColor = if(isFocused) MaterialTheme.colorScheme.primary else Color.Transparent
     val tagColor =  MaterialTheme.colorScheme.onSurface.copy(0.5f)
     val ot = OutputTransformation {
-        val builder = AnnotatedString.Builder(searchFieldState.text.toString())
         val regex = Regex("^#\\w+")
-        regex.findAll(searchFieldState.text).forEach { match ->
-            builder.addStyle(
-                SpanStyle(color = tagColor, fontStyle = FontStyle.Italic),
-                match.range.first,
-                match.range.last + 1
-            )
+        regex.findAll(searchFieldState.text).forEach {
+            match ->
+            addStyle( SpanStyle(color = tagColor, fontStyle = FontStyle.Italic), match.range.first, match.range.last + 1 )
         }
-        TransformedText(builder.toAnnotatedString(), OffsetMapping.Identity)
     }
 
 
