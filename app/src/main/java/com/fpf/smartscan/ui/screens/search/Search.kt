@@ -117,7 +117,7 @@ fun SearchScreen(
             }
 
             is SearchQuery.TextQuery -> {
-                searchViewModel.searchFieldState.edit { replace(0, intentSearchQuery.text.length, intentSearchQuery.text) }
+                searchViewModel.searchFieldState.edit { replace(0, searchViewModel.searchFieldState.text.length, intentSearchQuery.text) }
                 searchViewModel.search( appSettings.similarityThreshold)
             }
         }
