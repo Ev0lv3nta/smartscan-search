@@ -120,11 +120,12 @@ fun SearchScreen(
             is SearchQuery.ImageQuery -> {
                 searchViewModel.updateSearchImageUri(intentSearchQuery.uri)
                 searchViewModel.updateQueryType(QueryType.IMAGE)
-                searchViewModel.imageSearch(appSettings.similarityThreshold)
+                searchViewModel.search(appSettings.similarityThreshold)
             }
 
             is SearchQuery.TextQuery -> {
-                searchViewModel.textSearch(intentSearchQuery.text, appSettings.similarityThreshold)
+                searchViewModel.searchFieldState.edit { replace(0, intentSearchQuery.text.length, intentSearchQuery.text) }
+                searchViewModel.search( appSettings.similarityThreshold)
             }
         }
     }
@@ -235,7 +236,7 @@ fun SearchScreen(
                         imageSize = 120.dp,
                         searchEnabled = state.queryImage != null,
                         mediaTypeSelectorEnabled = (videoIndexStatus != ProcessorStatus.ACTIVE && imageIndexStatus != ProcessorStatus.ACTIVE), // prevent switching modes when indexing in progress
-                        onSearch = searchViewModel::imageSearch,
+                        onSearch = searchViewModel::search,
                         onMediaTypeChange = searchViewModel::setMediaType,
                         onRemoveImage = {
                             searchViewModel.updateSearchImageUri(null)
@@ -254,7 +255,7 @@ fun SearchScreen(
                     SearchBar(
                         searchFieldState = searchViewModel.searchFieldState,
                         enabled = hasStoragePermission && !state.loading,
-                        onSearch = searchViewModel::textSearch,
+                        onSearch = searchViewModel::search,
                         onImageSelected = {
                             searchViewModel.updateSearchImageUri(it)
                             searchViewModel.updateQueryType(QueryType.IMAGE)
@@ -346,7 +347,7 @@ fun SearchScreen(
                         searchViewModel.updateQueryType(QueryType.IMAGE)
                         isSelecting = false
                         searchViewModel.clearSelectedResults()
-                        searchViewModel.imageSearch(appSettings.similarityThreshold)
+                        searchViewModel.search(appSettings.similarityThreshold)
                     }
                 },
                 onShare = {
@@ -373,7 +374,7 @@ fun SearchScreen(
                     onUpdateSearchImage = {
                         searchViewModel.updateSearchImageUri(uri)
                         searchViewModel.updateQueryType(QueryType.IMAGE)
-                        searchViewModel.imageSearch(appSettings.similarityThreshold)
+                        searchViewModel.search(appSettings.similarityThreshold)
                         searchViewModel.toggleViewResult(null)
                     }
                 )

@@ -63,7 +63,7 @@ fun SearchBar(
     searchFieldState: TextFieldState,
     enabled: Boolean,
     threshold: Float,
-    onSearch: (query: String, threshold: Float) -> Unit,
+    onSearch: ( threshold: Float) -> Unit,
     onImageSelected: (Uri?) -> Unit,
     onImagePasted: (Uri?) -> Unit,
     onClearResults : () -> Unit,
@@ -125,7 +125,7 @@ fun SearchBar(
             keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
             onKeyboardAction = {
                 if (searchFieldState.text.isNotBlank()) {
-                    onSearch(searchFieldState.text.toString(), threshold)
+                    onSearch(threshold)
                 } else {
                     it()
                 }
