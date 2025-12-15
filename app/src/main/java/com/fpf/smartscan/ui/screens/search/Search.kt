@@ -1,5 +1,6 @@
 package com.fpf.smartscan.ui.screens.search
 
+import android.content.ClipData
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -28,6 +29,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -61,6 +63,7 @@ fun SearchScreen(
 ) {
     val appSettings by settingsViewModel.appSettings.collectAsState()
     val context = LocalContext.current
+    val clipboard = LocalClipboard.current
 
     // Index state
     val imageIndexProgress by searchViewModel.imageIndexProgress.collectAsState(initial = 0f)
@@ -361,6 +364,10 @@ fun SearchScreen(
                 },
                 onAddTag = {
                     isAddingTag = true
+                    isSelecting = false
+                },
+                onCopy = {
+                    clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", state.selectedResults[0]))
                     isSelecting = false
                 },
             )
