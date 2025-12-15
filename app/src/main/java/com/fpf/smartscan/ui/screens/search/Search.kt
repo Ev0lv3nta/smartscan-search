@@ -76,10 +76,12 @@ fun SearchScreen(
     val videoTags by searchViewModel.allVideoTags.collectAsState()
 
     var hasStoragePermission by remember { mutableStateOf(false) }
-    var visibilityPercent by remember { mutableFloatStateOf(1f) }
+    var searchActionBarVisibilityPct by remember { mutableFloatStateOf(1f) }
+    var searchBarVisibilityPercent by remember { mutableFloatStateOf(1f) }
+
     var isAddingTag by remember { mutableStateOf(false) }
     var isSelecting by remember { mutableStateOf(false) }
-    var searchBarPadding = if(visibilityPercent > 0 ) 16 else 0
+    var searchBarPadding = if(searchBarVisibilityPercent > 0 ) 16 else 0
 
 
     RequestPermissions { _, storageGranted ->
@@ -217,7 +219,7 @@ fun SearchScreen(
             if (state.queryType == QueryType.IMAGE) {
                 SlideRevealBox(
                     reverse = true,
-                    visibilityPercent = visibilityPercent,
+                    visibilityPercent = searchActionBarVisibilityPct,
                     modifier = Modifier
                         .zIndex(1f)
                         .padding(bottom = searchBarPadding.dp)
@@ -240,7 +242,7 @@ fun SearchScreen(
             } else {
                 SlideRevealBox(
                     reverse = true,
-                    visibilityPercent = visibilityPercent,
+                    visibilityPercent = searchBarVisibilityPercent,
                     modifier = Modifier
                         .zIndex(1f)
                         .padding(bottom = searchBarPadding.dp)
@@ -313,17 +315,19 @@ fun SearchScreen(
                 onLoadMore = searchViewModel::onLoadMore,
                 onToggleSelected = searchViewModel::toggleSelectedResult,
                 onToggleSelectionMode = { isSelecting = !isSelecting },
-                onActionBarVisibilityPctChange = { visibility -> visibilityPercent = visibility }
+                onSearchActionBarVisibilityPctChange = { visibility -> searchActionBarVisibilityPct = visibility },
+                onSearchBarVisibilityPctChange = { visibility -> searchBarVisibilityPercent = visibility }
+
             )
         }
         SlideRevealBox(
             isVisible = isSelecting && state.selectedResults.isNotEmpty(),
-            visibilityPercent = visibilityPercent,
+            visibilityPercent = searchActionBarVisibilityPct,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .zIndex(1f)
                 .then(
-                    if (visibilityPercent > 0f)
+                    if (searchActionBarVisibilityPct > 0f)
                         Modifier.clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }

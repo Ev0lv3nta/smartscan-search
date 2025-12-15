@@ -1,7 +1,9 @@
 package com.fpf.smartscan.ui.components
 
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -18,7 +20,6 @@ fun SlideRevealBox(
     modifier: Modifier = Modifier,
     isVisible: Boolean = true,
     visibilityPercent: Float = 1f,
-    animationDuration: Int = 500,
     reverse: Boolean = false,
     content: @Composable () -> Unit,
     ) {
@@ -28,10 +29,11 @@ fun SlideRevealBox(
 
     val animatedPct by animateFloatAsState(
         targetValue = visibilityPercent,
-        animationSpec = tween(
-            durationMillis = animationDuration,
-            easing = FastOutSlowInEasing
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessLow
         )
+
     )
 
     val direction = if (reverse) -1 else 1

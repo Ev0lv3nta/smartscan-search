@@ -41,6 +41,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalDensity
 import com.fpf.smartscan.ui.components.CircularCheckbox
 import kotlinx.coroutines.flow.drop
+import kotlin.math.abs
+import kotlin.math.max
 
 @Composable
 fun SearchResults(
@@ -53,55 +55,70 @@ fun SearchResults(
     totalResults: Int,
     onToggleSelected: (Uri) -> Unit,
     onToggleSelectionMode: () -> Unit,
-    onActionBarVisibilityPctChange: (Float) -> Unit,
+    onSearchActionBarVisibilityPctChange: (Float) -> Unit,
+    onSearchBarVisibilityPctChange: (Float) -> Unit,
     numGridColumns: Int = 3,
     loadMoreBuffer: Int = 5,
     isSelecting: Boolean = false,
     ) {
     if (!isVisible) return
-
-    val gridState = rememberLazyGridState()
-    val scope = rememberCoroutineScope()
-    var showScrollToTop by remember { mutableStateOf(false) }
     val scrollThreshold = 10
 
+    val scope = rememberCoroutineScope()
+    val gridState = rememberLazyGridState()
     val density = LocalDensity.current
-    val actionBarHeight = with(density) { 70.dp.toPx() }
-    var accumulatedPx by remember { mutableFloatStateOf(0f) }
-    var lastSize by remember { mutableIntStateOf(0) }
 
-    // Ensure the initial selection always makes the bar visible
-    LaunchedEffect(selectedResults, isSelecting){
-        if(isSelecting && lastSize == 0 && selectedResults.isNotEmpty()){
-            accumulatedPx = actionBarHeight
-            onActionBarVisibilityPctChange(1f)
+    val actionBarHeight = with(density) { 70.dp.toPx() }
+    val searchBarHeight = with(density) { 56.dp.toPx() }
+    val maxCollapsePx = max(actionBarHeight, searchBarHeight).toInt()
+
+    var showScrollToTop by remember { mutableStateOf(false) }
+    var lastSize by remember { mutableIntStateOf(0) }
+    var lastIndex by remember { mutableIntStateOf(0) }
+    var lastOffset by remember { mutableIntStateOf(0) }
+    var totalScrollPx by remember { mutableIntStateOf(0) }
+
+    // Ensure initial visibility
+    LaunchedEffect(selectedResults, isSelecting) {
+        if (isSelecting && lastSize == 0 && selectedResults.isNotEmpty()) {
+            totalScrollPx = maxCollapsePx
+            onSearchBarVisibilityPctChange(1f)
+            onSearchActionBarVisibilityPctChange(1f)
             lastSize = selectedResults.size
         }
-        if(!isSelecting) lastSize = 0
+        if (!isSelecting) lastSize = 0
     }
 
-    // Detect scroll to show/hide button
+    // Scroll tracking
     LaunchedEffect(gridState) {
-        var lastIndex = 0
-        var lastScrollOffset = 0
+        snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset
+        }.collect { (index, offset) ->
+            if(!gridState.isScrollInProgress) return@collect
 
-        snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }
-            .drop(1)
-            .collect { (index, offset) ->
-                val scrollingUp = index < lastIndex || (index == lastIndex && offset < lastScrollOffset)
+            val itemHeightPx = gridState.layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height ?: 0
+            val deltaPx = ( lastIndex - index) * itemHeightPx + ( lastOffset - offset)
+            println(deltaPx)
 
-                // calculate bottom bar visibility
-                val firstItemSize = gridState.layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height?: 0
-                val deltaPx = (lastIndex - index) * firstItemSize + (lastScrollOffset - offset)
-                accumulatedPx = (accumulatedPx + deltaPx).coerceIn(0f, actionBarHeight)
-                val visibilityPct = (accumulatedPx / actionBarHeight).coerceIn(0f, 1f)
-                onActionBarVisibilityPctChange(visibilityPct)
+            // prevent jitters due to small changes
+            if(abs(deltaPx) < 3) return@collect
 
-                showScrollToTop = !scrollingUp && index > scrollThreshold
-                lastIndex = index
-                lastScrollOffset = offset
-            }
+            totalScrollPx = (totalScrollPx + deltaPx).coerceIn(0, maxCollapsePx)
+
+            val actionBarVisibilityPct = (totalScrollPx / actionBarHeight).coerceIn(0f, 1f)
+            val searchBarVisibilityPct = (totalScrollPx / searchBarHeight).coerceIn(0f, 1f)
+
+            onSearchActionBarVisibilityPctChange(actionBarVisibilityPct)
+            onSearchBarVisibilityPctChange(searchBarVisibilityPct)
+
+            val scrollingDown = index > lastIndex || (index == lastIndex && offset > lastOffset)
+
+            showScrollToTop = scrollingDown && index > scrollThreshold
+            lastIndex = index
+            lastOffset = offset
+        }
     }
+
+
 
     LaunchedEffect(gridState) {
         snapshotFlow {
