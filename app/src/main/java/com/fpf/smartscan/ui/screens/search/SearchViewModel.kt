@@ -211,6 +211,8 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
                 // tag only search
                 if(idsMatchingTag.isNotEmpty() && actualQuery.isBlank()){
                     return@launch handleQueryResults(idsMatchingTag, store)
+                }else if(actualQuery.isBlank()){
+                    return@launch handleQueryResults(emptyList(), store)
                 }
 
                 if(!textEmbedder.isInitialized())textEmbedder.initialize()
