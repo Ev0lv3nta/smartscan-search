@@ -43,9 +43,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -87,6 +90,19 @@ fun SearchBar(
     val isFocused by interactionSource.collectIsFocusedAsState()
     val outlineColor = if(isFocused) MaterialTheme.colorScheme.primary else Color.Transparent
     val tagColor =  MaterialTheme.colorScheme.onSurface.copy(0.5f)
+    val ot = OutputTransformation {
+        val builder = AnnotatedString.Builder(searchFieldState.text.toString())
+        val regex = Regex("^#\\w+")
+        regex.findAll(searchFieldState.text).forEach { match ->
+            builder.addStyle(
+                SpanStyle(color = tagColor, fontStyle = FontStyle.Italic),
+                match.range.first,
+                match.range.last + 1
+            )
+        }
+        TransformedText(builder.toAnnotatedString(), OffsetMapping.Identity)
+    }
+
 
     Box(
         modifier = Modifier
@@ -102,16 +118,7 @@ fun SearchBar(
             interactionSource = interactionSource,
             enabled = enabled,
             lineLimits = TextFieldLineLimits.SingleLine,
-            outputTransformation = OutputTransformation {
-                val regex = Regex("^#\\w+")
-                regex.findAll(searchFieldState.text).forEach { match ->
-                    addStyle(
-                        SpanStyle(color = tagColor, fontStyle = FontStyle.Italic),
-                        match.range.first,
-                        match.range.last + 1
-                    )
-                }
-            },
+            outputTransformation = ot,
             textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
             keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
             onKeyboardAction = {
