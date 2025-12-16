@@ -55,16 +55,17 @@ class TagManager(
         }
     }
 
-    suspend fun generateTagPrototype(tag: String, sampleImageEmbeddings: List<Embedding>){
+    private suspend fun generateTagPrototype(id: Long, sampleImageEmbeddings: List<Embedding>){
         val prototype = generatePrototypeEmbedding(sampleImageEmbeddings.map{it.embeddings})
-        val id = stringToLong(tag)
         store.add(listOf(Embedding(id = id, embeddings = prototype, date = System.currentTimeMillis())))
     }
 
     suspend fun updateTagPrototype(tag: String, mediaType: MediaType, newItemEmbeddings: List<Embedding>){
         val id = stringToLong(tag)
         val result = store.get(listOf(id))
-        if(result.isEmpty()) return
+        if(result.isEmpty()){
+            return generateTagPrototype(id, newItemEmbeddings )
+        }
 
         var prototype = result[0].embeddings
         val nPrototype: Int = when(mediaType){
