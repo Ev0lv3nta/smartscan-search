@@ -60,7 +60,7 @@ class AutoTagger(
         return nPrototypeNew
     }
 
-    suspend fun calculateClassCohesion(tag: String, sampleBatchEmbeddings: List<Embedding>): Float{
+    suspend fun calculateCohesionScore(tag: String, sampleBatchEmbeddings: List<Embedding>): Float{
         val results = store.get(listOf(stringToLong((tag))))
         if(results.isEmpty()) error("prototype not found")
 
