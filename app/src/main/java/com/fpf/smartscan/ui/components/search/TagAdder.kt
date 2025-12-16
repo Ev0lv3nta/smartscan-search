@@ -1,5 +1,6 @@
 package com.fpf.smartscan.ui.components.search
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,6 +23,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -42,6 +44,7 @@ fun TagAdder(
 
     var newTag by remember { mutableStateOf(TextFieldValue(text = "", selection = TextRange(0))) }
     var isFocused by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         snapshotFlow { newTag.text }
@@ -58,7 +61,13 @@ fun TagAdder(
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 TextField(
                     value = newTag,
-                    onValueChange = { newTag = it },
+                    onValueChange = {
+                        if (!it.text.contains(" ")) {
+                            newTag = it
+                        }else{
+                            Toast.makeText(context, "Spaces are not allowed", Toast.LENGTH_SHORT).show()
+                        }
+                                    },
                     placeholder = { Text( "Enter new tag", style = MaterialTheme.typography.bodyLarge) },
                     textStyle = MaterialTheme.typography.bodyLarge,
                     modifier= Modifier
