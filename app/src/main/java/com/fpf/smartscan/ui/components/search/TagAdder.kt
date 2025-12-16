@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.filter
 
 @OptIn(FlowPreview::class)
 @Composable
@@ -49,6 +50,7 @@ fun TagAdder(
     LaunchedEffect(Unit) {
         snapshotFlow { newTag.text }
             .debounce(50)
+            .filter { it.isNotBlank() }
             .collectLatest { value ->
                 onCheckAutoCompletion(value, value.length, false)
             }
