@@ -240,6 +240,7 @@ fun SearchScreen(
                         onMediaTypeChange = searchViewModel::setMediaType,
                         onRemoveImage = {
                             searchViewModel.updateSearchImageUri(null)
+                            searchViewModel.reset()
                             searchViewModel.updateQueryType(QueryType.TEXT)
                         }
                     )
