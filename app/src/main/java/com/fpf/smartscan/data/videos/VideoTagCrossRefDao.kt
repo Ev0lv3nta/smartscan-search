@@ -7,6 +7,9 @@ interface VideoTagCrossRefDao {
     @Query("SELECT videoId FROM video_tag_crossref WHERE tag = :tag")
     suspend fun getVideoIds(tag: String): List<Long>
 
+    @Query("SELECT videoId FROM video_tag_crossref WHERE tag = :tag LIMIT :limit")
+    suspend fun getVideoIds(tag: String, limit: Int): List<Long>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(tags: List<VideoTagCrossRef>)
 

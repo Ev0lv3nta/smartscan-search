@@ -10,6 +10,9 @@ interface ImageTagCrossRefDao {
     @Query("SELECT imageId FROM image_tag_crossref WHERE tag = :tag")
     suspend fun getImageIds(tag: String): List<Long>
 
+    @Query("SELECT imageId FROM image_tag_crossref WHERE tag = :tag LIMIT :limit")
+    suspend fun getImageIds(tag: String, limit: Int): List<Long>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(tags: List<ImageTagCrossRef>)
 

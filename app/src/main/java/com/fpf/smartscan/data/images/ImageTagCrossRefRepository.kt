@@ -7,6 +7,7 @@ class ImageTagCrossRefRepository(
     private val imageTagDao: ImageTagDao
 ) {
     suspend fun getImageIds(tag: String): List<Long> = dao.getImageIds(tag)
+    suspend fun getImageIds(tag: String, limit: Int): List<Long> = dao.getImageIds(tag, limit)
 
     @Transaction
     suspend fun addTags(imageTagCrossRefs: List<ImageTagCrossRef>) {
