@@ -1,33 +1,91 @@
 package com.fpf.smartscan.search
 
-import android.graphics.Bitmap
+import android.content.ContentUris
+import android.net.Uri
+import com.fpf.smartscan.data.images.ImageTagCrossRef
+import com.fpf.smartscan.data.images.ImageTagCrossRefRepository
+import com.fpf.smartscan.data.images.ImageTagRepository
+import com.fpf.smartscan.data.videos.VideoTagCrossRef
+import com.fpf.smartscan.data.videos.VideoTagCrossRefRepository
+import com.fpf.smartscan.data.videos.VideoTagRepository
+import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscansdk.core.embeddings.Embedding
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.dot
 import com.fpf.smartscansdk.core.embeddings.generatePrototypeEmbedding
 import com.fpf.smartscansdk.core.embeddings.getSimilarities
 import com.fpf.smartscansdk.core.embeddings.getTopN
-import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 
-class AutoTagger(
-    private val tagStore: FileEmbeddingStore,
+class TagManager(
+    private val store: FileEmbeddingStore,
     private val textEmbedder: ClipTextEmbedder,
-    private val imageEmbedder: ClipImageEmbedder
-) {
+    private val imageTagsRepository: ImageTagRepository,
+    private val videoTagsRepository: VideoTagRepository,
+    private val imageTagsCrossRefRepository: ImageTagCrossRefRepository,
+    private val videoTagsCrossRefRepository: VideoTagCrossRefRepository,
+    ) {
 
-    suspend fun generateTagPrototype(tag: String, images: List<Bitmap>){
-        if(!imageEmbedder.isInitialized()) imageEmbedder.initialize()
-        val rawEmbeds = imageEmbedder.embedBatch(images)
-        val prototype = generatePrototypeEmbedding(rawEmbeds)
+    suspend fun addTag(tag: String, selectedResults: List<Uri>, mediaType: MediaType){
+        val ids = selectedResults.map { ContentUris.parseId(it) }
+
+        when (mediaType) {
+            MediaType.IMAGE -> {
+                val tagEntries = ids.map { ImageTagCrossRef(imageId = it, tag = tag.trim()) }
+                imageTagsCrossRefRepository.addTags(tagEntries)
+            }
+            MediaType.VIDEO -> {
+                val tagEntries = ids.map { VideoTagCrossRef(videoId = it, tag = tag.trim()) }
+                videoTagsCrossRefRepository.addTags(tagEntries)
+            }
+        }
+    }
+
+    suspend fun getMediaIds(mediaType: MediaType, tag: String?): List<Long>{
+        return when {
+            mediaType == MediaType.IMAGE && !tag.isNullOrBlank() -> {
+                imageTagsCrossRefRepository.getImageIds(tag)
+            }
+            mediaType == MediaType.VIDEO && !tag.isNullOrBlank() -> {
+                videoTagsCrossRefRepository.getVideoIds(tag)
+            }
+            else -> { emptyList()}
+        }
+    }
+
+    suspend fun generateTagPrototype(tag: String, sampleImageEmbeddings: List<Embedding>){
+        val prototype = generatePrototypeEmbedding(sampleImageEmbeddings.map{it.embeddings})
         val id = stringToLong(tag)
-        tagStore.add(listOf(Embedding(id = id, embeddings = prototype, date = System.currentTimeMillis())))
+        store.add(listOf(Embedding(id = id, embeddings = prototype, date = System.currentTimeMillis())))
+    }
+
+    suspend fun updateTagPrototype(tag: String, mediaType: MediaType, newItemEmbeddings: List<Embedding>){
+        val id = stringToLong(tag)
+        val result = store.get(listOf(id))
+        if(result.isEmpty()) return
+
+        var prototype = result[0].embeddings
+        val nPrototype: Int = when(mediaType){
+            MediaType.VIDEO -> {
+                videoTagsRepository.getByName(tag)?.nPrototype
+            }
+            MediaType.IMAGE -> {
+                imageTagsRepository.getByName(tag)?.nPrototype
+            }
+        }?: error("nPrototype unknown")
+
+        // newPrototype = ((N * currentPrototype) + sum(newEmbedding)) / N + newN
+        multiplyEmbedding(prototype, nPrototype.toFloat())
+        prototype =  sumEmbeddings(newItemEmbeddings.map { it.embeddings } + prototype)
+        multiplyEmbedding(prototype, 1f/(nPrototype + newItemEmbeddings.size))
+
+        store.add(listOf(Embedding(id = id, date = System.currentTimeMillis(), embeddings = prototype)))
     }
 
     suspend fun calculateClassCohesion(tag: String, sampleBatchEmbeddings: List<Embedding>): Float{
-        val results = tagStore.get(listOf(stringToLong((tag))))
+        val results = store.get(listOf(stringToLong((tag))))
         if(results.isEmpty()) error("prototype not found")
 
         val tagPrototype = results[0]
@@ -40,7 +98,7 @@ class AutoTagger(
         var bestSim = 0f
 
         for((tag, avgSim) in tagsCohesionMap.entries) {
-            val results = tagStore.get(listOf(stringToLong((tag))))
+            val results = store.get(listOf(stringToLong((tag))))
             if(results.isEmpty()) continue
 
             val tagPrototype = results[0]
@@ -55,7 +113,7 @@ class AutoTagger(
 
     suspend fun orderBySimilarity(tags: List<String>, rawEmbedding: FloatArray): List<String>{
         val tagIds = tags.map{stringToLong(it)}
-        val results = tagStore.get(tagIds)
+        val results = store.get(tagIds)
         if(results.isEmpty() || results.size != tags.size) return tags
 
         if(!textEmbedder.isInitialized()) textEmbedder.initialize()
@@ -69,5 +127,21 @@ class AutoTagger(
         val bytes = str.toByteArray()
         val hash =  MessageDigest.getInstance("SHA-256").digest(bytes)
         return ByteBuffer.wrap(hash.sliceArray(0..7)).long
+    }
+
+    private fun sumEmbeddings(embeddings: List<FloatArray>): FloatArray {
+        val sum = FloatArray(embeddings[0].size)
+        for (emb in embeddings) {
+            for (i in emb.indices) {
+                sum[i] += emb[i]
+            }
+        }
+        return sum
+    }
+
+    private fun multiplyEmbedding(rawEmbedding: FloatArray, x: Float) {
+        for (i in rawEmbedding.indices) {
+            rawEmbedding[i] *= x
+        }
     }
 }
