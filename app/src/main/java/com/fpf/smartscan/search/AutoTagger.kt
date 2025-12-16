@@ -1,14 +1,7 @@
 package com.fpf.smartscan.search
 
-import android.content.ContentUris
-import android.net.Uri
-import com.fpf.smartscan.data.images.ImageTagCrossRef
-import com.fpf.smartscan.data.images.ImageTagCrossRefRepository
-import com.fpf.smartscan.data.images.ImageTagRepository
-import com.fpf.smartscan.data.videos.VideoTagCrossRef
-import com.fpf.smartscan.data.videos.VideoTagCrossRefRepository
-import com.fpf.smartscan.data.videos.VideoTagRepository
-import com.fpf.smartscan.media.MediaType
+import com.fpf.smartscan.data.images.ImageTag
+import com.fpf.smartscan.data.videos.VideoTag
 import com.fpf.smartscansdk.core.embeddings.Embedding
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.dot
@@ -19,70 +12,53 @@ import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 
-class TagManager(
+class AutoTagger(
     private val store: FileEmbeddingStore,
     private val textEmbedder: ClipTextEmbedder,
-    private val imageTagsRepository: ImageTagRepository,
-    private val videoTagsRepository: VideoTagRepository,
-    private val imageTagsCrossRefRepository: ImageTagCrossRefRepository,
-    private val videoTagsCrossRefRepository: VideoTagCrossRefRepository,
     ) {
 
-    suspend fun addTag(tag: String, selectedResults: List<Uri>, mediaType: MediaType){
-        val ids = selectedResults.map { ContentUris.parseId(it) }
-
-        when (mediaType) {
-            MediaType.IMAGE -> {
-                val tagEntries = ids.map { ImageTagCrossRef(imageId = it, tag = tag.trim()) }
-                imageTagsCrossRefRepository.addTags(tagEntries)
-            }
-            MediaType.VIDEO -> {
-                val tagEntries = ids.map { VideoTagCrossRef(videoId = it, tag = tag.trim()) }
-                videoTagsCrossRefRepository.addTags(tagEntries)
-            }
-        }
-    }
-
-    suspend fun getMediaIds(mediaType: MediaType, tag: String?): List<Long>{
-        return when {
-            mediaType == MediaType.IMAGE && !tag.isNullOrBlank() -> {
-                imageTagsCrossRefRepository.getImageIds(tag)
-            }
-            mediaType == MediaType.VIDEO && !tag.isNullOrBlank() -> {
-                videoTagsCrossRefRepository.getVideoIds(tag)
-            }
-            else -> { emptyList()}
-        }
-    }
-
-    private suspend fun generateTagPrototype(id: Long, sampleImageEmbeddings: List<Embedding>){
+    private suspend fun generateTagPrototype(id: Long, sampleImageEmbeddings: List<Embedding>): FloatArray{
         val prototype = generatePrototypeEmbedding(sampleImageEmbeddings.map{it.embeddings})
         store.add(listOf(Embedding(id = id, embeddings = prototype, date = System.currentTimeMillis())))
+        return prototype
     }
 
-    suspend fun updateTagPrototype(tag: String, mediaType: MediaType, newItemEmbeddings: List<Embedding>){
-        val id = stringToLong(tag)
+    suspend fun updateImageTagPrototype(tag: ImageTag, newItemEmbeddings: List<Embedding>): FloatArray{
+        val id = stringToLong(tag.name)
         val result = store.get(listOf(id))
         if(result.isEmpty()){
             return generateTagPrototype(id, newItemEmbeddings )
         }
 
         var prototype = result[0].embeddings
-        val nPrototype: Int = when(mediaType){
-            MediaType.VIDEO -> {
-                videoTagsRepository.getByName(tag)?.nPrototype
-            }
-            MediaType.IMAGE -> {
-                imageTagsRepository.getByName(tag)?.nPrototype
-            }
-        }?: error("nPrototype unknown")
+        val nPrototype: Int = tag.nPrototype
 
         // newPrototype = ((N * currentPrototype) + sum(newEmbedding)) / N + newN
-        scaleEmbedding(prototype, nPrototype.toFloat())
+        if(nPrototype > 0) scaleEmbedding(prototype, nPrototype.toFloat())
         prototype =  sumEmbeddings(newItemEmbeddings.map { it.embeddings } + prototype)
         scaleEmbedding(prototype, 1f/(nPrototype + newItemEmbeddings.size))
 
         store.add(listOf(Embedding(id = id, date = System.currentTimeMillis(), embeddings = prototype)))
+        return prototype
+    }
+
+    suspend fun updateVideoTagPrototype(tag: VideoTag, newItemEmbeddings: List<Embedding>): FloatArray{
+        val id = stringToLong(tag.name)
+        val result = store.get(listOf(id))
+        if(result.isEmpty()){
+            return generateTagPrototype(id, newItemEmbeddings )
+        }
+
+        var prototype = result[0].embeddings
+        val nPrototype: Int = tag.nPrototype
+
+        // newPrototype = ((N * currentPrototype) + sum(newEmbedding)) / N + newN
+        if(nPrototype > 0) scaleEmbedding(prototype, nPrototype.toFloat())
+        prototype =  sumEmbeddings(newItemEmbeddings.map { it.embeddings } + prototype)
+        scaleEmbedding(prototype, 1f/(nPrototype + newItemEmbeddings.size))
+
+        store.add(listOf(Embedding(id = id, date = System.currentTimeMillis(), embeddings = prototype)))
+        return prototype
     }
 
     suspend fun calculateClassCohesion(tag: String, sampleBatchEmbeddings: List<Embedding>): Float{
