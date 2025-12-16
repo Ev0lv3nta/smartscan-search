@@ -1,6 +1,5 @@
 package com.fpf.smartscan.search
 
-import com.fpf.smartscan.utils.stringToLong
 import com.fpf.smartscansdk.core.embeddings.Embedding
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.dot
@@ -42,8 +41,8 @@ class AutoTagger(
         return nPrototypeNew
     }
 
-    suspend fun calculateCohesionScore(tag: String, sampleBatchEmbeddings: List<Embedding>): Float{
-        val results = store.get(listOf(stringToLong((tag))))
+    suspend fun calculateCohesionScore(tag: MediaTag, sampleBatchEmbeddings: List<Embedding>): Float{
+        val results = store.get(listOf((tag.prototypeId)))
         if(results.isEmpty()) error("prototype not found")
 
         val tagPrototype = results[0]
