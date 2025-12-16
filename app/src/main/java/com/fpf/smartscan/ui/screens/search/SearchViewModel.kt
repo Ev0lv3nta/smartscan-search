@@ -34,6 +34,7 @@ import com.fpf.smartscan.services.startIndexing
 import com.fpf.smartscan.utils.isWorkScheduled
 import com.fpf.smartscan.workers.AutoTagWorker
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
+import com.fpf.smartscansdk.core.embeddings.generatePrototypeEmbedding
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer
 import com.fpf.smartscansdk.core.media.getBitmapFromUri
@@ -460,6 +461,25 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     fun scheduleAutoTagging(){
         if (!imageStore.exists && !videoStore.exists) return
         AutoTagWorker.scheduleWorker(application, Pair(1L, TimeUnit.DAYS))
+    }
+
+    fun orderTagsBySimilarity(){
+        viewModelScope.launch(Dispatchers.IO){
+            when(_state.value.mediaType){
+                MediaType.IMAGE -> {
+                    val imageEmbeddings = imageStore.get(_state.value.selectedResults.map{ContentUris.parseId(it)})
+                    val prototype = generatePrototypeEmbedding(imageEmbeddings.map{it.embeddings})
+                    val orderTags = autoTagger.orderBySimilarity(allImageTags.value, prototype)
+                    _state.update { currentState -> currentState.copy(autoCompleteTagResults = orderTags.map{it.name}) }
+                }
+                MediaType.VIDEO -> {
+                    val videoEmbeddings = videoStore.get(_state.value.selectedResults.map{ContentUris.parseId(it)})
+                    val prototype = generatePrototypeEmbedding(videoEmbeddings.map{it.embeddings})
+                    val orderTags = autoTagger.orderBySimilarity(allVideoTags.value, prototype)
+                    _state.update { currentState -> currentState.copy(autoCompleteTagResults = orderTags.map{it.name}) }
+                }
+            }
+        }
     }
 
     override fun onCleared() {

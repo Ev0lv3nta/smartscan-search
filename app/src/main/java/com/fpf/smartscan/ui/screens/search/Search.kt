@@ -344,8 +344,10 @@ fun SearchScreen(
                     searchViewModel.clearSelectedResults()
                 },
                 onAddTag = {
+                    searchViewModel.orderTagsBySimilarity()
                     isAddingTag = true
                     isSelecting = false
+
                 },
                 onCopy = {
                     clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", state.selectedResults[0]))
