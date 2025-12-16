@@ -169,26 +169,25 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     }
 
     fun search(threshold: Float){
+        val store = if(_state.value.mediaType == MediaType.VIDEO) videoStore else imageStore
+        if(!store.exists) {
+            _state.update{ currentState -> currentState.copy(error = application.getString(R.string.search_error_not_indexed))}
+            return
+        }
         when(_state.value.queryType){
             QueryType.IMAGE -> {
-                imageSearch(threshold)
+                imageSearch(store, threshold)
             }
             QueryType.TEXT -> {
-                textSearch(threshold)
+                textSearch(store, threshold)
             }
         }
     }
 
-    private fun textSearch(threshold: Float) {
+    private fun textSearch(store: FileEmbeddingStore, threshold: Float) {
         val query = searchFieldState.text.toString()
         if (query.isBlank()) {
             _state.update{currentState -> currentState.copy(error = application.getString(R.string.search_error_empty_query))}
-            return
-        }
-
-        val store = if(_state.value.mediaType == MediaType.VIDEO) videoStore else imageStore
-        if(!store.exists) {
-            _state.update{ currentState -> currentState.copy(error = application.getString(R.string.search_error_not_indexed))}
             return
         }
         reset()
@@ -236,13 +235,9 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
         }
     }
 
-    private fun imageSearch(threshold: Float) {
+    private fun imageSearch(store: FileEmbeddingStore, threshold: Float) {
         val queryImage = _state.value.queryImage?: return
-        val store = if(_state.value.mediaType == MediaType.VIDEO) videoStore else imageStore
-        if(!store.exists) {
-            _state.value = _state.value.copy(error = application.getString(R.string.search_error_not_indexed))
-            return
-        }
+
         reset()
         _state.value = _state.value.copy( loading = true)
 
@@ -251,25 +246,15 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
                 if(!imageEmbedder.isInitialized()) imageEmbedder.initialize()
                 if(shouldShutdownModel(_state.value.textEmbedderLastUsage)) textEmbedder.closeSession() // prevent keeping both models open
 
-                val idsMatchingTag: List<Long> = when{
-                    _state.value.mediaType == MediaType.IMAGE && !_state.value.tagFilter.isNullOrBlank() -> {
-                        imageTagsCrossRefRepository.getImageIds(_state.value.tagFilter!!)
-                    }
-                    _state.value.mediaType == MediaType.VIDEO && !_state.value.tagFilter.isNullOrBlank() -> {
-                        videoTagsCrossRefRepository.getVideoIds(_state.value.tagFilter!!)
-                    }
-                    else -> { emptyList()}
-                }
                 val bitmap = getBitmapFromUri(application, queryImage, IMAGE_SIZE_X)
                 val embedding = imageEmbedder.embed(bitmap)
-                val resultIds = store.query(embedding, Int.MAX_VALUE, threshold).map { it.id }.filter { idsMatchingTag.isEmpty() || it in idsMatchingTag}
+                val resultIds = store.query(embedding, Int.MAX_VALUE, threshold).map { it.id }
                 handleQueryResults(resultIds, store)
             } catch (e: Exception) {
                 Log.e(TAG, "$e")
                 _state.emit(_state.value.copy(error = application.getString(R.string.search_error_unknown)))
             } finally {
                 _state.emit(_state.value.copy(loading = false, imageEmbedderLastUsage = System.currentTimeMillis()))
-
             }
         }
     }
