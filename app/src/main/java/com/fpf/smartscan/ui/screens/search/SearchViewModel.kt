@@ -77,6 +77,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
         private const val TAG = "SearchViewModel"
         const val RESULTS_BATCH_SIZE = 36
         private const val MODEL_SHUTDOWN_DURATION_THRESHOLD = 60_000L
+        private const val MAX_N_PROTOTYPE = 10
     }
 
     val imageIndexProgress = ImageIndexListener.progress
@@ -465,15 +466,17 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
 
     fun orderTagsBySimilarity(){
         viewModelScope.launch(Dispatchers.IO){
+            val ids = _state.value.selectedResults.take(MAX_N_PROTOTYPE).map{ContentUris.parseId(it)}
+
             when(_state.value.mediaType){
                 MediaType.IMAGE -> {
-                    val imageEmbeddings = imageStore.get(_state.value.selectedResults.map{ContentUris.parseId(it)})
+                    val imageEmbeddings = imageStore.get(ids)
                     val prototype = generatePrototypeEmbedding(imageEmbeddings.map{it.embeddings})
                     val orderTags = autoTagger.orderBySimilarity(allImageTags.value, prototype)
                     _state.update { currentState -> currentState.copy(autoCompleteTagResults = orderTags.map{it.name}) }
                 }
                 MediaType.VIDEO -> {
-                    val videoEmbeddings = videoStore.get(_state.value.selectedResults.map{ContentUris.parseId(it)})
+                    val videoEmbeddings = videoStore.get(ids)
                     val prototype = generatePrototypeEmbedding(videoEmbeddings.map{it.embeddings})
                     val orderTags = autoTagger.orderBySimilarity(allVideoTags.value, prototype)
                     _state.update { currentState -> currentState.copy(autoCompleteTagResults = orderTags.map{it.name}) }
