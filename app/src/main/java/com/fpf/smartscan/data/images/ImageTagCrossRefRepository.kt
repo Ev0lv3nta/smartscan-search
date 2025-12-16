@@ -6,9 +6,8 @@ class ImageTagCrossRefRepository(
     private val dao: ImageTagCrossRefDao,
     private val imageTagDao: ImageTagDao
 ) {
-    suspend fun getImageIds(tag: String): List<Long> {
-        return dao.getImageIds(tag)
-    }
+    suspend fun getImageIds(tag: String): List<Long> = dao.getImageIds(tag)
+
     @Transaction
     suspend fun addTags(imageTagCrossRefs: List<ImageTagCrossRef>) {
         val uniqueTagNames = imageTagCrossRefs.map { it.tag }.toSet()
@@ -21,16 +20,12 @@ class ImageTagCrossRefRepository(
         dao.upsert(imageTagCrossRefs)
     }
 
-    suspend fun deleteByIds(ids: List<Long>) {
-        dao.deleteByIds(ids)
-    }
+    suspend fun deleteByIds(ids: List<Long>) = dao.deleteByIds(ids)
 
-    suspend fun deleteByTags(tags: List<String>) {
-        dao.deleteByTags(tags)
-    }
+    suspend fun deleteByTags(tags: List<String>) = dao.deleteByTags(tags)
 
-    suspend fun clear() {
-        dao.clear()
-    }
+    suspend fun clear() = dao.clear()
+
+    suspend fun count(tag: String): Int = dao.count(tag)
 
 }

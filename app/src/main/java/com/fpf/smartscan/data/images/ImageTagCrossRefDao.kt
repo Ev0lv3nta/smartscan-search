@@ -21,4 +21,7 @@ interface ImageTagCrossRefDao {
 
     @Query("DELETE FROM image_tag_crossref")
     suspend fun clear()
+
+    @Query("SELECT COUNT(*) FROM image_tag_crossref WHERE tag = :tag ")
+    suspend fun count(tag: String): Int
 }

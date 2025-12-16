@@ -18,4 +18,7 @@ interface VideoTagCrossRefDao {
 
     @Query("DELETE FROM video_tag_crossref")
     suspend fun clear()
+
+    @Query("SELECT COUNT(*) FROM video_tag_crossref WHERE tag = :tag")
+    suspend fun count(tag: String): Int
 }

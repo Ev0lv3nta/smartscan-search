@@ -2,13 +2,9 @@ package com.fpf.smartscan.data.videos
 
 class VideoTagRepository(private val dao: VideoTagDao) {
     val allTags = dao.getAllFlow()
-    fun getAll(): List<VideoTag> {
-        return dao.getAll()
-    }
+    fun getAll(): List<VideoTag> = dao.getAll()
 
-    suspend fun getByName(name: String): VideoTag? {
-        return dao.get(name)
-    }
+    suspend fun getByName(name: String): VideoTag? = dao.get(name)
 
     suspend fun upsert(videoTag: VideoTag) {
         val existing = dao.get(videoTag.name)
@@ -25,7 +21,5 @@ class VideoTagRepository(private val dao: VideoTagDao) {
         }
     }
 
-    suspend fun delete(videoTag: VideoTag) {
-        dao.delete(videoTag)
-    }
+    suspend fun delete(videoTag: VideoTag) = dao.delete(videoTag)
 }

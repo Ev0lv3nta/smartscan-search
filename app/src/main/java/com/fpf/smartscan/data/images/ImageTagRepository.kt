@@ -2,17 +2,11 @@ package com.fpf.smartscan.data.images
 
 class ImageTagRepository(private val dao: ImageTagDao) {
     val allTags = dao.getAllFlow()
-    fun getAll(): List<ImageTag>{
-        return dao.getAll()
-    }
+    fun getAll(): List<ImageTag> = dao.getAll()
 
-    suspend fun getByName(name: String): ImageTag? {
-        return dao.get(name)
-    }
+    suspend fun getByName(name: String): ImageTag? = dao.get(name)
 
-    suspend fun insert(imageTag: ImageTag) {
-        dao.insert(imageTag)
-    }
+    suspend fun insert(imageTag: ImageTag) = dao.insert(imageTag)
 
     suspend fun upsert(imageTag: ImageTag) {
         val existing = dao.get(imageTag.name)
@@ -29,7 +23,5 @@ class ImageTagRepository(private val dao: ImageTagDao) {
         }
     }
 
-    suspend fun delete(imageTag: ImageTag) {
-        dao.delete(imageTag)
-    }
+    suspend fun delete(imageTag: ImageTag) = dao.delete(imageTag)
 }
