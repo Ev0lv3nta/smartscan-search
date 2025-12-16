@@ -1,5 +1,6 @@
 package com.fpf.smartscan.search
 
+import com.fpf.smartscan.utils.stringToLong
 import com.fpf.smartscansdk.core.embeddings.Embedding
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.dot
@@ -7,8 +8,6 @@ import com.fpf.smartscansdk.core.embeddings.generatePrototypeEmbedding
 import com.fpf.smartscansdk.core.embeddings.getSimilarities
 import com.fpf.smartscansdk.core.embeddings.getTopN
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
-import java.nio.ByteBuffer
-import java.security.MessageDigest
 
 class AutoTagger(
     private val store: FileEmbeddingStore,
@@ -69,7 +68,7 @@ class AutoTagger(
 
 
     suspend fun orderBySimilarity(tags: List<String>, rawEmbedding: FloatArray): List<String>{
-        val tagIds = tags.map{stringToLong(it)}
+        val tagIds = tags.map{ stringToLong(it) }
         val results = store.get(tagIds)
         if(results.isEmpty() || results.size != tags.size) return tags
 
@@ -79,13 +78,6 @@ class AutoTagger(
         val orderedTagEmbedsIndices = getTopN(sims, sims.size)
         return orderedTagEmbedsIndices.map{ tags[it] }
     }
-
-    private fun stringToLong(str: String): Long{
-        val bytes = str.toByteArray()
-        val hash =  MessageDigest.getInstance("SHA-256").digest(bytes)
-        return ByteBuffer.wrap(hash.sliceArray(0..7)).long
-    }
-
     private fun sumEmbeddings(embeddings: List<FloatArray>): FloatArray {
         val sum = FloatArray(embeddings[0].size)
         for (emb in embeddings) {
