@@ -1,6 +1,7 @@
 package com.fpf.smartscan.data.images
 
 import androidx.room.Transaction
+import com.fpf.smartscan.utils.stringToLong
 
 class ImageTagCrossRefRepository(
     private val dao: ImageTagCrossRefDao,
@@ -15,7 +16,7 @@ class ImageTagCrossRefRepository(
         for (name in uniqueTagNames){
             val existingTag = imageTagDao.get(name)
             if(existingTag == null){
-                imageTagDao.insert(ImageTag(name=name))
+                imageTagDao.insert(ImageTag(name=name, prototypeId = stringToLong(name)))
             }
         }
         dao.upsert(imageTagCrossRefs)

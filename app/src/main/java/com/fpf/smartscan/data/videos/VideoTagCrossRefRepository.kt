@@ -1,6 +1,7 @@
 package com.fpf.smartscan.data.videos
 
 import androidx.room.Transaction
+import com.fpf.smartscan.utils.stringToLong
 
 class VideoTagCrossRefRepository(
     private val dao: VideoTagCrossRefDao,
@@ -15,7 +16,7 @@ class VideoTagCrossRefRepository(
         for (name in uniqueTagNames){
             val existingTag = videoTagDao.get(name)
             if(existingTag == null){
-                videoTagDao.insert(VideoTag(name=name))
+                videoTagDao.insert(VideoTag(name=name, prototypeId = stringToLong(name)))
             }
         }
         dao.upsert(imageTagCrossRefs)
