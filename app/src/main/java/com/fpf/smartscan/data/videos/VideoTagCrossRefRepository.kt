@@ -15,7 +15,7 @@ class VideoTagCrossRefRepository(
         for (name in uniqueTagNames){
             val existingTag = videoTagDao.get(name)
             if(existingTag == null){
-                videoTagDao.upsert(VideoTag(name=name))
+                videoTagDao.insert(VideoTag(name=name))
             }
         }
         dao.upsert(imageTagCrossRefs)

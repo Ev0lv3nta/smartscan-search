@@ -15,7 +15,7 @@ class ImageTagCrossRefRepository(
         for (name in uniqueTagNames){
             val existingTag = imageTagDao.get(name)
             if(existingTag == null){
-                imageTagDao.upsert(ImageTag(name=name))
+                imageTagDao.insert(ImageTag(name=name))
             }
         }
         dao.upsert(imageTagCrossRefs)
