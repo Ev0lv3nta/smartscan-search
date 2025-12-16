@@ -165,7 +165,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     }
 
     fun reset(){
-        _state.value = _state.value.copy(totalResults = 0, searchResults = emptyList(), selectedResults = emptyList(), error = null, tagFilter = null)
+        _state.value = _state.value.copy(totalResults = 0, searchResults = emptyList(), selectedResults = emptyList(), autoCompleteTagResults = emptyList(), error = null, tagFilter = null)
     }
 
     fun search(threshold: Float){
