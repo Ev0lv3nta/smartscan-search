@@ -76,14 +76,17 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
             val imageTags = imageTagsRepository.getAll()
             val videoTags = videoTagsRepository.getAll()
 
-//            val imageTagIds = imageTags.map { stringToLong(it.name) }
-//            val videoTagIds = imageTags.map { stringToLong(it.name) }
+            val existingImageIds = (if(tagStore.exists) tagStore.get(imageTags.map{it.prototypeId}) else emptyList()).map{it.id}.toSet()
+            val imageTagsToUpdate = imageTags.filterNot { it.prototypeId in existingImageIds }
 
-            for (tag in imageTags){
+            val existingVideoIds = (if(tagStore.exists) tagStore.get(videoTags.map{it.prototypeId}) else emptyList()).map{it.id}.toSet()
+            val videoTagsToUpdate = videoTags.filterNot { it.prototypeId in existingVideoIds }
+
+            for (tag in imageTagsToUpdate){
                 updateImageTag((tag))
             }
 
-            for (tag in videoTags){
+            for (tag in videoTagsToUpdate){
                 updateVideoTag((tag))
             }
 
@@ -105,6 +108,7 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
         val nPrototypeNew = autoTagger.updateTagPrototype(tag, storedImageEmbeddings)
         val cohesionScore = autoTagger.calculateCohesionScore(tag.name, storedImageEmbeddings)
         imageTagsRepository.upsert(tag.copy(nPrototype = nPrototypeNew, cohesionScore = cohesionScore))
+        Log.d(TAG, "Tag: $tag.name | Cohesion Score: $cohesionScore | nP: $nPrototypeNew")
     }
 
     private suspend fun updateVideoTag(tag: VideoTag){
