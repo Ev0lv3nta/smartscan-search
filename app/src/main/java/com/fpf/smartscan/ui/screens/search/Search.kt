@@ -29,9 +29,12 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.zIndex
 import com.fpf.smartscan.R
@@ -51,10 +54,15 @@ import com.fpf.smartscan.ui.components.search.ImageSearcher
 import com.fpf.smartscan.ui.components.search.SearchActionBar
 import com.fpf.smartscan.ui.components.search.SearchBar
 import com.fpf.smartscan.ui.components.search.SearchResults
+import com.fpf.smartscan.ui.components.search.TagAdder
 import com.fpf.smartscan.ui.permissions.RequestPermissions
 import com.fpf.smartscan.ui.screens.search.SearchViewModel.Companion.RESULTS_BATCH_SIZE
 import com.fpf.smartscan.ui.screens.settings.SettingsViewModel
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
 
+@OptIn(FlowPreview::class)
 @Composable
 fun SearchScreen(
     searchViewModel: SearchViewModel = viewModel(),
@@ -153,45 +161,21 @@ fun SearchScreen(
         )
     }
 
-
-    if(isAddingTag) {
-        var newTag by remember { mutableStateOf("") }
-
-        AlertDialog(
-            onDismissRequest = { },
-            title = { Text("Add tag") },
-            text = {
-                Column {
-                    TextField(
-                        value = newTag,
-                        onValueChange = { newTag = it },
-                        placeholder = { Text( "Enter new tag", style = MaterialTheme.typography.bodyLarge) },
-                        textStyle = MaterialTheme.typography.bodyLarge,
-                        modifier= Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.small,
-                        colors = TextFieldDefaults.colors(focusedIndicatorColor = MaterialTheme.colorScheme.primary, unfocusedIndicatorColor = Color.Transparent, disabledIndicatorColor = Color.Transparent),
-                        leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) }
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    isAddingTag = false
-                    searchViewModel.clearSelectedResults()
-                }) {
-                    Text("Cancel")
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    searchViewModel.addTag(newTag)
-                    isAddingTag = false
-                }) {
-                    Text("Confirm")
-                }
-            }
-        )
-    }
+    TagAdder(
+        isVisible = isAddingTag,
+        autoCompleteTagResults = state.autoCompleteTagResults,
+        onAddTag = {
+            searchViewModel.addTag(it)
+            searchViewModel.updateAutoCompleteResults(emptyList())
+            isAddingTag = false
+        },
+        onClose = {
+            isAddingTag = false
+            searchViewModel.clearSelectedResults()
+            searchViewModel.updateAutoCompleteResults(emptyList())
+        },
+        onCheckAutoCompletion = searchViewModel::handleAutoCompletionCheck
+    )
 
     BackHandler(enabled = isSelecting) {
         isSelecting = false
@@ -295,10 +279,11 @@ fun SearchScreen(
                     )
                 }
                 AutoCompleter(
+                    isVisible = state.autoCompleteTagResults.isNotEmpty() && !isAddingTag,
                     autoCompleteResults = state.autoCompleteTagResults,
                     query = searchViewModel.searchFieldState.text.toString(),
                     onSelect = searchViewModel::onSelectAutoCompleteResult,
-                    label = "Matching tags",
+                    label = "Tags",
                 )
             }
 

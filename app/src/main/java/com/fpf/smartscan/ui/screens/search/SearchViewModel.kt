@@ -405,38 +405,40 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
         }
     }
 
+    fun updateAutoCompleteResults(results: List<String>){
+        _state.update{currentState -> currentState.copy(autoCompleteTagResults = results)}
+    }
+
+    fun handleAutoCompletionCheck(query: CharSequence, substringEnd: Int, startWithHashtag: Boolean =  true){
+        val text = query.toString()
+        val prefix = text.substring(0, substringEnd)
+
+        // Regex: find #tag at the end of prefix
+        var pattern =  """^#([a-zA-Z0-9_]*)$"""
+        pattern = if(!startWithHashtag )  pattern.replace("#", "") else pattern
+        val match = Regex(pattern).find(prefix)
+
+        if (match != null) {
+            val partialTag = match.groupValues[1]
+            // Track autocomplete only while typing the tag
+            if (_state.value.mediaType != MediaType.IMAGE) return
+            updateAutoCompleteResults(allImageTags.value
+                .filter { it.name.startsWith(partialTag, ignoreCase = true) }
+                .map { it.name }
+            )
+        }
+        else {
+            updateAutoCompleteResults(emptyList())
+        }
+    }
+
     @OptIn(FlowPreview::class)
     suspend fun processQuery() {
         snapshotFlow { searchFieldState.text }
             .debounce(50)
             .collectLatest { query: CharSequence ->
-                val text = query.toString()
-                val cursor = searchFieldState.selection.end
-                val prefix = text.substring(0, cursor)
-
-                // Regex: find #tag at the end of prefix
-                val match = Regex("""^#([a-zA-Z0-9_]*)$""").find(prefix)
-
-                if (match != null) {
-                    val partialTag = match.groupValues[1]
-                    // Track autocomplete only while typing the tag
-                        when (_state.value.mediaType) {
-                            MediaType.IMAGE -> {
-                                _state.emit(_state.value.copy(autoCompleteTagResults = allImageTags.value
-                                    .filter { it.name.startsWith(partialTag, ignoreCase = true) }
-                                    .map{it.name}))
-                            }
-
-                            MediaType.VIDEO -> {
-                                _state.emit(_state.value.copy(autoCompleteTagResults = allVideoTags.value
-                                    .filter { it.name.startsWith(partialTag, ignoreCase = true) }
-                                    .map { it.name }))
-                            }
-                        }
-                    }
-                else {
-                    _state.emit(_state.value.copy(autoCompleteTagResults = emptyList()))
-                }
+                val subStringEnd = searchFieldState.selection.end
+                handleAutoCompletionCheck(query, subStringEnd)
             }
     }
 
