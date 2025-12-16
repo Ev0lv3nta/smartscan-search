@@ -11,7 +11,10 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface VideoTagDao {
     @Query("SELECT * FROM video_tag ORDER BY createdAt")
-    fun getAll(): Flow<List<VideoTag>>
+    fun getAllFlow(): Flow<List<VideoTag>>
+
+    @Query("SELECT * FROM video_tag ORDER BY createdAt")
+    fun getAll(): List<VideoTag>
 
     @Query("SELECT * FROM video_tag WHERE name = :name")
     suspend fun get(name: String): VideoTag?

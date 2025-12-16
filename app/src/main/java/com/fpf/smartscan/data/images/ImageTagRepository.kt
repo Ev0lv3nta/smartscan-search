@@ -1,9 +1,8 @@
 package com.fpf.smartscan.data.images
 
-import kotlinx.coroutines.flow.Flow
-
 class ImageTagRepository(private val dao: ImageTagDao) {
-    fun getAll(): Flow<List<ImageTag>> {
+    val allTags = dao.getAllFlow()
+    fun getAll(): List<ImageTag>{
         return dao.getAll()
     }
 

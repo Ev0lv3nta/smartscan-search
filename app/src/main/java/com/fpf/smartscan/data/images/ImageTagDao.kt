@@ -11,7 +11,10 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ImageTagDao {
     @Query("SELECT * FROM image_tag ORDER BY createdAt")
-    fun getAll(): Flow<List<ImageTag>>
+    fun getAllFlow(): Flow<List<ImageTag>>
+
+    @Query("SELECT * FROM image_tag ORDER BY createdAt")
+    fun getAll(): List<ImageTag>
 
     @Query("SELECT * FROM image_tag WHERE name = :name")
     suspend fun get(name: String): ImageTag?

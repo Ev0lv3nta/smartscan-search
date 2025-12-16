@@ -1,10 +1,8 @@
 package com.fpf.smartscan.data.videos
 
-import kotlinx.coroutines.flow.Flow
-
 class VideoTagRepository(private val dao: VideoTagDao) {
-
-    fun getAll(): Flow<List<VideoTag>> {
+    val allTags = dao.getAllFlow()
+    fun getAll(): List<VideoTag> {
         return dao.getAll()
     }
 
