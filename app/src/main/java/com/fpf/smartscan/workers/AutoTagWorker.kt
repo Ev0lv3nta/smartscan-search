@@ -106,7 +106,7 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
         if(storedImageEmbeddings.isEmpty()) return
 
         val nPrototypeNew = autoTagger.updateTagPrototype(tag, storedImageEmbeddings)
-        val cohesionScore = autoTagger.calculateCohesionScore(tag.name, storedImageEmbeddings)
+        val cohesionScore = autoTagger.calculateCohesionScore(tag, storedImageEmbeddings)
         imageTagsRepository.upsert(tag.copy(nPrototype = nPrototypeNew, cohesionScore = cohesionScore))
         Log.d(TAG, "Tag: $tag.name | Cohesion Score: $cohesionScore | nP: $nPrototypeNew")
     }
@@ -120,7 +120,7 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
         if(storedVideosEmbeddings.isEmpty()) return
 
         val nPrototypeNew = autoTagger.updateTagPrototype(tag, storedVideosEmbeddings)
-        val cohesionScore = autoTagger.calculateCohesionScore(tag.name, storedVideosEmbeddings)
+        val cohesionScore = autoTagger.calculateCohesionScore(tag, storedVideosEmbeddings)
         videoTagsRepository.upsert(tag.copy(nPrototype = nPrototypeNew, cohesionScore=cohesionScore))
     }
 
