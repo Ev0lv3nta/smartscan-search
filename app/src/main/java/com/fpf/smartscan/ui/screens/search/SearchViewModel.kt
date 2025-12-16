@@ -31,6 +31,8 @@ import com.fpf.smartscan.search.AutoTagger
 import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.services.MediaIndexForegroundService
 import com.fpf.smartscan.services.startIndexing
+import com.fpf.smartscan.utils.isWorkScheduled
+import com.fpf.smartscan.workers.AutoTagWorker
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer
@@ -48,6 +50,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import java.io.File
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 data class SearchState(
@@ -112,8 +115,11 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
 
     init {
         loadImageIndex()
-        viewModelScope.launch(){
+        viewModelScope.launch{
             processQuery()
+        }
+        viewModelScope.launch(Dispatchers.IO){
+            if(!isWorkScheduled(context = application, workName = AutoTagWorker.TAG)) scheduleAutoTagging()
         }
     }
 
@@ -449,6 +455,11 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
 
     fun onSelectAutoCompleteResult(tag: String){
         searchFieldState.edit { replace(0, searchFieldState.text.length, "#$tag ") }
+    }
+
+    fun scheduleAutoTagging(){
+        if (!imageStore.exists && !videoStore.exists) return
+        AutoTagWorker.scheduleWorker(application, Pair(1L, TimeUnit.DAYS))
     }
 
     override fun onCleared() {
