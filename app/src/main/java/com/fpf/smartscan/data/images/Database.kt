@@ -6,19 +6,19 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(entities = [ImageTag::class, ImageTagCrossRef::class], version = 1, exportSchema = false)
-abstract class TagDatabase : RoomDatabase() {
+abstract class ImageTagDatabase : RoomDatabase() {
     abstract fun imageTagCrossRefDao(): ImageTagCrossRefDao
     abstract fun tagDao(): ImageTagDao
 
     companion object {
         @Volatile
-        private var INSTANCE: TagDatabase? = null
+        private var INSTANCE: ImageTagDatabase? = null
 
-        fun getDatabase(application: Application): TagDatabase {
+        fun getDatabase(application: Application): ImageTagDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     application,
-                    TagDatabase::class.java,
+                    ImageTagDatabase::class.java,
                     "image_tag_database"
                 ).build()
                 INSTANCE = instance
