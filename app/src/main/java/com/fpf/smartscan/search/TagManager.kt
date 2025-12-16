@@ -77,9 +77,9 @@ class TagManager(
         }?: error("nPrototype unknown")
 
         // newPrototype = ((N * currentPrototype) + sum(newEmbedding)) / N + newN
-        multiplyEmbedding(prototype, nPrototype.toFloat())
+        scaleEmbedding(prototype, nPrototype.toFloat())
         prototype =  sumEmbeddings(newItemEmbeddings.map { it.embeddings } + prototype)
-        multiplyEmbedding(prototype, 1f/(nPrototype + newItemEmbeddings.size))
+        scaleEmbedding(prototype, 1f/(nPrototype + newItemEmbeddings.size))
 
         store.add(listOf(Embedding(id = id, date = System.currentTimeMillis(), embeddings = prototype)))
     }
@@ -139,7 +139,7 @@ class TagManager(
         return sum
     }
 
-    private fun multiplyEmbedding(rawEmbedding: FloatArray, x: Float) {
+    private fun scaleEmbedding(rawEmbedding: FloatArray, x: Float) {
         for (i in rawEmbedding.indices) {
             rawEmbedding[i] *= x
         }
