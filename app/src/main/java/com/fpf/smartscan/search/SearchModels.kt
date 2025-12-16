@@ -20,6 +20,7 @@ sealed interface SearchQuery{
 }
 
 interface MediaTag{
+    val prototypeId: Long
     val name: String
     val createdAt: Long?
     val lastUsedAt: Long?

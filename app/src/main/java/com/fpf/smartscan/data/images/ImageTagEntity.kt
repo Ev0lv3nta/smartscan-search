@@ -8,6 +8,7 @@ import com.fpf.smartscan.search.MediaTag
 data class ImageTag(
     @PrimaryKey
     override val name: String,
+    override val prototypeId: Long,
     override val createdAt: Long = System.currentTimeMillis(),
     override val lastUsedAt: Long? = null,
     override val cohesionScore: Float? = null,
