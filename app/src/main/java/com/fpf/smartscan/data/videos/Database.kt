@@ -1,12 +1,15 @@
 package com.fpf.smartscan.data.videos
 
 import android.app.Application
-import androidx.room.*
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
 
-@Database(entities = [VideoTag::class], version = 1, exportSchema = false)
+
+@Database(entities = [VideoTag::class, VideoTagCrossRef::class], version = 1, exportSchema = false)
 abstract class VideoTagsDatabase : RoomDatabase() {
-    abstract fun videoTagDao(): VideoTagDao
-
+    abstract fun videoTagDao(): VideoTagCrossRefDao
+    abstract fun tagDao(): VideoTagDao
     companion object {
         @Volatile
         private var INSTANCE: VideoTagsDatabase? = null
@@ -16,7 +19,7 @@ abstract class VideoTagsDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     application,
                     VideoTagsDatabase::class.java,
-                    "video_tags_database"
+                    "video_tag_database"
                 ).build()
                 INSTANCE = instance
                 instance
