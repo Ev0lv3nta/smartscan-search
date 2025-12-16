@@ -1,7 +1,5 @@
 package com.fpf.smartscan.search
 
-import com.fpf.smartscan.data.images.ImageTag
-import com.fpf.smartscan.data.videos.VideoTag
 import com.fpf.smartscansdk.core.embeddings.Embedding
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.dot
@@ -21,27 +19,7 @@ class AutoTagger(
         val prototype = generatePrototypeEmbedding(sampleImageEmbeddings.map{it.embeddings})
         store.add(listOf(Embedding(id = id, embeddings = prototype, date = System.currentTimeMillis())))
     }
-
-    suspend fun updateImageTagPrototype(tag: ImageTag, newItemEmbeddings: List<Embedding>): Int{
-        val id = stringToLong(tag.name)
-        val result = store.get(listOf(id))
-        if(result.isEmpty()){
-            generateTagPrototype(id, newItemEmbeddings )
-            return newItemEmbeddings.size
-        }
-        var prototype = result[0].embeddings
-
-        // newPrototype = ((N * currentPrototype) + sum(newEmbedding)) / N + newN
-        if(tag.nPrototype > 0) scaleEmbedding(prototype, tag.nPrototype.toFloat())
-        prototype =  sumEmbeddings(newItemEmbeddings.map { it.embeddings } + prototype)
-        val nPrototypeNew = tag.nPrototype + newItemEmbeddings.size
-        scaleEmbedding(prototype, 1f/nPrototypeNew)
-
-        store.add(listOf(Embedding(id = id, date = System.currentTimeMillis(), embeddings = prototype)))
-        return nPrototypeNew
-    }
-
-    suspend fun updateVideoTagPrototype(tag: VideoTag, newItemEmbeddings: List<Embedding>): Int{
+    suspend fun updateTagPrototype(tag: MediaTag, newItemEmbeddings: List<Embedding>): Int{
         val id = stringToLong(tag.name)
         val result = store.get(listOf(id))
         if(result.isEmpty()){
@@ -69,23 +47,26 @@ class AutoTagger(
         return sims.sum() /sims.size
     }
 
-    suspend fun getSuggestedTag(tagsCohesionMap: Map<String, Float>, rawEmbedding: FloatArray): String?{
-        var suggestedTag: String? = null
+    suspend fun getSuggestedTag(tags: List<MediaTag>, rawEmbedding: FloatArray): MediaTag?{
+        var suggestedTag: MediaTag? = null
         var bestSim = 0f
 
-        for((tag, avgSim) in tagsCohesionMap.entries) {
-            val results = store.get(listOf(stringToLong((tag))))
+        for(tag in tags) {
+            if(tag.cohesionScore == null) continue
+            val results = store.get(listOf(stringToLong((tag.name))))
             if(results.isEmpty()) continue
 
             val tagPrototype = results[0]
             val sim = tagPrototype.embeddings dot rawEmbedding
-            if(sim >= avgSim && sim > bestSim){
+            if(sim >= tag.cohesionScore!! && sim > bestSim){
                 suggestedTag = tag
                 bestSim = sim
             }
         }
+
         return suggestedTag
     }
+
 
     suspend fun orderBySimilarity(tags: List<String>, rawEmbedding: FloatArray): List<String>{
         val tagIds = tags.map{stringToLong(it)}
