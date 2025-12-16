@@ -17,48 +17,47 @@ class AutoTagger(
     private val textEmbedder: ClipTextEmbedder,
     ) {
 
-    private suspend fun generateTagPrototype(id: Long, sampleImageEmbeddings: List<Embedding>): FloatArray{
+    private suspend fun generateTagPrototype(id: Long, sampleImageEmbeddings: List<Embedding>){
         val prototype = generatePrototypeEmbedding(sampleImageEmbeddings.map{it.embeddings})
         store.add(listOf(Embedding(id = id, embeddings = prototype, date = System.currentTimeMillis())))
-        return prototype
     }
 
-    suspend fun updateImageTagPrototype(tag: ImageTag, newItemEmbeddings: List<Embedding>): FloatArray{
+    suspend fun updateImageTagPrototype(tag: ImageTag, newItemEmbeddings: List<Embedding>): Int{
         val id = stringToLong(tag.name)
         val result = store.get(listOf(id))
         if(result.isEmpty()){
-            return generateTagPrototype(id, newItemEmbeddings )
+            generateTagPrototype(id, newItemEmbeddings )
+            return newItemEmbeddings.size
         }
-
         var prototype = result[0].embeddings
-        val nPrototype: Int = tag.nPrototype
 
         // newPrototype = ((N * currentPrototype) + sum(newEmbedding)) / N + newN
-        if(nPrototype > 0) scaleEmbedding(prototype, nPrototype.toFloat())
+        if(tag.nPrototype > 0) scaleEmbedding(prototype, tag.nPrototype.toFloat())
         prototype =  sumEmbeddings(newItemEmbeddings.map { it.embeddings } + prototype)
-        scaleEmbedding(prototype, 1f/(nPrototype + newItemEmbeddings.size))
+        val nPrototypeNew = tag.nPrototype + newItemEmbeddings.size
+        scaleEmbedding(prototype, 1f/nPrototypeNew)
 
         store.add(listOf(Embedding(id = id, date = System.currentTimeMillis(), embeddings = prototype)))
-        return prototype
+        return nPrototypeNew
     }
 
-    suspend fun updateVideoTagPrototype(tag: VideoTag, newItemEmbeddings: List<Embedding>): FloatArray{
+    suspend fun updateVideoTagPrototype(tag: VideoTag, newItemEmbeddings: List<Embedding>): Int{
         val id = stringToLong(tag.name)
         val result = store.get(listOf(id))
         if(result.isEmpty()){
-            return generateTagPrototype(id, newItemEmbeddings )
+            generateTagPrototype(id, newItemEmbeddings )
+            return newItemEmbeddings.size
         }
-
         var prototype = result[0].embeddings
-        val nPrototype: Int = tag.nPrototype
 
         // newPrototype = ((N * currentPrototype) + sum(newEmbedding)) / N + newN
-        if(nPrototype > 0) scaleEmbedding(prototype, nPrototype.toFloat())
+        if(tag.nPrototype > 0) scaleEmbedding(prototype, tag.nPrototype.toFloat())
+        val nPrototypeNew = tag.nPrototype + newItemEmbeddings.size
         prototype =  sumEmbeddings(newItemEmbeddings.map { it.embeddings } + prototype)
-        scaleEmbedding(prototype, 1f/(nPrototype + newItemEmbeddings.size))
+        scaleEmbedding(prototype, 1f/nPrototypeNew)
 
         store.add(listOf(Embedding(id = id, date = System.currentTimeMillis(), embeddings = prototype)))
-        return prototype
+        return nPrototypeNew
     }
 
     suspend fun calculateClassCohesion(tag: String, sampleBatchEmbeddings: List<Embedding>): Float{
