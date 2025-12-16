@@ -406,11 +406,11 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
 
                 when (_state.value.mediaType) {
                     MediaType.IMAGE -> {
-                        val tagEntries = ids.map { ImageTagCrossRef(imageId = it, tag = tag) }
+                        val tagEntries = ids.map { ImageTagCrossRef(imageId = it, tag = tag.trim()) }
                         imageTagsCrossRefRepository.addTags(tagEntries)
                     }
                     MediaType.VIDEO -> {
-                        val tagEntries = ids.map { VideoTagCrossRef(videoId = it, tag = tag) }
+                        val tagEntries = ids.map { VideoTagCrossRef(videoId = it, tag = tag.trim()) }
                         videoTagsCrossRefRepository.addTags(tagEntries)
                     }
                 }
