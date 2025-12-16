@@ -11,5 +11,5 @@ data class VideoTag(
     val createdAt: Long = System.currentTimeMillis(),
     val lastUsedAt: Long? = null,
     val cohesionScore: Float? = null,
-    val nPrototype: Int = 1
+    val nPrototype: Int = 0
 )
