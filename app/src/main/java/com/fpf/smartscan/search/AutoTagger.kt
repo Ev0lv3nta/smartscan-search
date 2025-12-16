@@ -19,10 +19,15 @@ class AutoTagger(
         store.add(listOf(Embedding(id = id, embeddings = prototype, date = System.currentTimeMillis())))
     }
     suspend fun updateTagPrototype(tag: MediaTag, newItemEmbeddings: List<Embedding>): Int{
-        val id = stringToLong(tag.name)
-        val result = store.get(listOf(id))
+        if(!store.exists){
+            generateTagPrototype(tag.prototypeId, newItemEmbeddings )
+            return newItemEmbeddings.size
+        }
+
+        val result = store.get(listOf(tag.prototypeId))
+
         if(result.isEmpty()){
-            generateTagPrototype(id, newItemEmbeddings )
+            generateTagPrototype(tag.prototypeId, newItemEmbeddings )
             return newItemEmbeddings.size
         }
         var prototype = result[0].embeddings
@@ -33,7 +38,7 @@ class AutoTagger(
         prototype =  sumEmbeddings(newItemEmbeddings.map { it.embeddings } + prototype)
         scaleEmbedding(prototype, 1f/nPrototypeNew)
 
-        store.add(listOf(Embedding(id = id, date = System.currentTimeMillis(), embeddings = prototype)))
+        store.add(listOf(Embedding(id = tag.prototypeId, date = System.currentTimeMillis(), embeddings = prototype)))
         return nPrototypeNew
     }
 
@@ -52,7 +57,7 @@ class AutoTagger(
 
         for(tag in tags) {
             if(tag.cohesionScore == null) continue
-            val results = store.get(listOf(stringToLong((tag.name))))
+            val results = store.get(listOf(tag.prototypeId))
             if(results.isEmpty()) continue
 
             val tagPrototype = results[0]
@@ -67,13 +72,12 @@ class AutoTagger(
     }
 
 
-    suspend fun orderBySimilarity(tags: List<String>, rawEmbedding: FloatArray): List<String>{
-        val tagIds = tags.map{ stringToLong(it) }
-        val results = store.get(tagIds)
+    suspend fun orderBySimilarity(tags: List<MediaTag>, rawEmbedding: FloatArray): List<MediaTag>{
+        val results = store.get(tags.map{ it.prototypeId})
         if(results.isEmpty() || results.size != tags.size) return tags
 
         if(!textEmbedder.isInitialized()) textEmbedder.initialize()
-        val rawEmbeds = textEmbedder.embedBatch(tags)
+        val rawEmbeds = textEmbedder.embedBatch(tags.map { it.name })
         val sims = getSimilarities(rawEmbedding, rawEmbeds)
         val orderedTagEmbedsIndices = getTopN(sims, sims.size)
         return orderedTagEmbedsIndices.map{ tags[it] }
