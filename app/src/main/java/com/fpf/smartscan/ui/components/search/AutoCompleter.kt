@@ -24,12 +24,13 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun AutoCompleter(
+    isVisible: Boolean,
     autoCompleteResults: List<String>,
     query: String,
     onSelect:(String) -> Unit,
     label: String? = null
 ){
-    if (autoCompleteResults.isEmpty()) return
+    if (!isVisible) return
 
     val cleanedQuery = if (query.startsWith("#") && query.length > 1) query.substring(1) else query
 

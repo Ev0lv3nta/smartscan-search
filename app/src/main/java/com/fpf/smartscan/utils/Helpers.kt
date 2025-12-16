@@ -14,6 +14,8 @@ import androidx.work.WorkManager
 import com.fpf.smartscan.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.nio.ByteBuffer
+import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -74,4 +76,10 @@ fun cancelWorker(context: Context, uniqueWorkName: String?, tag: String?){
     val workManager = WorkManager.getInstance(context.applicationContext)
     uniqueWorkName?.let{workManager.cancelUniqueWork(it)}
     tag?.let{workManager.cancelAllWorkByTag(it)}
+}
+
+fun stringToLong(str: String): Long{
+    val bytes = str.toByteArray()
+    val hash =  MessageDigest.getInstance("SHA-256").digest(bytes)
+    return ByteBuffer.wrap(hash.sliceArray(0..7)).long
 }

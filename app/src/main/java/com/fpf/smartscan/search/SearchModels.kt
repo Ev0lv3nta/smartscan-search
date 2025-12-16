@@ -18,3 +18,13 @@ sealed interface SearchQuery{
     data class ImageQuery(val uri: Uri, val mediaType: MediaType): SearchQuery
     data class TextQuery(val text: String, val mediaType: MediaType): SearchQuery
 }
+
+interface MediaTag{
+    val prototypeId: Long
+    val name: String
+    val createdAt: Long?
+    val lastUsedAt: Long?
+    val cohesionScore: Float?
+    val nPrototype: Int
+}
+
