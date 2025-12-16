@@ -13,7 +13,18 @@ class VideoTagRepository(private val dao: VideoTagDao) {
     }
 
     suspend fun upsert(videoTag: VideoTag) {
-        dao.upsert(videoTag)
+        val existing = dao.get(videoTag.name)
+        if (existing == null) {
+            dao.insert(videoTag)
+        }
+        else {
+            val updated = existing.copy(
+                lastUsedAt = videoTag.lastUsedAt ?: existing.lastUsedAt,
+                cohesionScore = videoTag.cohesionScore ?: existing.cohesionScore,
+                nPrototype = if (videoTag.nPrototype != 1) videoTag.nPrototype else existing.nPrototype
+            )
+            dao.update(updated)
+        }
     }
 
     suspend fun delete(videoTag: VideoTag) {

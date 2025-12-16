@@ -10,4 +10,5 @@ data class ImageTag(
     val createdAt: Long = System.currentTimeMillis(),
     val lastUsedAt: Long? = null,
     val cohesionScore: Float? = null,
+    val nPrototype: Int = 1
     )

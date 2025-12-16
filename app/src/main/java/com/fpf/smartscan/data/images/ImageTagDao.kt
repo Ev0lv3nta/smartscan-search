@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -15,8 +16,11 @@ interface ImageTagDao {
     @Query("SELECT * FROM image_tag WHERE name = :name")
     suspend fun get(name: String): ImageTag?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(imageTag: ImageTag)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(imageTag: ImageTag)
+
+    @Update
+    suspend fun update(imageTag: ImageTag)
 
     @Delete
     suspend fun delete(imageTag: ImageTag)
