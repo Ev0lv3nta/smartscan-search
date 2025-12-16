@@ -8,7 +8,7 @@ import androidx.room.RoomDatabase
 
 @Database(entities = [VideoTag::class, VideoTagCrossRef::class], version = 1, exportSchema = false)
 abstract class VideoTagDatabase : RoomDatabase() {
-    abstract fun videoTagDao(): VideoTagCrossRefDao
+    abstract fun videoTagCrossRefDao(): VideoTagCrossRefDao
     abstract fun tagDao(): VideoTagDao
     companion object {
         @Volatile
