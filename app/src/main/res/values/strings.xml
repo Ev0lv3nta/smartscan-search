@@ -106,11 +106,10 @@
     <string name="help_reverse_image_search">Reverse image search is generally more accurate than text queries, especially when searching videos.</string>
 
     <!--Updates-->
-    <string name="update_reverse_image_search_upload">Reverse image search by uploading images directly from the search bar</string>
-    <string name="update_paste_image_search">Reverse image search by pasting images into the search bar</string>
-    <string name="update_reverse_search_from_results">Reverse image search by long-pressing a result or using the Media Viewer</string>
-    <string name="update_menu_refresh_index">Added new menu with “Refresh index” options for images and videos</string>
-    <string name="update_backup_restore_settings">Added backup and restore settings</string>
-    <string name="update_remove_auto_organisation">Removed auto-organisation feature</string>
+    <string name="update_multi_select_actions">Multi-select actions added</string>
+    <string name="update_tagging_support">Tagging support added with auto-suggestions and auto-complete</string>
+    <string name="update_auto_open_results">Added setting to auto-open results in gallery</string>
+    <string name="update_search_from_other_apps">Search from other apps via Share/intents</string>
+    <string name="update_auto_search_upload">Auto-search when image is uploaded or selected</string>
 
 </resources>
