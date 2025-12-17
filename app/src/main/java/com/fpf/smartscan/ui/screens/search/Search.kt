@@ -318,7 +318,7 @@ fun SearchScreen(
                 isSelecting = isSelecting,
                 selectedResults = state.selectedResults,
                 loadMoreBuffer = (RESULTS_BATCH_SIZE * 0.4).toInt(),
-                onViewResult = searchViewModel::toggleViewResult,
+                onViewResult = { uri -> searchViewModel.toggleViewResult(context, uri, appSettings.enableDirectGalleryOpen) },
                 onLoadMore = searchViewModel::onLoadMore,
                 onToggleSelected = searchViewModel::toggleSelectedResult,
                 onToggleSelectionMode = { isSelecting = !isSelecting },
@@ -380,12 +380,12 @@ fun SearchScreen(
                 MediaViewer(
                     uri = uri,
                     type = state.mediaType,
-                    onClose = { searchViewModel.toggleViewResult(null) },
+                    onClose = { searchViewModel.toggleViewResult(context, null)},
                     onUpdateSearchImage = {
                         searchViewModel.updateSearchImageUri(uri)
                         searchViewModel.updateQueryType(QueryType.IMAGE)
                         searchViewModel.search(appSettings.similarityThreshold)
-                        searchViewModel.toggleViewResult(null)
+                        searchViewModel.toggleViewResult(context, null)
                     }
                 )
             }
