@@ -86,7 +86,7 @@ fun SearchScreen(
     var isAddingTag by remember { mutableStateOf(false) }
     var isSelecting by remember { mutableStateOf(false) }
     val searchBarPadding = if(searchBarVisibilityPercent > 0 ) 16 else 0
-
+    val searchHeight = if(state.queryImage != null) 160 else 56
 
     RequestPermissions { _, storageGranted ->
         hasStoragePermission = storageGranted
@@ -214,7 +214,7 @@ fun SearchScreen(
                         ImageSearcher(
                             uri = state.queryImage,
                             mediaType = state.mediaType,
-                            imageSize = 140.dp,
+                            imageSize = 160.dp,
                             mediaTypeSelectorEnabled = (videoIndexStatus != ProcessorStatus.ACTIVE && imageIndexStatus != ProcessorStatus.ACTIVE), // prevent switching modes when indexing in progress
                             onSearch = {
                                 searchViewModel.search(appSettings.similarityThreshold)
@@ -311,7 +311,8 @@ fun SearchScreen(
 
             SearchResults(
                 isVisible = !state.loading && state.searchResults.isNotEmpty(),
-                type = state.mediaType,
+                mediaType = state.mediaType,
+                queryType = state.queryType,
                 searchResults = state.searchResults,
                 totalResults=state.totalResults,
                 isSelecting = isSelecting,

@@ -39,6 +39,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalDensity
+import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.ui.components.CircularCheckbox
 import kotlinx.coroutines.flow.drop
 import kotlin.math.abs
@@ -50,7 +51,8 @@ fun SearchResults(
     searchResults: List<Uri>,
     selectedResults: List<Uri>,
     onViewResult: (uri: Uri?) -> Unit,
-    type: MediaType,
+    mediaType: MediaType,
+    queryType: QueryType,
     onLoadMore: () -> Unit,
     totalResults: Int,
     onToggleSelected: (Uri) -> Unit,
@@ -69,13 +71,30 @@ fun SearchResults(
     val density = LocalDensity.current
 
     val actionBarHeight = with(density) { 70.dp.toPx() }
-    val searchBarHeight = with(density) { 56.dp.toPx() }
+    val searchBarHeight = with(density) { (if(queryType == QueryType.IMAGE) 160 else 56).dp.toPx() }
     val maxCollapsePx = max(actionBarHeight, searchBarHeight).toInt()
 
     var showScrollToTop by remember { mutableStateOf(false) }
     var lastIndex by remember { mutableIntStateOf(0) }
     var lastOffset by remember { mutableIntStateOf(0) }
     var totalScrollPx by remember { mutableIntStateOf(0) }
+
+    var lastSize by remember { mutableIntStateOf(0) }
+    var lastTotalResults by remember { mutableIntStateOf(0) }
+
+    // Ensure always visible on first selection or new search
+    LaunchedEffect(selectedResults, isSelecting, totalResults) {
+        val isNewSearch = lastTotalResults != totalResults
+        val isFirstSelection = isSelecting && lastSize == 0 && selectedResults.isNotEmpty()
+        if (isFirstSelection || isNewSearch) {
+            totalScrollPx = maxCollapsePx
+            onSearchBarVisibilityPctChange(1f)
+            onSearchActionBarVisibilityPctChange(1f)
+            lastSize = selectedResults.size
+            lastTotalResults = totalResults
+        }
+        if (!isSelecting) lastSize = 0
+    }
 
     // Scroll tracking
     LaunchedEffect(gridState) {
@@ -177,7 +196,7 @@ fun SearchResults(
                         uri = uri,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
-                        type = type
+                        type = mediaType
                     )
                     if(isSelecting) {
                         CircularCheckbox(
