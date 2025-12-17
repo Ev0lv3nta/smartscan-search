@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -17,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ImageSearch
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
@@ -54,15 +57,18 @@ fun ImageSearcher(
     }
 
     Row (
-        modifier = Modifier.fillMaxWidth().padding(4.dp),
+        modifier = Modifier.fillMaxWidth().background(
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            shape = MaterialTheme.shapes.medium
+        ).padding(12.dp),
         verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Box(
             modifier = Modifier
-                .heightIn(max=160.dp)
+                .heightIn(max = 160.dp)
                 .size(imageSize)
-                .border(0.5.dp, MaterialTheme.colorScheme.outline)
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f))
                 .dropShadow(
                     shape = RoundedCornerShape(4.dp),
                     shadow = Shadow(
@@ -96,18 +102,30 @@ fun ImageSearcher(
                 )
             }
         }
-        SelectorItem(
-            enabled = mediaTypeSelectorEnabled, // prevent switching modes when indexing in progress
-            label = "Media type",
-            showLabel = false,
-            options = mediaTypeOptions.values.toList(),
-            selectedOption = mediaTypeOptions[mediaType]!!,
-            onOptionSelected = { selected ->
-                val newMode = mediaTypeOptions.entries
-                    .find { it.value == selected }
-                    ?.key ?: MediaType.IMAGE
-                onMediaTypeChange(newMode)
-            }
-        )
+        Column(
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.End,
+            modifier = Modifier.padding(horizontal = 4.dp)
+        ) {
+            SelectorItem(
+                enabled = mediaTypeSelectorEnabled, // prevent switching modes when indexing in progress
+                label = "Media type",
+                showLabel = false,
+                options = mediaTypeOptions.values.toList(),
+                selectedOption = mediaTypeOptions[mediaType]!!,
+                onOptionSelected = { selected ->
+                    val newMode = mediaTypeOptions.entries
+                        .find { it.value == selected }
+                        ?.key ?: MediaType.IMAGE
+                    onMediaTypeChange(newMode)
+                }
+            )
+            Icon(
+                imageVector = Icons.Filled.ImageSearch,
+                modifier = Modifier.fillMaxSize(),
+                contentDescription = "ImageSearch",
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha= 0.1f)
+            )
+        }
     }
 }
