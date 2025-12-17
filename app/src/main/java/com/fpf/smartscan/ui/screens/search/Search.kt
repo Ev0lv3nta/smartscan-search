@@ -86,7 +86,6 @@ fun SearchScreen(
     var isAddingTag by remember { mutableStateOf(false) }
     var isSelecting by remember { mutableStateOf(false) }
     val searchBarPadding = if(searchBarVisibilityPercent > 0 ) 16 else 0
-    val searchHeight = if(state.queryImage != null) 160 else 56
 
     RequestPermissions { _, storageGranted ->
         hasStoragePermission = storageGranted
@@ -156,6 +155,7 @@ fun SearchScreen(
 
     TagAdder(
         isVisible = isAddingTag,
+        suggestedTags = state.suggestedTags,
         autoCompleteTagResults = state.autoCompleteTagResults,
         onAddTag = {
             searchViewModel.addTag(it)
@@ -360,14 +360,14 @@ fun SearchScreen(
                     searchViewModel.clearSelectedResults()
                 },
                 onAddTag = {
-                    searchViewModel.orderTagsBySimilarity()
+                    searchViewModel.updateSuggestedTags()
                     isAddingTag = true
                     isSelecting = false
-
                 },
                 onCopy = {
                     clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", state.selectedResults[0]))
                     isSelecting = false
+                    searchViewModel.clearSelectedResults()
                 },
             )
         }

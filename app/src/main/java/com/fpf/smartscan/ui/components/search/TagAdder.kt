@@ -3,10 +3,16 @@ package com.fpf.smartscan.ui.components.search
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Stars
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -20,6 +26,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
@@ -27,6 +34,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.fpf.smartscan.search.SuggestedTags
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -36,6 +45,7 @@ import kotlinx.coroutines.flow.filter
 @Composable
 fun TagAdder(
     isVisible: Boolean,
+    suggestedTags: SuggestedTags,
     autoCompleteTagResults: List<String>,
     onClose: () -> Unit,
     onAddTag: (String) -> Unit,
@@ -50,7 +60,7 @@ fun TagAdder(
     LaunchedEffect(Unit) {
         snapshotFlow { newTag.text }
             .debounce(50)
-            .filter { it.isNotBlank() }
+//            .filter { it.isNotBlank() }
             .collectLatest { value ->
                 onCheckAutoCompletion(value, value.length, false)
             }
@@ -61,6 +71,40 @@ fun TagAdder(
         title = { Text("Add tag") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ){
+                    if(suggestedTags.bestMatch != null) {
+                        Button(
+                            onClick = {
+                                newTag = TextFieldValue(text = suggestedTags.bestMatch.name, selection = TextRange(suggestedTags.bestMatch.name.length))
+                            }
+                        ) {
+                            Icon(
+                                Icons.Filled.Stars,
+                                contentDescription = "Best match icon",
+                                modifier = Modifier.padding(end = 4.dp).size(16.dp)
+                            )
+                            Text(text = suggestedTags.bestMatch.name, fontSize = 12.sp)
+                        }
+                    }
+
+                    if(suggestedTags.lastedUsed != null && suggestedTags.bestMatch != suggestedTags.lastedUsed) {
+                        Button(
+                            onClick = {
+                                newTag = TextFieldValue(text = suggestedTags.lastedUsed.name, selection = TextRange(suggestedTags.lastedUsed.name.length))
+                            }
+                        ) {
+                            Icon(
+                                Icons.Filled.History,
+                                contentDescription = "Last used icon",
+                                modifier = Modifier.padding(end = 4.dp).size(16.dp)
+                            )
+                            Text(text = suggestedTags.lastedUsed.name, fontSize = 12.sp)
+                        }
+                    }
+                }
                 TextField(
                     value = newTag,
                     onValueChange = {

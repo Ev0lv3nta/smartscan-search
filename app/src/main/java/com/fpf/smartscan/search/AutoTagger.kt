@@ -8,6 +8,7 @@ import com.fpf.smartscansdk.core.embeddings.getSimilarities
 import com.fpf.smartscansdk.core.embeddings.getTopN
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
 
+
 class AutoTagger(
     private val store: FileEmbeddingStore,
     private val textEmbedder: ClipTextEmbedder,
@@ -50,34 +51,40 @@ class AutoTagger(
         return sims.sum() /sims.size
     }
 
-    suspend fun getSuggestedTag(tags: List<MediaTag>, rawEmbedding: FloatArray): MediaTag?{
+    suspend fun getSuggestedTags(tags: List<MediaTag>, selectedMediaPrototype: FloatArray): SuggestedTags {
         var suggestedTag: MediaTag? = null
         var bestSim = 0f
 
+        var lastUsedTag: MediaTag? = null
+        var lastUsed = 0L
+
         for(tag in tags) {
-            if(tag.cohesionScore == null) continue
             val results = store.get(listOf(tag.prototypeId))
             if(results.isEmpty()) continue
 
             val tagPrototype = results[0]
-            val sim = tagPrototype.embeddings dot rawEmbedding
-            if(sim >= tag.cohesionScore!! && sim > bestSim){
+            val sim = tagPrototype.embeddings dot selectedMediaPrototype
+            if(tag.cohesionScore != null && sim >= tag.cohesionScore!! && sim > bestSim){
                 suggestedTag = tag
                 bestSim = sim
             }
+            if(tag.lastUsedAt != null && tag.lastUsedAt!! > lastUsed){
+                lastUsedTag = tag
+                lastUsed = tag.lastUsedAt!!
+            }
         }
 
-        return suggestedTag
+        return SuggestedTags(suggestedTag, lastUsedTag)
     }
 
 
-    suspend fun orderBySimilarity(tags: List<MediaTag>, rawEmbedding: FloatArray): List<MediaTag>{
+    suspend fun orderBySimilarity(tags: List<MediaTag>, selectedMediaPrototype: FloatArray): List<MediaTag>{
         val results = store.get(tags.map{ it.prototypeId})
         if(results.isEmpty() || results.size != tags.size) return tags
 
         if(!textEmbedder.isInitialized()) textEmbedder.initialize()
         val rawEmbeds = textEmbedder.embedBatch(tags.map { it.name })
-        val sims = getSimilarities(rawEmbedding, rawEmbeds)
+        val sims = getSimilarities(selectedMediaPrototype, rawEmbeds)
         val orderedTagEmbedsIndices = getTopN(sims, sims.size)
         return orderedTagEmbedsIndices.map{ tags[it] }
     }

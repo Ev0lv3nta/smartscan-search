@@ -28,6 +28,7 @@ import com.fpf.smartscan.utils.canOpenUri
 import com.fpf.smartscan.media.getVideoUriFromId
 import com.fpf.smartscan.search.ImageIndexListener
 import com.fpf.smartscan.search.AutoTagger
+import com.fpf.smartscan.search.SuggestedTags
 import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.services.MediaIndexForegroundService
 import com.fpf.smartscan.services.startIndexing
@@ -69,7 +70,8 @@ data class SearchState(
     val imageEmbedderLastUsage: Long? = null,
     val textEmbedderLastUsage: Long? = null,
     val autoCompleteTagResults: List<String> = emptyList(),
-    val tagFilter: String? = null
+    val tagFilter: String? = null,
+    val suggestedTags: SuggestedTags = SuggestedTags()
 )
 
 class SearchViewModel(private val application: Application) : AndroidViewModel(application) {
@@ -174,7 +176,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     }
 
     fun reset(){
-        _state.value = _state.value.copy(totalResults = 0, searchResults = emptyList(), selectedResults = emptyList(), autoCompleteTagResults = emptyList(), error = null, tagFilter = null)
+        _state.value = _state.value.copy(totalResults = 0, searchResults = emptyList(), selectedResults = emptyList(), autoCompleteTagResults = emptyList(), error = null, tagFilter = null, suggestedTags = SuggestedTags())
     }
 
     fun search(threshold: Float){
@@ -207,7 +209,19 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
                 val regex = Regex("""^#([a-zA-Z0-9_]+)""")
                 val match = regex.find(query)
                 val tag = match?.groupValues?.get(1)
-                tag.let{_state.update { currentState -> currentState.copy(tagFilter = tag) }}
+                tag.let{
+                    _state.update { currentState -> currentState.copy(tagFilter = tag) }
+                    when(_state.value.mediaType){
+                        MediaType.VIDEO -> {
+                            val videoTag = allVideoTags.value.find { it.name == tag }
+                            videoTag?.let{videoTagsRepository.upsert(it.copy(lastUsedAt = System.currentTimeMillis()))}
+                        }
+                        MediaType.IMAGE -> {
+                            val imageTag = allImageTags.value.find { it.name == tag }
+                            imageTag?.let{imageTagsRepository.upsert(it.copy(lastUsedAt = System.currentTimeMillis()))}
+                        }
+                    }
+                }
 
                 val actualQueryStart = if(!tag.isNullOrBlank()) tag.length + 1 else 0
                 val actualQuery = query.substring(actualQueryStart).trim()
@@ -369,7 +383,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     }
 
     fun clearSelectedResults(){
-        _state.update{currentState -> currentState.copy(selectedResults = emptyList())}
+        _state.update{currentState -> currentState.copy(selectedResults = emptyList(), suggestedTags = SuggestedTags())}
     }
 
     private suspend fun getMediaIds(tag: String?): List<Long>{
@@ -460,22 +474,24 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
         AutoTagWorker.scheduleWorker(application, Pair(1L, TimeUnit.DAYS))
     }
 
-    fun orderTagsBySimilarity(){
+    fun updateSuggestedTags(){
         viewModelScope.launch(Dispatchers.IO){
             val ids = _state.value.selectedResults.take(MAX_N_PROTOTYPE).map{ContentUris.parseId(it)}
+            _state.update{currentState -> currentState.copy(suggestedTags = SuggestedTags())} // reset
 
             when(_state.value.mediaType){
                 MediaType.IMAGE -> {
                     val imageEmbeddings = imageStore.get(ids)
                     val prototype = generatePrototypeEmbedding(imageEmbeddings.map{it.embeddings})
-                    val orderTags = autoTagger.orderBySimilarity(allImageTags.value, prototype)
-                    _state.update { currentState -> currentState.copy(autoCompleteTagResults = orderTags.map{it.name}) }
+                    val suggestedTags = autoTagger.getSuggestedTags(allImageTags.value, prototype)
+                    _state.update{currentState -> currentState.copy(suggestedTags = suggestedTags)}
+
                 }
                 MediaType.VIDEO -> {
                     val videoEmbeddings = videoStore.get(ids)
                     val prototype = generatePrototypeEmbedding(videoEmbeddings.map{it.embeddings})
-                    val orderTags = autoTagger.orderBySimilarity(allVideoTags.value, prototype)
-                    _state.update { currentState -> currentState.copy(autoCompleteTagResults = orderTags.map{it.name}) }
+                    val suggestedTags = autoTagger.getSuggestedTags(allVideoTags.value, prototype)
+                    _state.update{currentState -> currentState.copy(suggestedTags = suggestedTags)}
                 }
             }
         }
