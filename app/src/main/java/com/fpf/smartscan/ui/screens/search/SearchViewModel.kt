@@ -123,8 +123,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
             processQuery()
         }
         viewModelScope.launch(Dispatchers.IO){
-//            if(!isWorkScheduled(context = application, workName = AutoTagWorker.TAG))
-                scheduleAutoTagging()
+            if(!isWorkScheduled(context = application, workName = AutoTagWorker.TAG)) scheduleAutoTagging()
         }
     }
 
