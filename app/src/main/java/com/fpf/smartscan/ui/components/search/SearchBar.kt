@@ -3,6 +3,7 @@ package com.fpf.smartscan.ui.components.search
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -36,20 +37,23 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.OffsetMapping
-import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -60,10 +64,27 @@ fun SearchBar(
     onImageSelected: (Uri?) -> Unit,
     onImagePasted: (Uri?) -> Unit,
     onClearResults : () -> Unit,
-    label: String,
+    placeholders: List<String>,
     modifier: Modifier = Modifier,
+    placeholderChangeDuration: Long = 2000L,
     trailingIcon: @Composable (() -> Unit)? = null
 ) {
+    var currentPlaceHolder by remember { mutableStateOf(placeholders[0]) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(currentPlaceHolder) {
+        val job = scope.launch {
+            delay(placeholderChangeDuration)
+            val currentIdx = placeholders.indexOf(currentPlaceHolder)
+            val nextIdx = if(currentIdx < placeholders.size -1) currentIdx + 1 else 0
+            currentPlaceHolder = placeholders[nextIdx]
+        }
+        if(searchFieldState.text.isNotBlank()) {
+            currentPlaceHolder = placeholders[0]
+            job.cancel()
+        }
+    }
+
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri: Uri? ->
@@ -103,7 +124,7 @@ fun SearchBar(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
-            .border( width = 1.dp, color = outlineColor, shape = RoundedCornerShape(8.dp) )
+            .border(width = 1.dp, color = outlineColor, shape = RoundedCornerShape(8.dp))
             .clip(RoundedCornerShape(8.dp))
             .background(MaterialTheme.colorScheme.surfaceContainer)
             .contentReceiver(receiveContentListener)
@@ -124,17 +145,24 @@ fun SearchBar(
                 }
             },
             cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
-            modifier = Modifier.fillMaxWidth().contentReceiver(receiveContentListener),
+            modifier = Modifier
+                .fillMaxWidth()
+                .contentReceiver(receiveContentListener),
             decorator = { innerTextField ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp).heightIn(min = 56.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                        .heightIn(min = 56.dp)
                 ) {
                     IconButton(
                         onClick = { imagePickerLauncher.launch("image/*") },
                         enabled = enabled,
-                        modifier = Modifier.align(Alignment.Top).padding(top = 4.dp)
+                        modifier = Modifier
+                            .align(Alignment.Top)
+                            .padding(top = 4.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Filled.AddPhotoAlternate,
@@ -145,14 +173,20 @@ fun SearchBar(
 
                     Box(
                         contentAlignment = Alignment.CenterStart,
-                        modifier = Modifier.weight(1f).padding(vertical = 16.dp)
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(vertical = 16.dp)
                     ) {
                         innerTextField()
                         if (searchFieldState.text.isEmpty()) {
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)),
-                            )
+                            Crossfade(targetState = currentPlaceHolder) { text ->
+                                Text(
+                                    text = text,
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    ),
+                                )
+                            }
                         }
                     }
 
@@ -163,20 +197,27 @@ fun SearchBar(
                                 searchFieldState.clearText()
                                 onClearResults()
                                       },
-                            modifier = Modifier.align(Alignment.Top).padding(top = 4.dp)
+                            modifier = Modifier
+                                .align(Alignment.Top)
+                                .padding(top = 4.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Close,
                                 contentDescription = "Clear query",
                                 tint = MaterialTheme.colorScheme.surface,
                                 modifier = Modifier
-                                    .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f), shape = CircleShape)
+                                    .background(
+                                        MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                                        shape = CircleShape
+                                    )
                                     .size(16.dp)
                                     .padding(2.dp)
                             )
                         }
                     }
-                    Box(modifier = Modifier.align(Alignment.Top).padding(top = 4.dp)){
+                    Box(modifier = Modifier
+                        .align(Alignment.Top)
+                        .padding(top = 4.dp)){
                         trailingIcon?.invoke()
                     }
                 }
