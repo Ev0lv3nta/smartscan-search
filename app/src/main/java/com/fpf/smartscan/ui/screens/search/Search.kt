@@ -346,7 +346,7 @@ fun SearchScreen(
             ) {
             SearchActionBar(
                 modifier = Modifier.height(70.dp),
-                searchEnabled = state.selectedResults.size == 1,
+                searchEnabled = state.selectedResults.size == 1 && state.mediaType == MediaType.IMAGE,
                 onSearch = {
                     if (state.selectedResults.size == 1) {
                         searchViewModel.updateSearchImageUri(state.selectedResults[0])
