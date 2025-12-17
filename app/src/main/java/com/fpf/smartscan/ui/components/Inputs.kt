@@ -219,7 +219,7 @@ fun SelectorItem(
     var showDialog by remember { mutableStateOf(false) }
 
     Column(
-        modifier = Modifier.padding(vertical = 4.dp)
+        modifier = Modifier.padding(bottom = 4.dp)
     ) {
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
