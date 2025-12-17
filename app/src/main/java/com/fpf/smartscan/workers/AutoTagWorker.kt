@@ -24,6 +24,9 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.TimeUnit
 
+// Worker updates tag prototypes, cohesion score, and nPrototype, periodically for auto-tagging functionality
+// These periodic updates allow suggested tags to dynamically adapt as the user tags new media
+
 class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
     CoroutineWorker(context, workerParams) {
 
@@ -46,7 +49,7 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
             val workRequest = workRequestBuilder.build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                AutoTagWorker.TAG,
+                TAG,
                 ExistingPeriodicWorkPolicy.REPLACE,
                 workRequest
             )
@@ -66,25 +69,17 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
 
     val autoTagger by lazy { AutoTagger(tagStore, textEmbedder)}
 
-//    val sharedPrefs by lazy { applicationContext.getSharedPreferences(TAG, Context.MODE_PRIVATE) }
 
-    // TODO: track last number of tags to determine if update required
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
             val imageTags = imageTagsRepository.getAll()
             val videoTags = videoTagsRepository.getAll()
 
-            val existingImageIds = (if(tagStore.exists) tagStore.get(imageTags.map{it.prototypeId}) else emptyList()).map{it.id}.toSet()
-            val imageTagsToUpdate = imageTags.filterNot { it.prototypeId in existingImageIds }
-
-            val existingVideoIds = (if(tagStore.exists) tagStore.get(videoTags.map{it.prototypeId}) else emptyList()).map{it.id}.toSet()
-            val videoTagsToUpdate = videoTags.filterNot { it.prototypeId in existingVideoIds }
-
-            for (tag in imageTagsToUpdate){
+            for (tag in imageTags){
                 updateImageTag((tag))
             }
 
-            for (tag in videoTagsToUpdate){
+            for (tag in videoTags){
                 updateVideoTag((tag))
             }
 
@@ -97,9 +92,9 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
 
     private suspend fun updateImageTag(tag: ImageTag){
         val nTaggedImages = imageTagsCrossRefRepository.count(tag.name)
-        if(nTaggedImages < N_PROTOTYPE ) return
+        if(nTaggedImages < N_PROTOTYPE || tag.nPrototype >= nTaggedImages ) return
 
-        val imageIds = imageTagsCrossRefRepository.getImageIds(tag.name, N_PROTOTYPE)
+        val imageIds = imageTagsCrossRefRepository.getImageIds(tag.name, N_PROTOTYPE, tag.nPrototype)
         val storedImageEmbeddings = imageStore.get(imageIds)
         if(storedImageEmbeddings.isEmpty()) return
 
@@ -110,9 +105,9 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
 
     private suspend fun updateVideoTag(tag: VideoTag){
         val nTaggedVideos = videoTagsCrossRefRepository.count(tag.name)
-        if(nTaggedVideos < N_PROTOTYPE ) return
+        if(nTaggedVideos < N_PROTOTYPE || tag.nPrototype >= nTaggedVideos) return
 
-        val videoIds = videoTagsCrossRefRepository.getVideoIds(tag.name, N_PROTOTYPE)
+        val videoIds = videoTagsCrossRefRepository.getVideoIds(tag.name, N_PROTOTYPE, tag.nPrototype)
         val storedVideosEmbeddings = videoStore.get(videoIds)
         if(storedVideosEmbeddings.isEmpty()) return
 
