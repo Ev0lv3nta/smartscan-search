@@ -318,7 +318,10 @@ fun SearchScreen(
                 onViewResult = { uri -> searchViewModel.toggleViewResult(context, uri, appSettings.enableDirectGalleryOpen) },
                 onLoadMore = searchViewModel::onLoadMore,
                 onToggleSelected = searchViewModel::toggleSelectedResult,
-                onToggleSelectionMode = { isSelecting = !isSelecting },
+                onToggleSelectionMode = {
+                    isSelecting = !isSelecting
+                    offset = 0
+                                        },
                 onOffsetChange = {  offset = it },
             )
         }
