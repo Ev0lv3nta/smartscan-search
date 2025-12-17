@@ -30,15 +30,18 @@ class AutoTagger(
             generateTagPrototype(tag.prototypeId, newItemEmbeddings )
             return newItemEmbeddings.size
         }
-        var prototype = result[0].embeddings
-
-        // newPrototype = ((N * currentPrototype) + sum(newEmbedding)) / N + newN
-        if(tag.nPrototype > 0) scaleEmbedding(prototype, tag.nPrototype.toFloat())
+        // updatedPrototype = ((N * currentPrototype) + sum(newEmbedding)) / (N + newN)
+        val prototype = result[0].embeddings
         val nPrototypeNew = tag.nPrototype + newItemEmbeddings.size
-        prototype =  sumEmbeddings(newItemEmbeddings.map { it.embeddings } + prototype)
-        scaleEmbedding(prototype, 1f/nPrototypeNew)
+        val sumNew = sumEmbeddings(newItemEmbeddings.map { it.embeddings })
+        val updatedPrototype = FloatArray(prototype.size)
+        if(tag.nPrototype > 0){
+            for(i in updatedPrototype.indices) updatedPrototype[i] = tag.nPrototype.toFloat() * prototype[i]
+        }
+        for (i in updatedPrototype.indices) updatedPrototype[i] += sumNew[i]
+        for (i in updatedPrototype.indices) updatedPrototype[i] /= nPrototypeNew.toFloat()
 
-        store.add(listOf(Embedding(id = tag.prototypeId, date = System.currentTimeMillis(), embeddings = prototype)))
+        store.add(listOf(Embedding(id = tag.prototypeId, date = System.currentTimeMillis(), embeddings = updatedPrototype)))
         return nPrototypeNew
     }
 
@@ -101,11 +104,5 @@ class AutoTagger(
             }
         }
         return sum
-    }
-
-    private fun scaleEmbedding(rawEmbedding: FloatArray, x: Float) {
-        for (i in rawEmbedding.indices) {
-            rawEmbedding[i] *= x
-        }
     }
 }
