@@ -23,6 +23,7 @@ navigationCompose = "2.9.3"
 roomRuntime = "2.7.2"
 runner = "1.6.1"
 smartscanMl = "1.2.1"
+smartscanMlVersion = "1.2.1"
 ui = "1.10.0"
 workRuntimeKtx = "2.10.3"
 
@@ -62,6 +63,7 @@ androidx-constraintlayout = { group = "androidx.constraintlayout", name = "const
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 mockk-android = { module = "io.mockk:mockk-android", version.ref = "mockk" }
 smartscan-ml = { module = "com.github.dev-diaries41.smartscan-sdk:smartscan-ml", version.ref = "smartscanMl" }
+smartscan-sdk-smartscan-ml = { module = "com.github.smartscanapp.smartscan-sdk:smartscan-ml", version.ref = "smartscanMlVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
