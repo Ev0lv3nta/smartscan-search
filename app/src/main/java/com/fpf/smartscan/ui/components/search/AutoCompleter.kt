@@ -2,10 +2,12 @@ package com.fpf.smartscan.ui.components.search
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Tag
@@ -34,18 +36,18 @@ fun AutoCompleter(
 
     val cleanedQuery = if (query.startsWith("#") && query.length > 1) query.substring(1) else query
 
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
+            .heightIn(max = 300.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(color = MaterialTheme.colorScheme.surfaceContainer)
             .padding(16.dp),
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        label?.let{Text(it, style = MaterialTheme.typography.labelSmall)}
-
-        autoCompleteResults.forEach { result ->
+        label?.let { item { Text(it, style = MaterialTheme.typography.labelSmall) } }
+        items(autoCompleteResults) { result ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
