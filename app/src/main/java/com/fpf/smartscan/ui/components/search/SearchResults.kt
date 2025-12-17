@@ -87,7 +87,7 @@ fun SearchResults(
         val isNewSearch = lastTotalResults != totalResults
         val isFirstSelection = isSelecting && lastSize == 0 && selectedResults.isNotEmpty()
         if (isFirstSelection || isNewSearch) {
-            totalScrollPx = maxCollapsePx
+//            totalScrollPx = maxCollapsePx
             onSearchBarVisibilityPctChange(1f)
             onSearchActionBarVisibilityPctChange(1f)
             lastSize = selectedResults.size
