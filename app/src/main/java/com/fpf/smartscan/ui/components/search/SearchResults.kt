@@ -73,22 +73,9 @@ fun SearchResults(
     val maxCollapsePx = max(actionBarHeight, searchBarHeight).toInt()
 
     var showScrollToTop by remember { mutableStateOf(false) }
-    var lastSize by remember { mutableIntStateOf(0) }
-    var lastTotalResults by remember { mutableIntStateOf(0) }
     var lastIndex by remember { mutableIntStateOf(0) }
     var lastOffset by remember { mutableIntStateOf(0) }
     var totalScrollPx by remember { mutableIntStateOf(0) }
-
-    // Ensure initial visibility
-    LaunchedEffect(selectedResults, isSelecting, totalResults) {
-        if (isSelecting && lastSize == 0 && selectedResults.isNotEmpty() || lastTotalResults != totalResults) {
-            totalScrollPx = maxCollapsePx
-            onSearchBarVisibilityPctChange(1f)
-            onSearchActionBarVisibilityPctChange(1f)
-            lastSize = selectedResults.size
-        }
-        if (!isSelecting) lastSize = 0
-    }
 
     // Scroll tracking
     LaunchedEffect(gridState) {
