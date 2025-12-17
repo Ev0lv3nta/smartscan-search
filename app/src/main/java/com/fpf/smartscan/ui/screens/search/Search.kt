@@ -78,7 +78,14 @@ fun SearchScreen(
     val state by searchViewModel.state.collectAsState()
     val imageTags by searchViewModel.allImageTags.collectAsState()
     val videoTags by searchViewModel.allVideoTags.collectAsState()
-
+    val searchBarPlaceholders = listOf(
+        when (state.mediaType) {
+            MediaType.IMAGE -> "Search images"
+            MediaType.VIDEO -> "Search videos"
+        },
+        "Search by tag: #tag",
+        "Search by tag: #tag query"
+    )
     var hasStoragePermission by remember { mutableStateOf(false) }
     var searchActionBarVisibilityPct by remember { mutableFloatStateOf(1f) }
     var searchBarVisibilityPercent by remember { mutableFloatStateOf(1f) }
@@ -204,7 +211,7 @@ fun SearchScreen(
                     modifier = Modifier
                         .zIndex(1f)
                 ) {
-                    Column() {
+                    Column {
                         if (isSelecting) {
                             val text = if (state.selectedResults.isNotEmpty()) "${state.selectedResults.size} Selected" else "Select items"
                             Text(text, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(bottom = 8.dp)
@@ -238,7 +245,7 @@ fun SearchScreen(
                         .zIndex(1f)
                         .padding(bottom = searchBarPadding.dp)
                 ) {
-                    Column() {
+                    Column {
                         if (isSelecting) {
                             val text = if (state.selectedResults.isNotEmpty()) "${state.selectedResults.size} Selected" else "Select items"
                             Text(text, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(bottom = 8.dp))
@@ -265,10 +272,7 @@ fun SearchScreen(
                                 isSelecting = false
                             },
                             onClearResults = { searchViewModel.reset() },
-                            label = when (state.mediaType) {
-                                MediaType.IMAGE -> "Search images..."
-                                MediaType.VIDEO -> "Search videos..."
-                            },
+                            placeholders = searchBarPlaceholders,
                             trailingIcon = {
                                 SelectorIconItem(
                                     enabled = (videoIndexStatus != ProcessorStatus.ACTIVE && imageIndexStatus != ProcessorStatus.ACTIVE), // prevent switching modes when indexing in progress
