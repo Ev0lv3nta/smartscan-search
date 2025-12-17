@@ -207,6 +207,8 @@ fun SearchScreen(
                     offsetPx = offset,
                     modifier = Modifier
                         .zIndex(1f)
+                        .heightIn(max=200.dp)
+                        .padding(bottom = 8.dp)
                 ) {
                     Column {
                         if (isSelecting) {
@@ -238,7 +240,10 @@ fun SearchScreen(
                 SlideRevealBox(
                     reverse = true,
                     offsetPx = offset,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier
+                        .padding(bottom = 8.dp)
+                        .heightIn(max=120.dp)
+
                 ) {
                     Column {
                         if (isSelecting) {

@@ -75,7 +75,7 @@ fun SearchResults(
     val density = LocalDensity.current
 
     val actionBarHeight = with(density) { 70.dp.toPx() }
-    val searchBarHeight = with(density) { (if(queryType == QueryType.IMAGE) 160 else 120).dp.toPx() }
+    val searchBarHeight = with(density) { (if(queryType == QueryType.IMAGE) 200 else 120).dp.toPx() }
     val maxCollapsePx = max(actionBarHeight, searchBarHeight).toInt()
     var showScrollToTop by remember { mutableStateOf(false) }
     var totalScrollPx by remember { mutableIntStateOf(0) }
