@@ -56,7 +56,6 @@ fun SearchResults(
     searchResults: List<Uri>,
     selectedResults: List<Uri>,
     onViewResult: (uri: Uri?) -> Unit,
-    mediaType: MediaType,
     queryType: QueryType,
     onLoadMore: () -> Unit,
     totalResults: Int,
@@ -171,7 +170,6 @@ fun SearchResults(
                         uri = uri,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
-                        type = mediaType
                     )
                     if(isSelecting) {
                         CircularCheckbox(

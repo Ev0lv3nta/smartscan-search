@@ -78,7 +78,6 @@ fun ImageSearcher(
                 uri = uri,
                 modifier = Modifier.matchParentSize(),
                 contentScale = ContentScale.Crop,
-                type = MediaType.IMAGE
             )
             IconButton(
                 onClick = { onRemoveImage() },

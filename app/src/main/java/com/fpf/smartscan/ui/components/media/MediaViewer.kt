@@ -73,7 +73,6 @@ fun MediaViewer(
                             )
                         },
                     contentScale = ContentScale.FillWidth,
-                    type = type,
                     maxSize = maxSize
                 )
             } else {

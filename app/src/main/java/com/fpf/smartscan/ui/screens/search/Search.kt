@@ -313,7 +313,6 @@ fun SearchScreen(
 
             SearchResults(
                 isVisible = !state.loading && state.searchResults.isNotEmpty(),
-                mediaType = state.mediaType,
                 queryType = state.queryType,
                 searchResults = state.searchResults,
                 totalResults=state.totalResults,
