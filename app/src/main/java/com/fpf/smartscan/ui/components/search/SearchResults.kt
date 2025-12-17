@@ -38,12 +38,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.ui.components.CircularCheckbox
 import kotlinx.coroutines.flow.drop
 import kotlin.math.abs
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 @Composable
 fun SearchResults(
@@ -57,8 +62,7 @@ fun SearchResults(
     totalResults: Int,
     onToggleSelected: (Uri) -> Unit,
     onToggleSelectionMode: () -> Unit,
-    onSearchActionBarVisibilityPctChange: (Float) -> Unit,
-    onSearchBarVisibilityPctChange: (Float) -> Unit,
+    onOffsetChange: (Int) -> Unit,
     numGridColumns: Int = 3,
     loadMoreBuffer: Int = 5,
     isSelecting: Boolean = false,
@@ -71,60 +75,31 @@ fun SearchResults(
     val density = LocalDensity.current
 
     val actionBarHeight = with(density) { 70.dp.toPx() }
-    val searchBarHeight = with(density) { (if(queryType == QueryType.IMAGE) 160 else 56).dp.toPx() }
+    val searchBarHeight = with(density) { (if(queryType == QueryType.IMAGE) 160 else 120).dp.toPx() }
     val maxCollapsePx = max(actionBarHeight, searchBarHeight).toInt()
-
     var showScrollToTop by remember { mutableStateOf(false) }
-    var lastIndex by remember { mutableIntStateOf(0) }
-    var lastOffset by remember { mutableIntStateOf(0) }
     var totalScrollPx by remember { mutableIntStateOf(0) }
 
-    var lastSize by remember { mutableIntStateOf(0) }
-    var lastTotalResults by remember { mutableIntStateOf(0) }
+    val connection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(
+                available: Offset,
+                source: NestedScrollSource
+            ): Offset {
+                val deltaPx = -available.y
+                totalScrollPx = (totalScrollPx + deltaPx.roundToInt()).coerceIn(0, maxCollapsePx)
 
-    // Ensure always visible on first selection or new search
-    LaunchedEffect(selectedResults, isSelecting, totalResults) {
-        val isNewSearch = lastTotalResults != totalResults
-        val isFirstSelection = isSelecting && lastSize == 0 && selectedResults.isNotEmpty()
-        if (isFirstSelection || isNewSearch) {
-//            totalScrollPx = maxCollapsePx
-            onSearchBarVisibilityPctChange(1f)
-            onSearchActionBarVisibilityPctChange(1f)
-            lastSize = selectedResults.size
-            lastTotalResults = totalResults
-        }
-        if (!isSelecting) lastSize = 0
-    }
+                // update search bar
+                onOffsetChange(totalScrollPx)
 
-    // Scroll tracking
-    LaunchedEffect(gridState) {
-        snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset
-        }.collect { (index, offset) ->
-            if(!gridState.isScrollInProgress) return@collect
+                // update scroll-to-top button based on total scroll or item index
+                val scrollingDown = deltaPx > 0
+                showScrollToTop = scrollingDown && (totalScrollPx > scrollThreshold)
 
-            val itemHeightPx = gridState.layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height ?: 0
-            val deltaPx = ( lastIndex - index) * itemHeightPx + ( lastOffset - offset)
-
-            // prevent jitters due to small changes
-            if(abs(deltaPx) < 3) return@collect
-
-            totalScrollPx = (totalScrollPx + deltaPx).coerceIn(0, maxCollapsePx)
-
-            val actionBarVisibilityPct = (totalScrollPx / actionBarHeight).coerceIn(0f, 1f)
-            val searchBarVisibilityPct = (totalScrollPx / searchBarHeight).coerceIn(0f, 1f)
-
-            onSearchActionBarVisibilityPctChange(actionBarVisibilityPct)
-            onSearchBarVisibilityPctChange(searchBarVisibilityPct)
-
-            val scrollingDown = index > lastIndex || (index == lastIndex && offset > lastOffset)
-
-            showScrollToTop = scrollingDown && index > scrollThreshold
-            lastIndex = index
-            lastOffset = offset
+                return Offset.Zero
+            }
         }
     }
-
-
 
     LaunchedEffect(gridState) {
         snapshotFlow {
@@ -143,7 +118,7 @@ fun SearchResults(
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(numGridColumns),
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().nestedScroll(connection),
             contentPadding = PaddingValues(4.dp)
         ) {
             item(span = { GridItemSpan(maxLineSpan) }) {

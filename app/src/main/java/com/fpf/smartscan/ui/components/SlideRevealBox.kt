@@ -1,10 +1,7 @@
 package com.fpf.smartscan.ui.components
 
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -13,27 +10,27 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.SubcomposeLayout
-import kotlin.math.roundToInt
+import androidx.compose.animation.core.animateIntAsState
+import kotlin.math.max
 
 @Composable
 fun SlideRevealBox(
     modifier: Modifier = Modifier,
     isVisible: Boolean = true,
-    visibilityPercent: Float = 1f,
+    offsetPx: Int = 0, // Offset in pixels
     reverse: Boolean = false,
     content: @Composable () -> Unit,
-    ) {
+) {
     if (!isVisible) return
 
     var contentHeight by remember { mutableIntStateOf(0) }
 
-    val animatedPct by animateFloatAsState(
-        targetValue = visibilityPercent,
+    val animatedOffsetPx by animateIntAsState(
+        targetValue = offsetPx,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioNoBouncy,
             stiffness = Spring.StiffnessLow
         )
-
     )
 
     val direction = if (reverse) -1 else 1
@@ -41,12 +38,13 @@ fun SlideRevealBox(
     SubcomposeLayout(modifier = modifier.clipToBounds()) { constraints ->
         val placeables = subcompose("content", content).map { it.measure(constraints) }
         contentHeight = placeables.maxOfOrNull { it.height } ?: 0
-        val animatedHeight = (contentHeight * animatedPct).roundToInt()
-        layout(constraints.maxWidth, animatedHeight) {
-            val animatedY = direction * (contentHeight - animatedHeight)
 
+        val visibleHeight = max(contentHeight - animatedOffsetPx, 0)
+
+        layout(constraints.maxWidth, visibleHeight) {
+            val animatedY = direction * animatedOffsetPx
             placeables.forEach {
-                it.place(
+                it.placeRelative(
                     x = 0,
                     y = animatedY
                 )
