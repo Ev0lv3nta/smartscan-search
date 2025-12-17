@@ -2,6 +2,7 @@ package com.fpf.smartscan.ui.screens.search
 
 import android.app.Application
 import android.content.ContentUris
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.text.input.TextFieldState
@@ -26,6 +27,8 @@ import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.utils.canOpenUri
 import com.fpf.smartscan.media.getVideoUriFromId
+import com.fpf.smartscan.media.openImageInGallery
+import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.search.ImageIndexListener
 import com.fpf.smartscan.search.AutoTagger
 import com.fpf.smartscan.search.SuggestedTags
@@ -328,8 +331,19 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
         }
     }
 
-    fun toggleViewResult(uri: Uri?){
-        _state.value = _state.value.copy(resultToView =uri)
+    fun toggleViewResult(context: Context, uri: Uri?, autoOpenInGallery: Boolean? = null){
+        if(autoOpenInGallery == true) {
+            when(_state.value.mediaType){
+                MediaType.IMAGE -> {
+                    uri?.let{openImageInGallery(context, it)}
+                }
+                MediaType.VIDEO -> {
+                    uri?.let{openVideoInGallery(context, it)}
+                }
+            }
+        }else{
+            _state.value = _state.value.copy(resultToView = uri)
+        }
     }
 
     fun showIndexAlert(){
