@@ -87,12 +87,9 @@ fun SearchScreen(
         "Search by tag: #tag query"
     )
     var hasStoragePermission by remember { mutableStateOf(false) }
-    var searchActionBarVisibilityPct by remember { mutableFloatStateOf(1f) }
-    var searchBarVisibilityPercent by remember { mutableFloatStateOf(1f) }
-
     var isAddingTag by remember { mutableStateOf(false) }
     var isSelecting by remember { mutableStateOf(false) }
-    val searchBarPadding = if(searchBarVisibilityPercent > 0 ) 16 else 0
+    var offset by remember { mutableStateOf(0) }
 
     RequestPermissions { _, storageGranted ->
         hasStoragePermission = storageGranted
@@ -207,9 +204,11 @@ fun SearchScreen(
             if (state.queryType == QueryType.IMAGE) {
                 SlideRevealBox(
                     reverse = true,
-                    visibilityPercent = searchActionBarVisibilityPct,
+                    offsetPx = offset,
                     modifier = Modifier
                         .zIndex(1f)
+                        .heightIn(max=200.dp)
+                        .padding(bottom = 8.dp)
                 ) {
                     Column {
                         if (isSelecting) {
@@ -240,24 +239,23 @@ fun SearchScreen(
             } else {
                 SlideRevealBox(
                     reverse = true,
-                    visibilityPercent = searchBarVisibilityPercent,
+                    offsetPx = offset,
                     modifier = Modifier
-                        .zIndex(1f)
-                        .padding(bottom = searchBarPadding.dp)
+                        .padding(bottom = 8.dp)
+                        .heightIn(max=120.dp)
+
                 ) {
                     Column {
                         if (isSelecting) {
                             val text = if (state.selectedResults.isNotEmpty()) "${state.selectedResults.size} Selected" else "Select items"
                             Text(text, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(bottom = 8.dp))
                         }
-
                         SearchBar(
                             searchFieldState = searchViewModel.searchFieldState,
                             enabled = hasStoragePermission && !state.loading,
                             onSearch = {
                                 searchViewModel.search(appSettings.similarityThreshold)
                                 isSelecting = false
-
                             },
                             onImageSelected = {
                                 searchViewModel.updateSearchImageUri(it)
@@ -325,20 +323,21 @@ fun SearchScreen(
                 onViewResult = { uri -> searchViewModel.toggleViewResult(context, uri, appSettings.enableDirectGalleryOpen) },
                 onLoadMore = searchViewModel::onLoadMore,
                 onToggleSelected = searchViewModel::toggleSelectedResult,
-                onToggleSelectionMode = { isSelecting = !isSelecting },
-                onSearchActionBarVisibilityPctChange = { visibility -> searchActionBarVisibilityPct = visibility },
-                onSearchBarVisibilityPctChange = { visibility -> searchBarVisibilityPercent = visibility }
-
+                onToggleSelectionMode = {
+                    isSelecting = !isSelecting
+                    offset = 0
+                                        },
+                onOffsetChange = {  offset = it },
             )
         }
         SlideRevealBox(
             isVisible = isSelecting && state.selectedResults.isNotEmpty(),
-            visibilityPercent = searchActionBarVisibilityPct,
+            offsetPx = offset,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .zIndex(1f)
                 .then(
-                    if (searchActionBarVisibilityPct > 0f)
+                    if (offset != 0)
                         Modifier.clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
