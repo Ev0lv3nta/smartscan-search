@@ -43,12 +43,11 @@ class MainViewModel( application: Application) : AndroidViewModel(application) {
 
     fun getUpdates(): List<String>{
         return listOf(
-            application.getString(R.string.update_reverse_image_search_upload),
-            application.getString(R.string.update_paste_image_search),
-            application.getString(R.string.update_reverse_search_from_results),
-            application.getString(R.string.update_menu_refresh_index),
-            application.getString(R.string.update_backup_restore_settings),
-            application.getString(R.string.update_remove_auto_organisation),
+            application.getString(R.string.update_multi_select_actions),
+            application.getString(R.string.update_tagging_support),
+            application.getString(R.string.update_auto_open_results),
+            application.getString(R.string.update_search_from_other_apps),
+            application.getString(R.string.update_auto_search_upload)
         )
     }
 

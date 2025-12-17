@@ -3,6 +3,7 @@ package com.fpf.smartscan.ui.components.search
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,7 +17,6 @@ import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -25,8 +25,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.OutputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Close
@@ -35,27 +37,54 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SearchBar(
+    searchFieldState: TextFieldState,
     enabled: Boolean,
-    threshold: Float,
-    onSearch: (query: String, threshold: Float) -> Unit,
+    onSearch: () -> Unit,
     onImageSelected: (Uri?) -> Unit,
     onImagePasted: (Uri?) -> Unit,
-    label: String,
+    onClearResults : () -> Unit,
+    placeholders: List<String>,
+    modifier: Modifier = Modifier,
+    placeholderChangeDuration: Long = 2000L,
     trailingIcon: @Composable (() -> Unit)? = null
 ) {
+    var currentPlaceHolder by remember { mutableStateOf(placeholders[0]) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(currentPlaceHolder) {
+        val job = scope.launch {
+            delay(placeholderChangeDuration)
+            val currentIdx = placeholders.indexOf(currentPlaceHolder)
+            val nextIdx = if(currentIdx < placeholders.size -1) currentIdx + 1 else 0
+            currentPlaceHolder = placeholders[nextIdx]
+        }
+        if(searchFieldState.text.isNotBlank()) {
+            currentPlaceHolder = placeholders[0]
+            job.cancel()
+        }
+    }
+
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri: Uri? ->
@@ -78,45 +107,62 @@ fun SearchBar(
         }
     }
 
-    val textFieldState = rememberTextFieldState()
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     val outlineColor = if(isFocused) MaterialTheme.colorScheme.primary else Color.Transparent
+    val tagColor =  MaterialTheme.colorScheme.onSurface.copy(0.5f)
+    val ot = OutputTransformation {
+        val regex = Regex("^#\\w+")
+        regex.findAll(searchFieldState.text).forEach {
+            match ->
+            addStyle( SpanStyle(color = tagColor, fontStyle = FontStyle.Italic), match.range.first, match.range.last + 1 )
+        }
+    }
+
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
-            .border( width = 1.dp, color = outlineColor, shape = RoundedCornerShape(8.dp) )
+            .border(width = 1.dp, color = outlineColor, shape = RoundedCornerShape(8.dp))
             .clip(RoundedCornerShape(8.dp))
             .background(MaterialTheme.colorScheme.surfaceContainer)
             .contentReceiver(receiveContentListener)
     ) {
         BasicTextField(
-            state = textFieldState,
+            state = searchFieldState,
             interactionSource = interactionSource,
             enabled = enabled,
+            lineLimits = TextFieldLineLimits.SingleLine,
+            outputTransformation = ot,
             textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
             keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
             onKeyboardAction = {
-                if (textFieldState.text.isNotBlank()) {
-                    onSearch(textFieldState.text.toString(), threshold)
+                if (searchFieldState.text.isNotBlank()) {
+                    onSearch()
                 } else {
                     it()
                 }
             },
             cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
-            modifier = Modifier.fillMaxWidth().contentReceiver(receiveContentListener),
+            modifier = Modifier
+                .fillMaxWidth()
+                .contentReceiver(receiveContentListener),
             decorator = { innerTextField ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp).heightIn(min = 56.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                        .heightIn(min = 56.dp)
                 ) {
                     IconButton(
                         onClick = { imagePickerLauncher.launch("image/*") },
                         enabled = enabled,
-                        modifier = Modifier.align(Alignment.Top).padding(top = 4.dp)
+                        modifier = Modifier
+                            .align(Alignment.Top)
+                            .padding(top = 4.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Filled.AddPhotoAlternate,
@@ -127,35 +173,51 @@ fun SearchBar(
 
                     Box(
                         contentAlignment = Alignment.CenterStart,
-                        modifier = Modifier.weight(1f).padding(vertical = 16.dp)
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(vertical = 16.dp)
                     ) {
                         innerTextField()
-                        if (textFieldState.text.isEmpty()) {
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)),
-                            )
+                        if (searchFieldState.text.isEmpty()) {
+                            Crossfade(targetState = currentPlaceHolder) { text ->
+                                Text(
+                                    text = text,
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    ),
+                                )
+                            }
                         }
                     }
 
-                    if (textFieldState.text.isNotBlank()) {
+                    if (searchFieldState.text.isNotBlank()) {
                         IconButton(
                             enabled = enabled,
-                            onClick = { textFieldState.clearText() },
-                            modifier = Modifier.align(Alignment.Top).padding(top = 4.dp)
+                            onClick = {
+                                searchFieldState.clearText()
+                                onClearResults()
+                                      },
+                            modifier = Modifier
+                                .align(Alignment.Top)
+                                .padding(top = 4.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Close,
                                 contentDescription = "Clear query",
                                 tint = MaterialTheme.colorScheme.surface,
                                 modifier = Modifier
-                                    .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f), shape = CircleShape)
+                                    .background(
+                                        MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                                        shape = CircleShape
+                                    )
                                     .size(16.dp)
                                     .padding(2.dp)
                             )
                         }
                     }
-                    Box(modifier = Modifier.align(Alignment.Top).padding(top = 4.dp)){
+                    Box(modifier = Modifier
+                        .align(Alignment.Top)
+                        .padding(top = 4.dp)){
                         trailingIcon?.invoke()
                     }
                 }

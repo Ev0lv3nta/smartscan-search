@@ -5,10 +5,6 @@
     <string name="source_code_url">https://github.com/dev-diaries41/smartscan</string>
     <string name="reddit_url">https://www.reddit.com/r/SmartScan/</string>
 
-    <!--Models info-->
-    <string name="inception_resnet_v1_model">Inception Resnet V1</string>
-    <string name="inception_resnet_v1_model_url">https://github.com/dev-diaries41/smartscan-models/releases/download/1.0.0/facial_recognition_inception_resnet_v1.zip</string>
-
     <!-- Screen titles-->
     <string name="title_search">Search</string>
     <string name="title_settings">Settings</string>
@@ -36,6 +32,7 @@
     <string name="search_error_empty_query">Query cannot be empty.</string>
     <string name="search_error_unknown">An unknown error occurred.</string>
     <string name="search_error_index_loading">Error loading index.</string>
+    <string name="search_start_indexing_alert">Start indexing %1$s</string>
 
     <!-- Donate screen -->
     <string name="label_btc">Bitcoin</string>
@@ -61,6 +58,7 @@
     <string name="setting_backup_restore_description">%1$s index files</string>
 
     <!--Search Settings-->
+    <string name="setting_auto_open_gallery">Auto-open in gallery</string>
     <string name="setting_index_frequency">Index frequency</string>
     <string name="setting_index_frequency_description">Schedule for auto-updates of video and image indexes.</string>
     <string name="setting_similarity_threshold">Similarity threshold</string>
@@ -108,11 +106,10 @@
     <string name="help_reverse_image_search">Reverse image search is generally more accurate than text queries, especially when searching videos.</string>
 
     <!--Updates-->
-    <string name="update_reverse_image_search_upload">Reverse image search by uploading images directly from the search bar</string>
-    <string name="update_paste_image_search">Reverse image search by pasting images into the search bar</string>
-    <string name="update_reverse_search_from_results">Reverse image search by long-pressing a result or using the Media Viewer</string>
-    <string name="update_menu_refresh_index">Added new menu with “Refresh index” options for images and videos</string>
-    <string name="update_backup_restore_settings">Added backup and restore settings</string>
-    <string name="update_remove_auto_organisation">Removed auto-organisation feature</string>
+    <string name="update_multi_select_actions">Multi-select actions added</string>
+    <string name="update_tagging_support">Tagging support added with auto-suggestions and auto-complete</string>
+    <string name="update_auto_open_results">Added setting to auto-open results in gallery</string>
+    <string name="update_search_from_other_apps">Search from other apps via Share/intents</string>
+    <string name="update_auto_search_upload">Auto-search when image is uploaded or selected</string>
 
 </resources>

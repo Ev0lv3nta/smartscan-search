@@ -1,7 +1,7 @@
 package com.fpf.smartscan.constants
 
-import com.fpf.smartscan.data.ModelPathInfo
-import com.fpf.smartscan.data.SmartScanModelType
+import com.fpf.smartscan.models.ModelInfo
+import com.fpf.smartscan.models.SmartScanModelType
 
 val smartScanModelTypeOptions = mapOf (
     SmartScanModelType.FACE to  "Facial recognition",
@@ -10,17 +10,28 @@ val smartScanModelTypeOptions = mapOf (
     SmartScanModelType.TEXT_ENCODER to "Text encoder"
 )
 
+// Models Info
 const val MODEL_DIR = "models"
+const val INCEPTION_RESNET_DEP_FACE_DETECTOR = "face_detect.onnx"
+const val INCEPTION_RESNET_DEP_INCEPTION = "inception_resnet_v1_quant.onnx"
 
-val modelPathsMap = mapOf(
-    SmartScanModelType.FACE to ModelPathInfo(
-        path = "$MODEL_DIR/${SmartScanModelType.FACE.tag}.zip",
-        dependentModelPaths = listOf(
-            "$MODEL_DIR/${SmartScanModelType.FACE.tag}/face_detect.onnx",
-            "$MODEL_DIR/${SmartScanModelType.FACE.tag}/inception_resnet_v1_quant.onnx"
-        )
-    ),
-    SmartScanModelType.OBJECTS to ModelPathInfo("$MODEL_DIR/${SmartScanModelType.OBJECTS.tag}.onnx"),
-    SmartScanModelType.IMAGE_ENCODER to ModelPathInfo("$MODEL_DIR/${SmartScanModelType.IMAGE_ENCODER.tag}.onnx"),
-    SmartScanModelType.TEXT_ENCODER to ModelPathInfo("$MODEL_DIR/${SmartScanModelType.TEXT_ENCODER.tag}.onnx")
+val facialRecognitionModel = ModelInfo(
+    type = SmartScanModelType.FACE,
+    name = "Inception Resnet V1",
+    url = "https://github.com/dev-diaries41/smartscan-models/releases/download/1.0.0/facial_recognition_inception_resnet_v1.zip",
 )
+
+val miniLmTextEmbedderModel = ModelInfo(
+    type = SmartScanModelType.TEXT_ENCODER,
+    name = "MiniLM-L6-v2",
+    url = "https://github.com/dev-diaries41/smartscan-models/releases/download/1.0.0/minilm_sentence_transformer_quant.onnx",
+)
+
+val dinoV2SmallImageEmbedderModel = ModelInfo(
+    type = SmartScanModelType.IMAGE_ENCODER,
+    name = "DinoV2-Small",
+    url = "https://github.com/dev-diaries41/smartscan-models/releases/download/1.0.0/dinov2_small_quant.onnx",
+)
+
+val downloadableModels = listOf(facialRecognitionModel, miniLmTextEmbedderModel, dinoV2SmallImageEmbedderModel)
+

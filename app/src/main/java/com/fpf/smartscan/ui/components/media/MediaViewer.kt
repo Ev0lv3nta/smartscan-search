@@ -1,7 +1,6 @@
 package com.fpf.smartscan.ui.components.media
 
 import android.content.ClipData
-import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -28,20 +27,20 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.fpf.smartscan.lib.DEFAULT_IMAGE_DISPLAY_SIZE
-import com.fpf.smartscan.lib.openImageInGallery
-import com.fpf.smartscan.lib.openVideoInGallery
+import com.fpf.smartscan.media.openImageInGallery
+import com.fpf.smartscan.media.openVideoInGallery
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.ImageSearch
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import com.fpf.smartscan.data.MediaType
-import com.fpf.smartscan.lib.canOpenUri
+import com.fpf.smartscan.media.MediaType
+import com.fpf.smartscan.media.shareMedia
+import com.fpf.smartscan.utils.canOpenUri
 
 @Composable
 fun MediaViewer(
@@ -49,7 +48,7 @@ fun MediaViewer(
     type: MediaType,
     onClose: () -> Unit,
     onUpdateSearchImage: (uri: Uri) -> Unit,
-    maxSize: Int = DEFAULT_IMAGE_DISPLAY_SIZE
+    maxSize: Int = 2048
 ){
     var isActionsVisible by remember { mutableStateOf(true) }
 
@@ -74,7 +73,6 @@ fun MediaViewer(
                             )
                         },
                     contentScale = ContentScale.FillWidth,
-                    type = type,
                     maxSize = maxSize
                 )
             } else {
@@ -99,12 +97,6 @@ fun ActionRow(
     isVisible: Boolean
 ){
     val context = LocalContext.current
-    val mime = context.contentResolver.getType(uri)
-    val shareIntent: Intent = Intent().apply {
-        this.action = Intent.ACTION_SEND
-        this.putExtra(Intent.EXTRA_STREAM, uri)
-        this.type = mime
-    }
     val clipboard = LocalClipboard.current
     val isUriAccessible = canOpenUri(context, uri)
 
@@ -125,24 +117,15 @@ fun ActionRow(
                 horizontalArrangement = Arrangement.End,
             )
             {
-                if(type == MediaType.IMAGE) {
-                    IconButton(onClick = { onUpdateSearchImage(uri) }) {
-                        Icon(
-                            Icons.Filled.ImageSearch,
-                            contentDescription = "Search image",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-
-                IconButton(onClick = {
-                    clipboard.nativeClipboard.setPrimaryClip(
-                        ClipData.newUri(
-                            context.contentResolver,
-                            "smartscan_media",
-                            uri
-                        )
+                IconButton(onClick = { shareMedia(context, uri) }) {
+                    Icon(
+                        Icons.Filled.Share,
+                        contentDescription = "Share",
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
+                }
+                IconButton(onClick = {
+                    clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", uri))
                 }) {
                     Icon(
                         Icons.Filled.ContentCopy,
@@ -150,7 +133,6 @@ fun ActionRow(
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
-
                 IconButton(onClick = {
                     if (type == MediaType.IMAGE) {
                         openImageInGallery(context, uri)
@@ -164,15 +146,11 @@ fun ActionRow(
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
-
-                // Prevent share if mime is undefined for some reason
-                mime?.let {
-                    IconButton(onClick = {
-                        context.startActivity(Intent.createChooser(shareIntent, null))
-                    }) {
+                if(type == MediaType.IMAGE) {
+                    IconButton(onClick = { onUpdateSearchImage(uri) }) {
                         Icon(
-                            Icons.Filled.Share,
-                            contentDescription = "Share",
+                            Icons.Filled.Search,
+                            contentDescription = "Search image",
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }

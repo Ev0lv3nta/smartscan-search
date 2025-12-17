@@ -10,29 +10,28 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import com.fpf.smartscan.data.AppSettings
-import com.fpf.smartscan.data.ImportedModel
-import com.fpf.smartscan.lib.ImageIndexListener
-import com.fpf.smartscan.lib.VideoIndexListener
-import com.fpf.smartscan.lib.copyFromUri
-import com.fpf.smartscan.lib.copyToUri
-import com.fpf.smartscan.lib.deleteModel
-import com.fpf.smartscan.lib.getImportedModels
-import com.fpf.smartscan.lib.hashFile
-import com.fpf.smartscan.lib.importModel
-import com.fpf.smartscan.lib.loadSettings
-import com.fpf.smartscan.lib.saveSettings
-import com.fpf.smartscan.lib.unzipFiles
-import com.fpf.smartscan.lib.zipFiles
+import com.fpf.smartscan.settings.AppSettings
+import com.fpf.smartscan.search.ImageIndexListener
+import com.fpf.smartscan.search.VideoIndexListener
+import com.fpf.smartscan.utils.copyFromUri
+import com.fpf.smartscan.utils.copyToUri
+import com.fpf.smartscan.utils.hashFile
+import com.fpf.smartscan.settings.loadSettings
+import com.fpf.smartscan.settings.saveSettings
+import com.fpf.smartscan.utils.unzipFiles
+import com.fpf.smartscan.utils.zipFiles
+import com.fpf.smartscan.models.ImportedModel
+import com.fpf.smartscan.models.ModelManager
 import com.fpf.smartscan.ui.theme.ColorSchemeType
 import com.fpf.smartscan.ui.theme.ThemeManager
 import com.fpf.smartscan.ui.theme.ThemeMode
 import com.fpf.smartscansdk.core.processors.Metrics
-import com.fpf.smartscansdk.extensions.indexers.ImageIndexer
-import com.fpf.smartscansdk.extensions.indexers.VideoIndexer
+import com.fpf.smartscansdk.core.indexers.ImageIndexer
+import com.fpf.smartscansdk.core.indexers.VideoIndexer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.update
 import java.io.File
 
 class SettingsViewModel(private val application: Application) : AndroidViewModel(application) {
@@ -40,7 +39,7 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
     private val _appSettings = MutableStateFlow(AppSettings())
     val appSettings: StateFlow<AppSettings> = _appSettings
 
-    private val _importedModels = MutableStateFlow(getImportedModels(application))
+    private val _importedModels = MutableStateFlow(ModelManager.getImportedModels(application))
     val importedModels: StateFlow<List<ImportedModel>> = _importedModels
     private val _event = MutableSharedFlow<String>()
     val event = _event.asSharedFlow()
@@ -79,11 +78,11 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
     fun onImportModel( uri: Uri) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                importModel(application, uri)
-                _importedModels.value = getImportedModels(application)
+                ModelManager.importModel(application, uri)
+                _importedModels.value = ModelManager.getImportedModels(application)
                 _event.emit("Model imported successfully")
             } catch (e: Exception) {
-                val defaultErrorMessage = "Error importing model"
+                val defaultErrorMessage = "Model import failed"
                 val invalidFileError = "Invalid model file"
                 Log.e(TAG, "$defaultErrorMessage: ${e.message}")
                 val errorMessage = if(e.message == invalidFileError) invalidFileError else defaultErrorMessage
@@ -93,7 +92,7 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
     }
 
     fun onDeleteModel(model: ImportedModel){
-        if(deleteModel(application, model)) _importedModels.value = _importedModels.value - model
+        if(ModelManager.deleteModel(application, model)) _importedModels.value = _importedModels.value - model
     }
 
     fun addSearchableImageDirectory(dir: String) {
@@ -147,6 +146,7 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
 
         viewModelScope.launch(Dispatchers.IO){
             try {
+                if(!imageIndexFile.exists() && !videoIndexFile.exists()) error("Media not indexed")
                 val hashes: List<String> = listOf(imageIndexFile, videoIndexFile).filter { it.exists() }.map{hashFile(it)}
                 hashFile.writeText(hashes.joinToString("\n") )
 
@@ -155,7 +155,7 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
                 _event.emit("Backup successful")
             }catch (e: Exception){
                 Log.e(TAG, "Error backing up: ${e.message}")
-                _event.emit("Backup error")
+                if(e.message == "Media not indexed") _event.emit(e.message!!) else _event.emit("Backup failed")
             }finally {
                 indexZipFile.delete()
                 hashFile.delete()
@@ -182,7 +182,7 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
                 sharedPrefs.edit { putString("lastIndexed", System.currentTimeMillis().toString()) } // so scheduling can be triggered
             }catch (e: Exception){
                 Log.e(TAG, "Error restoring: ${e.message}")
-                _event.emit("Restore error")
+                if (e.message == "Invalid backup file") _event.emit(e.message!!) else _event.emit("Restore failed")
             }finally {
                 indexZipFile.delete()
                 _isRestoreLoading.emit(false)
@@ -198,5 +198,10 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
         val indexFiles = extractedFiles.filterNot{it.name == HASH_FILENAME}
         val indexHashes = indexFiles.map{hashFile(it)}
         return hashesFromFile.toSet() == indexHashes.toSet()
+    }
+
+    fun updateEnableDirectionGalleryOpen(enable: Boolean){
+        _appSettings.update{currentSettings -> currentSettings.copy(enableDirectGalleryOpen = enable)}
+        saveSettings(sharedPrefs, _appSettings.value)
     }
 }

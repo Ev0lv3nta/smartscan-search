@@ -25,6 +25,7 @@ import com.fpf.smartscan.constants.Routes
 import com.fpf.smartscan.constants.SettingTypes
 import com.fpf.smartscan.constants.colorSchemeDisplayNames
 import com.fpf.smartscan.constants.themeModeDisplayNames
+import com.fpf.smartscan.ui.components.SwitchItem
 import com.fpf.smartscan.ui.theme.ColorSchemeType
 import com.fpf.smartscan.ui.theme.ThemeMode
 
@@ -119,9 +120,14 @@ fun SettingsScreen(
                     },
                     modifier = Modifier.fillMaxWidth()
                 )
+                SwitchItem(
+                    text=stringResource(R.string.setting_auto_open_gallery),
+                    checked = appSettings.enableDirectGalleryOpen,
+                    onCheckedChange = viewModel::updateEnableDirectionGalleryOpen,
+                )
 
-                Spacer(modifier = Modifier.height(24.dp))
-
+//                Spacer(modifier = Modifier.height(24.dp))
+//
 //                Text(
 //                    text = stringResource(id = R.string.advanced_settings),
 //                    style = MaterialTheme.typography.titleMedium,
@@ -136,8 +142,8 @@ fun SettingsScreen(
 //                    text = stringResource(id = R.string.setting_manage_models),
 //                    onClick = { onNavigate(Routes.settingsDetail(SettingTypes.MANAGE_MODELS)) }
 //                )
-//
-//                Spacer(modifier = Modifier.height(24.dp))
+
+                Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
                     text = stringResource(id = R.string.other_settings),

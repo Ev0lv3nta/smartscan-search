@@ -19,7 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import com.fpf.smartscan.data.MediaType
+import com.fpf.smartscan.media.MediaType
 
 @Composable
 fun ImageUploader(
@@ -47,7 +47,6 @@ fun ImageUploader(
                 uri = uri,
                 modifier = Modifier.matchParentSize(),
                 contentScale = ContentScale.Crop,
-                type = MediaType.IMAGE
             )
             IconButton(
                 onClick = { onImageSelected(null) },

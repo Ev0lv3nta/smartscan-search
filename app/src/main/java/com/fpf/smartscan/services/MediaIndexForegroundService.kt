@@ -4,7 +4,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import android.util.Log
@@ -13,17 +12,18 @@ import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.fpf.smartscan.R
 import com.fpf.smartscan.MainActivity
-import com.fpf.smartscan.lib.ImageIndexListener
-import com.fpf.smartscan.lib.VideoIndexListener
-import com.fpf.smartscan.lib.loadSettings
-import com.fpf.smartscan.lib.queryImageIds
-import com.fpf.smartscan.lib.queryVideoIds
-import com.fpf.smartscansdk.core.ml.embeddings.clip.ClipConfig.CLIP_EMBEDDING_LENGTH
-import com.fpf.smartscansdk.core.ml.embeddings.clip.ClipImageEmbedder
-import com.fpf.smartscansdk.core.ml.models.ResourceId
-import com.fpf.smartscansdk.extensions.embeddings.FileEmbeddingStore
-import com.fpf.smartscansdk.extensions.indexers.ImageIndexer
-import com.fpf.smartscansdk.extensions.indexers.VideoIndexer
+import com.fpf.smartscan.search.ImageIndexListener
+import com.fpf.smartscan.search.VideoIndexListener
+import com.fpf.smartscan.settings.loadSettings
+import com.fpf.smartscan.media.queryImageIds
+import com.fpf.smartscan.media.queryVideoIds
+import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
+import com.fpf.smartscansdk.core.indexers.ImageIndexer
+import com.fpf.smartscansdk.core.indexers.VideoIndexer
+import com.fpf.smartscansdk.ml.models.loaders.ResourceId
+import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
+import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_X
+import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_Y
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -45,12 +45,12 @@ class MediaIndexForegroundService : Service() {
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(serviceJob + Dispatchers.Default)
     private lateinit var embeddingHandler: ClipImageEmbedder
-    private val sharedPrefs by lazy { application.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)    }
+    private val sharedPrefs by lazy { application.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)    }
 
 
     override fun onCreate() {
         super.onCreate()
-        embeddingHandler = ClipImageEmbedder(resources, ResourceId(R.raw.image_encoder_quant_int8))
+        embeddingHandler = ClipImageEmbedder(application, ResourceId(R.raw.clip_image_encoder_quant))
         createNotificationChannel()
         startForegroundServiceNotification()
     }
@@ -94,8 +94,8 @@ class MediaIndexForegroundService : Service() {
 
                 if (mediaType == TYPE_IMAGE || mediaType == TYPE_BOTH) {
                     // cache not needed for indexing
-                    val imageStore = FileEmbeddingStore(File(application.filesDir, ImageIndexer.INDEX_FILENAME), CLIP_EMBEDDING_LENGTH, useCache = false)
-                    val imageIndexer = ImageIndexer(embeddingHandler, application, ImageIndexListener, store = imageStore)
+                    val imageStore = FileEmbeddingStore(File(application.filesDir, ImageIndexer.INDEX_FILENAME), embeddingHandler.embeddingDim)
+                    val imageIndexer = ImageIndexer(embeddingHandler, context=application, listener = ImageIndexListener, store = imageStore)
                     val ids = queryImageIds(application, appSettings.searchableImageDirectories.map{it.toUri()})
                     val existingIds = if(imageStore.exists) imageStore.get().map{it.id}.toSet() else emptySet()
                     val filteredIds = ids.filterNot { existingIds.contains(it) }
@@ -103,8 +103,8 @@ class MediaIndexForegroundService : Service() {
                 }
 
                 if (mediaType == TYPE_VIDEO || mediaType == TYPE_BOTH) {
-                    val videoStore = FileEmbeddingStore(File(application.filesDir,  VideoIndexer.INDEX_FILENAME), CLIP_EMBEDDING_LENGTH, useCache = false )
-                    val videoIndexer = VideoIndexer(embeddingHandler, application=application, listener = VideoIndexListener, store = videoStore)
+                    val videoStore = FileEmbeddingStore(File(application.filesDir,  VideoIndexer.INDEX_FILENAME), embeddingHandler.embeddingDim )
+                    val videoIndexer = VideoIndexer(embeddingHandler, context=application, listener = VideoIndexListener, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
                     val ids = queryVideoIds(application, appSettings.searchableVideoDirectories.map { it.toUri() })
                     val existingIds = if(videoStore.exists) videoStore.get().map{it.id}.toSet() else emptySet()
                     val filteredIds = ids.filterNot { existingIds.contains(it) }

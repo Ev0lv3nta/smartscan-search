@@ -9,7 +9,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -28,43 +30,74 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import com.fpf.smartscan.data.MediaType
+import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.ui.components.media.ImageDisplay
 import kotlinx.coroutines.launch
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
+import com.fpf.smartscan.search.QueryType
+import com.fpf.smartscan.ui.components.CircularCheckbox
+import kotlinx.coroutines.flow.drop
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.roundToInt
 
 @Composable
 fun SearchResults(
     isVisible: Boolean,
     searchResults: List<Uri>,
-    toggleViewResult: (uri: Uri?) -> Unit,
-    updateSearchImage: (uri: Uri) -> Unit,
-    type: MediaType,
+    selectedResults: List<Uri>,
+    onViewResult: (uri: Uri?) -> Unit,
+    queryType: QueryType,
     onLoadMore: () -> Unit,
     totalResults: Int,
+    onToggleSelected: (Uri) -> Unit,
+    onToggleSelectionMode: () -> Unit,
+    onOffsetChange: (Int) -> Unit,
     numGridColumns: Int = 3,
-    loadMoreBuffer: Int = 5
-) {
+    loadMoreBuffer: Int = 5,
+    isSelecting: Boolean = false,
+    ) {
     if (!isVisible) return
-
-    val gridState = rememberLazyGridState()
-    val scope = rememberCoroutineScope()
-    var showScrollToTop by remember { mutableStateOf(false) }
     val scrollThreshold = 10
 
-    // Detect scroll to show/hide button
-    LaunchedEffect(gridState) {
-        var lastIndex = 0
-        var lastScrollOffset = 0
-        snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }
-            .collect { (index, offset) ->
-                val scrollingUp = index < lastIndex || (index == lastIndex && offset < lastScrollOffset)
-                showScrollToTop = !scrollingUp && index > scrollThreshold
-                lastIndex = index
-                lastScrollOffset = offset
+    val scope = rememberCoroutineScope()
+    val gridState = rememberLazyGridState()
+    val density = LocalDensity.current
+
+    val actionBarHeight = with(density) { 70.dp.toPx() }
+    val searchBarHeight = with(density) { (if(queryType == QueryType.IMAGE) 200 else 120).dp.toPx() }
+    val maxCollapsePx = max(actionBarHeight, searchBarHeight).toInt()
+    var showScrollToTop by remember { mutableStateOf(false) }
+    var totalScrollPx by remember { mutableIntStateOf(0) }
+
+    val connection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(
+                available: Offset,
+                source: NestedScrollSource
+            ): Offset {
+                val deltaPx = -available.y
+                totalScrollPx = (totalScrollPx + deltaPx.roundToInt()).coerceIn(0, maxCollapsePx)
+
+                // update search bar
+                onOffsetChange(totalScrollPx)
+
+                // update scroll-to-top button based on total scroll or item index
+                val scrollingDown = deltaPx > 0
+                showScrollToTop = scrollingDown && (totalScrollPx > scrollThreshold)
+
+                return Offset.Zero
             }
+        }
     }
 
     LaunchedEffect(gridState) {
@@ -81,42 +114,75 @@ fun SearchResults(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Text(
-                text = "${searchResults.size} Results",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(4.dp)
-            )
-            LazyVerticalGrid(
-                state = gridState,
-                columns = GridCells.Fixed(numGridColumns),
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(4.dp)
-            ) {
-                items(searchResults) { uri ->
-                    ImageDisplay(
-                        uri = uri,
+        LazyVerticalGrid(
+            state = gridState,
+            columns = GridCells.Fixed(numGridColumns),
+            modifier = Modifier.fillMaxSize().nestedScroll(connection),
+            contentPadding = PaddingValues(4.dp)
+        ) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Row(
+                    modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Box(
                         modifier = Modifier
-                            .aspectRatio(1f)
-                            .padding(1.dp)
-                            .border(1.dp, Color.Gray.copy(alpha = 0.2f))
-                            .combinedClickable(
-                                indication = null,
-                                interactionSource = remember { MutableInteractionSource() },
-                                onClick = { toggleViewResult(uri) },
-                                onLongClick = {
-                                    if(type == MediaType.IMAGE){
-                                        updateSearchImage(uri)
-                                    }
-                                }
-                            ),
-                        contentScale = ContentScale.Crop,
-                        type = type
+                            .weight(1f)
+                            .height(0.5.dp)
+                            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha=0.5f))
+                    )
+                    Text(
+                        text = "$totalResults Results",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(0.5.dp)
+                            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha=0.5f))
                     )
                 }
             }
-        }
 
+            items(searchResults) { uri ->
+                Box(
+                    modifier = Modifier
+                        .aspectRatio(1f)
+                        .padding(2.dp)
+                        .border(1.dp, Color.Gray.copy(alpha = 0.2f))
+                        .combinedClickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() },
+                            onClick = {
+                                if(isSelecting) onToggleSelected(uri) else onViewResult(uri)
+                            },
+                            onLongClick = {
+                                if(!isSelecting) {
+                                    onToggleSelectionMode()
+                                    onToggleSelected(uri)
+                                }
+                            }
+                        )
+                ) {
+                    ImageDisplay(
+                        uri = uri,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                    if(isSelecting) {
+                        CircularCheckbox(
+                            checked = uri in selectedResults,
+                            onCheckedChange = { onToggleSelected(uri) },
+                            modifier = Modifier
+                                .offset(x = 8.dp, y = 8.dp)
+                                .align(Alignment.TopStart),
+                        )
+                    }
+                }
+            }
+        }
         AnimatedVisibility(
             visible = showScrollToTop,
             enter = fadeIn(animationSpec = tween(300)),

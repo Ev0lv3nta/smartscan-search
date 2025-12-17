@@ -14,8 +14,8 @@ android {
         applicationId = "com.fpf.smartscan"
         minSdk = 30
         targetSdk = 34
-        versionCode = 15
-        versionName = "1.1.7"
+        versionCode = 16
+        versionName = "1.1.8"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -52,6 +52,7 @@ android {
     buildFeatures {
         compose = true
         viewBinding = false
+        aidl = true
     }
 
     composeOptions {
@@ -76,10 +77,14 @@ android {
 }
 
 dependencies {
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.documentfile)
+
     implementation(libs.coil.compose)
     implementation(libs.coil.video)
 
-    implementation(libs.smartscan.extensions)
+    implementation(libs.smartscan.sdk.smartscan.ml)
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)

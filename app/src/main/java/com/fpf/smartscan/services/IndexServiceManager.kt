@@ -2,7 +2,7 @@ package com.fpf.smartscan.services
 
 import android.content.Context
 import android.content.Intent
-import com.fpf.smartscan.lib.isServiceRunning
+import com.fpf.smartscan.utils.isServiceRunning
 
 fun startIndexing(context: Context, mediaType: String) {
     Intent(context.applicationContext, MediaIndexForegroundService::class.java)
