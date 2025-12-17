@@ -52,6 +52,8 @@ class AutoTagger(
     }
 
     suspend fun getSuggestedTags(tags: List<MediaTag>, selectedMediaPrototype: FloatArray): SuggestedTags {
+        if(!store.exists) return SuggestedTags()
+
         var suggestedTag: MediaTag? = null
         var bestSim = 0f
 
@@ -79,6 +81,8 @@ class AutoTagger(
 
 
     suspend fun orderBySimilarity(tags: List<MediaTag>, selectedMediaPrototype: FloatArray): List<MediaTag>{
+        if(!store.exists) return emptyList()
+
         val results = store.get(tags.map{ it.prototypeId})
         if(results.isEmpty() || results.size != tags.size) return tags
 

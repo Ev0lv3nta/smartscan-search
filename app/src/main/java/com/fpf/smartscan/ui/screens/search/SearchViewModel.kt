@@ -489,24 +489,29 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     }
 
     fun updateSuggestedTags(){
+        if(!tagStore.exists) return
         viewModelScope.launch(Dispatchers.IO){
             val ids = _state.value.selectedResults.take(MAX_N_PROTOTYPE).map{ContentUris.parseId(it)}
             _state.update{currentState -> currentState.copy(suggestedTags = SuggestedTags())} // reset
 
-            when(_state.value.mediaType){
-                MediaType.IMAGE -> {
-                    val imageEmbeddings = imageStore.get(ids)
-                    val prototype = generatePrototypeEmbedding(imageEmbeddings.map{it.embeddings})
-                    val suggestedTags = autoTagger.getSuggestedTags(allImageTags.value, prototype)
-                    _state.update{currentState -> currentState.copy(suggestedTags = suggestedTags)}
+            try {
+                when(_state.value.mediaType){
+                    MediaType.IMAGE -> {
+                        val imageEmbeddings = imageStore.get(ids)
+                        val prototype = generatePrototypeEmbedding(imageEmbeddings.map{it.embeddings})
+                        val suggestedTags = autoTagger.getSuggestedTags(allImageTags.value, prototype)
+                        _state.update{currentState -> currentState.copy(suggestedTags = suggestedTags)}
 
+                    }
+                    MediaType.VIDEO -> {
+                        val videoEmbeddings = videoStore.get(ids)
+                        val prototype = generatePrototypeEmbedding(videoEmbeddings.map{it.embeddings})
+                        val suggestedTags = autoTagger.getSuggestedTags(allVideoTags.value, prototype)
+                        _state.update{currentState -> currentState.copy(suggestedTags = suggestedTags)}
+                    }
                 }
-                MediaType.VIDEO -> {
-                    val videoEmbeddings = videoStore.get(ids)
-                    val prototype = generatePrototypeEmbedding(videoEmbeddings.map{it.embeddings})
-                    val suggestedTags = autoTagger.getSuggestedTags(allVideoTags.value, prototype)
-                    _state.update{currentState -> currentState.copy(suggestedTags = suggestedTags)}
-                }
+            }catch (e: Exception){
+                Log.e(TAG, "$e")
             }
         }
     }
