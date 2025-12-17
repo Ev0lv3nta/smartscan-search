@@ -2,7 +2,6 @@ package com.fpf.smartscan.workers
 
 import android.app.Application
 import android.content.Context
-import android.content.SharedPreferences
 import android.util.Log
 import androidx.work.*
 import com.fpf.smartscan.R
@@ -15,7 +14,6 @@ import com.fpf.smartscan.data.videos.VideoTagCrossRefRepository
 import com.fpf.smartscan.data.videos.VideoTagDatabase
 import com.fpf.smartscan.data.videos.VideoTagRepository
 import com.fpf.smartscan.search.AutoTagger
-import com.fpf.smartscan.utils.stringToLong
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer
@@ -92,7 +90,7 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
 
             return@withContext Result.success()
         } catch (e: Exception) {
-            Log.e(TAG, "Error during classification orchestration: ${e.message}", e)
+            Log.e(TAG, "Error updating tags: ${e.message}", e)
             return@withContext Result.failure()
         }
     }
@@ -108,7 +106,6 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
         val nPrototypeNew = autoTagger.updateTagPrototype(tag, storedImageEmbeddings)
         val cohesionScore = autoTagger.calculateCohesionScore(tag, storedImageEmbeddings)
         imageTagsRepository.upsert(tag.copy(nPrototype = nPrototypeNew, cohesionScore = cohesionScore))
-        Log.d(TAG, "Tag: $tag.name | Cohesion Score: $cohesionScore | nP: $nPrototypeNew")
     }
 
     private suspend fun updateVideoTag(tag: VideoTag){
