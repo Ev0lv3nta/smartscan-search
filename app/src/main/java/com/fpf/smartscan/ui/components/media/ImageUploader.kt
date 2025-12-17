@@ -47,7 +47,6 @@ fun ImageUploader(
                 uri = uri,
                 modifier = Modifier.matchParentSize(),
                 contentScale = ContentScale.Crop,
-                type = MediaType.IMAGE
             )
             IconButton(
                 onClick = { onImageSelected(null) },
