@@ -11,5 +11,6 @@ data class AppSettings(
     val searchableImageDirectories: List<String> = emptyList(),
     val searchableVideoDirectories: List<String> = emptyList(),
     val theme: ThemeMode = ThemeMode.SYSTEM,
-    val color: ColorSchemeType = ColorSchemeType.SMARTSCAN
+    val color: ColorSchemeType = ColorSchemeType.SMARTSCAN,
+    val enableDirectGalleryOpen: Boolean = false
 )

@@ -31,6 +31,7 @@ import com.fpf.smartscansdk.core.indexers.VideoIndexer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.update
 import java.io.File
 
 class SettingsViewModel(private val application: Application) : AndroidViewModel(application) {
@@ -197,5 +198,10 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
         val indexFiles = extractedFiles.filterNot{it.name == HASH_FILENAME}
         val indexHashes = indexFiles.map{hashFile(it)}
         return hashesFromFile.toSet() == indexHashes.toSet()
+    }
+
+    fun updateEnableDirectionGalleryOpen(enable: Boolean){
+        _appSettings.update{currentSettings -> currentSettings.copy(enableDirectGalleryOpen = enable)}
+        saveSettings(sharedPrefs, _appSettings.value)
     }
 }
