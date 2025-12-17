@@ -224,7 +224,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
                 if(shouldShutdownModel(_state.value.imageEmbedderLastUsage)) imageEmbedder.closeSession() // prevent keeping both models open
 
                 val embedding = textEmbedder.embed(actualQuery)
-                val queryResults = store.query(embedding, Int.MAX_VALUE, threshold).map { it.id }.filter { idsMatchingTag.isEmpty() || it in idsMatchingTag}
+                val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, idsMatchingTag)
                 handleQueryResults(queryResults, store)
             } catch (e: Exception) {
                 Log.e(TAG, "$e")
@@ -248,7 +248,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
 
                 val bitmap = getBitmapFromUri(application, queryImage, IMAGE_SIZE_X)
                 val embedding = imageEmbedder.embed(bitmap)
-                val resultIds = store.query(embedding, Int.MAX_VALUE, threshold).map { it.id }
+                val resultIds = store.query(embedding, Int.MAX_VALUE, threshold)
                 handleQueryResults(resultIds, store)
             } catch (e: Exception) {
                 Log.e(TAG, "$e")
@@ -292,13 +292,9 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
             try {
                 val end = (currentItemsCount + RESULTS_BATCH_SIZE).coerceAtMost(_state.value.totalResults)
                 val batch = store.query(currentItemsCount, end).take(RESULTS_BATCH_SIZE)
-                val idsMatchingTag: List<Long> = getMediaIds(_state.value.tagFilter)
-
-                val (filteredResults, idsToPurge) = batch
-                    .filter { idsMatchingTag.isEmpty() || it.id in idsMatchingTag}
-                    .map { embed ->
-                        val uri = if (_state.value.mediaType == MediaType.VIDEO) getVideoUriFromId(embed.id) else getImageUriFromId(embed.id)
-                        embed.id to uri
+                val (filteredResults, idsToPurge) = batch.map { id ->
+                        val uri = if (_state.value.mediaType == MediaType.VIDEO) getVideoUriFromId(id) else getImageUriFromId(id)
+                        id to uri
                 }.partition { (_, uri) -> canOpenUri(application, uri) }
 
                 if (filteredResults.isNotEmpty()) {
