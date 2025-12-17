@@ -42,9 +42,10 @@ class AutoTagger(
         return nPrototypeNew
     }
 
-    suspend fun calculateCohesionScore(tag: MediaTag, sampleBatchEmbeddings: List<Embedding>): Float{
+    suspend fun calculateCohesionScore(tag: MediaTag, sampleBatchEmbeddings: List<Embedding>): Float?{
+        if(!store.exists) return null
         val results = store.get(listOf((tag.prototypeId)))
-        if(results.isEmpty()) error("prototype not found")
+        if(results.isEmpty()) null
 
         val tagPrototype = results[0]
         val sims = getSimilarities(tagPrototype.embeddings, sampleBatchEmbeddings.map{it.embeddings})
