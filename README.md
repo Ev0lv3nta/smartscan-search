@@ -32,7 +32,7 @@ The app is free, but if you enjoy using it and want to support project developme
 - **Cross-App Search**: Search from other apps via Share/intent.
 - **Folder Selection:** Choose which image and video folders are allowed to be indexed.
 - **Gallery Access:** Open search results directly in the gallery.
-- **Auto-refresh Index:** Automatically refresh image and video indexes for new content.
+- **Auto-Refresh Index:** Automatically refresh image and video indexes for new content.
 
 ### Fully On-Device
 All processing is handled entirely on-device, ensuring privacy, speed, and offline functionality.
