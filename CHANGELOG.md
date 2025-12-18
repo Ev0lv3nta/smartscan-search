@@ -1,3 +1,15 @@
+## v1.1.8 18/12/2025
+
+### Added
+* Added multi-select actions
+* Added tagging support with auto-suggestions and auto-complete
+* Added setting to auto-open results in gallery
+* Search from other apps via Share/intent
+
+### Changed 
+* Auto-search when image is uploaded or selected
+
+
 ## v1.1.7 – 27/10/2025
 
 ### Added
