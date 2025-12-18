@@ -70,28 +70,12 @@ fun SearchBar(
     trailingIcon: @Composable (() -> Unit)? = null
 ) {
     var currentPlaceHolder by remember { mutableStateOf(placeholders[0]) }
-    val scope = rememberCoroutineScope()
-
-    LaunchedEffect(currentPlaceHolder) {
-        val job = scope.launch {
-            delay(placeholderChangeDuration)
-            val currentIdx = placeholders.indexOf(currentPlaceHolder)
-            val nextIdx = if(currentIdx < placeholders.size -1) currentIdx + 1 else 0
-            currentPlaceHolder = placeholders[nextIdx]
-        }
-        if(searchFieldState.text.isNotBlank()) {
-            currentPlaceHolder = placeholders[0]
-            job.cancel()
-        }
-    }
-
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri: Uri? ->
             uri?.let { onImageSelected(it) }
         }
     )
-
     val receiveContentListener = remember {
         ReceiveContentListener { transferableContent ->
             when {
@@ -106,7 +90,6 @@ fun SearchBar(
             }
         }
     }
-
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     val outlineColor = if(isFocused) MaterialTheme.colorScheme.primary else Color.Transparent
@@ -116,6 +99,20 @@ fun SearchBar(
         regex.findAll(searchFieldState.text).forEach {
             match ->
             addStyle( SpanStyle(color = tagColor, fontStyle = FontStyle.Italic), match.range.first, match.range.last + 1 )
+        }
+    }
+
+    LaunchedEffect(placeholders, searchFieldState.text, isFocused) {
+        if (isFocused || searchFieldState.text.isNotBlank() || currentPlaceHolder !in placeholders) {
+            currentPlaceHolder = placeholders[0]
+            return@LaunchedEffect
+        }
+
+        while (true) {
+            delay(placeholderChangeDuration)
+            val currentIdx = placeholders.indexOf(currentPlaceHolder)
+            val nextIdx = if (currentIdx < placeholders.size - 1) currentIdx + 1 else 0
+            currentPlaceHolder = placeholders[nextIdx]
         }
     }
 
