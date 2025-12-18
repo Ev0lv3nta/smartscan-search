@@ -1,4 +1,4 @@
-## v1.1.8 18/12/2025
+## v1.1.8 - 18/12/2025
 
 ### Added
 * Added multi-select actions
