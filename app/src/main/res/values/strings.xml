@@ -55,7 +55,7 @@
     <string name="setting_backup_restore">Backup &amp; Restore</string>
     <string name="setting_backup">Backup</string>
     <string name="setting_restore">Restore</string>
-    <string name="setting_backup_restore_description">%1$s index files</string>
+    <string name="setting_backup_restore_description">%1$s index files and databases</string>
 
     <!--Search Settings-->
     <string name="setting_auto_open_gallery">Auto-open in gallery</string>

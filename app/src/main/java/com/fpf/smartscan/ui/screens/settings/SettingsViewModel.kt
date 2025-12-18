@@ -141,13 +141,16 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
         val imageIndexFile = File(application.filesDir, ImageIndexer.INDEX_FILENAME)
         val videoIndexFile = File(application.filesDir,  VideoIndexer.INDEX_FILENAME)
         val hashFile = File(application.cacheDir, HASH_FILENAME)
-        val filesToZip = listOf(imageIndexFile, videoIndexFile, hashFile)
+        val imageTagDb = application.getDatabasePath("image_tag_database")
+        val videoTagDb = application.getDatabasePath("video_tag_database")
+
+        val filesToZip = listOf(imageIndexFile, videoIndexFile, hashFile, imageTagDb, videoTagDb)
         _isBackupLoading.value = true
 
         viewModelScope.launch(Dispatchers.IO){
             try {
                 if(!imageIndexFile.exists() && !videoIndexFile.exists()) error("Media not indexed")
-                val hashes: List<String> = listOf(imageIndexFile, videoIndexFile).filter { it.exists() }.map{hashFile(it)}
+                val hashes: List<String> = filesToZip.filter { it.exists() && it != hashFile }.map{hashFile(it)}
                 hashFile.writeText(hashes.joinToString("\n") )
 
                 zipFiles(indexZipFile, filesToZip)
@@ -193,11 +196,11 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
     private suspend fun isValidBackupFile(extractedFiles: List<File>): Boolean{
         val hashFile = extractedFiles.find { it.name == HASH_FILENAME }?: return false
         val hashesFromFile: List<String> = hashFile.readLines()
-        if(hashesFromFile.isEmpty()) return false // must have hash for at least 1 of image or video index file
+        if(hashesFromFile.isEmpty()) return false
 
-        val indexFiles = extractedFiles.filterNot{it.name == HASH_FILENAME}
-        val indexHashes = indexFiles.map{hashFile(it)}
-        return hashesFromFile.toSet() == indexHashes.toSet()
+        val otherFiles = extractedFiles.filterNot{it.name == HASH_FILENAME}
+        val otherFileHashes = otherFiles.map{hashFile(it)}
+        return hashesFromFile.toSet() == otherFileHashes.toSet()
     }
 
     fun updateEnableDirectionGalleryOpen(enable: Boolean){
