@@ -28,30 +28,14 @@ The app is free, but if you enjoy using it and want to support project developme
 
 ### Search Images and Videos
 - **Search Options:** Search using text or images.
+- **Tagging**: Add tags with auto-suggestions and auto-complete.
+- **Cross-App Search**: Search from other apps via Share/intent.
 - **Folder Selection:** Choose which image and video folders are allowed to be indexed.
 - **Gallery Access:** Open search results directly in the gallery.
-- **Weekly Updates:** Automatically refresh image and video indexes for new content.
+- **Auto-refresh Index:** Automatically refresh image and video indexes for new content.
 
 ### Fully On-Device
 All processing is handled entirely on-device, ensuring privacy, speed, and offline functionality.
-
----
-
-## How to use
-
-### Media Search
-
-Search across both images and videos with the following behavior:
-
-* **First-Time Indexing:** First-time use requires indexing of media files. This may take several minutes depending on your library size.
-* **Automatic Updates:** Indexing occurs automatically on a schedule (daily or weekly) based on your settings.
-* **Manual Refresh:** You can also manually refresh the image or video index anytime via Settings.
-
-#### Search Tips
-
-- **Keep it Short**: Use short, specific search queries.
-- **Be Descriptive**: For images with text content, include specific words present in the image.
-- **Adjust Results**: In settings, you can modify the number of similar results displayed.
 
 ---
 

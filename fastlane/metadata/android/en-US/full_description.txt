@@ -9,7 +9,7 @@ Search images and videos offline using text or by reverse image search with on-d
 <li><b>Cross-App Search:</b> Search from other apps via Share.</li>
 <li><b>Gallery Access:</b> Open search results directly in the gallery.</li>
 <li><b>Folder Selection:</b> Choose which image and video folders are allowed to be indexed.</li>
-<li><b>Weekly Updates:</b> Automatically refresh image and video indexes for new content.</li>
+<li><b>Auto-Refresh Index:</b> Automatically refresh image and video indexes for new content.</li>
 </ul>
 
 <b>Fully On-Device</b>
