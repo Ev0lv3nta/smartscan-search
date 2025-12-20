@@ -193,6 +193,8 @@ fun SearchResults(
         ) {
             FloatingActionButton(onClick = {
                 scope.launch {
+                    showScrollToTop = false
+                    onOffsetChange(0)
                     gridState.scrollToItem(0)
                 }
             }) {
