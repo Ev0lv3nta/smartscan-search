@@ -115,6 +115,10 @@ fun SearchScreen(
         }
     }
 
+    LaunchedEffect(state.searchResults) {
+        if(state.searchResults.isEmpty()) offset = 0
+    }
+
     LaunchedEffect(intentSearchQuery) {
         if(intentSearchQuery == null) return@LaunchedEffect
 
