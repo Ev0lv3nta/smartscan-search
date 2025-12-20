@@ -269,7 +269,10 @@ fun SearchScreen(
                                 searchViewModel.search(appSettings.similarityThreshold)
                                 isSelecting = false
                             },
-                            onClearResults = { searchViewModel.reset() },
+                            onClearResults = {
+                                isSelecting = false
+                                searchViewModel.reset()
+                                             },
                             placeholders = searchBarPlaceholders,
                             trailingIcon = {
                                 SelectorIconItem(
