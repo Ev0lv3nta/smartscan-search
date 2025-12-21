@@ -98,8 +98,8 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
         val storedImageEmbeddings = imageStore.get(imageIds)
         if(storedImageEmbeddings.isEmpty()) return
 
-        val nPrototypeNew = autoTagger.updateTagPrototype(tag, storedImageEmbeddings)
-        val cohesionScore = autoTagger.calculateCohesionScore(tag, storedImageEmbeddings)
+        val nPrototypeNew = autoTagger.updateTagPrototype(tag, storedImageEmbeddings.map{it.embedding})
+        val cohesionScore = autoTagger.calculateCohesionScore(tag, storedImageEmbeddings.map{it.embedding})
         imageTagsRepository.upsert(tag.copy(nPrototype = nPrototypeNew, cohesionScore = cohesionScore))
     }
 
@@ -111,8 +111,8 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
         val storedVideosEmbeddings = videoStore.get(videoIds)
         if(storedVideosEmbeddings.isEmpty()) return
 
-        val nPrototypeNew = autoTagger.updateTagPrototype(tag, storedVideosEmbeddings)
-        val cohesionScore = autoTagger.calculateCohesionScore(tag, storedVideosEmbeddings)
+        val nPrototypeNew = autoTagger.updateTagPrototype(tag, storedVideosEmbeddings.map{it.embedding})
+        val cohesionScore = autoTagger.calculateCohesionScore(tag, storedVideosEmbeddings.map{it.embedding})
         videoTagsRepository.upsert(tag.copy(nPrototype = nPrototypeNew, cohesionScore=cohesionScore))
     }
 

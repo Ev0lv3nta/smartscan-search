@@ -498,14 +498,14 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
                 when(_state.value.mediaType){
                     MediaType.IMAGE -> {
                         val imageEmbeddings = imageStore.get(ids)
-                        val prototype = generatePrototypeEmbedding(imageEmbeddings.map{it.embeddings})
+                        val prototype = generatePrototypeEmbedding(imageEmbeddings.map{it.embedding})
                         val suggestedTags = autoTagger.getSuggestedTags(allImageTags.value, prototype)
                         _state.update{currentState -> currentState.copy(suggestedTags = suggestedTags)}
 
                     }
                     MediaType.VIDEO -> {
                         val videoEmbeddings = videoStore.get(ids)
-                        val prototype = generatePrototypeEmbedding(videoEmbeddings.map{it.embeddings})
+                        val prototype = generatePrototypeEmbedding(videoEmbeddings.map{it.embedding})
                         val suggestedTags = autoTagger.getSuggestedTags(allVideoTags.value, prototype)
                         _state.update{currentState -> currentState.copy(suggestedTags = suggestedTags)}
                     }
