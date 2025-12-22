@@ -80,12 +80,12 @@ android {
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.documentfile)
+    implementation(libs.smartscan.ml)
 
+    // media loading
     implementation(libs.coil.compose)
     implementation(libs.coil.video)
-
-    implementation(libs.smartscan.sdk.smartscan.ml)
-
+    
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
