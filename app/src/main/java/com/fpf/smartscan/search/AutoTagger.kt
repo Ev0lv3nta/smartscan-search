@@ -6,16 +6,8 @@ import com.fpf.smartscansdk.core.embeddings.updatePrototype
 import com.fpf.smartscansdk.core.embeddings.dot
 import com.fpf.smartscansdk.core.embeddings.generatePrototypeEmbedding
 import com.fpf.smartscansdk.core.embeddings.getSimilarities
-import com.fpf.smartscansdk.core.embeddings.getTopN
-import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
-import kotlin.math.exp
 
-
-class AutoTagger(
-    private val store: FileEmbeddingStore,
-    private val textEmbedder: ClipTextEmbedder,
-    ) {
-
+class AutoTagger(private val store: FileEmbeddingStore) {
     private suspend fun generateTagPrototype(id: Long, sampleEmbeddings: List<FloatArray>){
         val prototype = generatePrototypeEmbedding(sampleEmbeddings)
         store.add(listOf(StoredEmbedding(id = id, embedding = prototype, date = System.currentTimeMillis())))
@@ -77,19 +69,5 @@ class AutoTagger(
 
         val confidence = bestSim - secondBestSim
         return TagSuggestionsResult(suggestedTag, lastUsedTag, confidence)
-    }
-
-
-    suspend fun orderBySimilarity(tags: List<MediaTag>, selectedMediaPrototype: FloatArray): List<MediaTag>{
-        if(!store.exists) return emptyList()
-
-        val results = store.get(tags.map{ it.prototypeId})
-        if(results.isEmpty() || results.size != tags.size) return tags
-
-        if(!textEmbedder.isInitialized()) textEmbedder.initialize()
-        val rawEmbeds = textEmbedder.embedBatch(tags.map { it.name })
-        val sims = getSimilarities(selectedMediaPrototype, rawEmbeds)
-        val orderedTagEmbedsIndices = getTopN(sims, sims.size)
-        return orderedTagEmbedsIndices.map{ tags[it] }
     }
 }
