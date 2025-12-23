@@ -7,6 +7,7 @@ class VideoTagCrossRefRepository(
     private val dao: VideoTagCrossRefDao,
     private val videoTagDao: VideoTagDao
 ) {
+    suspend fun getTagsForVideo(videoId: Long): List<String> = dao.getTagsForVideo(videoId)
     suspend fun getVideoIds(tag: String): List<Long> = dao.getVideoIds(tag)
     suspend fun getVideoIds(tag: String, limit: Int, offset: Int = 0): List<Long> = dao.getVideoIds(tag, limit, offset)
 
