@@ -4,6 +4,9 @@ import androidx.room.*
 
 @Dao
 interface VideoTagCrossRefDao {
+    @Query("SELECT DISTINCT tag FROM video_tag_crossref WHERE videoId = :videoId")
+    suspend fun getTagsForVideo(videoId: Long): List<String>
+
     @Query("SELECT videoId FROM video_tag_crossref WHERE tag = :tag")
     suspend fun getVideoIds(tag: String): List<Long>
 

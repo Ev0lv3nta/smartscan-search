@@ -35,17 +35,16 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.fpf.smartscan.search.SuggestedTags
+import com.fpf.smartscan.search.TagSuggestionsResult
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.filter
 
 @OptIn(FlowPreview::class)
 @Composable
 fun TagAdder(
     isVisible: Boolean,
-    suggestedTags: SuggestedTags,
+    suggestedTags: TagSuggestionsResult,
     autoCompleteTagResults: List<String>,
     onClose: () -> Unit,
     onAddTag: (String) -> Unit,

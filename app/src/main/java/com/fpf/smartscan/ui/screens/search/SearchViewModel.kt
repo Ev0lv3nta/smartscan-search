@@ -31,7 +31,7 @@ import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.search.ImageIndexListener
 import com.fpf.smartscan.search.AutoTagger
-import com.fpf.smartscan.search.SuggestedTags
+import com.fpf.smartscan.search.TagSuggestionsResult
 import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.services.MediaIndexForegroundService
 import com.fpf.smartscan.services.startIndexing
@@ -74,8 +74,9 @@ data class SearchState(
     val textEmbedderLastUsage: Long? = null,
     val autoCompleteTagResults: List<String> = emptyList(),
     val tagFilter: String? = null,
-    val suggestedTags: SuggestedTags = SuggestedTags()
-)
+    val suggestedTags: TagSuggestionsResult = TagSuggestionsResult(),
+    val tagOnlySearch: Boolean = false,
+    )
 
 class SearchViewModel(private val application: Application) : AndroidViewModel(application) {
     companion object {
@@ -179,11 +180,11 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     }
 
     fun reset(){
-        _state.value = _state.value.copy(totalResults = 0, searchResults = emptyList(), selectedResults = emptyList(), autoCompleteTagResults = emptyList(), error = null, tagFilter = null, suggestedTags = SuggestedTags())
+        _state.value = _state.value.copy(totalResults = 0, searchResults = emptyList(), selectedResults = emptyList(), autoCompleteTagResults = emptyList(), error = null, tagFilter = null, suggestedTags = TagSuggestionsResult(), tagOnlySearch = false)
     }
 
     fun search(threshold: Float){
-        val store = if(_state.value.mediaType == MediaType.VIDEO) videoStore else imageStore
+        val store = getStore()
         if(!store.exists) {
             _state.update{ currentState -> currentState.copy(error = application.getString(R.string.search_error_not_indexed))}
             return
@@ -212,27 +213,20 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
                 val regex = Regex("""^#([a-zA-Z0-9_]+)""")
                 val match = regex.find(query)
                 val tag = match?.groupValues?.get(1)
-                tag.let{
+                tag?.let{ tag ->
                     _state.update { currentState -> currentState.copy(tagFilter = tag) }
-                    when(_state.value.mediaType){
-                        MediaType.VIDEO -> {
-                            val videoTag = allVideoTags.value.find { it.name == tag }
-                            videoTag?.let{videoTagsRepository.upsert(it.copy(lastUsedAt = System.currentTimeMillis()))}
-                        }
-                        MediaType.IMAGE -> {
-                            val imageTag = allImageTags.value.find { it.name == tag }
-                            imageTag?.let{imageTagsRepository.upsert(it.copy(lastUsedAt = System.currentTimeMillis()))}
-                        }
-                    }
+                    updateTagLastUsage(tag)
                 }
 
                 val actualQueryStart = if(!tag.isNullOrBlank()) tag.length + 1 else 0
                 val actualQuery = query.substring(actualQueryStart).trim()
-                val idsMatchingTag: List<Long> = getMediaIds(tag)
+                val idsMatchingTag: List<Long> = getMediaIds(tag, RESULTS_BATCH_SIZE, 0) // load initial
+                val totalResults = countMediaIds(tag)
 
-                // tag only search
-                if(idsMatchingTag.isNotEmpty() && actualQuery.isBlank()){
-                    return@launch handleQueryResults(idsMatchingTag, store)
+                val tagOnlySearch = idsMatchingTag.isNotEmpty() && actualQuery.isBlank()
+                if(tagOnlySearch){
+                    _state.update { currentState -> currentState.copy(tagOnlySearch = true) }
+                    return@launch handleQueryResults(idsMatchingTag, store, totalResults)
                 }else if(actualQuery.isBlank()){
                     return@launch handleQueryResults(emptyList(), store)
                 }
@@ -276,7 +270,8 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
         }
     }
 
-    private suspend fun handleQueryResults(queryResults: List<Long>, store: FileEmbeddingStore) {
+    private suspend fun handleQueryResults(queryResults: List<Long>, store: FileEmbeddingStore, totalResults: Int? = null) {
+        val totalCount = totalResults?: queryResults.size
         val initialBatch = queryResults.take(RESULTS_BATCH_SIZE) // initial results the rest loaded dynamically
 
         val (unprocessedFilteredResults, idsToPurge) = initialBatch.map { id ->
@@ -286,7 +281,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
 
         val filteredSearchResults = unprocessedFilteredResults.map { it.second }
 
-        _state.emit( _state.value.copy(totalResults = queryResults.size, searchResults = filteredSearchResults))
+        _state.emit( _state.value.copy(totalResults = totalCount, searchResults = filteredSearchResults))
 
         if (filteredSearchResults.isEmpty()) {
             _state.emit(_state.value.copy(error = application.getString(R.string.search_error_no_results)))
@@ -301,14 +296,19 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
 
     fun onLoadMore() {
         if (isLoadingMoreSearchResults.getAndSet(true)) return
-        val store = if(_state.value.mediaType == MediaType.VIDEO) videoStore else imageStore
+        val store = getStore()
         val currentItemsCount = _state.value.searchResults.size
         if (currentItemsCount >= _state.value.totalResults) return
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val end = (currentItemsCount + RESULTS_BATCH_SIZE).coerceAtMost(_state.value.totalResults)
-                val batch = store.query(currentItemsCount, end).take(RESULTS_BATCH_SIZE)
+                val batch = if(_state.value.tagOnlySearch && _state.value.tagFilter != null){
+                    val offset = (currentItemsCount).coerceAtMost(_state.value.totalResults)
+                    getMediaIds(_state.value.tagFilter, RESULTS_BATCH_SIZE, offset = offset)
+                }else{
+                    val end = (currentItemsCount + RESULTS_BATCH_SIZE).coerceAtMost(_state.value.totalResults)
+                    store.query(currentItemsCount, end).take(RESULTS_BATCH_SIZE)
+                }
                 val (filteredResults, idsToPurge) = batch.map { id ->
                         val uri = if (_state.value.mediaType == MediaType.VIDEO) getVideoUriFromId(id) else getImageUriFromId(id)
                         id to uri
@@ -320,7 +320,6 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
                 }
 
                 if (idsToPurge.isNotEmpty()) {
-                    val store = if (_state.value.mediaType == MediaType.VIDEO) videoStore else imageStore
                     viewModelScope.launch(Dispatchers.IO) {
                         store.remove(idsToPurge.map { it.first })
                     }
@@ -397,19 +396,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     }
 
     fun clearSelectedResults(){
-        _state.update{currentState -> currentState.copy(selectedResults = emptyList(), suggestedTags = SuggestedTags())}
-    }
-
-    private suspend fun getMediaIds(tag: String?): List<Long>{
-        return when {
-            _state.value.mediaType == MediaType.IMAGE && !tag.isNullOrBlank() -> {
-                imageTagsCrossRefRepository.getImageIds(tag)
-            }
-            _state.value.mediaType == MediaType.VIDEO && !tag.isNullOrBlank() -> {
-                videoTagsCrossRefRepository.getVideoIds(tag)
-            }
-            else -> { emptyList()}
-        }
+        _state.update{currentState -> currentState.copy(selectedResults = emptyList(), suggestedTags = TagSuggestionsResult())}
     }
 
     fun addTag(tag: String){
@@ -492,7 +479,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
         if(!tagStore.exists) return
         viewModelScope.launch(Dispatchers.IO){
             val ids = _state.value.selectedResults.take(MAX_N_PROTOTYPE).map{ContentUris.parseId(it)}
-            _state.update{currentState -> currentState.copy(suggestedTags = SuggestedTags())} // reset
+            _state.update{currentState -> currentState.copy(suggestedTags = TagSuggestionsResult())} // reset
 
             try {
                 when(_state.value.mediaType){
@@ -512,6 +499,45 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
                 }
             }catch (e: Exception){
                 Log.e(TAG, "$e")
+            }
+        }
+    }
+
+    private fun getStore() = if(_state.value.mediaType == MediaType.VIDEO) videoStore else imageStore
+
+    private suspend fun getMediaIds(tag: String?, limit: Int, offset: Int): List<Long>{
+        return when {
+            _state.value.mediaType == MediaType.IMAGE && !tag.isNullOrBlank() -> {
+                imageTagsCrossRefRepository.getImageIds(tag, limit, offset)
+            }
+            _state.value.mediaType == MediaType.VIDEO && !tag.isNullOrBlank() -> {
+                videoTagsCrossRefRepository.getVideoIds(tag, limit, offset)
+            }
+            else -> { emptyList() }
+        }
+    }
+
+    private suspend fun countMediaIds(tag: String?): Int{
+        return when {
+            _state.value.mediaType == MediaType.IMAGE && !tag.isNullOrBlank() -> {
+                imageTagsCrossRefRepository.count(tag)
+            }
+            _state.value.mediaType == MediaType.VIDEO && !tag.isNullOrBlank() -> {
+                videoTagsCrossRefRepository.count(tag)
+            }
+            else -> 0
+        }
+    }
+
+    private suspend fun updateTagLastUsage(tag: String){
+        when(_state.value.mediaType){
+            MediaType.VIDEO -> {
+                val videoTag = allVideoTags.value.find { it.name == tag }
+                videoTag?.let{videoTagsRepository.upsert(it.copy(lastUsedAt = System.currentTimeMillis()))}
+            }
+            MediaType.IMAGE -> {
+                val imageTag = allImageTags.value.find { it.name == tag }
+                imageTag?.let{imageTagsRepository.upsert(it.copy(lastUsedAt = System.currentTimeMillis()))}
             }
         }
     }
