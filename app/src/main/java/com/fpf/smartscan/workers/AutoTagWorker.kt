@@ -5,6 +5,7 @@ import android.content.Context
 import android.util.Log
 import androidx.work.*
 import com.fpf.smartscan.R
+import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.data.images.ImageTag
 import com.fpf.smartscan.data.images.ImageTagCrossRef
 import com.fpf.smartscan.data.images.ImageTagCrossRefRepository
@@ -18,8 +19,6 @@ import com.fpf.smartscan.data.videos.VideoTagRepository
 import com.fpf.smartscan.search.AutoTagger
 import com.fpf.smartscan.utils.showNotification
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
-import com.fpf.smartscansdk.core.indexers.ImageIndexer
-import com.fpf.smartscansdk.core.indexers.VideoIndexer
 import com.fpf.smartscansdk.ml.models.loaders.ResourceId
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
 import kotlinx.coroutines.Dispatchers
@@ -70,10 +69,9 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
 
     val textEmbedder by lazy { ClipTextEmbedder(applicationContext, ResourceId(R.raw.clip_text_encoder_quant))}
 
-    val imageStore = FileEmbeddingStore(File(applicationContext.filesDir, ImageIndexer.INDEX_FILENAME), textEmbedder.embeddingDim)
-    val videoStore = FileEmbeddingStore(File(applicationContext.filesDir, VideoIndexer.INDEX_FILENAME), textEmbedder.embeddingDim )
-    val tagStore by lazy { FileEmbeddingStore(File(applicationContext.filesDir, "tags_store.bin"), textEmbedder.embeddingDim)}
-
+    val imageStore = FileEmbeddingStore(File(applicationContext.filesDir, EmbeddingStoresFiles.IMAGE), textEmbedder.embeddingDim)
+    val videoStore = FileEmbeddingStore(File(applicationContext.filesDir, EmbeddingStoresFiles.VIDEO), textEmbedder.embeddingDim )
+    val tagStore = FileEmbeddingStore(File(applicationContext.filesDir, EmbeddingStoresFiles.TAGS), textEmbedder.embeddingDim)
     val autoTagger by lazy { AutoTagger(tagStore, textEmbedder)}
 
 

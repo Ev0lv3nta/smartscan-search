@@ -21,6 +21,7 @@ import coil3.disk.directory
 import coil3.memory.MemoryCache
 import coil3.request.crossfade
 import coil3.video.VideoFrameDecoder
+import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.utils.isServiceRunning
@@ -30,8 +31,6 @@ import com.fpf.smartscan.services.startIndexing
 import com.fpf.smartscan.ui.permissions.StorageAccess
 import com.fpf.smartscan.ui.permissions.getStorageAccess
 import com.fpf.smartscan.ui.theme.ThemeManager
-import com.fpf.smartscansdk.core.indexers.ImageIndexer
-import com.fpf.smartscansdk.core.indexers.VideoIndexer
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.io.File
@@ -112,8 +111,8 @@ class MainActivity : ComponentActivity() {
         if (shouldIndex) {
             if(isServiceRunning(application, MediaIndexForegroundService::class.java)) return // additional check to prevent service running again if condition met
 
-            val imageIndexFile = File(application.filesDir, ImageIndexer.INDEX_FILENAME)
-            val videoIndexFile = File(application.filesDir, VideoIndexer.INDEX_FILENAME)
+            val imageIndexFile = File(application.filesDir, EmbeddingStoresFiles.IMAGE)
+            val videoIndexFile = File(application.filesDir, EmbeddingStoresFiles.VIDEO)
             if(!imageIndexFile.exists() || !videoIndexFile.exists()) return // prevent full re-index due to migration incomplete
 
             val permissionType = getStorageAccess(application)
