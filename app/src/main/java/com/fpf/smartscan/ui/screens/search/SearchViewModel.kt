@@ -99,12 +99,12 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
 
     private val imageTagsRepository = ImageTagRepository(ImageTagDatabase.getDatabase(application).tagDao())
     private val videoTagsRepository = VideoTagRepository(VideoTagDatabase.getDatabase(application).tagDao())
-    private val imageTagsCrossRefRepository = ImageTagCrossRefRepository( ImageTagDatabase.getDatabase(application).imageTagCrossRefDao(), ImageTagDatabase.getDatabase(application).tagDao(),)
-    private val videoTagsCrossRefRepository = VideoTagCrossRefRepository(VideoTagDatabase.getDatabase(application).videoTagCrossRefDao(), VideoTagDatabase.getDatabase(application).tagDao(),)
+    private val imageTagsCrossRefRepository = ImageTagCrossRefRepository( ImageTagDatabase.getDatabase(application).imageTagCrossRefDao(), ImageTagDatabase.getDatabase(application).tagDao())
+    private val videoTagsCrossRefRepository = VideoTagCrossRefRepository(VideoTagDatabase.getDatabase(application).videoTagCrossRefDao(), VideoTagDatabase.getDatabase(application).tagDao())
     val allImageTags: StateFlow<List<ImageTag>> = imageTagsRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val allVideoTags: StateFlow<List<VideoTag>> = videoTagsRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    val autoTagger = AutoTagger(tagStore, textEmbedder)
+    val autoTagger = AutoTagger(tagStore)
 
     private val _state = MutableStateFlow(SearchState())
     val state: StateFlow<SearchState> = _state

@@ -146,7 +146,7 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
         val imageTagDb = application.getDatabasePath("image_tag_database")
         val videoTagDb = application.getDatabasePath("video_tag_database")
 
-        val filesToZip = listOf(imageIndexFile, videoIndexFile, hashFile, imageTagDb, videoTagDb)
+        val filesToZip = listOf(imageIndexFile, videoIndexFile, tagsEmbedStoreFile, hashFile, imageTagDb, videoTagDb)
         _isBackupLoading.value = true
 
         viewModelScope.launch(Dispatchers.IO){
