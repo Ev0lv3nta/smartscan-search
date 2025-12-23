@@ -28,8 +28,9 @@ interface MediaTag{
     val nPrototype: Int
 }
 
-data class SuggestedTags(
+data class TagSuggestionsResult(
     val bestMatch: MediaTag? = null,
-    val lastedUsed: MediaTag? = null
+    val lastedUsed: MediaTag? = null,
+    val confidence: Float = 0f
 )
 

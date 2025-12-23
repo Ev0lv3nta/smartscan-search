@@ -8,6 +8,7 @@ import com.fpf.smartscansdk.core.embeddings.generatePrototypeEmbedding
 import com.fpf.smartscansdk.core.embeddings.getSimilarities
 import com.fpf.smartscansdk.core.embeddings.getTopN
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
+import kotlin.math.exp
 
 
 class AutoTagger(
@@ -47,11 +48,12 @@ class AutoTagger(
         return sims.sum() /sims.size
     }
 
-    suspend fun getSuggestedTags(tags: List<MediaTag>, selectedMediaPrototype: FloatArray): SuggestedTags {
-        if(!store.exists) return SuggestedTags()
+    suspend fun getSuggestedTags(tags: List<MediaTag>, embedding: FloatArray): TagSuggestionsResult {
+        if(!store.exists) return TagSuggestionsResult()
 
         var suggestedTag: MediaTag? = null
         var bestSim = 0f
+        var secondBestSim = 0f
 
         var lastUsedTag: MediaTag? = null
         var lastUsed = 0L
@@ -61,9 +63,10 @@ class AutoTagger(
             if(results.isEmpty()) continue
 
             val tagPrototype = results[0]
-            val sim = tagPrototype.embedding dot selectedMediaPrototype
+            val sim = tagPrototype.embedding dot embedding
             if(tag.cohesionScore != null && sim >= tag.cohesionScore!! && sim > bestSim){
                 suggestedTag = tag
+                secondBestSim = bestSim
                 bestSim = sim
             }
             if(tag.lastUsedAt != null && tag.lastUsedAt!! > lastUsed){
@@ -72,7 +75,8 @@ class AutoTagger(
             }
         }
 
-        return SuggestedTags(suggestedTag, lastUsedTag)
+        val confidence = bestSim - secondBestSim
+        return TagSuggestionsResult(suggestedTag, lastUsedTag, confidence)
     }
 
 
