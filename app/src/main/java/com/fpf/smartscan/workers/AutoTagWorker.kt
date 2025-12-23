@@ -84,18 +84,18 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
                 updateVideoTag((tag))
             }
 
-            val completionTime = measureTimeMillis {
-                val nSuggestedImageTags = tagImages(imageTags)
-                val nSuggestedVideoTags = tagVideos(videoTags)
-                if (nSuggestedImageTags > 0 || nSuggestedVideoTags > 0) {
-                    val title = applicationContext.getString(R.string.notif_title_auto_tag)
-                    val message = buildString {
-                        if (nSuggestedImageTags > 0) append("Tagged $nSuggestedImageTags image(s). ")
-                        if (nSuggestedVideoTags > 0) append("Tagged $nSuggestedVideoTags video(s). ")
-                    }
-                    showNotification(applicationContext, title, message, NOTIFICATION_ID)
-                }
-            }
+//            val completionTime = measureTimeMillis {
+//                val nSuggestedImageTags = tagImages(imageTags)
+//                val nSuggestedVideoTags = tagVideos(videoTags)
+//                if (nSuggestedImageTags > 0 || nSuggestedVideoTags > 0) {
+//                    val title = applicationContext.getString(R.string.notif_title_auto_tag)
+//                    val message = buildString {
+//                        if (nSuggestedImageTags > 0) append("Tagged $nSuggestedImageTags image(s). ")
+//                        if (nSuggestedVideoTags > 0) append("Tagged $nSuggestedVideoTags video(s). ")
+//                    }
+//                    showNotification(applicationContext, title, message, NOTIFICATION_ID)
+//                }
+//            }
 
 //            Log.d(TAG, "Completion time: ${completionTime} ms")
             return@withContext Result.success()
