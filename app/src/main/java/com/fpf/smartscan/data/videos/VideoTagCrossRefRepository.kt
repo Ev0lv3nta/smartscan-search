@@ -12,15 +12,15 @@ class VideoTagCrossRefRepository(
     suspend fun getVideoIds(tag: String, limit: Int, offset: Int = 0): List<Long> = dao.getVideoIds(tag, limit, offset)
 
     @Transaction
-    suspend fun addTags(imageTagCrossRefs: List<VideoTagCrossRef>) {
-        val uniqueTagNames = imageTagCrossRefs.map { it.tag }.toSet()
+    suspend fun addTags(videoTagCrossRefs: List<VideoTagCrossRef>) {
+        val uniqueTagNames = videoTagCrossRefs.map { it.tag }.toSet()
         for (name in uniqueTagNames){
             val existingTag = videoTagDao.get(name)
             if(existingTag == null){
                 videoTagDao.insert(VideoTag(name=name, prototypeId = stringToLong(name)))
             }
         }
-        dao.upsert(imageTagCrossRefs)
+        dao.upsert(videoTagCrossRefs)
     }
 
     suspend fun deleteByIds(ids: List<Long>) = dao.deleteByIds(ids)
