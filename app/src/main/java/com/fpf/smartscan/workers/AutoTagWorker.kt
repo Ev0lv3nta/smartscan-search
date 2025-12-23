@@ -23,6 +23,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlin.system.measureTimeMillis
+import com.fpf.smartscan.R
 
 // Worker updates tag prototypes, cohesion score, and nPrototype, periodically for auto-tagging functionality
 // These periodic updates allow suggested tags to dynamically adapt as the user tags new media
@@ -87,7 +88,7 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
                 val nSuggestedImageTags = tagImages(imageTags)
                 val nSuggestedVideoTags = tagVideos(videoTags)
                 if (nSuggestedImageTags > 0 || nSuggestedVideoTags > 0) {
-                    val title = "New tags added to media"
+                    val title = applicationContext.getString(R.string.notif_title_auto_tag)
                     val message = buildString {
                         if (nSuggestedImageTags > 0) append("Tagged $nSuggestedImageTags image(s). ")
                         if (nSuggestedVideoTags > 0) append("Tagged $nSuggestedVideoTags video(s). ")
