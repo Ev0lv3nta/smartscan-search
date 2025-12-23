@@ -271,7 +271,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     }
 
     private suspend fun handleQueryResults(queryResults: List<Long>, store: FileEmbeddingStore, totalResults: Int? = null) {
-        val totalResults = totalResults?:  queryResults.size
+        val totalCount = totalResults?: queryResults.size
         val initialBatch = queryResults.take(RESULTS_BATCH_SIZE) // initial results the rest loaded dynamically
 
         val (unprocessedFilteredResults, idsToPurge) = initialBatch.map { id ->
@@ -281,7 +281,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
 
         val filteredSearchResults = unprocessedFilteredResults.map { it.second }
 
-        _state.emit( _state.value.copy(totalResults = totalResults, searchResults = filteredSearchResults))
+        _state.emit( _state.value.copy(totalResults = totalCount, searchResults = filteredSearchResults))
 
         if (filteredSearchResults.isEmpty()) {
             _state.emit(_state.value.copy(error = application.getString(R.string.search_error_no_results)))
