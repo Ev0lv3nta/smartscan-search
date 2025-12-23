@@ -106,9 +106,6 @@
     <string name="help_reverse_image_search">Reverse image search is generally more accurate than text queries, especially when searching videos.</string>
 
     <!--Updates-->
-    <string name="update_multi_select_actions">Added multi-select actions</string>
-    <string name="update_tagging_support">Added tagging with auto-suggestions and auto-complete</string>
-    <string name="update_auto_open_results">Added setting to auto-open results in gallery</string>
-    <string name="update_search_from_other_apps">Search from other apps via Share/intents</string>
-    <string name="update_auto_search_upload">Auto-search when image is uploaded or selected</string>
+    <string name="update_auto_tagging">Added auto-tagging to apply existing tags to matching media</string>
+    <string name="update_ui_fixes">Fixed UI bugs</string>
 </resources>
