@@ -213,18 +213,9 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
                 val regex = Regex("""^#([a-zA-Z0-9_]+)""")
                 val match = regex.find(query)
                 val tag = match?.groupValues?.get(1)
-                tag.let{
+                tag?.let{ tag ->
                     _state.update { currentState -> currentState.copy(tagFilter = tag) }
-                    when(_state.value.mediaType){
-                        MediaType.VIDEO -> {
-                            val videoTag = allVideoTags.value.find { it.name == tag }
-                            videoTag?.let{videoTagsRepository.upsert(it.copy(lastUsedAt = System.currentTimeMillis()))}
-                        }
-                        MediaType.IMAGE -> {
-                            val imageTag = allImageTags.value.find { it.name == tag }
-                            imageTag?.let{imageTagsRepository.upsert(it.copy(lastUsedAt = System.currentTimeMillis()))}
-                        }
-                    }
+                    updateTagLastUsage(tag)
                 }
 
                 val actualQueryStart = if(!tag.isNullOrBlank()) tag.length + 1 else 0
@@ -408,30 +399,6 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
         _state.update{currentState -> currentState.copy(selectedResults = emptyList(), suggestedTags = TagSuggestionsResult())}
     }
 
-    private suspend fun getMediaIds(tag: String?, limit: Int, offset: Int): List<Long>{
-        return when {
-            _state.value.mediaType == MediaType.IMAGE && !tag.isNullOrBlank() -> {
-                imageTagsCrossRefRepository.getImageIds(tag, limit, offset)
-            }
-            _state.value.mediaType == MediaType.VIDEO && !tag.isNullOrBlank() -> {
-                videoTagsCrossRefRepository.getVideoIds(tag, limit, offset)
-            }
-            else -> { emptyList() }
-        }
-    }
-
-    private suspend fun countMediaIds(tag: String?): Int{
-        return when {
-            _state.value.mediaType == MediaType.IMAGE && !tag.isNullOrBlank() -> {
-                imageTagsCrossRefRepository.count(tag)
-            }
-            _state.value.mediaType == MediaType.VIDEO && !tag.isNullOrBlank() -> {
-                videoTagsCrossRefRepository.count(tag)
-            }
-            else -> 0
-        }
-    }
-
     fun addTag(tag: String){
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -538,6 +505,42 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
 
     private fun getStore() = if(_state.value.mediaType == MediaType.VIDEO) videoStore else imageStore
 
+    private suspend fun getMediaIds(tag: String?, limit: Int, offset: Int): List<Long>{
+        return when {
+            _state.value.mediaType == MediaType.IMAGE && !tag.isNullOrBlank() -> {
+                imageTagsCrossRefRepository.getImageIds(tag, limit, offset)
+            }
+            _state.value.mediaType == MediaType.VIDEO && !tag.isNullOrBlank() -> {
+                videoTagsCrossRefRepository.getVideoIds(tag, limit, offset)
+            }
+            else -> { emptyList() }
+        }
+    }
+
+    private suspend fun countMediaIds(tag: String?): Int{
+        return when {
+            _state.value.mediaType == MediaType.IMAGE && !tag.isNullOrBlank() -> {
+                imageTagsCrossRefRepository.count(tag)
+            }
+            _state.value.mediaType == MediaType.VIDEO && !tag.isNullOrBlank() -> {
+                videoTagsCrossRefRepository.count(tag)
+            }
+            else -> 0
+        }
+    }
+
+    private suspend fun updateTagLastUsage(tag: String){
+        when(_state.value.mediaType){
+            MediaType.VIDEO -> {
+                val videoTag = allVideoTags.value.find { it.name == tag }
+                videoTag?.let{videoTagsRepository.upsert(it.copy(lastUsedAt = System.currentTimeMillis()))}
+            }
+            MediaType.IMAGE -> {
+                val imageTag = allImageTags.value.find { it.name == tag }
+                imageTag?.let{imageTagsRepository.upsert(it.copy(lastUsedAt = System.currentTimeMillis()))}
+            }
+        }
+    }
 
     override fun onCleared() {
         textEmbedder.closeSession()
