@@ -31,7 +31,7 @@ import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.search.ImageIndexListener
 import com.fpf.smartscan.search.AutoTagger
-import com.fpf.smartscan.search.SuggestedTags
+import com.fpf.smartscan.search.TagSuggestionsResult
 import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.services.MediaIndexForegroundService
 import com.fpf.smartscan.services.startIndexing
@@ -74,7 +74,7 @@ data class SearchState(
     val textEmbedderLastUsage: Long? = null,
     val autoCompleteTagResults: List<String> = emptyList(),
     val tagFilter: String? = null,
-    val suggestedTags: SuggestedTags = SuggestedTags()
+    val suggestedTags: TagSuggestionsResult = TagSuggestionsResult()
 )
 
 class SearchViewModel(private val application: Application) : AndroidViewModel(application) {
@@ -179,7 +179,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     }
 
     fun reset(){
-        _state.value = _state.value.copy(totalResults = 0, searchResults = emptyList(), selectedResults = emptyList(), autoCompleteTagResults = emptyList(), error = null, tagFilter = null, suggestedTags = SuggestedTags())
+        _state.value = _state.value.copy(totalResults = 0, searchResults = emptyList(), selectedResults = emptyList(), autoCompleteTagResults = emptyList(), error = null, tagFilter = null, suggestedTags = TagSuggestionsResult())
     }
 
     fun search(threshold: Float){
@@ -397,7 +397,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     }
 
     fun clearSelectedResults(){
-        _state.update{currentState -> currentState.copy(selectedResults = emptyList(), suggestedTags = SuggestedTags())}
+        _state.update{currentState -> currentState.copy(selectedResults = emptyList(), suggestedTags = TagSuggestionsResult())}
     }
 
     private suspend fun getMediaIds(tag: String?): List<Long>{
@@ -492,7 +492,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
         if(!tagStore.exists) return
         viewModelScope.launch(Dispatchers.IO){
             val ids = _state.value.selectedResults.take(MAX_N_PROTOTYPE).map{ContentUris.parseId(it)}
-            _state.update{currentState -> currentState.copy(suggestedTags = SuggestedTags())} // reset
+            _state.update{currentState -> currentState.copy(suggestedTags = TagSuggestionsResult())} // reset
 
             try {
                 when(_state.value.mediaType){
