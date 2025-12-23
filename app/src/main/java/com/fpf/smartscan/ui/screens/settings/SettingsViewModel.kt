@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -138,8 +139,9 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
 
     fun backup(uri: Uri){
         val indexZipFile = File(application.cacheDir, BACKUP_FILENAME)
-        val imageIndexFile = File(application.filesDir, ImageIndexer.INDEX_FILENAME)
-        val videoIndexFile = File(application.filesDir,  VideoIndexer.INDEX_FILENAME)
+        val imageIndexFile = File(application.filesDir, EmbeddingStoresFiles.IMAGE)
+        val videoIndexFile = File(application.filesDir,  EmbeddingStoresFiles.VIDEO)
+        val tagsEmbedStoreFile = File(application.filesDir,  EmbeddingStoresFiles.TAGS)
         val hashFile = File(application.cacheDir, HASH_FILENAME)
         val imageTagDb = application.getDatabasePath("image_tag_database")
         val videoTagDb = application.getDatabasePath("video_tag_database")

@@ -13,6 +13,7 @@ import androidx.lifecycle.viewModelScope
 import com.fpf.smartscan.media.getImageUriFromId
 import kotlinx.coroutines.Dispatchers
 import com.fpf.smartscan.R
+import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.data.images.ImageTag
 import com.fpf.smartscan.data.images.ImageTagCrossRef
 import com.fpf.smartscan.data.images.ImageTagCrossRefRepository
@@ -39,8 +40,6 @@ import com.fpf.smartscan.utils.isWorkScheduled
 import com.fpf.smartscan.workers.AutoTagWorker
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.generatePrototypeEmbedding
-import com.fpf.smartscansdk.core.indexers.ImageIndexer
-import com.fpf.smartscansdk.core.indexers.VideoIndexer
 import com.fpf.smartscansdk.core.media.getBitmapFromUri
 import com.fpf.smartscansdk.ml.models.loaders.ResourceId
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
@@ -94,9 +93,9 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     private val textEmbedder = ClipTextEmbedder(application, ResourceId(R.raw.clip_text_encoder_quant))
     private val imageEmbedder = ClipImageEmbedder(application, ResourceId(R.raw.clip_image_encoder_quant))
 
-    val imageStore = FileEmbeddingStore(File(application.filesDir, ImageIndexer.INDEX_FILENAME), imageEmbedder.embeddingDim)
-    val videoStore = FileEmbeddingStore(File(application.filesDir, VideoIndexer.INDEX_FILENAME), imageEmbedder.embeddingDim )
-    val tagStore = FileEmbeddingStore(File(application.filesDir, "tags_store.bin"), imageEmbedder.embeddingDim)
+    val imageStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE), imageEmbedder.embeddingDim)
+    val videoStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.VIDEO), imageEmbedder.embeddingDim )
+    val tagStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.TAGS), imageEmbedder.embeddingDim)
 
     private val imageTagsRepository = ImageTagRepository(ImageTagDatabase.getDatabase(application).tagDao())
     private val videoTagsRepository = VideoTagRepository(VideoTagDatabase.getDatabase(application).tagDao())
