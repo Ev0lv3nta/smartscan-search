@@ -64,7 +64,7 @@ class MainActivity : ComponentActivity() {
             }
                 .crossfade(true)
                 .memoryCache { MemoryCache.Builder().maxSizePercent(this, 0.25).build() }
-                .diskCache { DiskCache.Builder().directory(cacheDir.resolve("image_cache")).maxSizePercent(0.02).build() }
+                .diskCache { DiskCache.Builder().directory(cacheDir.resolve("image_cache")).maxSizePercent(0.05).build() }
                 .build()
         }
         var intentSearchQuery: SearchQuery? = null
