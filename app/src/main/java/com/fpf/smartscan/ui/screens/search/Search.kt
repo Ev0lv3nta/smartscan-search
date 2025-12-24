@@ -115,6 +115,10 @@ fun SearchScreen(
         }
     }
 
+    LaunchedEffect(state.searchResults) {
+        if(state.searchResults.isEmpty()) offset = 0
+    }
+
     LaunchedEffect(intentSearchQuery) {
         if(intentSearchQuery == null) return@LaunchedEffect
 
@@ -269,7 +273,10 @@ fun SearchScreen(
                                 searchViewModel.search(appSettings.similarityThreshold)
                                 isSelecting = false
                             },
-                            onClearResults = { searchViewModel.reset() },
+                            onClearResults = {
+                                isSelecting = false
+                                searchViewModel.reset()
+                                             },
                             placeholders = searchBarPlaceholders,
                             trailingIcon = {
                                 SelectorIconItem(

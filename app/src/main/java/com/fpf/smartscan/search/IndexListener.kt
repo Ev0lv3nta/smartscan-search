@@ -7,11 +7,11 @@ import kotlinx.coroutines.flow.StateFlow
 import com.fpf.smartscan.R
 import com.fpf.smartscan.utils.getTimeInMinutesAndSeconds
 import com.fpf.smartscan.utils.showNotification
-import com.fpf.smartscansdk.core.embeddings.Embedding
+import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
 import com.fpf.smartscansdk.core.processors.Metrics
 import com.fpf.smartscansdk.core.processors.IProcessorListener
 
-abstract class BaseIndexListener(private val notificationId: Int, private val tag: String) : IProcessorListener<Long, Embedding> {
+abstract class BaseIndexListener(private val notificationId: Int, private val tag: String) : IProcessorListener<Long, StoredEmbedding> {
     private val _progress = MutableStateFlow(0f)
     val progress: StateFlow<Float> = _progress
 

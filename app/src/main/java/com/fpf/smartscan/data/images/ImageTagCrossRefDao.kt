@@ -7,6 +7,8 @@ import androidx.room.Query
 
 @Dao
 interface ImageTagCrossRefDao {
+    @Query("SELECT DISTINCT tag FROM image_tag_crossref WHERE imageId = :imageId")
+    suspend fun getTagsForImage(imageId: Long): List<String>
     @Query("SELECT imageId FROM image_tag_crossref WHERE tag = :tag")
     suspend fun getImageIds(tag: String): List<Long>
 

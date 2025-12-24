@@ -12,6 +12,7 @@ import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.fpf.smartscan.R
 import com.fpf.smartscan.MainActivity
+import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.search.ImageIndexListener
 import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.settings.loadSettings
@@ -94,7 +95,7 @@ class MediaIndexForegroundService : Service() {
 
                 if (mediaType == TYPE_IMAGE || mediaType == TYPE_BOTH) {
                     // cache not needed for indexing
-                    val imageStore = FileEmbeddingStore(File(application.filesDir, ImageIndexer.INDEX_FILENAME), embeddingHandler.embeddingDim)
+                    val imageStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE), embeddingHandler.embeddingDim)
                     val imageIndexer = ImageIndexer(embeddingHandler, context=application, listener = ImageIndexListener, store = imageStore)
                     val ids = queryImageIds(application, appSettings.searchableImageDirectories.map{it.toUri()})
                     val existingIds = if(imageStore.exists) imageStore.get().map{it.id}.toSet() else emptySet()
@@ -103,7 +104,7 @@ class MediaIndexForegroundService : Service() {
                 }
 
                 if (mediaType == TYPE_VIDEO || mediaType == TYPE_BOTH) {
-                    val videoStore = FileEmbeddingStore(File(application.filesDir,  VideoIndexer.INDEX_FILENAME), embeddingHandler.embeddingDim )
+                    val videoStore = FileEmbeddingStore(File(application.filesDir,  EmbeddingStoresFiles.VIDEO), embeddingHandler.embeddingDim )
                     val videoIndexer = VideoIndexer(embeddingHandler, context=application, listener = VideoIndexListener, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
                     val ids = queryVideoIds(application, appSettings.searchableVideoDirectories.map { it.toUri() })
                     val existingIds = if(videoStore.exists) videoStore.get().map{it.id}.toSet() else emptySet()

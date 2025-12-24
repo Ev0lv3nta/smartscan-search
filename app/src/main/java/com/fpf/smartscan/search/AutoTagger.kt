@@ -1,65 +1,51 @@
 package com.fpf.smartscan.search
 
-import com.fpf.smartscansdk.core.embeddings.Embedding
+import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
+import com.fpf.smartscansdk.core.embeddings.updatePrototype
 import com.fpf.smartscansdk.core.embeddings.dot
 import com.fpf.smartscansdk.core.embeddings.generatePrototypeEmbedding
 import com.fpf.smartscansdk.core.embeddings.getSimilarities
-import com.fpf.smartscansdk.core.embeddings.getTopN
-import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
 
-
-class AutoTagger(
-    private val store: FileEmbeddingStore,
-    private val textEmbedder: ClipTextEmbedder,
-    ) {
-
-    private suspend fun generateTagPrototype(id: Long, sampleImageEmbeddings: List<Embedding>){
-        val prototype = generatePrototypeEmbedding(sampleImageEmbeddings.map{it.embeddings})
-        store.add(listOf(Embedding(id = id, embeddings = prototype, date = System.currentTimeMillis())))
+class AutoTagger(private val store: FileEmbeddingStore) {
+    private suspend fun generateTagPrototype(id: Long, sampleEmbeddings: List<FloatArray>){
+        val prototype = generatePrototypeEmbedding(sampleEmbeddings)
+        store.add(listOf(StoredEmbedding(id = id, embedding = prototype, date = System.currentTimeMillis())))
     }
-    suspend fun updateTagPrototype(tag: MediaTag, newItemEmbeddings: List<Embedding>): Int{
+    suspend fun updateTagPrototype(tag: MediaTag, newEmbeddings: List<FloatArray>): Int{
         if(!store.exists){
-            generateTagPrototype(tag.prototypeId, newItemEmbeddings )
-            return newItemEmbeddings.size
+            generateTagPrototype(tag.prototypeId, newEmbeddings )
+            return newEmbeddings.size
         }
 
         val result = store.get(listOf(tag.prototypeId))
 
         if(result.isEmpty()){
-            generateTagPrototype(tag.prototypeId, newItemEmbeddings )
-            return newItemEmbeddings.size
+            generateTagPrototype(tag.prototypeId, newEmbeddings )
+            return newEmbeddings.size
         }
-        // updatedPrototype = ((N * currentPrototype) + sum(newEmbedding)) / (N + newN)
-        val prototype = result[0].embeddings
-        val nPrototypeNew = tag.nPrototype + newItemEmbeddings.size
-        val sumNew = sumEmbeddings(newItemEmbeddings.map { it.embeddings })
-        val updatedPrototype = FloatArray(prototype.size)
-        if(tag.nPrototype > 0){
-            for(i in updatedPrototype.indices) updatedPrototype[i] = tag.nPrototype.toFloat() * prototype[i]
-        }
-        for (i in updatedPrototype.indices) updatedPrototype[i] += sumNew[i]
-        for (i in updatedPrototype.indices) updatedPrototype[i] /= nPrototypeNew.toFloat()
-
-        store.add(listOf(Embedding(id = tag.prototypeId, date = System.currentTimeMillis(), embeddings = updatedPrototype)))
-        return nPrototypeNew
+        val prototype = result[0].embedding
+        val (updatedPrototype, newN) = updatePrototype(prototype, newEmbeddings, tag.nPrototype)
+        store.add(listOf(StoredEmbedding(id = tag.prototypeId, date = System.currentTimeMillis(), embedding = updatedPrototype)))
+        return newN
     }
 
-    suspend fun calculateCohesionScore(tag: MediaTag, sampleBatchEmbeddings: List<Embedding>): Float?{
+    suspend fun calculateCohesionScore(tag: MediaTag, sampleEmbeddings: List<FloatArray>): Float?{
         if(!store.exists) return null
         val results = store.get(listOf((tag.prototypeId)))
         if(results.isEmpty()) null
 
         val tagPrototype = results[0]
-        val sims = getSimilarities(tagPrototype.embeddings, sampleBatchEmbeddings.map{it.embeddings})
+        val sims = getSimilarities(tagPrototype.embedding, sampleEmbeddings)
         return sims.sum() /sims.size
     }
 
-    suspend fun getSuggestedTags(tags: List<MediaTag>, selectedMediaPrototype: FloatArray): SuggestedTags {
-        if(!store.exists) return SuggestedTags()
+    suspend fun getSuggestedTags(tags: List<MediaTag>, embedding: FloatArray): TagSuggestionsResult {
+        if(!store.exists) return TagSuggestionsResult()
 
         var suggestedTag: MediaTag? = null
         var bestSim = 0f
+        var secondBestSim = 0f
 
         var lastUsedTag: MediaTag? = null
         var lastUsed = 0L
@@ -69,9 +55,10 @@ class AutoTagger(
             if(results.isEmpty()) continue
 
             val tagPrototype = results[0]
-            val sim = tagPrototype.embeddings dot selectedMediaPrototype
+            val sim = tagPrototype.embedding dot embedding
             if(tag.cohesionScore != null && sim >= tag.cohesionScore!! && sim > bestSim){
                 suggestedTag = tag
+                secondBestSim = bestSim
                 bestSim = sim
             }
             if(tag.lastUsedAt != null && tag.lastUsedAt!! > lastUsed){
@@ -80,29 +67,7 @@ class AutoTagger(
             }
         }
 
-        return SuggestedTags(suggestedTag, lastUsedTag)
-    }
-
-
-    suspend fun orderBySimilarity(tags: List<MediaTag>, selectedMediaPrototype: FloatArray): List<MediaTag>{
-        if(!store.exists) return emptyList()
-
-        val results = store.get(tags.map{ it.prototypeId})
-        if(results.isEmpty() || results.size != tags.size) return tags
-
-        if(!textEmbedder.isInitialized()) textEmbedder.initialize()
-        val rawEmbeds = textEmbedder.embedBatch(tags.map { it.name })
-        val sims = getSimilarities(selectedMediaPrototype, rawEmbeds)
-        val orderedTagEmbedsIndices = getTopN(sims, sims.size)
-        return orderedTagEmbedsIndices.map{ tags[it] }
-    }
-    private fun sumEmbeddings(embeddings: List<FloatArray>): FloatArray {
-        val sum = FloatArray(embeddings[0].size)
-        for (emb in embeddings) {
-            for (i in emb.indices) {
-                sum[i] += emb[i]
-            }
-        }
-        return sum
+        val confidence = bestSim - secondBestSim
+        return TagSuggestionsResult(suggestedTag, lastUsedTag, confidence)
     }
 }

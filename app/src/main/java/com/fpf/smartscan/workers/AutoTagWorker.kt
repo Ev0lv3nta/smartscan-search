@@ -4,25 +4,26 @@ import android.app.Application
 import android.content.Context
 import android.util.Log
 import androidx.work.*
-import com.fpf.smartscan.R
+import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.data.images.ImageTag
+import com.fpf.smartscan.data.images.ImageTagCrossRef
 import com.fpf.smartscan.data.images.ImageTagCrossRefRepository
 import com.fpf.smartscan.data.images.ImageTagDatabase
 import com.fpf.smartscan.data.images.ImageTagRepository
 import com.fpf.smartscan.data.videos.VideoTag
+import com.fpf.smartscan.data.videos.VideoTagCrossRef
 import com.fpf.smartscan.data.videos.VideoTagCrossRefRepository
 import com.fpf.smartscan.data.videos.VideoTagDatabase
 import com.fpf.smartscan.data.videos.VideoTagRepository
 import com.fpf.smartscan.search.AutoTagger
+import com.fpf.smartscan.utils.showNotification
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
-import com.fpf.smartscansdk.core.indexers.ImageIndexer
-import com.fpf.smartscansdk.core.indexers.VideoIndexer
-import com.fpf.smartscansdk.ml.models.loaders.ResourceId
-import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.TimeUnit
+import kotlin.system.measureTimeMillis
+import com.fpf.smartscan.R
 
 // Worker updates tag prototypes, cohesion score, and nPrototype, periodically for auto-tagging functionality
 // These periodic updates allow suggested tags to dynamically adapt as the user tags new media
@@ -33,6 +34,10 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
     companion object {
         const val TAG = "AutoTagWorker"
         const val N_PROTOTYPE = 10
+        private const val NOTIFICATION_ID = 2000
+        private const val MIN_CONFIDENCE_MARGIN = 0.2
+        private const val EMBED_DIM = 512
+
 
         fun scheduleWorker(context: Context, frequency: Pair<Long, TimeUnit>, delay: Pair<Long, TimeUnit>? = null) {
             val constraints = Constraints.Builder()
@@ -60,14 +65,10 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
     val videoTagsRepository by lazy { VideoTagRepository(VideoTagDatabase.getDatabase(applicationContext as Application).tagDao())}
     val imageTagsCrossRefRepository by lazy { ImageTagCrossRefRepository( ImageTagDatabase.getDatabase(applicationContext as Application).imageTagCrossRefDao(), ImageTagDatabase.getDatabase(applicationContext as Application).tagDao())}
     val videoTagsCrossRefRepository by lazy { VideoTagCrossRefRepository(VideoTagDatabase.getDatabase(applicationContext as Application).videoTagCrossRefDao(), VideoTagDatabase.getDatabase(applicationContext as Application).tagDao())}
-
-    val textEmbedder by lazy { ClipTextEmbedder(applicationContext, ResourceId(R.raw.clip_text_encoder_quant))}
-
-    val imageStore = FileEmbeddingStore(File(applicationContext.filesDir, ImageIndexer.INDEX_FILENAME), textEmbedder.embeddingDim)
-    val videoStore = FileEmbeddingStore(File(applicationContext.filesDir, VideoIndexer.INDEX_FILENAME), textEmbedder.embeddingDim )
-    val tagStore by lazy { FileEmbeddingStore(File(applicationContext.filesDir, "tags_store.bin"), textEmbedder.embeddingDim)}
-
-    val autoTagger by lazy { AutoTagger(tagStore, textEmbedder)}
+    val imageStore = FileEmbeddingStore(File(applicationContext.filesDir, EmbeddingStoresFiles.IMAGE), EMBED_DIM)
+    val videoStore = FileEmbeddingStore(File(applicationContext.filesDir, EmbeddingStoresFiles.VIDEO), EMBED_DIM )
+    val tagStore = FileEmbeddingStore(File(applicationContext.filesDir, EmbeddingStoresFiles.TAGS), EMBED_DIM)
+    val autoTagger by lazy { AutoTagger(tagStore)}
 
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
@@ -83,6 +84,20 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
                 updateVideoTag((tag))
             }
 
+//            val completionTime = measureTimeMillis {
+//                val nSuggestedImageTags = tagImages(imageTags)
+//                val nSuggestedVideoTags = tagVideos(videoTags)
+//                if (nSuggestedImageTags > 0 || nSuggestedVideoTags > 0) {
+//                    val title = applicationContext.getString(R.string.notif_title_auto_tag)
+//                    val message = buildString {
+//                        if (nSuggestedImageTags > 0) append("Tagged $nSuggestedImageTags image(s). ")
+//                        if (nSuggestedVideoTags > 0) append("Tagged $nSuggestedVideoTags video(s). ")
+//                    }
+//                    showNotification(applicationContext, title, message, NOTIFICATION_ID)
+//                }
+//            }
+
+//            Log.d(TAG, "Completion time: ${completionTime} ms")
             return@withContext Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "Error updating tags: ${e.message}", e)
@@ -98,8 +113,8 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
         val storedImageEmbeddings = imageStore.get(imageIds)
         if(storedImageEmbeddings.isEmpty()) return
 
-        val nPrototypeNew = autoTagger.updateTagPrototype(tag, storedImageEmbeddings)
-        val cohesionScore = autoTagger.calculateCohesionScore(tag, storedImageEmbeddings)
+        val nPrototypeNew = autoTagger.updateTagPrototype(tag, storedImageEmbeddings.map{it.embedding})
+        val cohesionScore = autoTagger.calculateCohesionScore(tag, storedImageEmbeddings.map{it.embedding})
         imageTagsRepository.upsert(tag.copy(nPrototype = nPrototypeNew, cohesionScore = cohesionScore))
     }
 
@@ -111,9 +126,43 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
         val storedVideosEmbeddings = videoStore.get(videoIds)
         if(storedVideosEmbeddings.isEmpty()) return
 
-        val nPrototypeNew = autoTagger.updateTagPrototype(tag, storedVideosEmbeddings)
-        val cohesionScore = autoTagger.calculateCohesionScore(tag, storedVideosEmbeddings)
+        val nPrototypeNew = autoTagger.updateTagPrototype(tag, storedVideosEmbeddings.map{it.embedding})
+        val cohesionScore = autoTagger.calculateCohesionScore(tag, storedVideosEmbeddings.map{it.embedding})
         videoTagsRepository.upsert(tag.copy(nPrototype = nPrototypeNew, cohesionScore=cohesionScore))
+    }
+
+    private suspend fun tagImages(tags: List<ImageTag>): Int{
+        val storedEmbeddings = imageStore.get().map { it }.toSet()
+        val imageTagsToAdd: MutableList<ImageTagCrossRef> = emptyList<ImageTagCrossRef>().toMutableList()
+
+        for (storedEmbed in storedEmbeddings){
+            val result = autoTagger.getSuggestedTags(tags,  storedEmbed.embedding)
+            result.bestMatch?.let{
+                if(result.confidence < MIN_CONFIDENCE_MARGIN) continue
+                val existingTags = imageTagsCrossRefRepository.getTagsForImage(storedEmbed.id).toSet()
+                if (it.name in existingTags) continue
+                imageTagsToAdd.add(ImageTagCrossRef(storedEmbed.id, it.name))
+            }
+        }
+        if(imageTagsToAdd.isNotEmpty()) imageTagsCrossRefRepository.addTags(imageTagsToAdd)
+        return imageTagsToAdd.size
+    }
+
+    private suspend fun tagVideos( tags: List<VideoTag>): Int{
+        val storedEmbeddings = videoStore.get().map { it }.toSet()
+        val videoTagsToAdd: MutableList<VideoTagCrossRef> = emptyList<VideoTagCrossRef>().toMutableList()
+
+        for (storedEmbed in storedEmbeddings){
+            val result = autoTagger.getSuggestedTags(tags,  storedEmbed.embedding)
+            result.bestMatch?.let{
+                if(result.confidence < MIN_CONFIDENCE_MARGIN) continue
+                val existingTags = videoTagsCrossRefRepository.getTagsForVideo(storedEmbed.id).toSet()
+                if (it.name in existingTags) continue
+                videoTagsToAdd.add(VideoTagCrossRef(storedEmbed.id, it.name))
+            }
+        }
+        if(videoTagsToAdd.isNotEmpty()) videoTagsCrossRefRepository.addTags(videoTagsToAdd)
+        return videoTagsToAdd.size
     }
 
 }
