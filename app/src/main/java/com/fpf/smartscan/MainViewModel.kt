@@ -43,7 +43,6 @@ class MainViewModel( application: Application) : AndroidViewModel(application) {
 
     fun getUpdates(): List<String>{
         return listOf(
-            application.getString(R.string.update_auto_tagging),
             application.getString(R.string.update_ui_fixes),
         )
     }
