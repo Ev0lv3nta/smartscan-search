@@ -119,23 +119,8 @@ fun SearchScreen(
         if(state.searchResults.isEmpty()) offset = 0
     }
 
-    LaunchedEffect(intentSearchQuery) {
-        if(intentSearchQuery == null) return@LaunchedEffect
-
-        when(intentSearchQuery) {
-            is SearchQuery.ImageQuery -> {
-                searchViewModel.setMediaType(intentSearchQuery.mediaType)
-                searchViewModel.updateSearchImageUri(intentSearchQuery.uri)
-                searchViewModel.updateQueryType(QueryType.IMAGE)
-                searchViewModel.search(appSettings.similarityThreshold)
-            }
-
-            is SearchQuery.TextQuery -> {
-                searchViewModel.setMediaType(intentSearchQuery.mediaType)
-                searchViewModel.searchFieldState.edit { replace(0, searchViewModel.searchFieldState.text.length, intentSearchQuery.text) }
-                searchViewModel.search( appSettings.similarityThreshold)
-            }
-        }
+    LaunchedEffect(Unit) {
+        searchViewModel.externalSearch(intentSearchQuery, appSettings.similarityThreshold)
     }
 
     if ( !alertTitle.isNullOrBlank() && !alertDescription.isNullOrBlank()) {
