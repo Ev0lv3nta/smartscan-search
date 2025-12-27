@@ -354,6 +354,11 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     }
 
     fun toggleViewResult(context: Context, uri: Uri?, autoOpenInGallery: Boolean? = null, isSelecting: Boolean = false){
+        if(uri != null && !canOpenUri(context, uri)){
+            _state.update { currentState -> currentState.copy(searchResults = currentState.searchResults - uri) }
+            return
+        }
+
         if(autoOpenInGallery == true && !isSelecting) {
             when(_state.value.mediaType){
                 MediaType.IMAGE -> {
