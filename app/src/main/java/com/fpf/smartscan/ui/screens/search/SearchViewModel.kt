@@ -353,8 +353,8 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
         }
     }
 
-    fun toggleViewResult(context: Context, uri: Uri?, autoOpenInGallery: Boolean? = null){
-        if(autoOpenInGallery == true) {
+    fun toggleViewResult(context: Context, uri: Uri?, autoOpenInGallery: Boolean? = null, isSelecting: Boolean = false){
+        if(autoOpenInGallery == true && !isSelecting) {
             when(_state.value.mediaType){
                 MediaType.IMAGE -> {
                     uri?.let{openImageInGallery(context, it)}
