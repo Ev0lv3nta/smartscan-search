@@ -123,6 +123,12 @@ fun SearchScreen(
         searchViewModel.externalSearch(intentSearchQuery, appSettings.similarityThreshold)
     }
 
+    DisposableEffect(Unit) {
+        onDispose {
+            searchViewModel.clearSelectedResults()
+        }
+    }
+
     if ( !alertTitle.isNullOrBlank() && !alertDescription.isNullOrBlank()) {
         AlertDialog(
             onDismissRequest = { },
