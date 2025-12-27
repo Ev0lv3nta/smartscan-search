@@ -1,5 +1,6 @@
 # SmartScan - Media search engine app
 
+## ❗ This repository is no longer maintained.
 Search images and videos offline using text or by reverse image search with on-device AI.
 
 <div align="center">
