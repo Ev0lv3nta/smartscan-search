@@ -123,6 +123,12 @@ fun SearchScreen(
         searchViewModel.externalSearch(intentSearchQuery, appSettings.similarityThreshold)
     }
 
+    DisposableEffect(Unit) {
+        onDispose {
+            searchViewModel.clearSelectedResults()
+        }
+    }
+
     if ( !alertTitle.isNullOrBlank() && !alertDescription.isNullOrBlank()) {
         AlertDialog(
             onDismissRequest = { },
@@ -311,7 +317,7 @@ fun SearchScreen(
                 isSelecting = isSelecting,
                 selectedResults = state.selectedResults,
                 loadMoreBuffer = (RESULTS_BATCH_SIZE * 0.4).toInt(),
-                onViewResult = { uri -> searchViewModel.toggleViewResult(context, uri, appSettings.enableDirectGalleryOpen) },
+                onViewResult = { uri -> searchViewModel.toggleViewResult(context, uri, autoOpenInGallery = appSettings.enableDirectGalleryOpen, isSelecting = isSelecting ) },
                 onLoadMore = searchViewModel::onLoadMore,
                 onToggleSelected = searchViewModel::toggleSelectedResult,
                 onToggleSelectionMode = {
