@@ -43,7 +43,10 @@ class MainViewModel( application: Application) : AndroidViewModel(application) {
 
     fun getUpdates(): List<String>{
         return listOf(
-            application.getString(R.string.update_ui_fixes),
+            application.getString(R.string.update_image_expansion),
+            application.getString(R.string.update_search_crash_fix),
+            application.getString(R.string.update_external_search_fix),
+            application.getString(R.string.update_ui_minor)
         )
     }
 

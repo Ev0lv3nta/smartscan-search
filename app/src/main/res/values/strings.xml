@@ -106,6 +106,9 @@
     <string name="help_reverse_image_search">Reverse image search is generally more accurate than text queries, especially when searching videos.</string>
 
     <!--Updates-->
-    <string name="update_auto_tagging">Added auto-tagging to apply existing tags to matching media</string>
-    <string name="update_ui_fixes">Fixed UI bugs</string>
+    <string name="update_image_expansion">Added image expansion in selection mode</string>
+    <string name="update_search_crash_fix">Fixed crash when clicking a search result that was deleted after results were displayed</string>
+    <string name="update_external_search_fix">Fixed issue where external search re-triggered on Search screen recomposition</string>
+    <string name="update_ui_minor">Other minor UI improvements</string>
+
 </resources>
