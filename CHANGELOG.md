@@ -1,4 +1,14 @@
-## v1.1.9 - 18/12/2025
+## v1.2.0 - 27/12/2025 
+
+### Added 
+* Added image expansion in selection mode.
+
+### Fixed
+* Fixed crash when clicking a search result that was deleted after results were displayed.
+* Fixed issue where external search would re-trigger when the Search screen was recomposed.
+* Other minor UI improvements.
+
+## v1.1.9 - 24/12/2025
 
 ### Fixed
 * Fixed UI bug where all results for tag only search were not viewable
