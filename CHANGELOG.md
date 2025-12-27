@@ -1,3 +1,9 @@
+## v1.1.9 - 18/12/2025
+
+### Fixed
+* Fixed UI bug where all results for tag only search were not viewable
+* Fixed other minor UI bugs
+
 ## v1.1.8 - 18/12/2025
 
 ### Added
