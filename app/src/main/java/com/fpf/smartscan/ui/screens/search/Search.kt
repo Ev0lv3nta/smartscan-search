@@ -125,6 +125,7 @@ fun SearchScreen(
 
     DisposableEffect(Unit) {
         onDispose {
+            searchViewModel.toggleViewResult(context, null)
             searchViewModel.clearSelectedResults()
         }
     }
