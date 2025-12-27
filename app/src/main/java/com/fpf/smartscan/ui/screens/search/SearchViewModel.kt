@@ -32,6 +32,7 @@ import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.search.ImageIndexListener
 import com.fpf.smartscan.search.AutoTagger
+import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.search.TagSuggestionsResult
 import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.services.MediaIndexForegroundService
@@ -118,6 +119,8 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     private val _alertDescription = MutableStateFlow<String?>(null)
     val alertDescription: StateFlow<String?> = _alertDescription
     private val isLoadingMoreSearchResults = AtomicBoolean(false)
+
+    private var hasHandledExternalSearch = false
 
 
     init {
@@ -293,6 +296,27 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
         }
     }
 
+    fun externalSearch(intentSearchQuery: SearchQuery?, similarityThreshold: Float){
+        if(intentSearchQuery == null || hasHandledExternalSearch) return
+
+        when(intentSearchQuery) {
+            is SearchQuery.ImageQuery -> {
+                setMediaType(intentSearchQuery.mediaType)
+                updateSearchImageUri(intentSearchQuery.uri)
+                updateQueryType(QueryType.IMAGE)
+                search(similarityThreshold)
+                hasHandledExternalSearch = true
+            }
+
+            is SearchQuery.TextQuery -> {
+               setMediaType(intentSearchQuery.mediaType)
+                searchFieldState.edit { replace(0, searchFieldState.text.length, intentSearchQuery.text) }
+                search( similarityThreshold)
+                hasHandledExternalSearch = true
+            }
+        }
+    }
+
     fun onLoadMore() {
         if (isLoadingMoreSearchResults.getAndSet(true)) return
         val store = getStore()
@@ -329,8 +353,13 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
         }
     }
 
-    fun toggleViewResult(context: Context, uri: Uri?, autoOpenInGallery: Boolean? = null){
-        if(autoOpenInGallery == true) {
+    fun toggleViewResult(context: Context, uri: Uri?, autoOpenInGallery: Boolean? = null, isSelecting: Boolean = false){
+        if(uri != null && !canOpenUri(context, uri)){
+            _state.update { currentState -> currentState.copy(searchResults = currentState.searchResults - uri) }
+            return
+        }
+
+        if(autoOpenInGallery == true && !isSelecting) {
             when(_state.value.mediaType){
                 MediaType.IMAGE -> {
                     uri?.let{openImageInGallery(context, it)}

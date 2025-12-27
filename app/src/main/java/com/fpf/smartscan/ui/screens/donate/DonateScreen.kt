@@ -1,5 +1,6 @@
 package com.fpf.smartscan.ui.screens.donate
 
+import android.content.ClipData
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -11,23 +12,26 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.ClipboardManager
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.fpf.smartscan.R
+import kotlinx.coroutines.launch
 
 @Composable
 fun DonateScreen() {
-    val clipboardManager: ClipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
     val btcWallet = stringResource(R.string.btc_wallet)
     val ethWallet = stringResource(R.string.eth_wallet)
     val ltcWallet = stringResource(R.string.ltc_wallet)
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -46,21 +50,27 @@ fun DonateScreen() {
             coinName = stringResource(R.string.label_btc),
             walletAddress = btcWallet,
             onCopyClick = {
-                clipboardManager.setText(AnnotatedString(btcWallet))
+                scope.launch {
+                    clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("btc wallet", AnnotatedString(btcWallet))))
+                }
             }
         )
         CryptoWalletOption(
             coinName = stringResource(R.string.label_eth),
             walletAddress = ethWallet,
             onCopyClick = {
-                clipboardManager.setText(AnnotatedString(ethWallet))
+                scope.launch {
+                    clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("eth wallet", AnnotatedString(ethWallet))))
+                }
             }
         )
         CryptoWalletOption(
             coinName = stringResource(R.string.label_ltc),
             walletAddress = ltcWallet,
             onCopyClick = {
-                clipboardManager.setText(AnnotatedString(ltcWallet))
+                scope.launch {
+                    clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("ltc wallet", AnnotatedString(ltcWallet))))
+                }
             }
         )
     }
@@ -73,7 +83,6 @@ fun CryptoWalletOption(
     onCopyClick: () -> Unit
 ) {
     Card(
-        elevation = CardDefaults.cardElevation(4.dp),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         modifier = Modifier

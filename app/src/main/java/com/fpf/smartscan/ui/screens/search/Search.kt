@@ -119,22 +119,14 @@ fun SearchScreen(
         if(state.searchResults.isEmpty()) offset = 0
     }
 
-    LaunchedEffect(intentSearchQuery) {
-        if(intentSearchQuery == null) return@LaunchedEffect
+    LaunchedEffect(Unit) {
+        searchViewModel.externalSearch(intentSearchQuery, appSettings.similarityThreshold)
+    }
 
-        when(intentSearchQuery) {
-            is SearchQuery.ImageQuery -> {
-                searchViewModel.setMediaType(intentSearchQuery.mediaType)
-                searchViewModel.updateSearchImageUri(intentSearchQuery.uri)
-                searchViewModel.updateQueryType(QueryType.IMAGE)
-                searchViewModel.search(appSettings.similarityThreshold)
-            }
-
-            is SearchQuery.TextQuery -> {
-                searchViewModel.setMediaType(intentSearchQuery.mediaType)
-                searchViewModel.searchFieldState.edit { replace(0, searchViewModel.searchFieldState.text.length, intentSearchQuery.text) }
-                searchViewModel.search( appSettings.similarityThreshold)
-            }
+    DisposableEffect(Unit) {
+        onDispose {
+            searchViewModel.toggleViewResult(context, null)
+            searchViewModel.clearSelectedResults()
         }
     }
 
@@ -321,12 +313,13 @@ fun SearchScreen(
             SearchResults(
                 isVisible = !state.loading && state.searchResults.isNotEmpty(),
                 queryType = state.queryType,
+                mediaType = state.mediaType,
                 searchResults = state.searchResults,
                 totalResults=state.totalResults,
                 isSelecting = isSelecting,
                 selectedResults = state.selectedResults,
                 loadMoreBuffer = (RESULTS_BATCH_SIZE * 0.4).toInt(),
-                onViewResult = { uri -> searchViewModel.toggleViewResult(context, uri, appSettings.enableDirectGalleryOpen) },
+                onViewResult = { uri -> searchViewModel.toggleViewResult(context, uri, autoOpenInGallery = appSettings.enableDirectGalleryOpen, isSelecting = isSelecting ) },
                 onLoadMore = searchViewModel::onLoadMore,
                 onToggleSelected = searchViewModel::toggleSelectedResult,
                 onToggleSelectionMode = {
