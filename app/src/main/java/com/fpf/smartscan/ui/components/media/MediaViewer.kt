@@ -73,7 +73,8 @@ fun MediaViewer(
                             )
                         },
                     contentScale = ContentScale.FillWidth,
-                    maxSize = maxSize
+                    maxSize = maxSize,
+                    mediaType = type
                 )
             } else {
                 VideoDisplay(

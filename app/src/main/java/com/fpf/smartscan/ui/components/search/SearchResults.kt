@@ -60,10 +60,11 @@ fun SearchResults(
     isVisible: Boolean,
     searchResults: List<Uri>,
     selectedResults: List<Uri>,
-    onViewResult: (uri: Uri?) -> Unit,
     queryType: QueryType,
-    onLoadMore: () -> Unit,
+    mediaType: MediaType,
     totalResults: Int,
+    onLoadMore: () -> Unit,
+    onViewResult: (uri: Uri?) -> Unit,
     onToggleSelected: (Uri) -> Unit,
     onToggleSelectionMode: () -> Unit,
     onOffsetChange: (Int) -> Unit,
@@ -175,6 +176,7 @@ fun SearchResults(
                         uri = uri,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
+                        mediaType = mediaType
                     )
                     if(isSelecting) {
                         CircularCheckbox(
