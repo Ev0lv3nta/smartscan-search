@@ -44,11 +44,17 @@ All processing is handled entirely on-device, ensuring privacy, speed, and offli
 
 Go to [Releases](https://github.com/dev-diaries41/smartscan/releases/latest) and download the latest apk.
 
-<div style="display: flex; gap: 10px;">
-  <a href="https://f-droid.org/packages/com.fpf.smartscan" style="text-decoration: none;">
-  <img src="https://f-droid.org/badge/get-it-on.svg" alt="F-Droid" style="max-width:100%;" width=200>
-  </a>
-</div>
+To download on F-droid you must now add the archive repository in the F-droid client app. The latest version is not current available on F-droid.
+
+[//]: # (<div style="display: flex; gap: 10px;">)
+
+[//]: # (  <a href="https://f-droid.org/packages/com.fpf.smartscan" style="text-decoration: none;">)
+
+[//]: # (  <img src="https://f-droid.org/badge/get-it-on.svg" alt="F-Droid" style="max-width:100%;" width=200>)
+
+[//]: # (  </a>)
+
+[//]: # (</div>)
 
 ---
 
