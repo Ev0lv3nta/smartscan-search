@@ -60,6 +60,7 @@
     <!--Search Settings-->
     <string name="setting_auto_open_gallery">Auto-open in gallery</string>
     <string name="setting_index_frequency">Index frequency</string>
+    <string name="setting_search_result_columns">Results per row</string>
     <string name="setting_index_frequency_description">Schedule for auto-updates of video and image indexes.</string>
     <string name="setting_similarity_threshold">Similarity threshold</string>
     <string name="setting_similarity_threshold_description">Minimum similarity score for matching results</string>

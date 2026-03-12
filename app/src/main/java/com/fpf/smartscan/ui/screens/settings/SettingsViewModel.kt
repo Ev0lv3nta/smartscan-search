@@ -209,4 +209,8 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
         _appSettings.update{currentSettings -> currentSettings.copy(enableDirectGalleryOpen = enable)}
         saveSettings(sharedPrefs, _appSettings.value)
     }
+    fun updateResultsPerRow(n: Int){
+        _appSettings.update{currentSettings -> currentSettings.copy(resultsPerRow = n)}
+        saveSettings(sharedPrefs, _appSettings.value)
+    }
 }

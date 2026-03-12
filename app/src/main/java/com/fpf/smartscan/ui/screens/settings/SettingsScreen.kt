@@ -120,6 +120,15 @@ fun SettingsScreen(
                     },
                     modifier = Modifier.fillMaxWidth()
                 )
+                SelectorItem(
+                    label = stringResource(id = R.string.setting_search_result_columns),
+                    options = (3 until 6).map { it.toString() },
+                    selectedOption = appSettings.resultsPerRow.toString(),
+                    onOptionSelected = { selected ->
+                        viewModel.updateResultsPerRow(selected.toInt())
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
                 SwitchItem(
                     text=stringResource(R.string.setting_auto_open_gallery),
                     checked = appSettings.enableDirectGalleryOpen,
