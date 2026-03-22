@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<link id="favicon" rel="icon" type="image/x-icon" href="">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SmartScan</title>
@@ -243,6 +244,11 @@ fetch('config.json')
 .then(res => res.json())
 .then(config => {
   document.title = config.appName || '';
+    // Favicon
+  if (config.favicon) {
+    const favicon = document.getElementById('favicon');
+    favicon.href = config.favicon;
+  }
 
   const logo = document.getElementById('hero-logo');
   if (config.logo) logo.src = config.logo;
@@ -250,7 +256,7 @@ fetch('config.json')
 
   document.getElementById('hero-title').textContent = config.appName || '';
   document.getElementById('hero-developer').textContent = config.developer || '';
-  document.getElementById('hero-tagline').textContent = config.hero?.tagline || '';
+  document.getElementById('hero-tagline').textContent = config.description || '';
 
   if (config.hero?.image) {
     document.getElementById('hero-bg').style.backgroundImage = `url('${config.hero.image}')`;
