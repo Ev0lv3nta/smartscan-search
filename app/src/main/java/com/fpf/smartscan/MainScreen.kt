@@ -11,9 +11,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.compose.NavHost
@@ -69,60 +66,6 @@ fun MainScreen(intentSearchQuery: SearchQuery?) {
 
     val showBackButton = currentRoute?.startsWith(Routes.SETTINGS.split("/")[0]) == true || currentRoute in listOf( Routes.DONATE, Routes.HELP)
 
-    var showRefreshImageIndexDialog by remember { mutableStateOf(false) }
-    var showRefreshVideoIndexDialog by remember { mutableStateOf(false) }
-
-    if (showRefreshImageIndexDialog || showRefreshVideoIndexDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                if(showRefreshImageIndexDialog) {
-                    showRefreshImageIndexDialog = false
-                }else{
-                    showRefreshVideoIndexDialog = false
-                }
-            },
-            title = { Text(text = if (showRefreshImageIndexDialog) {
-                stringResource(id = R.string.setting_refresh_image_index)
-            } else {
-                stringResource(id = R.string.setting_refresh_video_index)
-            }) },
-            text = { Text(text = mainViewModel.getRefreshMessage()) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val storageAccess = getStorageAccess(context)
-                        if (storageAccess != StorageAccess.Denied) {
-                            if(showRefreshImageIndexDialog){
-                                refreshIndex(context.applicationContext, MediaIndexForegroundService.TYPE_IMAGE)
-                            }else{
-                                refreshIndex(context.applicationContext, MediaIndexForegroundService.TYPE_VIDEO)
-                            }
-                        }
-                        if(showRefreshImageIndexDialog){
-                            showRefreshImageIndexDialog = false
-                        }else{
-                            showRefreshVideoIndexDialog = false
-                        }
-                    }
-                ) {
-                    Text(text = "Confirm")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        if(showRefreshImageIndexDialog){
-                            showRefreshImageIndexDialog = false
-                        }else{
-                            showRefreshVideoIndexDialog = false
-                        } }
-                ) {
-                    Text(text = "Cancel")
-                }
-            }
-        )
-    }
-
     if(isUpdatePopUpVisible) {
         UpdatePopUp(
             isVisible = true,
@@ -146,8 +89,20 @@ fun MainScreen(intentSearchQuery: SearchQuery?) {
                     },
                     actions = {
                         OverflowMenu(
-                            onRefreshImageIndex = { showRefreshImageIndexDialog = true },
-                            onRefreshVideoIndex = { showRefreshVideoIndexDialog = true }
+                            onRefreshImageIndex = {
+                                val storageAccess = getStorageAccess(context)
+                                if (storageAccess != StorageAccess.Denied) {
+                                    refreshIndex(context.applicationContext, MediaIndexForegroundService.TYPE_IMAGE
+                                    )
+                                }
+                                                  },
+                            onRefreshVideoIndex = {
+                                val storageAccess = getStorageAccess(context)
+                                if (storageAccess != StorageAccess.Denied) {
+                                    refreshIndex(context.applicationContext, MediaIndexForegroundService.TYPE_VIDEO
+                                    )
+                                }
+                            },
                         )
                     }
                 )
