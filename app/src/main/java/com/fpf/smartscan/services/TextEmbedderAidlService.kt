@@ -6,28 +6,25 @@ import android.os.IBinder
 import android.util.Log
 import com.fpf.smartscan.ITextEmbedderService
 import com.fpf.smartscan.R
-import com.fpf.smartscan.constants.miniLmTextEmbedderModel
-import com.fpf.smartscan.models.ModelManager
-import com.fpf.smartscan.models.SmartScanModelType
 import com.fpf.smartscansdk.core.embeddings.TextEmbeddingProvider
 import com.fpf.smartscansdk.core.embeddings.flattenEmbeddings
+import com.fpf.smartscansdk.core.models.ModelManager
+import com.fpf.smartscansdk.core.models.ModelName
+import com.fpf.smartscansdk.core.models.ModelRegistry
+import com.fpf.smartscansdk.core.models.ModelType
 import com.fpf.smartscansdk.ml.models.loaders.FilePath
 import com.fpf.smartscansdk.ml.models.loaders.ResourceId
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
 import com.fpf.smartscansdk.ml.providers.embeddings.minilm.MiniLMTextEmbedder
 import kotlinx.coroutines.runBlocking
-import java.io.File
-
 
 class TextEmbedderAidlService: Service() {
-
     companion object {
         const val TAG = "TextEmbedderAidlService"
-        private const val DEFAULT_MODEL = "Default"
     }
     private lateinit var textEmbedder: TextEmbeddingProvider
 
-    private var selectedModel = DEFAULT_MODEL
+    private var selectedModel = ModelName.CLIP_VIT_B_32_TEXT.name
 
     override fun onCreate() {
         super.onCreate()
@@ -81,26 +78,27 @@ class TextEmbedderAidlService: Service() {
         }
 
         override fun listModels(): List<String> {
-            return ModelManager.getImportedModels(application).filter { it.type == SmartScanModelType.TEXT_ENCODER }.map { it.name }
+            return ModelManager.listModels(application, ModelType.TEXT_ENCODER).map { it.name }
         }
 
-        override fun selectModel(model: String): Boolean {
-            if(model == selectedModel) return true
+        override fun selectModel(modelName: String): Boolean {
+            if(modelName == selectedModel) return true
 
-            val availableModels = listModels() + DEFAULT_MODEL
-            if(!availableModels.contains(model)) return false
+            val availableModels = listModels() + ModelName.CLIP_VIT_B_32_TEXT.name
+            if(!availableModels.contains(modelName)) return false
 
-            selectedModel = model
+            selectedModel = modelName
 
-            val modelPathsMap = ModelManager.getModelPathMap()
-            val pathInfo = modelPathsMap[model]
+            val model = ModelName.entries.firstOrNull { it.name == modelName }?: return false
+            val modelInfo = ModelRegistry[model]!!
+            val file = ModelManager.getModelFile(application, modelInfo)
 
             textEmbedder = when(model){
-                miniLmTextEmbedderModel.name -> {
+                ModelName.ALL_MINILM_L6_V2 -> {
                     textEmbedder.closeSession()
-                    MiniLMTextEmbedder(application, FilePath(File(application.filesDir, pathInfo!!.path).path))
+                    MiniLMTextEmbedder(application, FilePath(file.path))
                 }
-                DEFAULT_MODEL -> {
+                ModelName.CLIP_VIT_B_32_TEXT -> {
                     textEmbedder.closeSession()
                     ClipTextEmbedder(application, ResourceId(R.raw.clip_text_encoder_quant))
                 }

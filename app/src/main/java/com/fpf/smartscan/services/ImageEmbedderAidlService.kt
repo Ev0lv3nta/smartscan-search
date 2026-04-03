@@ -9,10 +9,10 @@ import android.os.IBinder
 import android.util.Log
 import com.fpf.smartscan.IImageEmbedderService
 import com.fpf.smartscan.R
-import com.fpf.smartscan.models.SmartScanModelType
-import com.fpf.smartscan.models.ModelManager
 import com.fpf.smartscansdk.core.embeddings.ImageEmbeddingProvider
 import com.fpf.smartscansdk.core.embeddings.flattenEmbeddings
+import com.fpf.smartscansdk.core.models.ModelManager
+import com.fpf.smartscansdk.core.models.ModelType
 import com.fpf.smartscansdk.ml.models.loaders.ResourceId
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
 import kotlinx.coroutines.runBlocking
@@ -22,7 +22,6 @@ class ImageEmbedderAidlService: Service() {
 
     companion object {
         const val TAG = "ImageEmbedderAidlService"
-        private const val DEFAULT_MODEL = "Default"
     }
     private lateinit var imageEmbedder: ImageEmbeddingProvider
 
@@ -79,7 +78,7 @@ class ImageEmbedderAidlService: Service() {
         }
 
         override fun listModels(): List<String> {
-            return ModelManager.getImportedModels(application).filter { it.type == SmartScanModelType.IMAGE_ENCODER }.map { it.name }
+            return ModelManager.listModels(application, ModelType.IMAGE_ENCODER).map { it.name }
         }
 
         override fun selectModel(model: String): Boolean {
