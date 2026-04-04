@@ -21,7 +21,6 @@ import com.fpf.smartscan.media.queryVideoIds
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer
-import com.fpf.smartscansdk.ml.models.loaders.ResourceId
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_X
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_Y
@@ -45,13 +44,13 @@ class MediaIndexForegroundService : Service() {
 
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(serviceJob + Dispatchers.Default)
-    private lateinit var embeddingHandler: ClipImageEmbedder
+    private lateinit var imageEmbedder: ClipImageEmbedder
     private val sharedPrefs by lazy { application.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)    }
 
 
     override fun onCreate() {
         super.onCreate()
-        embeddingHandler = ClipImageEmbedder(application, ResourceId(R.raw.clip_image_encoder_quant))
+        imageEmbedder = ClipImageEmbedder(application, R.raw.clip_image_encoder_quant)
         createNotificationChannel()
         startForegroundServiceNotification()
     }
@@ -91,12 +90,12 @@ class MediaIndexForegroundService : Service() {
             try {
                 val appSettings = loadSettings(sharedPrefs)
 
-                embeddingHandler.initialize()
+                imageEmbedder.initialize()
 
                 if (mediaType == TYPE_IMAGE || mediaType == TYPE_BOTH) {
                     // cache not needed for indexing
-                    val imageStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE), embeddingHandler.embeddingDim)
-                    val imageIndexer = ImageIndexer(embeddingHandler, context=application, listener = ImageIndexListener, store = imageStore)
+                    val imageStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE), imageEmbedder.embeddingDim)
+                    val imageIndexer = ImageIndexer(imageEmbedder, context=application, listener = ImageIndexListener, store = imageStore)
                     val ids = queryImageIds(application, appSettings.searchableImageDirectories.map{it.toUri()})
                     val existingIds = if(imageStore.exists) imageStore.get().map{it.id}.toSet() else emptySet()
                     val filteredIds = ids.filterNot { existingIds.contains(it) }
@@ -104,8 +103,8 @@ class MediaIndexForegroundService : Service() {
                 }
 
                 if (mediaType == TYPE_VIDEO || mediaType == TYPE_BOTH) {
-                    val videoStore = FileEmbeddingStore(File(application.filesDir,  EmbeddingStoresFiles.VIDEO), embeddingHandler.embeddingDim )
-                    val videoIndexer = VideoIndexer(embeddingHandler, context=application, listener = VideoIndexListener, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
+                    val videoStore = FileEmbeddingStore(File(application.filesDir,  EmbeddingStoresFiles.VIDEO), imageEmbedder.embeddingDim )
+                    val videoIndexer = VideoIndexer(imageEmbedder, context=application, listener = VideoIndexListener, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
                     val ids = queryVideoIds(application, appSettings.searchableVideoDirectories.map { it.toUri() })
                     val existingIds = if(videoStore.exists) videoStore.get().map{it.id}.toSet() else emptySet()
                     val filteredIds = ids.filterNot { existingIds.contains(it) }
@@ -117,7 +116,7 @@ class MediaIndexForegroundService : Service() {
                 Log.e(TAG, "Indexing failed:", e)
             } finally {
                 sharedPrefs.edit { putString("lastIndexed", System.currentTimeMillis().toString()) } //putString used for backward compat
-                embeddingHandler.closeSession()
+                imageEmbedder.closeSession()
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }

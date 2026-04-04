@@ -10,10 +10,7 @@ import com.fpf.smartscansdk.core.embeddings.TextEmbeddingProvider
 import com.fpf.smartscansdk.core.embeddings.flattenEmbeddings
 import com.fpf.smartscansdk.core.models.ModelManager
 import com.fpf.smartscansdk.core.models.ModelName
-import com.fpf.smartscansdk.core.models.ModelRegistry
 import com.fpf.smartscansdk.core.models.ModelType
-import com.fpf.smartscansdk.ml.models.loaders.FilePath
-import com.fpf.smartscansdk.ml.models.loaders.ResourceId
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
 import com.fpf.smartscansdk.ml.providers.embeddings.minilm.MiniLMTextEmbedder
 import kotlinx.coroutines.runBlocking
@@ -28,7 +25,7 @@ class TextEmbedderAidlService: Service() {
 
     override fun onCreate() {
         super.onCreate()
-        textEmbedder = ClipTextEmbedder(application, ResourceId(R.raw.clip_text_encoder_quant))
+        textEmbedder = ClipTextEmbedder(application, R.raw.clip_text_encoder_quant, vocabResId = R.raw.vocab, mergesResId = R.raw.merges)
     }
 
     override fun onBind(intent: Intent): IBinder {
@@ -87,20 +84,17 @@ class TextEmbedderAidlService: Service() {
             val availableModels = listModels() + ModelName.CLIP_VIT_B_32_TEXT.name
             if(!availableModels.contains(modelName)) return false
 
-            selectedModel = modelName
-
             val model = ModelName.entries.firstOrNull { it.name == modelName }?: return false
-            val modelInfo = ModelRegistry[model]!!
-            val file = ModelManager.getModelFile(application, modelInfo)
+            selectedModel = modelName
 
             textEmbedder = when(model){
                 ModelName.ALL_MINILM_L6_V2 -> {
                     textEmbedder.closeSession()
-                    MiniLMTextEmbedder(application, FilePath(file.path))
+                    MiniLMTextEmbedder(application)
                 }
                 ModelName.CLIP_VIT_B_32_TEXT -> {
                     textEmbedder.closeSession()
-                    ClipTextEmbedder(application, ResourceId(R.raw.clip_text_encoder_quant))
+                    ClipTextEmbedder(application, R.raw.clip_text_encoder_quant, vocabResId = R.raw.vocab, mergesResId = R.raw.merges)
                 }
                 else -> return false
             }
