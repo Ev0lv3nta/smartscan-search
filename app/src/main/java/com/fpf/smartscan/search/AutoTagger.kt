@@ -2,7 +2,7 @@ package com.fpf.smartscan.search
 
 import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
-import com.fpf.smartscansdk.core.embeddings.updatePrototype
+import com.fpf.smartscansdk.core.embeddings.updatePrototypeEmbedding
 import com.fpf.smartscansdk.core.embeddings.dot
 import com.fpf.smartscansdk.core.embeddings.generatePrototypeEmbedding
 import com.fpf.smartscansdk.core.embeddings.getSimilarities
@@ -25,7 +25,7 @@ class AutoTagger(private val store: FileEmbeddingStore) {
             return newEmbeddings.size
         }
         val prototype = result[0].embedding
-        val (updatedPrototype, newN) = updatePrototype(prototype, newEmbeddings, tag.nPrototype)
+        val (updatedPrototype, newN) = updatePrototypeEmbedding(prototype, newEmbeddings, tag.nPrototype)
         store.add(listOf(StoredEmbedding(id = tag.prototypeId, date = System.currentTimeMillis(), embedding = updatedPrototype)))
         return newN
     }
