@@ -8,12 +8,15 @@ import com.fpf.smartscan.ITextEmbedderService
 import com.fpf.smartscan.R
 import com.fpf.smartscansdk.core.embeddings.TextEmbeddingProvider
 import com.fpf.smartscansdk.core.embeddings.flattenEmbeddings
+import com.fpf.smartscansdk.core.models.ModelAssetSource
 import com.fpf.smartscansdk.core.models.ModelManager
 import com.fpf.smartscansdk.core.models.ModelName
+import com.fpf.smartscansdk.core.models.ModelRegistry
 import com.fpf.smartscansdk.core.models.ModelType
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
 import com.fpf.smartscansdk.ml.providers.embeddings.minilm.MiniLMTextEmbedder
 import kotlinx.coroutines.runBlocking
+import java.io.File
 
 class TextEmbedderAidlService: Service() {
     companion object {
@@ -25,7 +28,7 @@ class TextEmbedderAidlService: Service() {
 
     override fun onCreate() {
         super.onCreate()
-        textEmbedder = ClipTextEmbedder(application, R.raw.clip_text_encoder_quant, vocabResId = R.raw.vocab, mergesResId = R.raw.merges)
+        textEmbedder = ClipTextEmbedder(application, ModelAssetSource.Resource(R.raw.clip_text_encoder_quant), vocabSource = ModelAssetSource.Resource(R.raw.vocab), mergesSource = ModelAssetSource.Resource(R.raw.merges))
     }
 
     override fun onBind(intent: Intent): IBinder {
@@ -78,23 +81,29 @@ class TextEmbedderAidlService: Service() {
             return ModelManager.listModels(application, ModelType.TEXT_ENCODER).map { it.name }
         }
 
-        override fun selectModel(modelName: String): Boolean {
-            if(modelName == selectedModel) return true
+        override fun selectModel(modelNameStr: String): Boolean {
+            if(modelNameStr == selectedModel) return true
 
             val availableModels = listModels() + ModelName.CLIP_VIT_B_32_TEXT.name
-            if(!availableModels.contains(modelName)) return false
+            if(!availableModels.contains(modelNameStr)) return false
 
-            val model = ModelName.entries.firstOrNull { it.name == modelName }?: return false
-            selectedModel = modelName
+            val modelName = ModelName.entries.firstOrNull { it.name == modelNameStr }?: return false
+            val modelInfo = ModelRegistry[modelName]!!
+            val modelDir = ModelManager.getModelFile(application, modelInfo)
 
-            textEmbedder = when(model){
+            selectedModel = modelNameStr
+
+            textEmbedder = when(modelName){
                 ModelName.ALL_MINILM_L6_V2 -> {
                     textEmbedder.closeSession()
-                    MiniLMTextEmbedder(application)
+                    val modelFile = File(modelDir, modelInfo.resourceFiles!![0] )
+                    val vocabFile = File(modelDir, modelInfo.resourceFiles!![1] )
+                    val configFile = File(modelDir, modelInfo.resourceFiles!![2] )
+                    MiniLMTextEmbedder(application, modelSource = ModelAssetSource.LocalFile(modelFile), vocabSource = ModelAssetSource.LocalFile(vocabFile), configSource = ModelAssetSource.LocalFile(configFile))
                 }
                 ModelName.CLIP_VIT_B_32_TEXT -> {
                     textEmbedder.closeSession()
-                    ClipTextEmbedder(application, R.raw.clip_text_encoder_quant, vocabResId = R.raw.vocab, mergesResId = R.raw.merges)
+                    ClipTextEmbedder(application, ModelAssetSource.Resource(R.raw.clip_text_encoder_quant), vocabSource = ModelAssetSource.Resource(R.raw.vocab), mergesSource = ModelAssetSource.Resource(R.raw.merges))
                 }
                 else -> return false
             }

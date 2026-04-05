@@ -42,6 +42,7 @@ import com.fpf.smartscan.workers.AutoTagWorker
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.generatePrototypeEmbedding
 import com.fpf.smartscansdk.core.media.getBitmapFromUri
+import com.fpf.smartscansdk.core.models.ModelAssetSource
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_X
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
@@ -90,8 +91,10 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     val videoIndexProgress = VideoIndexListener.progress
     val videoIndexStatus = VideoIndexListener.indexingStatus
 
-    private val textEmbedder = ClipTextEmbedder(application, R.raw.clip_text_encoder_quant, vocabResId = R.raw.vocab, mergesResId = R.raw.merges)
-    private val imageEmbedder = ClipImageEmbedder(application, R.raw.clip_image_encoder_quant)
+    private val textEmbedder  = ClipTextEmbedder(application, ModelAssetSource.Resource(R.raw.clip_text_encoder_quant), vocabSource = ModelAssetSource.Resource(R.raw.vocab), mergesSource = ModelAssetSource.Resource(R.raw.merges))
+
+    private val imageEmbedder = ClipImageEmbedder(application, ModelAssetSource.Resource(R.raw.clip_image_encoder_quant))
+
 
     val imageStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE), imageEmbedder.embeddingDim)
     val videoStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.VIDEO), imageEmbedder.embeddingDim )

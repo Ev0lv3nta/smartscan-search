@@ -11,6 +11,7 @@ import com.fpf.smartscan.IImageEmbedderService
 import com.fpf.smartscan.R
 import com.fpf.smartscansdk.core.embeddings.ImageEmbeddingProvider
 import com.fpf.smartscansdk.core.embeddings.flattenEmbeddings
+import com.fpf.smartscansdk.core.models.ModelAssetSource
 import com.fpf.smartscansdk.core.models.ModelManager
 import com.fpf.smartscansdk.core.models.ModelType
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
@@ -26,7 +27,7 @@ class ImageEmbedderAidlService: Service() {
 
     override fun onCreate() {
         super.onCreate()
-        imageEmbedder = ClipImageEmbedder(application, R.raw.clip_image_encoder_quant)
+        imageEmbedder = ClipImageEmbedder(application, ModelAssetSource.Resource(R.raw.clip_image_encoder_quant))
     }
 
     override fun onBind(intent: Intent): IBinder {
