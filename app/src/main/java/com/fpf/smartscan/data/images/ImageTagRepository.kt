@@ -2,7 +2,7 @@ package com.fpf.smartscan.data.images
 
 class ImageTagRepository(private val dao: ImageTagDao) {
     val allTags = dao.getAllFlow()
-    fun getAll(): List<ImageTag> = dao.getAll()
+    suspend fun getAll(): List<ImageTag> = dao.getAll()
 
     suspend fun getByName(name: String): ImageTag? = dao.get(name)
 
