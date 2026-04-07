@@ -10,11 +10,11 @@ import java.util.LinkedHashMap
 class VideoClusterCrossRefRepository(private val dao: VideoClusterCrossRefDao) {
     var clusterVideoIdsMap: LinkedHashMap<Long, List<Long>> = LinkedHashMap()
 
-    suspend fun getAllClusters(): Set<Long> = dao.getAllClusters()
+    suspend fun getAllClusters(): Set<Long> = dao.getAllClusters().toSet()
 
-    suspend fun getAllVideos(): Set<Long> = dao.getAllVideos()
+    suspend fun getAllVideos(): Set<Long> = dao.getAllVideos().toSet()
 
-    suspend fun getVideosInCluster(clusterId: Long): Set<Long> = dao.getVideosInCluster(clusterId)
+    suspend fun getVideosInCluster(clusterId: Long): Set<Long> = dao.getVideosInCluster(clusterId).toSet()
 
     suspend fun getClusterToVideoIdsMap(): LinkedHashMap<Long, List<Long>> {
         if (clusterVideoIdsMap.isNotEmpty()) return clusterVideoIdsMap

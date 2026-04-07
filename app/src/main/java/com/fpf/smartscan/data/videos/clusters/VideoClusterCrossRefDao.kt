@@ -8,13 +8,13 @@ import androidx.room.Query
 @Dao
 interface VideoClusterCrossRefDao {
     @Query("SELECT clusterId FROM video_cluster_crossref")
-    suspend fun getAllClusters(): Set<Long>
+    suspend fun getAllClusters(): List<Long>
 
     @Query("SELECT videoId FROM video_cluster_crossref")
-    suspend fun getAllVideos(): Set<Long>
+    suspend fun getAllVideos(): List<Long>
 
     @Query("SELECT videoId FROM video_cluster_crossref WHERE clusterId = :clusterId")
-    suspend fun getVideosInCluster(clusterId: Long): Set<Long>
+    suspend fun getVideosInCluster(clusterId: Long): List<Long>
 
     @Query("SELECT clusterId, videoId FROM video_cluster_crossref")
     suspend fun getClusterVideoPairs(): List<Pair<Long, Long>>

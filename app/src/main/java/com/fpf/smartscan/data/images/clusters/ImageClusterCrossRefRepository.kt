@@ -10,10 +10,10 @@ import java.util.LinkedHashMap
 class ImageClusterCrossRefRepository(private val dao: ImageClusterCrossRefDao) {
     var clusterImageIdsMap: LinkedHashMap<Long, List<Long>> = LinkedHashMap()
 
-    suspend fun getAllClusters(): Set<Long> = dao.getAllClusters()
-    suspend fun getAllImages(): Set<Long> = dao.getAllImages()
+    suspend fun getAllClusters(): Set<Long> = dao.getAllClusters().toSet()
+    suspend fun getAllImages(): Set<Long> = dao.getAllImages().toSet()
 
-    suspend fun getImagesInCluster(clusterId: Long): Set<Long> = dao.getImagesInCluster(clusterId)
+    suspend fun getImagesInCluster(clusterId: Long): Set<Long> = dao.getImagesInCluster(clusterId).toSet()
 
     suspend fun getClusterToImageIdsMap(): LinkedHashMap<Long, List<Long>> {
         if (clusterImageIdsMap.isNotEmpty()) return clusterImageIdsMap

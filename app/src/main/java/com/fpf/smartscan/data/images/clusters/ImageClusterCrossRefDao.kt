@@ -9,13 +9,13 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ImageClusterCrossRefDao {
     @Query("SELECT clusterId FROM image_cluster_crossref")
-    suspend fun getAllClusters(): Set<Long>
+    suspend fun getAllClusters(): List<Long>
 
     @Query("SELECT imageId FROM image_cluster_crossref")
-    suspend fun getAllImages(): Set<Long>
+    suspend fun getAllImages(): List<Long>
 
     @Query("SELECT imageId FROM image_cluster_crossref WHERE clusterId = :clusterId")
-    suspend fun getImagesInCluster(clusterId: Long): Set<Long>
+    suspend fun getImagesInCluster(clusterId: Long): List<Long>
 
     @Query("SELECT clusterId, imageId FROM image_cluster_crossref")
     suspend fun getClusterImagePairs(): List<Pair<Long, Long>>
