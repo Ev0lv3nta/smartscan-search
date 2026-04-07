@@ -12,7 +12,6 @@ data class ImageClusterMetadata (
     val meanSimilarity: Float = 0f,
     val stdSimilarity: Float = 0f,
     val label: String? = null,
-    val createdAt: Long = System.currentTimeMillis(),
     ){
     fun toMetadata() = ClusterMetadata(
         prototypeSize=prototypeSize,
