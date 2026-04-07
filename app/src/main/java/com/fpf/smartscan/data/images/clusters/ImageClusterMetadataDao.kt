@@ -22,6 +22,6 @@ interface ImageClusterMetadataDao {
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     suspend fun upsert(metadatas: List<ImageClusterMetadata>)
 
-    @Delete
-    suspend fun delete(metadata: ImageClusterMetadata)
+    @Query("DELETE FROM image_cluster_metadata WHERE clusterId = :id")
+    suspend fun delete(id: Long)
 }

@@ -22,6 +22,6 @@ interface VideoClusterMetadataDao {
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     suspend fun upsert(metadatas: List<VideoClusterMetadata>)
 
-    @Delete
-    suspend fun delete(metadata: VideoClusterMetadata)
+    @Query("DELETE FROM video_cluster_metadata WHERE clusterId = :id")
+    suspend fun delete(id: Long)
 }

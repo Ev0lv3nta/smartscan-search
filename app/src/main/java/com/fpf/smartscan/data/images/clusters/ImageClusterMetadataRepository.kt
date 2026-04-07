@@ -12,5 +12,5 @@ class ImageClusterMetadataRepository(private val dao: ImageClusterMetadataDao) {
 
     suspend fun upsertMetadatas(metadatas: List<ImageClusterMetadata>) = dao.upsert(metadatas)
 
-    suspend fun deleteMetadata(metadata: ImageClusterMetadata) = dao.delete(metadata)
+    suspend fun deleteMetadata(id: Long) = dao.delete(id)
 }

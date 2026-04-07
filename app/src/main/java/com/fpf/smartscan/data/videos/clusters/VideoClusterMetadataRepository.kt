@@ -12,5 +12,5 @@ class VideoClusterMetadataRepository(private val dao: VideoClusterMetadataDao) {
 
     suspend fun upsertMetadatas(metadatas: List<VideoClusterMetadata>) = dao.upsert(metadatas)
 
-    suspend fun deleteMetadata(metadata: VideoClusterMetadata) = dao.delete(metadata)
+    suspend fun deleteMetadata(id: Long) = dao.delete(id)
 }
