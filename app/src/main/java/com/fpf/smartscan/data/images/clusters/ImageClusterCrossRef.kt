@@ -12,7 +12,7 @@ import com.fpf.smartscan.data.images.clusters.ImageClusterMetadata
         ForeignKey(
             entity = ImageClusterMetadata::class,
             parentColumns = ["clusterId"],
-            childColumns = ["imageId"],
+            childColumns = ["clusterId"],
             onDelete = ForeignKey.Companion.CASCADE
         )
     ],

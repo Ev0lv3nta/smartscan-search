@@ -11,7 +11,7 @@ import androidx.room.Index
         ForeignKey(
             entity = VideoClusterMetadata::class,
             parentColumns = ["clusterId"],
-            childColumns = ["videoId"],
+            childColumns = ["clusterId"],
             onDelete = ForeignKey.Companion.CASCADE
         )
     ],
