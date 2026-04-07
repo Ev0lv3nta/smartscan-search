@@ -29,6 +29,7 @@ import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscan.media.queryImageIds
 import com.fpf.smartscan.media.queryVideoIds
+import com.fpf.smartscansdk.core.cluster.Cluster
 import com.fpf.smartscansdk.core.cluster.IncrementalClusterer
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
@@ -46,6 +47,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.collections.filterNot
 import kotlin.collections.map
+import kotlin.collections.mapNotNull
 
 class MediaIndexForegroundService : Service() {
     companion object {
@@ -164,14 +166,25 @@ class MediaIndexForegroundService : Service() {
 
     private suspend fun clusterImages(imageStore: FileEmbeddingStore){
         val imageClusterStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE_CLUSTER), imageEmbedder.embeddingDim)
-        val clusterer = IncrementalClusterer()
         val assignedIds = imageClusterCrossRefRepository.getAllImages()
+        val existingClusters: Map<Long, Cluster> = if (imageClusterStore.exists) {
+            val metadataMap = imageClusterMetadataRepository.getAllMetadata()
+            imageClusterStore.get().mapNotNull { cluster -> metadataMap[cluster.id]?.let { meta ->
+                cluster.id to Cluster(cluster.id, cluster.embedding, meta)
+            } }.toMap()
+        } else emptyMap()
 
-        var storedEmbeds = if(imageStore.exists) imageStore.get() else emptyList()
-        storedEmbeds = storedEmbeds.filterNot {it.id in assignedIds}
+        var itemEmbeds = if(imageStore.exists) imageStore.get() else emptyList()
+        itemEmbeds = itemEmbeds.filterNot {it.id in assignedIds}
 
-        val result = clusterer.cluster(storedEmbeds)
+        val clusterer = IncrementalClusterer(existingClusters = existingClusters, defaultThreshold = 0.4f)
+        val result = clusterer.cluster(itemEmbeds)
 
+        // Update assignments
+        val crossRefs = result.assignments.map { ImageClusterCrossRef(clusterId = it.value, imageId = it.key) }
+        imageClusterCrossRefRepository.addImages(crossRefs)
+
+        // Update clusters
         val clusterMetadatas = result.clusters.values.map{ ImageClusterMetadata(
             clusterId = it.prototypeId,
             prototypeSize = it.metadata.prototypeSize,
@@ -183,21 +196,29 @@ class MediaIndexForegroundService : Service() {
 
         val clusterEmbeddings = result.clusters.values.map { StoredEmbedding(id = it.prototypeId, embedding = it.embedding, date = System.currentTimeMillis()) }
         imageClusterStore.add(clusterEmbeddings)
-
-        val crossRefs = result.assignments.map { ImageClusterCrossRef(clusterId = it.value, imageId = it.key) }
-        imageClusterCrossRefRepository.addImages(crossRefs)
     }
 
     private suspend fun clusterVideos(videoStore: FileEmbeddingStore){
         val videoClusterStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.VIDEO_CLUSTER), imageEmbedder.embeddingDim)
-        val clusterer = IncrementalClusterer()
         val assignedIds = videoClusterCrossRefRepository.getAllVideos()
+        val existingClusters: Map<Long, Cluster> = if (videoClusterStore.exists) {
+            val metadataMap = videoClusterMetadataRepository.getAllMetadata()
+            videoClusterStore.get().mapNotNull { cluster -> metadataMap[cluster.id]?.let { meta ->
+                cluster.id to Cluster(cluster.id, cluster.embedding, meta)
+            } }.toMap()
+        } else emptyMap()
 
-        var storedEmbeds = if(videoStore.exists) videoStore.get() else emptyList()
-        storedEmbeds = storedEmbeds.filterNot {it.id in assignedIds}
+        var itemEmbeds = if(videoStore.exists) videoStore.get() else emptyList()
+        itemEmbeds = itemEmbeds.filterNot {it.id in assignedIds}
 
-        val result = clusterer.cluster(storedEmbeds)
+        val clusterer = IncrementalClusterer(existingClusters = existingClusters, defaultThreshold = 0.4f)
+        val result = clusterer.cluster(itemEmbeds)
 
+        // Update assignments
+        val crossRefs = result.assignments.map { VideoClusterCrossRef(clusterId = it.value, videoId = it.key) }
+        videoClusterCrossRefRepository.addVideos(crossRefs)
+
+        // Update clusters
         val clusterMetadatas = result.clusters.values.map{ VideoClusterMetadata(
             clusterId = it.prototypeId,
             prototypeSize = it.metadata.prototypeSize,
@@ -209,8 +230,5 @@ class MediaIndexForegroundService : Service() {
 
         val clusterEmbeddings = result.clusters.values.map { StoredEmbedding(id = it.prototypeId, embedding = it.embedding, date = System.currentTimeMillis()) }
         videoClusterStore.add(clusterEmbeddings)
-
-        val crossRefs = result.assignments.map { VideoClusterCrossRef(clusterId = it.value, videoId = it.key) }
-        videoClusterCrossRefRepository.addVideos(crossRefs)
     }
 }
