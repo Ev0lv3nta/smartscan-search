@@ -19,11 +19,15 @@ import com.fpf.smartscan.data.images.ImageTagCrossRef
 import com.fpf.smartscan.data.images.ImageTagCrossRefRepository
 import com.fpf.smartscan.data.images.ImageTagDatabase
 import com.fpf.smartscan.data.images.ImageTagRepository
+import com.fpf.smartscan.data.images.clusters.ImageClusterCrossRefRepository
+import com.fpf.smartscan.data.images.clusters.ImageClusterDatabase
 import com.fpf.smartscan.data.videos.VideoTag
 import com.fpf.smartscan.data.videos.VideoTagCrossRef
 import com.fpf.smartscan.data.videos.VideoTagCrossRefRepository
 import com.fpf.smartscan.data.videos.VideoTagDatabase
 import com.fpf.smartscan.data.videos.VideoTagRepository
+import com.fpf.smartscan.data.videos.clusters.VideoClusterCrossRefRepository
+import com.fpf.smartscan.data.videos.clusters.VideoClusterDatabase
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.utils.canOpenUri
@@ -98,12 +102,21 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
 
     val imageStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE), imageEmbedder.embeddingDim)
     val videoStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.VIDEO), imageEmbedder.embeddingDim )
+
+    val imageClusterStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE_CLUSTER), imageEmbedder.embeddingDim)
+
+    val videoClusterStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.VIDEO_CLUSTER), imageEmbedder.embeddingDim )
+
+
     val tagStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.TAGS), imageEmbedder.embeddingDim)
 
     private val imageTagsRepository = ImageTagRepository(ImageTagDatabase.getDatabase(application).tagDao())
     private val videoTagsRepository = VideoTagRepository(VideoTagDatabase.getDatabase(application).tagDao())
     private val imageTagsCrossRefRepository = ImageTagCrossRefRepository( ImageTagDatabase.getDatabase(application).imageTagCrossRefDao(), ImageTagDatabase.getDatabase(application).tagDao())
     private val videoTagsCrossRefRepository = VideoTagCrossRefRepository(VideoTagDatabase.getDatabase(application).videoTagCrossRefDao(), VideoTagDatabase.getDatabase(application).tagDao())
+    private val imageClusterCrossRefRepository = ImageClusterCrossRefRepository(ImageClusterDatabase.getDatabase(application).imageClusterCrossRefDao())
+    private val videoClusterCrossRefRepository = VideoClusterCrossRefRepository(VideoClusterDatabase.getDatabase(application).videoClusterCrossRefDao())
+
     val allImageTags: StateFlow<List<ImageTag>> = imageTagsRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val allVideoTags: StateFlow<List<VideoTag>> = videoTagsRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
@@ -239,7 +252,11 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
                 if(shouldShutdownModel(_state.value.imageEmbedderLastUsage)) imageEmbedder.closeSession() // prevent keeping both models open
 
                 val embedding = textEmbedder.embed(actualQuery)
-                val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, idsMatchingTag)
+                val targetClusters = getTargetCluster(embedding, threshold, 3)
+//                Log.d(TAG, "Target clusters: ${targetClusters.joinToString()}")
+                val mediaIdsInCluster = targetClusters.mapNotNull {getClusterToMediaIdsMap().get(it) }.flatten()
+                val filterIds = mediaIdsInCluster + idsMatchingTag
+                val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, filterIds)
                 handleQueryResults(queryResults, store)
             } catch (e: Exception) {
                 Log.e(TAG, "$e")
@@ -263,7 +280,10 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
 
                 val bitmap = getBitmapFromUri(application, queryImage, IMAGE_SIZE_X)
                 val embedding = imageEmbedder.embed(bitmap)
-                val resultIds = store.query(embedding, Int.MAX_VALUE, threshold)
+                val targetClusters = getTargetCluster(embedding, threshold, 3)
+//                Log.d(TAG, "Target clusters: ${targetClusters.joinToString()}")
+                val mediaIdsInCluster = targetClusters.mapNotNull {getClusterToMediaIdsMap().get(it) }.flatten()
+                val resultIds = store.query(embedding, Int.MAX_VALUE, threshold, mediaIdsInCluster)
                 handleQueryResults(resultIds, store)
             } catch (e: Exception) {
                 Log.e(TAG, "$e")
@@ -272,6 +292,12 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
                 _state.emit(_state.value.copy(loading = false, imageEmbedderLastUsage = System.currentTimeMillis()))
             }
         }
+    }
+
+    private suspend fun getTargetCluster(queryEmbedding: FloatArray, threshold: Float, topK: Int = 1): List<Long>{
+        val store = getClusterStore()
+        val resultIds = store.query(queryEmbedding, topK, threshold)
+        return resultIds
     }
 
     private suspend fun handleQueryResults(queryResults: List<Long>, store: FileEmbeddingStore, totalResults: Int? = null) {
@@ -534,6 +560,9 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
     }
 
     private fun getStore() = if(_state.value.mediaType == MediaType.VIDEO) videoStore else imageStore
+    private fun getClusterStore() = if(_state.value.mediaType == MediaType.VIDEO) videoClusterStore else imageClusterStore
+
+    private suspend fun getClusterToMediaIdsMap() = if(_state.value.mediaType == MediaType.VIDEO) videoClusterCrossRefRepository.getClusterToVideoIdsMap() else imageClusterCrossRefRepository.getClusterToImageIdsMap()
 
     private suspend fun getMediaIds(tag: String?, limit: Int, offset: Int): List<Long>{
         return when {
