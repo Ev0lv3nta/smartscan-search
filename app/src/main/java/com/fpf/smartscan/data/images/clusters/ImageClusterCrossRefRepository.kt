@@ -5,12 +5,24 @@ import com.fpf.smartscan.data.images.clusters.ImageClusterMetadataDao
 import com.fpf.smartscansdk.core.cluster.Assignments
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.util.LinkedHashMap
 
 class ImageClusterCrossRefRepository(private val dao: ImageClusterCrossRefDao) {
+    var clusterImageIdsMap: LinkedHashMap<Long, List<Long>> = LinkedHashMap()
+
     suspend fun getAllClusters(): Set<Long> = dao.getAllClusters()
     suspend fun getAllImages(): Set<Long> = dao.getAllImages()
 
     suspend fun getImagesInCluster(clusterId: Long): Set<Long> = dao.getImagesInCluster(clusterId)
+
+    suspend fun getClusterToImageIdsMap(): LinkedHashMap<Long, List<Long>> {
+        if (clusterImageIdsMap.isNotEmpty()) return clusterImageIdsMap
+
+        clusterImageIdsMap = LinkedHashMap(
+                dao.getClusterImagePairs().groupBy({ it.first }, { it.second })
+            )
+        return clusterImageIdsMap
+    }
 
     @Transaction
     suspend fun addImages(imageClusterCrossRefs: List<ImageClusterCrossRef>) = dao.addImages(imageClusterCrossRefs)

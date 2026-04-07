@@ -5,13 +5,25 @@ import com.fpf.smartscan.data.images.clusters.ImageClusterMetadataDao
 import com.fpf.smartscansdk.core.cluster.Assignments
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.util.LinkedHashMap
 
 class VideoClusterCrossRefRepository(private val dao: VideoClusterCrossRefDao) {
+    var clusterVideoIdsMap: LinkedHashMap<Long, List<Long>> = LinkedHashMap()
+
     suspend fun getAllClusters(): Set<Long> = dao.getAllClusters()
 
     suspend fun getAllVideos(): Set<Long> = dao.getAllVideos()
 
     suspend fun getVideosInCluster(clusterId: Long): Set<Long> = dao.getVideosInCluster(clusterId)
+
+    suspend fun getClusterToVideoIdsMap(): LinkedHashMap<Long, List<Long>> {
+        if (clusterVideoIdsMap.isNotEmpty()) return clusterVideoIdsMap
+
+        clusterVideoIdsMap = LinkedHashMap(
+            dao.getClusterVideoPairs().groupBy({ it.first }, { it.second })
+        )
+        return clusterVideoIdsMap
+    }
 
     @Transaction
     suspend fun addVideos(videoClusterCrossRefs: List<VideoClusterCrossRef>) = dao.addVideos(videoClusterCrossRefs)

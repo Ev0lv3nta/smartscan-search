@@ -16,6 +16,9 @@ interface VideoClusterCrossRefDao {
     @Query("SELECT videoId FROM video_cluster_crossref WHERE clusterId = :clusterId")
     suspend fun getVideosInCluster(clusterId: Long): Set<Long>
 
+    @Query("SELECT clusterId, videoId FROM video_cluster_crossref")
+    suspend fun getClusterVideoPairs(): List<Pair<Long, Long>>
+
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     suspend fun addVideos(videosClusterCrossRefs: List<VideoClusterCrossRef>)
 
