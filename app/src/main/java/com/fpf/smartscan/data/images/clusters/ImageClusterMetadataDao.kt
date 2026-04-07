@@ -18,7 +18,7 @@ interface ImageClusterMetadataDao {
     suspend fun get(id: Long): ImageClusterMetadata?
 
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
-    suspend fun upsert(metadata: ImageClusterMetadata)
+    suspend fun upsert(metadatas: List<ImageClusterMetadata>)
 
     @Delete
     suspend fun delete(metadata: ImageClusterMetadata)
