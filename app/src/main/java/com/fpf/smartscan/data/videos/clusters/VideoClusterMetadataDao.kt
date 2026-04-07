@@ -1,5 +1,6 @@
 package com.fpf.smartscan.data.videos.clusters
 
+import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -7,6 +8,7 @@ import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
+@Dao
 interface VideoClusterMetadataDao {
     @Query("SELECT * FROM video_cluster_metadata ORDER BY createdAt")
     fun getAllFlow(): Flow<List<VideoClusterMetadata>>
