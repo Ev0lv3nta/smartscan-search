@@ -17,11 +17,8 @@ interface ImageClusterMetadataDao {
     @Query("SELECT * FROM image_cluster_metadata WHERE clusterId = :id")
     suspend fun get(id: Long): ImageClusterMetadata?
 
-    @Insert(onConflict = OnConflictStrategy.Companion.IGNORE)
-    suspend fun insert(metadata: ImageClusterMetadata)
-
-    @Update
-    suspend fun update(metadata: ImageClusterMetadata)
+    @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
+    suspend fun upsert(metadata: ImageClusterMetadata)
 
     @Delete
     suspend fun delete(metadata: ImageClusterMetadata)

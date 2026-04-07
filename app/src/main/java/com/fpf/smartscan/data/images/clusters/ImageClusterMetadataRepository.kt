@@ -6,9 +6,7 @@ class ImageClusterMetadataRepository(private val dao: ImageClusterMetadataDao) {
 
     suspend fun getMetadata(id: Long): ImageClusterMetadata? = dao.get(id)
 
-    suspend fun insertMetadata(metadata: ImageClusterMetadata) = dao.insert(metadata)
-
-    suspend fun updateMetadata(metadata: ImageClusterMetadata) = dao.update(metadata)
+    suspend fun upsertMetadata(metadata: ImageClusterMetadata) = dao.upsert(metadata)
 
     suspend fun deleteMetadata(metadata: ImageClusterMetadata) = dao.delete(metadata)
 }

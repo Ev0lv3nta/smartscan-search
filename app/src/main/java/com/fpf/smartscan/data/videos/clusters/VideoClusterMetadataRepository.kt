@@ -6,9 +6,7 @@ class VideoClusterMetadataRepository(private val dao: VideoClusterMetadataDao) {
 
     suspend fun getMetadata(id: Long): VideoClusterMetadata? = dao.get(id)
 
-    suspend fun insertMetadata(metadata: VideoClusterMetadata) = dao.insert(metadata)
-
-    suspend fun updateMetadata(metadata: VideoClusterMetadata) = dao.update(metadata)
+    suspend fun upsertMetadata(metadata: VideoClusterMetadata) = dao.upsert(metadata)
 
     suspend fun deleteMetadata(metadata: VideoClusterMetadata) = dao.delete(metadata)
 }
