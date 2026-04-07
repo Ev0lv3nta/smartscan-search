@@ -4,27 +4,17 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface VideoClusterCrossRefDao {
     @Query("SELECT clusterId FROM video_cluster_crossref")
-    fun getAllClustersFlow(): Flow<List<Long>>
-
-    @Query("SELECT clusterId FROM video_cluster_crossref")
-    suspend fun getAllClusters(): List<Long>
+    suspend fun getAllClusters(): Set<Long>
 
     @Query("SELECT videoId FROM video_cluster_crossref")
-    fun getAllVideosFlow(): Flow<List<Long>>
-
-    @Query("SELECT videoId FROM video_cluster_crossref")
-    suspend fun getAllVideos(): List<Long>
+    suspend fun getAllVideos(): Set<Long>
 
     @Query("SELECT videoId FROM video_cluster_crossref WHERE clusterId = :clusterId")
-    suspend fun getVideosInCluster(clusterId: Long): List<Long>
-
-    @Query("SELECT videoId FROM video_cluster_crossref WHERE clusterId = :clusterId")
-    fun getVideosInClusterFlow(clusterId: Long): Flow<List<Long>>
+    suspend fun getVideosInCluster(clusterId: Long): Set<Long>
 
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     suspend fun addVideos(videosClusterCrossRefs: List<VideoClusterCrossRef>)

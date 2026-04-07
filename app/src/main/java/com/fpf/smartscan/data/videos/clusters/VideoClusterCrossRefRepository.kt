@@ -7,14 +7,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 class VideoClusterCrossRefRepository(private val dao: VideoClusterCrossRefDao) {
-    val allClusters: Flow<List<Long>> = dao.getAllClustersFlow()
-    suspend fun getAllClusters(): List<Long> = dao.getAllClusters()
+    suspend fun getAllClusters(): Set<Long> = dao.getAllClusters()
 
-    val allVideos: Flow<List<Long>> = dao.getAllVideosFlow()
-    suspend fun getAllVideos(): List<Long> = dao.getAllVideos()
+    suspend fun getAllVideos(): Set<Long> = dao.getAllVideos()
 
-    fun getVideosInClusterFlow(clusterId: Long): Flow<List<Long>> = dao.getVideosInClusterFlow(clusterId)
-    suspend fun getVideosInCluster(clusterId: Long): List<Long> = dao.getVideosInCluster(clusterId)
+    suspend fun getVideosInCluster(clusterId: Long): Set<Long> = dao.getVideosInCluster(clusterId)
 
     @Transaction
     suspend fun addVideos(videoClusterCrossRefs: List<VideoClusterCrossRef>) = dao.addVideos(videoClusterCrossRefs)

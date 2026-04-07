@@ -7,14 +7,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 class ImageClusterCrossRefRepository(private val dao: ImageClusterCrossRefDao) {
-    val allCluster: Flow<List<Long>> = dao.getAllClustersFlow()
-    suspend fun getAllClusters(): List<Long> = dao.getAllClusters()
+    suspend fun getAllClusters(): Set<Long> = dao.getAllClusters()
+    suspend fun getAllImages(): Set<Long> = dao.getAllImages()
 
-    val allImages = dao.getAllImagesFlow()
-    suspend fun getAllImages(): List<Long> = dao.getAllImages()
-
-    fun getImagesInClusterFlow(clusterId: Long): Flow<List<Long>> = dao.getImagesInClusterFlow(clusterId)
-    suspend fun getImagesInCluster(clusterId: Long): List<Long> = dao.getImagesInCluster(clusterId)
+    suspend fun getImagesInCluster(clusterId: Long): Set<Long> = dao.getImagesInCluster(clusterId)
 
     @Transaction
     suspend fun addImages(imageClusterCrossRefs: List<ImageClusterCrossRef>) = dao.addImages(imageClusterCrossRefs)
