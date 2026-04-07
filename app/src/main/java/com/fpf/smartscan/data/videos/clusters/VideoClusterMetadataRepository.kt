@@ -1,10 +1,14 @@
 package com.fpf.smartscan.data.videos.clusters
 
+import com.fpf.smartscansdk.core.cluster.ClusterMetadata
+
 class VideoClusterMetadataRepository(private val dao: VideoClusterMetadataDao) {
     val allMetadata = dao.getAllFlow()
-    suspend fun getAllMetadata(): List<VideoClusterMetadata> = dao.getAll()
+    suspend fun getAllMetadata(): Map<Long, ClusterMetadata> = dao.getAll().associate {
+        it.clusterId to it.toMetadata()
+    }
 
-    suspend fun getMetadata(id: Long): VideoClusterMetadata? = dao.get(id)
+    suspend fun getMetadata(id: Long): ClusterMetadata? = dao.get(id)?.toMetadata()
 
     suspend fun upsertMetadatas(metadatas: List<VideoClusterMetadata>) = dao.upsert(metadatas)
 
