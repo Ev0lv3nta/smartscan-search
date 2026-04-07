@@ -19,7 +19,7 @@ class ImageClusterCrossRefRepository(private val dao: ImageClusterCrossRefDao) {
         if (clusterImageIdsMap.isNotEmpty()) return clusterImageIdsMap
 
         clusterImageIdsMap = LinkedHashMap(
-                dao.getClusterImagePairs().groupBy({ it.first }, { it.second })
+                dao.getAllClusterImageCrossRefs().groupBy({ it.clusterId }, { it.imageId })
             )
         return clusterImageIdsMap
     }

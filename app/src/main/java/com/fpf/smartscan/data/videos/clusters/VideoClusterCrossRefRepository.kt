@@ -20,7 +20,7 @@ class VideoClusterCrossRefRepository(private val dao: VideoClusterCrossRefDao) {
         if (clusterVideoIdsMap.isNotEmpty()) return clusterVideoIdsMap
 
         clusterVideoIdsMap = LinkedHashMap(
-            dao.getClusterVideoPairs().groupBy({ it.first }, { it.second })
+            dao.getAllClusterVideoCrossRefs().groupBy({ it.clusterId }, { it.videoId })
         )
         return clusterVideoIdsMap
     }

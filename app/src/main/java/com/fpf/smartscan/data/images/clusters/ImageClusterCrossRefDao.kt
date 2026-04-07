@@ -17,8 +17,8 @@ interface ImageClusterCrossRefDao {
     @Query("SELECT imageId FROM image_cluster_crossref WHERE clusterId = :clusterId")
     suspend fun getImagesInCluster(clusterId: Long): List<Long>
 
-    @Query("SELECT clusterId, imageId FROM image_cluster_crossref")
-    suspend fun getClusterImagePairs(): List<Pair<Long, Long>>
+    @Query("SELECT * FROM image_cluster_crossref")
+    suspend fun getAllClusterImageCrossRefs(): List<ImageClusterCrossRef>
 
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     suspend fun addImages(imageClusterCrossRefs: List<ImageClusterCrossRef>)
