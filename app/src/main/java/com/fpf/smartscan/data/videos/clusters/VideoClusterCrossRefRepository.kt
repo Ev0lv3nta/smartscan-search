@@ -1,14 +1,10 @@
 package com.fpf.smartscan.data.videos.clusters
 
 import androidx.room.Transaction
-import com.fpf.smartscan.data.images.clusters.ImageClusterMetadataDao
-import com.fpf.smartscansdk.core.cluster.Assignments
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import java.util.LinkedHashMap
 
 class VideoClusterCrossRefRepository(private val dao: VideoClusterCrossRefDao) {
-    var clusterVideoIdsMap: LinkedHashMap<Long, List<Long>> = LinkedHashMap()
+    var clusterVideoIdsMap:  LinkedHashMap<Long, MutableSet<Long>>  = LinkedHashMap()
 
     suspend fun getAllClusters(): Set<Long> = dao.getAllClusters().toSet()
 
@@ -16,12 +12,12 @@ class VideoClusterCrossRefRepository(private val dao: VideoClusterCrossRefDao) {
 
     suspend fun getVideosInCluster(clusterId: Long): Set<Long> = dao.getVideosInCluster(clusterId).toSet()
 
-    suspend fun getClusterToVideoIdsMap(): LinkedHashMap<Long, List<Long>> {
+    suspend fun getClusterToVideoIdsMap(): LinkedHashMap<Long, MutableSet<Long>> {
         if (clusterVideoIdsMap.isNotEmpty()) return clusterVideoIdsMap
 
-        clusterVideoIdsMap = LinkedHashMap(
-            dao.getAllClusterVideoCrossRefs().groupBy({ it.clusterId }, { it.videoId })
-        )
+        for (ref in dao.getAllClusterVideoCrossRefs()) {
+            clusterVideoIdsMap.computeIfAbsent(ref.clusterId) { HashSet() }.add(ref.videoId)
+        }
         return clusterVideoIdsMap
     }
 
