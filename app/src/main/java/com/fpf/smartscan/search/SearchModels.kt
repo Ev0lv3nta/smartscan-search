@@ -14,11 +14,6 @@ enum class SearchMode {
 
 enum class ProcessorStatus {IDLE, ACTIVE, COMPLETE, FAILED }
 
-sealed interface SearchQuery{
-    data class ImageQuery(val uri: Uri, val mediaType: MediaType): SearchQuery
-    data class TextQuery(val text: String, val mediaType: MediaType): SearchQuery
-}
-
 interface MediaTag{
     val prototypeId: Long
     val name: String
