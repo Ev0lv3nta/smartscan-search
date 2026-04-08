@@ -252,15 +252,18 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
                 if(shouldShutdownModel(_state.value.imageEmbedderLastUsage)) imageEmbedder.closeSession() // prevent keeping both models open
 
                 val embedding = textEmbedder.embed(actualQuery)
+//                val start = System.currentTimeMillis()
                 val targetClusters = getTargetClusters(embedding, threshold, 3)
-                val mediaIdsInCluster: Set<Long> = buildSet {
+                val filterIds: Set<Long> = buildSet {
                     for (clusterId in targetClusters) {
                         val ids = getClusterToMediaIdsMap()[clusterId] ?: continue
                         addAll(ids)
                     }
+                    addAll(idsMatchingTag)
                 }
-                val filterIds = mediaIdsInCluster.union(idsMatchingTag)
                 val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, filterIds)
+//                val timeElapsed = System.currentTimeMillis() - start
+//                Log.d(TAG, "time elapsed: $timeElapsed | results: ${queryResults.size}")
                 handleQueryResults(queryResults, store)
             } catch (e: Exception) {
                 Log.e(TAG, "$e")
