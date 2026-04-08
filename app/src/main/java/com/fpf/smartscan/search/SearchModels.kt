@@ -1,13 +1,10 @@
 package com.fpf.smartscan.search
 
-import android.net.Uri
-import com.fpf.smartscan.media.MediaType
-
 enum class QueryType {
     TEXT, IMAGE
 }
 
-enum class ProcessorStatus {IDLE, ACTIVE, COMPLETE, FAILED }
+enum class IndexingStatus {IDLE, ACTIVE, COMPLETE, FAILED }
 
 data class TagSuggestionsResult(
     val bestMatch: MediaTag? = null,
