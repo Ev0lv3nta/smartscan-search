@@ -252,10 +252,14 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
                 if(shouldShutdownModel(_state.value.imageEmbedderLastUsage)) imageEmbedder.closeSession() // prevent keeping both models open
 
                 val embedding = textEmbedder.embed(actualQuery)
-                val targetClusters = getTargetCluster(embedding, threshold, 3)
-//                Log.d(TAG, "Target clusters: ${targetClusters.joinToString()}")
-                val mediaIdsInCluster = targetClusters.mapNotNull {getClusterToMediaIdsMap().get(it) }.flatten()
-                val filterIds = mediaIdsInCluster + idsMatchingTag
+                val targetClusters = getTargetClusters(embedding, threshold, 3)
+                val mediaIdsInCluster: Set<Long> = buildSet {
+                    for (clusterId in targetClusters) {
+                        val ids = getClusterToMediaIdsMap()[clusterId] ?: continue
+                        addAll(ids)
+                    }
+                }
+                val filterIds = mediaIdsInCluster.union(idsMatchingTag)
                 val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, filterIds)
                 handleQueryResults(queryResults, store)
             } catch (e: Exception) {
@@ -280,9 +284,13 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
 
                 val bitmap = getBitmapFromUri(application, queryImage, IMAGE_SIZE_X)
                 val embedding = imageEmbedder.embed(bitmap)
-                val targetClusters = getTargetCluster(embedding, threshold, 3)
-//                Log.d(TAG, "Target clusters: ${targetClusters.joinToString()}")
-                val mediaIdsInCluster = targetClusters.mapNotNull {getClusterToMediaIdsMap().get(it) }.flatten()
+                val targetClusters = getTargetClusters(embedding, threshold, 3)
+                val mediaIdsInCluster: Set<Long> = buildSet {
+                    for (clusterId in targetClusters) {
+                        val ids = getClusterToMediaIdsMap()[clusterId] ?: continue
+                        addAll(ids)
+                    }
+                }
                 val resultIds = store.query(embedding, Int.MAX_VALUE, threshold, mediaIdsInCluster)
                 handleQueryResults(resultIds, store)
             } catch (e: Exception) {
@@ -294,7 +302,7 @@ class SearchViewModel(private val application: Application) : AndroidViewModel(a
         }
     }
 
-    private suspend fun getTargetCluster(queryEmbedding: FloatArray, threshold: Float, topK: Int = 1): List<Long>{
+    private suspend fun getTargetClusters(queryEmbedding: FloatArray, threshold: Float, topK: Int = 1): List<Long>{
         val store = getClusterStore()
         val resultIds = store.query(queryEmbedding, topK, threshold)
         return resultIds
