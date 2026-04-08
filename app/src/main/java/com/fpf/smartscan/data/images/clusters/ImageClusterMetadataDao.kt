@@ -10,10 +10,10 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ImageClusterMetadataDao {
-    @Query("SELECT * FROM image_cluster_metadata ORDER BY createdAt")
+    @Query("SELECT * FROM image_cluster_metadata")
     fun getAllFlow(): Flow<List<ImageClusterMetadata>>
 
-    @Query("SELECT * FROM image_cluster_metadata ORDER BY createdAt")
+    @Query("SELECT * FROM image_cluster_metadata")
     suspend fun getAll(): List<ImageClusterMetadata>
 
     @Query("SELECT * FROM image_cluster_metadata WHERE clusterId = :id")
