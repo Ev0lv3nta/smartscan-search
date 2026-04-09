@@ -12,6 +12,9 @@ interface ImageTagCrossRefDao {
     @Query("SELECT imageId FROM image_tag_crossref WHERE tag = :tag")
     suspend fun getImageIds(tag: String): List<Long>
 
+    @Query("SELECT * FROM image_tag_crossref")
+    suspend fun getAllCrossRefs(): List<ImageTagCrossRef>
+
     @Query("SELECT imageId FROM image_tag_crossref WHERE tag = :tag LIMIT :limit OFFSET :offset")
     suspend fun getImageIds(tag: String, limit: Int, offset: Int): List<Long>
 
