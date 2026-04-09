@@ -237,8 +237,8 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
                 val actualQueryStart = if(!tag.isNullOrBlank()) tag.length + 1 else 0
                 val actualQuery = query.substring(actualQueryStart).trim()
-                val idsMatchingTag: List<Long> = getMediaIds(tag, RESULTS_BATCH_SIZE, 0) // load initial
-                val totalResults = countMediaIds(tag)
+                val idsMatchingTag: List<Long> = getMediaMatchingTag(tag, RESULTS_BATCH_SIZE, 0) // load initial
+                val totalResults = countMediaMatchingTag(tag)
 
                 val tagOnlySearch = idsMatchingTag.isNotEmpty() && actualQuery.isBlank()
                 if(tagOnlySearch){
@@ -253,9 +253,8 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
                 val embedding = textEmbedder.embed(actualQuery)
 //                val start = System.currentTimeMillis()
-                val targetClusters = getTargetClusters(embedding, threshold, 3)
                 val filterIds: Set<Long> = buildSet {
-                    for (clusterId in targetClusters) {
+                    for (clusterId in getTargetClusters(embedding, threshold, 3)) {
                         val ids = getClusterToMediaIdsMap()[clusterId] ?: continue
                         addAll(ids)
                     }
@@ -287,9 +286,8 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
                 val bitmap = getBitmapFromUri(getApplication<Application>(), queryImage, IMAGE_SIZE_X)
                 val embedding = imageEmbedder.embed(bitmap)
-                val targetClusters = getTargetClusters(embedding, threshold, 3)
                 val mediaIdsInCluster: Set<Long> = buildSet {
-                    for (clusterId in targetClusters) {
+                    for (clusterId in getTargetClusters(embedding, threshold, 3)) {
                         val ids = getClusterToMediaIdsMap()[clusterId] ?: continue
                         addAll(ids)
                     }
@@ -307,6 +305,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
     private suspend fun getTargetClusters(queryEmbedding: FloatArray, threshold: Float, topK: Int = 1): List<Long>{
         val store = getClusterStore()
+        if(!store.exists) return emptyList()
         val resultIds = store.query(queryEmbedding, topK, threshold)
         return resultIds
     }
@@ -366,7 +365,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
             try {
                 val batch = if(_state.value.tagOnlySearch && _state.value.tagFilter != null){
                     val offset = (currentItemsCount).coerceAtMost(_state.value.totalResults)
-                    getMediaIds(_state.value.tagFilter, RESULTS_BATCH_SIZE, offset = offset)
+                    getMediaMatchingTag(_state.value.tagFilter, RESULTS_BATCH_SIZE, offset = offset)
                 }else{
                     val end = (currentItemsCount + RESULTS_BATCH_SIZE).coerceAtMost(_state.value.totalResults)
                     store.query(currentItemsCount, end).take(RESULTS_BATCH_SIZE)
@@ -445,8 +444,8 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
     fun onIndex(){
         when(_state.value.mediaType){
-            MediaType.IMAGE -> startIndexing(getApplication<Application>(), MediaIndexForegroundService.TYPE_IMAGE)
-            MediaType.VIDEO -> startIndexing(getApplication<Application>(), MediaIndexForegroundService.TYPE_VIDEO)
+            MediaType.IMAGE -> startIndexing(getApplication(), MediaIndexForegroundService.TYPE_IMAGE)
+            MediaType.VIDEO -> startIndexing(getApplication(), MediaIndexForegroundService.TYPE_VIDEO)
         }
     }
 
@@ -573,9 +572,9 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     private fun getStore() = if(_state.value.mediaType == MediaType.VIDEO) videoStore else imageStore
     private fun getClusterStore() = if(_state.value.mediaType == MediaType.VIDEO) videoClusterStore else imageClusterStore
 
-    private suspend fun getClusterToMediaIdsMap() = if(_state.value.mediaType == MediaType.VIDEO) videoClusterCrossRefRepository.getClusterToVideoIdsMap() else imageClusterCrossRefRepository.getClusterToImageIdsMap()
+    private suspend fun getClusterToMediaIdsMap() = if(_state.value.mediaType == MediaType.VIDEO) videoClusterCrossRefRepository.getClusterToMediaIdsMap() else imageClusterCrossRefRepository.getClusterToMediaIdsMap()
 
-    private suspend fun getMediaIds(tag: String?, limit: Int, offset: Int): List<Long>{
+    private suspend fun getMediaMatchingTag(tag: String?, limit: Int, offset: Int): List<Long>{
         return when {
             _state.value.mediaType == MediaType.IMAGE && !tag.isNullOrBlank() -> {
                 imageTagsCrossRefRepository.getImageIds(tag, limit, offset)
@@ -587,7 +586,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         }
     }
 
-    private suspend fun countMediaIds(tag: String?): Int{
+    private suspend fun countMediaMatchingTag(tag: String?): Int{
         return when {
             _state.value.mediaType == MediaType.IMAGE && !tag.isNullOrBlank() -> {
                 imageTagsCrossRefRepository.count(tag)
