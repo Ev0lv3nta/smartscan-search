@@ -20,6 +20,12 @@ interface VideoClusterMetadataDao {
     @Query("SELECT * FROM video_cluster_metadata WHERE clusterId = :id")
     suspend fun get(id: Long): VideoClusterMetadata?
 
+    @Query("SELECT clusterId FROM video_cluster_metadata WHERE label = :label")
+    suspend fun getIdFromLabel(label: String): Long?
+
+    @Query("SELECT label FROM video_cluster_metadata WHERE label IS NOT NULL")
+    fun getLabels(): Flow<List<String>>
+
     @Transaction
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     suspend fun upsert(metadatas: List<VideoClusterMetadata>)

@@ -5,10 +5,13 @@ import kotlinx.coroutines.flow.Flow
 
 interface MediaClusterMetadataRepository {
     val allMetadata: Flow<Map<Long, ClusterMetadata>>
+    val allLabels: Flow<List<String>>
 
     suspend fun getAllMetadata(): Map<Long, ClusterMetadata>
 
     suspend fun getMetadata(id: Long): ClusterMetadata?
+
+    suspend fun getIdFromLabel(label: String): Long?
 
     suspend fun upsertMetadatas(metadatas: List<MediaClusterMetadata>)
 

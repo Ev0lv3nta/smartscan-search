@@ -1,10 +1,14 @@
 package com.fpf.smartscan.data.images.clusters
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.fpf.smartscan.data.MediaClusterMetadata
 
-@Entity(tableName = "image_cluster_metadata")
+@Entity(
+    tableName = "image_cluster_metadata",
+    indices = [Index(value = ["label"], unique = true)]
+)
 data class ImageClusterMetadata (
     @PrimaryKey
     override val clusterId: Long,

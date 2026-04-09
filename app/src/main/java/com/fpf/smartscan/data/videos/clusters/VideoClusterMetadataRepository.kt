@@ -10,11 +10,15 @@ class VideoClusterMetadataRepository(private val dao: VideoClusterMetadataDao): 
     override val allMetadata: Flow<Map<Long, ClusterMetadata>> = dao.getAllFlow().map { list ->
         list.associate { it.clusterId to it.toMetadata() }
     }
+    override val allLabels: Flow<List<String>> = dao.getLabels()
+
     override suspend fun getAllMetadata(): Map<Long, ClusterMetadata> = dao.getAll().associate {
         it.clusterId to it.toMetadata()
     }
 
     override suspend fun getMetadata(id: Long): ClusterMetadata? = dao.get(id)?.toMetadata()
+
+    override suspend fun getIdFromLabel(label: String): Long? = dao.getIdFromLabel(label)
 
     override suspend fun upsertMetadatas(metadatas: List<MediaClusterMetadata>) = dao.upsert(metadatas.map{it.toVideoClusterMetadata()})
 
