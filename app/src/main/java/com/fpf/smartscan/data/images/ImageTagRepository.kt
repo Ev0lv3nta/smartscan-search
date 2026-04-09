@@ -16,8 +16,6 @@ class ImageTagRepository(private val dao: ImageTagDao) {
         else {
             val updated = existing.copy(
                 lastUsedAt = imageTag.lastUsedAt ?: existing.lastUsedAt,
-                cohesionScore = imageTag.cohesionScore ?: existing.cohesionScore,
-                nPrototype = if (imageTag.nPrototype != 1) imageTag.nPrototype else existing.nPrototype
             )
             dao.update(updated)
         }

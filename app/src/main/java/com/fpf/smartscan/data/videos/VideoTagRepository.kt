@@ -14,8 +14,6 @@ class VideoTagRepository(private val dao: VideoTagDao) {
         else {
             val updated = existing.copy(
                 lastUsedAt = videoTag.lastUsedAt ?: existing.lastUsedAt,
-                cohesionScore = videoTag.cohesionScore ?: existing.cohesionScore,
-                nPrototype = if (videoTag.nPrototype != 1) videoTag.nPrototype else existing.nPrototype
             )
             dao.update(updated)
         }

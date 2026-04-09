@@ -10,10 +10,10 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface VideoTagDao {
-    @Query("SELECT * FROM video_tag ORDER BY createdAt")
+    @Query("SELECT * FROM video_tag")
     fun getAllFlow(): Flow<List<VideoTag>>
 
-    @Query("SELECT * FROM video_tag ORDER BY createdAt")
+    @Query("SELECT * FROM video_tag")
     fun getAll(): List<VideoTag>
 
     @Query("SELECT * FROM video_tag WHERE name = :name")
