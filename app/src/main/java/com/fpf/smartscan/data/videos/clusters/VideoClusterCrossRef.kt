@@ -3,10 +3,11 @@ package com.fpf.smartscan.data.videos.clusters
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
+import com.fpf.smartscan.data.MediaClusterCrossRef
 
 @Entity(
     tableName = "video_cluster_crossref",
-    primaryKeys = ["clusterId", "videoId"],
+    primaryKeys = ["clusterId", "mediaId"],
     foreignKeys = [
         ForeignKey(
             entity = VideoClusterMetadata::class,
@@ -15,10 +16,10 @@ import androidx.room.Index
             onDelete = ForeignKey.Companion.CASCADE
         )
     ],
-    indices = [Index("videoId")]
+    indices = [Index("mediaId")]
 )
 
 data class VideoClusterCrossRef(
-    val clusterId: Long,
-    val videoId: Long
-)
+    override val clusterId: Long,
+    override val mediaId: Long
+): MediaClusterCrossRef(clusterId, mediaId)

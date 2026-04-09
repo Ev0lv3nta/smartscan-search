@@ -12,10 +12,10 @@ interface ImageClusterCrossRefDao {
     @Query("SELECT clusterId FROM image_cluster_crossref")
     suspend fun getAllClusters(): List<Long>
 
-    @Query("SELECT imageId FROM image_cluster_crossref")
+    @Query("SELECT mediaId FROM image_cluster_crossref")
     suspend fun getAllImages(): List<Long>
 
-    @Query("SELECT imageId FROM image_cluster_crossref WHERE clusterId = :clusterId")
+    @Query("SELECT mediaId FROM image_cluster_crossref WHERE clusterId = :clusterId")
     suspend fun getImagesInCluster(clusterId: Long): List<Long>
 
     @Query("SELECT * FROM image_cluster_crossref")
@@ -26,7 +26,7 @@ interface ImageClusterCrossRefDao {
     suspend fun addImages(imageClusterCrossRefs: List<ImageClusterCrossRef>)
 
     @Transaction
-    @Query("DELETE FROM image_cluster_crossref WHERE imageId IN (:ids)")
+    @Query("DELETE FROM image_cluster_crossref WHERE mediaId IN (:ids)")
     suspend fun deleteByImageIds(ids: List<Long>)
 
     @Transaction

@@ -2,21 +2,14 @@ package com.fpf.smartscan.data.images.clusters
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.fpf.smartscansdk.core.cluster.ClusterMetadata
+import com.fpf.smartscan.data.MediaClusterMetadata
 
 @Entity(tableName = "image_cluster_metadata")
 data class ImageClusterMetadata (
     @PrimaryKey
-    val clusterId: Long,
-    val prototypeSize: Int,
-    val meanSimilarity: Float = 0f,
-    val stdSimilarity: Float = 0f,
-    val label: String? = null,
-    ){
-    fun toMetadata() = ClusterMetadata(
-        prototypeSize=prototypeSize,
-        meanSimilarity=meanSimilarity,
-        stdSimilarity=stdSimilarity,
-        label=label
-    )
-}
+    override val clusterId: Long,
+    override val prototypeSize: Int,
+    override val meanSimilarity: Float = 0f,
+    override val stdSimilarity: Float = 0f,
+    override val label: String? = null,
+    ): MediaClusterMetadata(clusterId, prototypeSize, meanSimilarity, stdSimilarity, label)

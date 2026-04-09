@@ -11,10 +11,10 @@ interface VideoClusterCrossRefDao {
     @Query("SELECT clusterId FROM video_cluster_crossref")
     suspend fun getAllClusters(): List<Long>
 
-    @Query("SELECT videoId FROM video_cluster_crossref")
+    @Query("SELECT mediaId FROM video_cluster_crossref")
     suspend fun getAllVideos(): List<Long>
 
-    @Query("SELECT videoId FROM video_cluster_crossref WHERE clusterId = :clusterId")
+    @Query("SELECT mediaId FROM video_cluster_crossref WHERE clusterId = :clusterId")
     suspend fun getVideosInCluster(clusterId: Long): List<Long>
 
     @Query("SELECT * FROM video_cluster_crossref")
@@ -26,7 +26,7 @@ interface VideoClusterCrossRefDao {
 
 
     @Transaction
-    @Query("DELETE FROM video_cluster_crossref WHERE videoId IN (:ids)")
+    @Query("DELETE FROM video_cluster_crossref WHERE mediaId IN (:ids)")
     suspend fun deleteByVideoIds(ids: List<Long>)
 
     @Transaction
