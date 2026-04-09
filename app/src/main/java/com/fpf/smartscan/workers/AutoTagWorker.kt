@@ -24,7 +24,9 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlin.system.measureTimeMillis
 import com.fpf.smartscan.R
+import com.fpf.smartscan.data.MediaTag
 
+//TODO: update to use workers
 // Worker updates tag prototypes, cohesion score, and nPrototype, periodically for auto-tagging functionality
 // These periodic updates allow suggested tags to dynamically adapt as the user tags new media
 
@@ -73,8 +75,8 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
-            val imageTags = imageTagsRepository.getAll()
-            val videoTags = videoTagsRepository.getAll()
+            val imageTags = imageTagsRepository.getAllTags()
+            val videoTags = videoTagsRepository.getAllTags()
 
             for (tag in imageTags){
                 updateImageTag((tag))
@@ -105,64 +107,66 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
         }
     }
 
-    private suspend fun updateImageTag(tag: ImageTag){
-        val nTaggedImages = imageTagsCrossRefRepository.count(tag.name)
-        if(nTaggedImages < N_PROTOTYPE || tag.nPrototype >= nTaggedImages ) return
-
-        val imageIds = imageTagsCrossRefRepository.getImageIds(tag.name, N_PROTOTYPE, tag.nPrototype)
-        val storedImageEmbeddings = imageStore.get(imageIds)
-        if(storedImageEmbeddings.isEmpty()) return
-
-        val nPrototypeNew = autoTagger.updateTagPrototype(tag, storedImageEmbeddings.map{it.embedding})
-        val cohesionScore = autoTagger.calculateCohesionScore(tag, storedImageEmbeddings.map{it.embedding})
-        imageTagsRepository.upsert(tag.copy(nPrototype = nPrototypeNew, cohesionScore = cohesionScore))
+    private suspend fun updateImageTag(tag: MediaTag){
+//        val nTaggedImages = imageTagsCrossRefRepository.count(tag.name)
+//        if(nTaggedImages < N_PROTOTYPE || tag.nPrototype >= nTaggedImages ) return
+//
+//        val imageIds = imageTagsCrossRefRepository.getImageIds(tag.name, N_PROTOTYPE, tag.nPrototype)
+//        val storedImageEmbeddings = imageStore.get(imageIds)
+//        if(storedImageEmbeddings.isEmpty()) return
+//
+//        val nPrototypeNew = autoTagger.updateTagPrototype(tag, storedImageEmbeddings.map{it.embedding})
+//        val cohesionScore = autoTagger.calculateCohesionScore(tag, storedImageEmbeddings.map{it.embedding})
+//        imageTagsRepository.upsert(tag.copy(nPrototype = nPrototypeNew, cohesionScore = cohesionScore))
     }
 
-    private suspend fun updateVideoTag(tag: VideoTag){
-        val nTaggedVideos = videoTagsCrossRefRepository.count(tag.name)
-        if(nTaggedVideos < N_PROTOTYPE || tag.nPrototype >= nTaggedVideos) return
-
-        val videoIds = videoTagsCrossRefRepository.getVideoIds(tag.name, N_PROTOTYPE, tag.nPrototype)
-        val storedVideosEmbeddings = videoStore.get(videoIds)
-        if(storedVideosEmbeddings.isEmpty()) return
-
-        val nPrototypeNew = autoTagger.updateTagPrototype(tag, storedVideosEmbeddings.map{it.embedding})
-        val cohesionScore = autoTagger.calculateCohesionScore(tag, storedVideosEmbeddings.map{it.embedding})
-        videoTagsRepository.upsert(tag.copy(nPrototype = nPrototypeNew, cohesionScore=cohesionScore))
+    private suspend fun updateVideoTag(tag: MediaTag){
+//        val nTaggedVideos = videoTagsCrossRefRepository.count(tag.name)
+//        if(nTaggedVideos < N_PROTOTYPE || tag.nPrototype >= nTaggedVideos) return
+//
+//        val videoIds = videoTagsCrossRefRepository.getVideoIds(tag.name, N_PROTOTYPE, tag.nPrototype)
+//        val storedVideosEmbeddings = videoStore.get(videoIds)
+//        if(storedVideosEmbeddings.isEmpty()) return
+//
+//        val nPrototypeNew = autoTagger.updateTagPrototype(tag, storedVideosEmbeddings.map{it.embedding})
+//        val cohesionScore = autoTagger.calculateCohesionScore(tag, storedVideosEmbeddings.map{it.embedding})
+//        videoTagsRepository.upsert(tag.copy(nPrototype = nPrototypeNew, cohesionScore=cohesionScore))
     }
 
     private suspend fun tagImages(tags: List<ImageTag>): Int{
-        val storedEmbeddings = imageStore.get().map { it }.toSet()
-        val imageTagsToAdd: MutableList<ImageTagCrossRef> = emptyList<ImageTagCrossRef>().toMutableList()
-
-        for (storedEmbed in storedEmbeddings){
-            val result = autoTagger.getSuggestedTags(tags,  storedEmbed.embedding)
-            result.bestMatch?.let{
-                if(result.confidence < MIN_CONFIDENCE_MARGIN) continue
-                val existingTags = imageTagsCrossRefRepository.getTagsForImage(storedEmbed.id).toSet()
-                if (it.name in existingTags) continue
-                imageTagsToAdd.add(ImageTagCrossRef(storedEmbed.id, it.name))
-            }
-        }
-        if(imageTagsToAdd.isNotEmpty()) imageTagsCrossRefRepository.addTags(imageTagsToAdd)
-        return imageTagsToAdd.size
+//        val storedEmbeddings = imageStore.get().map { it }.toSet()
+//        val imageTagsToAdd: MutableList<ImageTagCrossRef> = emptyList<ImageTagCrossRef>().toMutableList()
+//
+//        for (storedEmbed in storedEmbeddings){
+//            val result = autoTagger.getSuggestedTags(tags,  storedEmbed.embedding)
+//            result.bestMatch?.let{
+//                if(result.confidence < MIN_CONFIDENCE_MARGIN) continue
+//                val existingTags = imageTagsCrossRefRepository.getTagsForImage(storedEmbed.id).toSet()
+//                if (it.name in existingTags) continue
+//                imageTagsToAdd.add(ImageTagCrossRef(storedEmbed.id, it.name))
+//            }
+//        }
+//        if(imageTagsToAdd.isNotEmpty()) imageTagsCrossRefRepository.addTags(imageTagsToAdd)
+//        return imageTagsToAdd.size
+        return 0
     }
 
     private suspend fun tagVideos( tags: List<VideoTag>): Int{
-        val storedEmbeddings = videoStore.get().map { it }.toSet()
-        val videoTagsToAdd: MutableList<VideoTagCrossRef> = emptyList<VideoTagCrossRef>().toMutableList()
-
-        for (storedEmbed in storedEmbeddings){
-            val result = autoTagger.getSuggestedTags(tags,  storedEmbed.embedding)
-            result.bestMatch?.let{
-                if(result.confidence < MIN_CONFIDENCE_MARGIN) continue
-                val existingTags = videoTagsCrossRefRepository.getTagsForVideo(storedEmbed.id).toSet()
-                if (it.name in existingTags) continue
-                videoTagsToAdd.add(VideoTagCrossRef(storedEmbed.id, it.name))
-            }
-        }
-        if(videoTagsToAdd.isNotEmpty()) videoTagsCrossRefRepository.addTags(videoTagsToAdd)
-        return videoTagsToAdd.size
+//        val storedEmbeddings = videoStore.get().map { it }.toSet()
+//        val videoTagsToAdd: MutableList<VideoTagCrossRef> = emptyList<VideoTagCrossRef>().toMutableList()
+//
+//        for (storedEmbed in storedEmbeddings){
+//            val result = autoTagger.getSuggestedTags(tags,  storedEmbed.embedding)
+//            result.bestMatch?.let{
+//                if(result.confidence < MIN_CONFIDENCE_MARGIN) continue
+//                val existingTags = videoTagsCrossRefRepository.getTagsForVideo(storedEmbed.id).toSet()
+//                if (it.name in existingTags) continue
+//                videoTagsToAdd.add(VideoTagCrossRef(storedEmbed.id, it.name))
+//            }
+//        }
+//        if(videoTagsToAdd.isNotEmpty()) videoTagsCrossRefRepository.addTags(videoTagsToAdd)
+//        return videoTagsToAdd.size
+        return 0
     }
 
 }

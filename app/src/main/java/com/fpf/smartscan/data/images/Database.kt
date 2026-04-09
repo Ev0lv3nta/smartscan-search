@@ -7,7 +7,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import java.io.File
 
-@Database(entities = [ImageTag::class, ImageTagCrossRef::class], version = 1, exportSchema = false)
+@Database(entities = [ImageTag::class, ImageTagCrossRef::class], version = 2, exportSchema = false)
 abstract class ImageTagDatabase : RoomDatabase() {
     abstract fun imageTagCrossRefDao(): ImageTagCrossRefDao
     abstract fun tagDao(): ImageTagDao
@@ -32,7 +32,9 @@ abstract class ImageTagDatabase : RoomDatabase() {
                     ImageTagDatabase::class.java,
                     dbName
                 ).setJournalMode(JournalMode.TRUNCATE)
+                    .addMigrations(MIGRATION_1_2_IMAGE)
                     .build()
+
                 INSTANCE = instance
                 instance
             }

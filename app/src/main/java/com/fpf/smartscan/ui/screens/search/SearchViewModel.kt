@@ -10,10 +10,12 @@ import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.launch
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.room.util.copy
 import com.fpf.smartscan.media.getImageUriFromId
 import kotlinx.coroutines.Dispatchers
 import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
+import com.fpf.smartscan.data.MediaTag
 import com.fpf.smartscan.data.images.ImageTag
 import com.fpf.smartscan.data.images.ImageTagCrossRef
 import com.fpf.smartscan.data.images.ImageTagCrossRefRepository
@@ -97,8 +99,8 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     private val imageClusterCrossRefRepository = ImageClusterCrossRefRepository(ImageClusterDatabase.getDatabase(application).imageClusterCrossRefDao())
     private val videoClusterCrossRefRepository = VideoClusterCrossRefRepository(VideoClusterDatabase.getDatabase(application).videoClusterCrossRefDao())
 
-    val allImageTags: StateFlow<List<ImageTag>> = imageTagsRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
-    val allVideoTags: StateFlow<List<VideoTag>> = videoTagsRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val allImageTags: StateFlow<List<MediaTag>> = imageTagsRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val allVideoTags: StateFlow<List<MediaTag>> = videoTagsRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val autoTagger = AutoTagger(tagStore)
 
@@ -452,11 +454,11 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
                 when (_state.value.mediaType) {
                     MediaType.IMAGE -> {
-                        val tagEntries = ids.map { ImageTagCrossRef(imageId = it, tag = tag.trim()) }
+                        val tagEntries = ids.map { ImageTagCrossRef(mediaId = it, tag = tag.trim()) }
                         imageTagsCrossRefRepository.addTags(tagEntries)
                     }
                     MediaType.VIDEO -> {
-                        val tagEntries = ids.map { VideoTagCrossRef(videoId = it, tag = tag.trim()) }
+                        val tagEntries = ids.map { VideoTagCrossRef(mediaId = it, tag = tag.trim()) }
                         videoTagsCrossRefRepository.addTags(tagEntries)
                     }
                 }
@@ -557,10 +559,10 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     private suspend fun getMediaMatchingTag(tag: String?, limit: Int, offset: Int): List<Long>{
         return when {
             _state.value.mediaType == MediaType.IMAGE && !tag.isNullOrBlank() -> {
-                imageTagsCrossRefRepository.getImageIds(tag, limit, offset)
+                imageTagsCrossRefRepository.getMediaIds(tag, limit, offset)
             }
             _state.value.mediaType == MediaType.VIDEO && !tag.isNullOrBlank() -> {
-                videoTagsCrossRefRepository.getVideoIds(tag, limit, offset)
+                videoTagsCrossRefRepository.getMediaIds(tag, limit, offset)
             }
             else -> { emptyList() }
         }
@@ -581,12 +583,12 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     private suspend fun updateTagLastUsage(tag: String){
         when(_state.value.mediaType){
             MediaType.VIDEO -> {
-                val videoTag = allVideoTags.value.find { it.name == tag }
-                videoTag?.let{videoTagsRepository.upsert(it.copy(lastUsedAt = System.currentTimeMillis()))}
+                val videoTag = allVideoTags.value.find { it.name == tag }?: return
+                videoTagsRepository.upsertTag(MediaTag(videoTag.name, System.currentTimeMillis()))
             }
             MediaType.IMAGE -> {
-                val imageTag = allImageTags.value.find { it.name == tag }
-                imageTag?.let{imageTagsRepository.upsert(it.copy(lastUsedAt = System.currentTimeMillis()))}
+                val imageTag = allImageTags.value.find { it.name == tag }?: return
+                imageTagsRepository.upsertTag(MediaTag(imageTag.name, System.currentTimeMillis()))
             }
         }
     }

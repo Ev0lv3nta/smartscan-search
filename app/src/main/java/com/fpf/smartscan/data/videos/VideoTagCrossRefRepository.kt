@@ -1,33 +1,33 @@
 package com.fpf.smartscan.data.videos
 
-import androidx.room.Transaction
-import com.fpf.smartscan.utils.stringToLong
+import com.fpf.smartscan.data.MediaTagCrossRef
+import com.fpf.smartscan.data.MediaTagCrossRefRepository
 
 class VideoTagCrossRefRepository(
     private val dao: VideoTagCrossRefDao,
     private val videoTagDao: VideoTagDao
-) {
-    suspend fun getTagsForVideo(videoId: Long): List<String> = dao.getTagsForVideo(videoId)
-    suspend fun getVideoIds(tag: String): List<Long> = dao.getVideoIds(tag)
-    suspend fun getVideoIds(tag: String, limit: Int, offset: Int = 0): List<Long> = dao.getVideoIds(tag, limit, offset)
+): MediaTagCrossRefRepository {
+    override suspend fun getTagToMediaIdsMap(): Map<String, List<Long>> = dao.getAllCrossRefs().groupBy({it.tag}, {it.mediaId})
+    override suspend fun getTagsForMedia(mediaId: Long): List<String> = dao.getTagsForVideo(mediaId)
+    override suspend fun getMediaIds(tag: String): List<Long> = dao.getVideoIds(tag)
+    override  suspend fun getMediaIds(tag: String, limit: Int, offset: Int): List<Long> = dao.getVideoIds(tag, limit, offset)
 
-    @Transaction
-    suspend fun addTags(videoTagCrossRefs: List<VideoTagCrossRef>) {
-        val uniqueTagNames = videoTagCrossRefs.map { it.tag }.toSet()
+    override  suspend fun addTags(crossRefs: List<MediaTagCrossRef>) {
+        val uniqueTagNames = crossRefs.map { it.tag }.toSet()
         for (name in uniqueTagNames){
             val existingTag = videoTagDao.get(name)
             if(existingTag == null){
-                videoTagDao.insert(VideoTag(name=name, prototypeId = stringToLong(name)))
+                videoTagDao.insert(VideoTag(name=name))
             }
         }
-        dao.upsert(videoTagCrossRefs)
+        dao.upsert(crossRefs.map{it.toVideoCrossRef()})
     }
 
-    suspend fun deleteByIds(ids: List<Long>) = dao.deleteByIds(ids)
+    override suspend fun deleteByIds(ids: List<Long>) = dao.deleteByIds(ids)
 
-    suspend fun deleteByTags(tags: List<String>) = dao.deleteByTags(tags)
+    override suspend fun deleteByTags(tags: List<String>) = dao.deleteByTags(tags)
 
-    suspend fun clear() = dao.clear()
+    override suspend fun clear() = dao.clear()
 
-    suspend fun count(tag: String) = dao.count(tag)
+    override suspend fun count(tag: String) = dao.count(tag)
 }

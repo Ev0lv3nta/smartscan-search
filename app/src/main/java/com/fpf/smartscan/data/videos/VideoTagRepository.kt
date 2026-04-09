@@ -1,23 +1,30 @@
 package com.fpf.smartscan.data.videos
 
-class VideoTagRepository(private val dao: VideoTagDao) {
-    val allTags = dao.getAllFlow()
-    fun getAll(): List<VideoTag> = dao.getAll()
+import com.fpf.smartscan.data.MediaTag
+import com.fpf.smartscan.data.MediaTagRepository
+import kotlinx.coroutines.flow.Flow
 
-    suspend fun getByName(name: String): VideoTag? = dao.get(name)
+class VideoTagRepository(private val dao: VideoTagDao): MediaTagRepository {
+    override val allTags: Flow<List<MediaTag>> = dao.getAllFlow()
 
-    suspend fun upsert(videoTag: VideoTag) {
-        val existing = dao.get(videoTag.name)
+    override suspend fun getAllTags(): List<MediaTag> = dao.getAll()
+
+    override suspend fun getTag(name: String): MediaTag? = dao.get(name)
+
+    override suspend fun insertTag(mediaTag: MediaTag) = dao.insert(mediaTag.toVideoMediaTag())
+
+    override suspend fun upsertTag(mediaTag: MediaTag) {
+        val existing = dao.get(mediaTag.name)
         if (existing == null) {
-            dao.insert(videoTag)
+            insertTag(mediaTag)
         }
         else {
             val updated = existing.copy(
-                lastUsedAt = videoTag.lastUsedAt ?: existing.lastUsedAt,
+                lastUsedAt = mediaTag.lastUsedAt ?: existing.lastUsedAt,
             )
             dao.update(updated)
         }
     }
 
-    suspend fun delete(videoTag: VideoTag) = dao.delete(videoTag)
+    override suspend fun deleteTag(mediaTag: MediaTag) = dao.delete(mediaTag.toVideoMediaTag())
 }

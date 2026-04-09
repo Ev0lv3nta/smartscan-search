@@ -1,25 +1,30 @@
 package com.fpf.smartscan.data.images
 
-class ImageTagRepository(private val dao: ImageTagDao) {
-    val allTags = dao.getAllFlow()
-    suspend fun getAll(): List<ImageTag> = dao.getAll()
+import com.fpf.smartscan.data.MediaTag
+import com.fpf.smartscan.data.MediaTagRepository
+import kotlinx.coroutines.flow.Flow
 
-    suspend fun getByName(name: String): ImageTag? = dao.get(name)
+class ImageTagRepository(private val dao: ImageTagDao): MediaTagRepository {
+    override val allTags: Flow<List<MediaTag>> = dao.getAllFlow()
 
-    suspend fun insert(imageTag: ImageTag) = dao.insert(imageTag)
+    override suspend fun getAllTags(): List<MediaTag> = dao.getAll()
 
-    suspend fun upsert(imageTag: ImageTag) {
-        val existing = dao.get(imageTag.name)
+    override suspend fun getTag(name: String): MediaTag? = dao.get(name)
+
+    override suspend fun insertTag(mediaTag: MediaTag) = dao.insert(mediaTag.toImageMediaTag())
+
+    override suspend fun upsertTag(mediaTag: MediaTag) {
+        val existing = dao.get(mediaTag.name)
         if (existing == null) {
-            dao.insert(imageTag)
+            insertTag(mediaTag)
         }
         else {
             val updated = existing.copy(
-                lastUsedAt = imageTag.lastUsedAt ?: existing.lastUsedAt,
+                lastUsedAt = mediaTag.lastUsedAt ?: existing.lastUsedAt,
             )
             dao.update(updated)
         }
     }
 
-    suspend fun delete(imageTag: ImageTag) = dao.delete(imageTag)
+    override suspend fun deleteTag(mediaTag: MediaTag) = dao.delete(mediaTag.toImageMediaTag())
 }

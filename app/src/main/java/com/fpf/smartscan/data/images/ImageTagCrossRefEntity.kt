@@ -3,10 +3,11 @@ package com.fpf.smartscan.data.images
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
+import com.fpf.smartscan.data.MediaTagCrossRef
 
 @Entity(
     tableName = "image_tag_crossref",
-    primaryKeys = ["imageId", "tag"],
+    primaryKeys = ["mediaId", "tag"],
     foreignKeys = [
         ForeignKey(
             entity = ImageTag::class,
@@ -18,6 +19,6 @@ import androidx.room.Index
     indices = [Index("tag")]
 )
 data class ImageTagCrossRef(
-    val imageId: Long,
-    val tag: String
-)
+    override val mediaId: Long,
+    override val tag: String
+): MediaTagCrossRef(mediaId, tag)

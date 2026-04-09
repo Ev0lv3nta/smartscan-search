@@ -4,24 +4,27 @@ import androidx.room.*
 
 @Dao
 interface VideoTagCrossRefDao {
-    @Query("SELECT DISTINCT tag FROM video_tag_crossref WHERE videoId = :videoId")
+    @Query("SELECT DISTINCT tag FROM video_tag_crossref WHERE mediaId = :videoId")
     suspend fun getTagsForVideo(videoId: Long): List<String>
 
-    @Query("SELECT videoId FROM video_tag_crossref WHERE tag = :tag")
+    @Query("SELECT mediaId FROM video_tag_crossref WHERE tag = :tag")
     suspend fun getVideoIds(tag: String): List<Long>
 
-    @Query("SELECT videoId FROM video_tag_crossref WHERE tag = :tag LIMIT :limit OFFSET :offset")
+    @Query("SELECT mediaId FROM video_tag_crossref WHERE tag = :tag LIMIT :limit OFFSET :offset")
     suspend fun getVideoIds(tag: String, limit: Int, offset: Int): List<Long>
 
     @Query("SELECT * FROM video_tag_crossref")
     suspend fun getAllCrossRefs(): List<VideoTagCrossRef>
 
+    @Transaction
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(tags: List<VideoTagCrossRef>)
 
-    @Query("DELETE FROM video_tag_crossref WHERE videoId IN (:ids)")
+    @Transaction
+    @Query("DELETE FROM video_tag_crossref WHERE mediaId IN (:ids)")
     suspend fun deleteByIds(ids: List<Long>)
 
+    @Transaction
     @Query("DELETE FROM video_tag_crossref WHERE tag IN (:tags)")
     suspend fun deleteByTags(tags: List<String>)
 

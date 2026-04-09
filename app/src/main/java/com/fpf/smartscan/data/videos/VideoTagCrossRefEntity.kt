@@ -3,10 +3,11 @@ package com.fpf.smartscan.data.videos
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
+import com.fpf.smartscan.data.MediaTagCrossRef
 
 @Entity(
     tableName = "video_tag_crossref",
-    primaryKeys = ["videoId", "tag"],
+    primaryKeys = ["mediaId", "tag"],
     foreignKeys = [
         ForeignKey(
             entity = VideoTag::class,
@@ -18,6 +19,6 @@ import androidx.room.Index
     indices = [Index("tag")]
 )
 data class VideoTagCrossRef(
-    val videoId: Long,
-    val tag: String
-)
+    override val mediaId: Long,
+    override val tag: String
+): MediaTagCrossRef(mediaId, tag)

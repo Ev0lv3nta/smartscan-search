@@ -8,7 +8,7 @@ import androidx.room.RoomDatabase
 import java.io.File
 
 
-@Database(entities = [VideoTag::class, VideoTagCrossRef::class], version = 1, exportSchema = false)
+@Database(entities = [VideoTag::class, VideoTagCrossRef::class], version = 2, exportSchema = false)
 abstract class VideoTagDatabase : RoomDatabase() {
     abstract fun videoTagCrossRefDao(): VideoTagCrossRefDao
     abstract fun tagDao(): VideoTagDao
@@ -31,7 +31,9 @@ abstract class VideoTagDatabase : RoomDatabase() {
                     application,
                     VideoTagDatabase::class.java,
                     dbName
-                ).setJournalMode(JournalMode.TRUNCATE).build()
+                ).setJournalMode(JournalMode.TRUNCATE)
+                    .addMigrations(MIGRATION_1_2_VIDEO)
+                    .build()
                 INSTANCE = instance
                 instance
             }
