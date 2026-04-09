@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 
 @Dao
 interface VideoClusterCrossRefDao {
@@ -19,12 +20,16 @@ interface VideoClusterCrossRefDao {
     @Query("SELECT * FROM video_cluster_crossref")
     suspend fun getAllClusterVideoCrossRefs(): List<VideoClusterCrossRef>
 
+    @Transaction
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     suspend fun addVideos(videosClusterCrossRefs: List<VideoClusterCrossRef>)
 
+
+    @Transaction
     @Query("DELETE FROM video_cluster_crossref WHERE videoId IN (:ids)")
     suspend fun deleteByVideoIds(ids: List<Long>)
 
+    @Transaction
     @Query("DELETE FROM video_cluster_crossref WHERE clusterId IN (:ids)")
     suspend fun deleteByClusterIds(ids: List<Long>)
 

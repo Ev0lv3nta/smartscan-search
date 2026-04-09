@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
@@ -19,6 +20,7 @@ interface VideoClusterMetadataDao {
     @Query("SELECT * FROM video_cluster_metadata WHERE clusterId = :id")
     suspend fun get(id: Long): VideoClusterMetadata?
 
+    @Transaction
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     suspend fun upsert(metadatas: List<VideoClusterMetadata>)
 
