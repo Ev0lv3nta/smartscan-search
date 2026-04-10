@@ -2,7 +2,7 @@ package com.fpf.smartscan.data.images.tags
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.fpf.smartscan.data.MediaTag
+import com.fpf.smartscan.collections.MediaTag
 
 @Entity(tableName = "image_tag")
 data class ImageTag(

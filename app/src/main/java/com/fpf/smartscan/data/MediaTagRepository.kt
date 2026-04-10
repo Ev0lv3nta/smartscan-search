@@ -1,5 +1,6 @@
 package com.fpf.smartscan.data
 
+import com.fpf.smartscan.collections.MediaTag
 import kotlinx.coroutines.flow.Flow
 
 interface MediaTagRepository {
