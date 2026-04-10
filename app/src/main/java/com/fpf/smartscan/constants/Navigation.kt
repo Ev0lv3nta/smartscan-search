@@ -2,6 +2,7 @@ package com.fpf.smartscan.constants
 
 object Routes {
     const val SEARCH = "search"
+    const val COLLECTIONS = "collections"
     const val SETTINGS = "settings"
     const val SETTINGS_DETAIL = "settings_detail/{type}"
     const val DONATE = "donate"

@@ -26,6 +26,8 @@ import com.fpf.smartscan.ui.components.OverflowMenu
 import com.fpf.smartscan.ui.components.UpdatePopUp
 import com.fpf.smartscan.ui.permissions.StorageAccess
 import com.fpf.smartscan.ui.permissions.getStorageAccess
+import com.fpf.smartscan.ui.screens.collections.CollectionsScreen
+import com.fpf.smartscan.ui.screens.collections.CollectionsViewModel
 import com.fpf.smartscan.ui.screens.donate.DonateScreen
 import com.fpf.smartscan.ui.screens.help.HelpScreen
 import com.fpf.smartscan.ui.screens.search.SearchScreen
@@ -44,11 +46,13 @@ fun MainScreen(intentSearchQuery: SearchQuery?) {
     val typeVal = navBackStackEntry?.arguments?.getString("type")
     val mainViewModel: MainViewModel = viewModel()
     val settingsViewModel: SettingsViewModel = viewModel()
+    val collectionsViewModel: CollectionsViewModel = viewModel()
     val searchViewModel: SearchViewModel = viewModel()
     val isUpdatePopUpVisible by mainViewModel.isUpdatePopUpVisible.collectAsState()
 
     val headerTitle = when {
         currentRoute == Routes.SEARCH -> stringResource(R.string.title_search)
+        currentRoute == Routes.COLLECTIONS -> stringResource(R.string.title_collections)
         currentRoute == Routes.SETTINGS -> stringResource(R.string.title_settings)
         currentRoute == Routes.DONATE -> stringResource(R.string.title_donate)
         currentRoute == Routes.HELP -> stringResource(R.string.title_help)
@@ -119,6 +123,12 @@ fun MainScreen(intentSearchQuery: SearchQuery?) {
                         searchViewModel = searchViewModel,
                         settingsViewModel = settingsViewModel,
                         intentSearchQuery = intentSearchQuery
+                    )
+                }
+                composable(Routes.COLLECTIONS) {
+                    CollectionsScreen(
+                        collectionsViewModel= collectionsViewModel,
+                        settingsViewModel = settingsViewModel,
                     )
                 }
                 composable(Routes.SETTINGS) {

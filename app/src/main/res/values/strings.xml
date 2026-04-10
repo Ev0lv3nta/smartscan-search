@@ -7,6 +7,7 @@
 
     <!-- Screen titles-->
     <string name="title_search">Search</string>
+    <string name="title_collections">Collections</string>
     <string name="title_settings">Settings</string>
     <string name="title_donate">Donate</string>
     <string name="title_help">Help</string>
@@ -34,6 +35,9 @@
     <string name="search_error_unknown">An unknown error occurred.</string>
     <string name="search_error_index_loading">Error loading index.</string>
     <string name="search_start_indexing_alert">Start indexing %1$s</string>
+
+    <string name="collections_no_collections_title">No Collections</string>
+    <string name="collections_no_collections_description">Collection are created by automatically grouping similar items or when you tag items.</string>
 
     <!-- Donate screen -->
     <string name="label_btc">Bitcoin</string>
