@@ -1,4 +1,4 @@
-package com.fpf.smartscan.data
+package com.fpf.smartscan.collections
 
 import com.fpf.smartscan.data.images.tags.ImageTag
 import com.fpf.smartscan.data.videos.tags.VideoTag
