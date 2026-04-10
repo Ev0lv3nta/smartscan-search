@@ -35,7 +35,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
 import java.io.File
 
-class SettingsViewModel(private val application: Application) : AndroidViewModel(application) {
+class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val sharedPrefs = application.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
     private val _appSettings = MutableStateFlow(AppSettings())
     val appSettings: StateFlow<AppSettings> = _appSettings
@@ -80,8 +80,8 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
     fun onImportModel( uri: Uri, modelInfo: ModelInfo) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                ModelManager.importModel(application, modelInfo, uri)
-                _importedModels.value = ModelManager.listModels(application)
+                ModelManager.importModel(getApplication(), modelInfo, uri)
+                _importedModels.value = ModelManager.listModels(getApplication())
                 _event.emit("Model imported successfully")
             } catch (e: Exception) {
                 val defaultErrorMessage = "Model import failed"
@@ -94,8 +94,8 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
     }
 
     fun onDeleteModel(modelInfo: ModelInfo){
-        if(ModelManager.deleteModel(application, modelInfo)) {
-            _importedModels.value = ModelManager.listModels(application)
+        if(ModelManager.deleteModel(getApplication(), modelInfo)) {
+            _importedModels.value = ModelManager.listModels(getApplication())
         }
     }
 
@@ -141,13 +141,13 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
     }
 
     fun backup(uri: Uri){
-        val indexZipFile = File(application.cacheDir, BACKUP_FILENAME)
-        val imageIndexFile = File(application.filesDir, EmbeddingStoresFiles.IMAGE)
-        val videoIndexFile = File(application.filesDir,  EmbeddingStoresFiles.VIDEO)
-        val tagsEmbedStoreFile = File(application.filesDir,  EmbeddingStoresFiles.TAGS)
-        val hashFile = File(application.cacheDir, HASH_FILENAME)
-        val imageTagDb = application.getDatabasePath("image_tag_database")
-        val videoTagDb = application.getDatabasePath("video_tag_database")
+        val indexZipFile = File(getApplication<Application>().cacheDir, BACKUP_FILENAME)
+        val imageIndexFile = File(getApplication<Application>().filesDir, EmbeddingStoresFiles.IMAGE)
+        val videoIndexFile = File(getApplication<Application>().filesDir,  EmbeddingStoresFiles.VIDEO)
+        val tagsEmbedStoreFile = File(getApplication<Application>().filesDir,  EmbeddingStoresFiles.TAGS)
+        val hashFile = File(getApplication<Application>().cacheDir, HASH_FILENAME)
+        val imageTagDb = getApplication<Application>().getDatabasePath("image_tag_database")
+        val videoTagDb = getApplication<Application>().getDatabasePath("video_tag_database")
 
         val filesToZip = listOf(imageIndexFile, videoIndexFile, tagsEmbedStoreFile, hashFile, imageTagDb, videoTagDb)
         _isBackupLoading.value = true
@@ -159,7 +159,7 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
                 hashFile.writeText(hashes.joinToString("\n") )
 
                 zipFiles(indexZipFile, filesToZip)
-                copyToUri(application, uri, indexZipFile)
+                copyToUri(getApplication<Application>(), uri, indexZipFile)
                 _event.emit("Backup successful")
             }catch (e: Exception){
                 Log.e(TAG, "Error backing up: ${e.message}")
@@ -173,20 +173,20 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
     }
 
     fun restore(uri: Uri){
-        val indexZipFile = File(application.cacheDir, BACKUP_FILENAME)
+        val indexZipFile = File(getApplication<Application>().cacheDir, BACKUP_FILENAME)
         _isRestoreLoading.value = true
 
         viewModelScope.launch(Dispatchers.IO){
             try {
-                copyFromUri(application, uri, indexZipFile)
-                val extractedFiles = unzipFiles(indexZipFile, application.filesDir)
+                copyFromUri(getApplication<Application>(), uri, indexZipFile)
+                val extractedFiles = unzipFiles(indexZipFile, getApplication<Application>().filesDir)
                 if(!isValidBackupFile((extractedFiles))){
                     extractedFiles.forEach { it.delete() }
                     error("Invalid backup file")
                 }
                 _event.emit("Restore successful")
-                ImageIndexListener.onComplete(application, Metrics.Success()) // call onComplete to trigger refresh in search screen
-                VideoIndexListener.onComplete(application, Metrics.Success())
+                ImageIndexListener.onComplete(getApplication<Application>(), Metrics.Success()) // call onComplete to trigger refresh in search screen
+                VideoIndexListener.onComplete(getApplication<Application>(), Metrics.Success())
                 sharedPrefs.edit { putString("lastIndexed", System.currentTimeMillis().toString()) } // so scheduling can be triggered
             }catch (e: Exception){
                 Log.e(TAG, "Error restoring: ${e.message}")

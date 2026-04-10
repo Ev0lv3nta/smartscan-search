@@ -35,7 +35,7 @@ import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.mediaTypeOptions
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.shareMediaMulti
-import com.fpf.smartscan.search.ProcessorStatus
+import com.fpf.smartscan.search.IndexingStatus
 import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.ui.components.LoadingIndicator
@@ -104,13 +104,13 @@ fun SearchScreen(
     }
 
     LaunchedEffect(imageIndexStatus) {
-        if (imageIndexStatus == ProcessorStatus.COMPLETE) {
+        if (imageIndexStatus == IndexingStatus.COMPLETE) {
             searchViewModel.refreshIndex(MediaType.IMAGE)
         }
     }
 
     LaunchedEffect(videoIndexStatus) {
-        if (videoIndexStatus == ProcessorStatus.COMPLETE) {
+        if (videoIndexStatus == IndexingStatus.COMPLETE) {
             searchViewModel.refreshIndex(MediaType.VIDEO)
         }
     }
@@ -188,13 +188,13 @@ fun SearchScreen(
 
             ProgressBar(
                 label = "Indexing images ${"%.0f".format(imageIndexProgress * 100)}%",
-                isVisible = imageIndexStatus == ProcessorStatus.ACTIVE,
+                isVisible = imageIndexStatus == IndexingStatus.ACTIVE,
                 progress = imageIndexProgress
             )
 
             ProgressBar(
                 label = "Indexing videos ${"%.0f".format(videoIndexProgress * 100)}%",
-                isVisible = videoIndexStatus == ProcessorStatus.ACTIVE,
+                isVisible = videoIndexStatus == IndexingStatus.ACTIVE,
                 progress = videoIndexProgress
             )
             if (state.queryType == QueryType.IMAGE) {
@@ -217,7 +217,7 @@ fun SearchScreen(
                             uri = state.queryImage,
                             mediaType = state.mediaType,
                             imageSize = 160.dp,
-                            mediaTypeSelectorEnabled = (videoIndexStatus != ProcessorStatus.ACTIVE && imageIndexStatus != ProcessorStatus.ACTIVE), // prevent switching modes when indexing in progress
+                            mediaTypeSelectorEnabled = (videoIndexStatus != IndexingStatus.ACTIVE && imageIndexStatus != IndexingStatus.ACTIVE), // prevent switching modes when indexing in progress
                             onSearch = {
                                 searchViewModel.search(appSettings.similarityThreshold)
                                 isSelecting = false
@@ -272,7 +272,7 @@ fun SearchScreen(
                             placeholders = searchBarPlaceholders,
                             trailingIcon = {
                                 SelectorIconItem(
-                                    enabled = (videoIndexStatus != ProcessorStatus.ACTIVE && imageIndexStatus != ProcessorStatus.ACTIVE), // prevent switching modes when indexing in progress
+                                    enabled = (videoIndexStatus != IndexingStatus.ACTIVE && imageIndexStatus != IndexingStatus.ACTIVE), // prevent switching modes when indexing in progress
                                     label = "Media type",
                                     options = mediaTypeOptions.values.toList(),
                                     selectedOption = mediaTypeOptions[state.mediaType]!!,

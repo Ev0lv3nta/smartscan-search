@@ -1,33 +1,32 @@
 package com.fpf.smartscan.data.images.clusters
 
-import androidx.room.Transaction
+import com.fpf.smartscan.data.MediaClusterCrossRef
+import com.fpf.smartscan.data.MediaClusterCrossRefRepository
 import java.util.LinkedHashMap
 
-class ImageClusterCrossRefRepository(private val dao: ImageClusterCrossRefDao) {
-    var clusterImageIdsMap: LinkedHashMap<Long, MutableSet<Long>> = LinkedHashMap()
+class ImageClusterCrossRefRepository(private val dao: ImageClusterCrossRefDao): MediaClusterCrossRefRepository {
+    private var clusterImageIdsMap: LinkedHashMap<Long, MutableSet<Long>> = LinkedHashMap()
 
-    suspend fun getAllClusters(): Set<Long> = dao.getAllClusters().toSet()
-    suspend fun getAllImages(): Set<Long> = dao.getAllImages().toSet()
+    override suspend fun getAllClusters(): Set<Long> = dao.getAllClusters().toSet()
+    override suspend fun getAllMedia(): Set<Long> = dao.getAllImages().toSet()
+    override suspend fun getMediaInCluster(clusterId: Long): Set<Long> = dao.getImagesInCluster(clusterId).toSet()
 
-    suspend fun getImagesInCluster(clusterId: Long): Set<Long> = dao.getImagesInCluster(clusterId).toSet()
-
-    suspend fun getClusterToImageIdsMap(): LinkedHashMap<Long, MutableSet<Long>> {
+    override suspend fun getClusterToMediaIdsMap(): LinkedHashMap<Long, MutableSet<Long>> {
         if (clusterImageIdsMap.isNotEmpty()) return clusterImageIdsMap
 
         for(ref in dao.getAllClusterImageCrossRefs()){
-            clusterImageIdsMap.computeIfAbsent(ref.clusterId) { HashSet() }.add(ref.imageId)
+            clusterImageIdsMap.computeIfAbsent(ref.clusterId) { HashSet() }.add(ref.mediaId)
         }
         return clusterImageIdsMap
     }
 
-    @Transaction
-    suspend fun addImages(imageClusterCrossRefs: List<ImageClusterCrossRef>) = dao.addImages(imageClusterCrossRefs)
+    override suspend fun addMedia(mediaClusterCrossRefs: List<MediaClusterCrossRef>) = dao.addImages(mediaClusterCrossRefs.map{it.toImageCrossRef()})
 
-    suspend fun deleteByClusterIds(ids: List<Long>) = dao.deleteByClusterIds(ids)
+    override suspend fun deleteByClusterIds(ids: List<Long>) = dao.deleteByClusterIds(ids)
 
-    suspend fun deleteByImageIds(ids: List<Long>) = dao.deleteByImageIds(ids)
+    override suspend fun deleteByMediaIds(ids: List<Long>) = dao.deleteByImageIds(ids)
 
-    suspend fun clear() = dao.clear()
+    override suspend fun clear() = dao.clear()
 
-    suspend fun count(clusterId: Long): Int = dao.count(clusterId)
+    override suspend fun count(clusterId: Long): Int = dao.count(clusterId)
 }
