@@ -5,26 +5,21 @@ import android.content.Context
 import android.util.Log
 import androidx.work.*
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
-import com.fpf.smartscan.data.images.ImageTag
-import com.fpf.smartscan.data.images.ImageTagCrossRef
-import com.fpf.smartscan.data.images.ImageTagCrossRefRepository
-import com.fpf.smartscan.data.images.ImageTagDatabase
-import com.fpf.smartscan.data.images.ImageTagRepository
-import com.fpf.smartscan.data.videos.VideoTag
-import com.fpf.smartscan.data.videos.VideoTagCrossRef
-import com.fpf.smartscan.data.videos.VideoTagCrossRefRepository
-import com.fpf.smartscan.data.videos.VideoTagDatabase
-import com.fpf.smartscan.data.videos.VideoTagRepository
+import com.fpf.smartscan.data.images.tags.ImageTag
+import com.fpf.smartscan.data.images.tags.ImageTagCrossRefRepository
+import com.fpf.smartscan.data.images.tags.ImageTagRepository
+import com.fpf.smartscan.data.videos.tags.VideoTag
+import com.fpf.smartscan.data.videos.tags.VideoTagCrossRefRepository
+import com.fpf.smartscan.data.videos.tags.VideoTagRepository
 import com.fpf.smartscan.search.AutoTagger
-import com.fpf.smartscan.utils.showNotification
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.TimeUnit
-import kotlin.system.measureTimeMillis
-import com.fpf.smartscan.R
 import com.fpf.smartscan.data.MediaTag
+import com.fpf.smartscan.data.images.ImageDatabase
+import com.fpf.smartscan.data.videos.VideoDatabase
 
 //TODO: update to use workers
 // Worker updates tag prototypes, cohesion score, and nPrototype, periodically for auto-tagging functionality
@@ -63,10 +58,10 @@ class AutoTagWorker(context: Context, workerParams: WorkerParameters) :
         }
     }
 
-    val imageTagsRepository by lazy { ImageTagRepository(ImageTagDatabase.getDatabase(applicationContext as Application).tagDao())}
-    val videoTagsRepository by lazy { VideoTagRepository(VideoTagDatabase.getDatabase(applicationContext as Application).tagDao())}
-    val imageTagsCrossRefRepository by lazy { ImageTagCrossRefRepository( ImageTagDatabase.getDatabase(applicationContext as Application).imageTagCrossRefDao(), ImageTagDatabase.getDatabase(applicationContext as Application).tagDao())}
-    val videoTagsCrossRefRepository by lazy { VideoTagCrossRefRepository(VideoTagDatabase.getDatabase(applicationContext as Application).videoTagCrossRefDao(), VideoTagDatabase.getDatabase(applicationContext as Application).tagDao())}
+    val imageTagsRepository by lazy { ImageTagRepository(ImageDatabase.getDatabase(applicationContext as Application).tagDao())}
+    val videoTagsRepository by lazy { VideoTagRepository(VideoDatabase.getDatabase(applicationContext as Application).tagDao())}
+    val imageTagsCrossRefRepository by lazy { ImageTagCrossRefRepository(ImageDatabase.getDatabase(applicationContext as Application).imageTagCrossRefDao())}
+    val videoTagsCrossRefRepository by lazy { VideoTagCrossRefRepository(VideoDatabase.getDatabase(applicationContext as Application).videoTagCrossRefDao())}
     val imageStore = FileEmbeddingStore(File(applicationContext.filesDir, EmbeddingStoresFiles.IMAGE), EMBED_DIM)
     val videoStore = FileEmbeddingStore(File(applicationContext.filesDir, EmbeddingStoresFiles.VIDEO), EMBED_DIM )
     val tagStore = FileEmbeddingStore(File(applicationContext.filesDir, EmbeddingStoresFiles.TAGS), EMBED_DIM)

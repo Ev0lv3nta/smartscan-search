@@ -1,7 +1,7 @@
 package com.fpf.smartscan.data
 
-import com.fpf.smartscan.data.images.ImageTagCrossRef
-import com.fpf.smartscan.data.videos.VideoTagCrossRef
+import com.fpf.smartscan.data.images.tags.ImageTagCrossRef
+import com.fpf.smartscan.data.videos.tags.VideoTagCrossRef
 
 open class MediaTagCrossRef (
     open val mediaId: Long,

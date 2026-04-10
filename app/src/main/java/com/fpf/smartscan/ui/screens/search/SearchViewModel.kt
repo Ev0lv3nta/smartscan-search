@@ -10,26 +10,23 @@ import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.launch
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.room.util.copy
 import com.fpf.smartscan.media.getImageUriFromId
 import kotlinx.coroutines.Dispatchers
 import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.data.MediaTag
-import com.fpf.smartscan.data.images.ImageTag
-import com.fpf.smartscan.data.images.ImageTagCrossRef
-import com.fpf.smartscan.data.images.ImageTagCrossRefRepository
-import com.fpf.smartscan.data.images.ImageTagDatabase
-import com.fpf.smartscan.data.images.ImageTagRepository
+import com.fpf.smartscan.data.images.tags.ImageTagCrossRef
+import com.fpf.smartscan.data.images.tags.ImageTagCrossRefRepository
+import com.fpf.smartscan.data.images.tags.ImageTagRepository
 import com.fpf.smartscan.data.images.clusters.ImageClusterCrossRefRepository
-import com.fpf.smartscan.data.images.clusters.ImageClusterDatabase
-import com.fpf.smartscan.data.videos.VideoTag
-import com.fpf.smartscan.data.videos.VideoTagCrossRef
-import com.fpf.smartscan.data.videos.VideoTagCrossRefRepository
-import com.fpf.smartscan.data.videos.VideoTagDatabase
-import com.fpf.smartscan.data.videos.VideoTagRepository
+import com.fpf.smartscan.data.images.ImageDatabase
+import com.fpf.smartscan.data.images.OldImageDB
+import com.fpf.smartscan.data.videos.OldVideoDB
+import com.fpf.smartscan.data.videos.tags.VideoTagCrossRef
+import com.fpf.smartscan.data.videos.tags.VideoTagCrossRefRepository
+import com.fpf.smartscan.data.videos.tags.VideoTagRepository
 import com.fpf.smartscan.data.videos.clusters.VideoClusterCrossRefRepository
-import com.fpf.smartscan.data.videos.clusters.VideoClusterDatabase
+import com.fpf.smartscan.data.videos.VideoDatabase
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.utils.canOpenUri
@@ -92,12 +89,16 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
     val tagStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.TAGS), imageEmbedder.embeddingDim)
 
-    private val imageTagsRepository = ImageTagRepository(ImageTagDatabase.getDatabase(application).tagDao())
-    private val videoTagsRepository = VideoTagRepository(VideoTagDatabase.getDatabase(application).tagDao())
-    private val imageTagsCrossRefRepository = ImageTagCrossRefRepository( ImageTagDatabase.getDatabase(application).imageTagCrossRefDao(), ImageTagDatabase.getDatabase(application).tagDao())
-    private val videoTagsCrossRefRepository = VideoTagCrossRefRepository(VideoTagDatabase.getDatabase(application).videoTagCrossRefDao(), VideoTagDatabase.getDatabase(application).tagDao())
-    private val imageClusterCrossRefRepository = ImageClusterCrossRefRepository(ImageClusterDatabase.getDatabase(application).imageClusterCrossRefDao())
-    private val videoClusterCrossRefRepository = VideoClusterCrossRefRepository(VideoClusterDatabase.getDatabase(application).videoClusterCrossRefDao())
+
+    private val imageDB = ImageDatabase.getDatabase(application)
+    private val videoDB = VideoDatabase.getDatabase(application)
+
+    private val imageTagsRepository by lazy { ImageTagRepository(imageDB.tagDao())}
+    private val videoTagsRepository by lazy { VideoTagRepository(videoDB.tagDao())}
+    private val imageTagsCrossRefRepository by lazy { ImageTagCrossRefRepository( imageDB.imageTagCrossRefDao())}
+    private val videoTagsCrossRefRepository by lazy {  VideoTagCrossRefRepository(videoDB.videoTagCrossRefDao())}
+    private val imageClusterCrossRefRepository by lazy {  ImageClusterCrossRefRepository(imageDB.imageClusterCrossRefDao())}
+    private val videoClusterCrossRefRepository by lazy {  VideoClusterCrossRefRepository(videoDB.videoClusterCrossRefDao())}
 
     val allImageTags: StateFlow<List<MediaTag>> = imageTagsRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val allVideoTags: StateFlow<List<MediaTag>> = videoTagsRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
@@ -454,12 +455,20 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
                 when (_state.value.mediaType) {
                     MediaType.IMAGE -> {
+                        val existing = imageTagsRepository.getTag(tag)
+                        if(existing == null){
+                            imageTagsRepository.insertTags(listOf(MediaTag(tag)))
+                        }
                         val tagEntries = ids.map { ImageTagCrossRef(mediaId = it, tag = tag.trim()) }
-                        imageTagsCrossRefRepository.addTags(tagEntries)
+                        imageTagsCrossRefRepository.upsertTagCrossRefs(tagEntries)
                     }
                     MediaType.VIDEO -> {
+                        val existing = videoTagsRepository.getTag(tag)
+                        if(existing == null){
+                            videoTagsRepository.insertTags(listOf(MediaTag(tag)))
+                        }
                         val tagEntries = ids.map { VideoTagCrossRef(mediaId = it, tag = tag.trim()) }
-                        videoTagsCrossRefRepository.addTags(tagEntries)
+                        videoTagsCrossRefRepository.upsertTagCrossRefs(tagEntries)
                     }
                 }
             }finally {
@@ -584,11 +593,11 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         when(_state.value.mediaType){
             MediaType.VIDEO -> {
                 val videoTag = allVideoTags.value.find { it.name == tag }?: return
-                videoTagsRepository.upsertTag(MediaTag(videoTag.name, System.currentTimeMillis()))
+                videoTagsRepository.updateTags(listOf(MediaTag(videoTag.name, System.currentTimeMillis())))
             }
             MediaType.IMAGE -> {
                 val imageTag = allImageTags.value.find { it.name == tag }?: return
-                imageTagsRepository.upsertTag(MediaTag(imageTag.name, System.currentTimeMillis()))
+                imageTagsRepository.updateTags(listOf(MediaTag(imageTag.name, System.currentTimeMillis())))
             }
         }
     }

@@ -2,6 +2,8 @@ package com.fpf.smartscan.data
 
 
 interface MediaTagCrossRefRepository {
+
+    suspend fun getAllCrossRefs(): List<MediaTagCrossRef>
     suspend fun getTagToMediaIdsMap(): Map<String, List<Long>>
 
     suspend fun getTagsForMedia(mediaId: Long): List<String>
@@ -10,7 +12,7 @@ interface MediaTagCrossRefRepository {
 
     suspend fun getMediaIds(tag: String, limit: Int, offset: Int = 0): List<Long>
 
-    suspend fun addTags(crossRefs: List<MediaTagCrossRef>)
+    suspend fun upsertTagCrossRefs(crossRefs: List<MediaTagCrossRef>)
 
     suspend fun deleteByIds(ids: List<Long>)
 

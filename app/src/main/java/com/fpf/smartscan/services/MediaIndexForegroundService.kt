@@ -15,10 +15,10 @@ import com.fpf.smartscan.R
 import com.fpf.smartscan.MainActivity
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.data.images.clusters.ImageClusterCrossRefRepository
-import com.fpf.smartscan.data.images.clusters.ImageClusterDatabase
+import com.fpf.smartscan.data.images.ImageDatabase
 import com.fpf.smartscan.data.images.clusters.ImageClusterMetadataRepository
 import com.fpf.smartscan.data.videos.clusters.VideoClusterCrossRefRepository
-import com.fpf.smartscan.data.videos.clusters.VideoClusterDatabase
+import com.fpf.smartscan.data.videos.VideoDatabase
 import com.fpf.smartscan.data.videos.clusters.VideoClusterMetadataRepository
 import com.fpf.smartscan.search.ImageIndexListener
 import com.fpf.smartscan.search.VideoIndexListener
@@ -58,11 +58,11 @@ class MediaIndexForegroundService : Service() {
     private val sharedPrefs by lazy { application.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)    }
     private val imageEmbedder by lazy { ClipImageEmbedder(application, ModelAssetSource.Resource(R.raw.clip_image_encoder_quant))}
 
-    private val imageClusterMetadataRepository by lazy { ImageClusterMetadataRepository(ImageClusterDatabase.getDatabase(application).imageClusterMetadataDao()) }
-    private val imageClusterCrossRefRepository by lazy { ImageClusterCrossRefRepository(ImageClusterDatabase.getDatabase(application).imageClusterCrossRefDao()) }
+    private val imageClusterMetadataRepository by lazy { ImageClusterMetadataRepository(ImageDatabase.getDatabase(application).imageClusterMetadataDao()) }
+    private val imageClusterCrossRefRepository by lazy { ImageClusterCrossRefRepository(ImageDatabase.getDatabase(application).imageClusterCrossRefDao()) }
 
-    private val videoClusterMetadataRepository by lazy { VideoClusterMetadataRepository(VideoClusterDatabase.getDatabase(application).videoClusterMetadataDao()) }
-    private val videoClusterCrossRefRepository by lazy { VideoClusterCrossRefRepository(VideoClusterDatabase.getDatabase(application).videoClusterCrossRefDao()) }
+    private val videoClusterMetadataRepository by lazy { VideoClusterMetadataRepository(VideoDatabase.getDatabase(application).videoClusterMetadataDao()) }
+    private val videoClusterCrossRefRepository by lazy { VideoClusterCrossRefRepository(VideoDatabase.getDatabase(application).videoClusterCrossRefDao()) }
 
 
     override fun onCreate() {

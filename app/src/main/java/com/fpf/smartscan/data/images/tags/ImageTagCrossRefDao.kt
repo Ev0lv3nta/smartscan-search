@@ -1,4 +1,4 @@
-package com.fpf.smartscan.data.images
+package com.fpf.smartscan.data.images.tags
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -20,7 +20,7 @@ interface ImageTagCrossRefDao {
     suspend fun getImageIds(tag: String, limit: Int, offset: Int): List<Long>
 
     @Transaction
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     suspend fun upsert(tags: List<ImageTagCrossRef>)
 
     @Transaction

@@ -1,4 +1,4 @@
-package com.fpf.smartscan.data.videos
+package com.fpf.smartscan.data.videos.tags
 
 import androidx.room.Entity
 import androidx.room.ForeignKey

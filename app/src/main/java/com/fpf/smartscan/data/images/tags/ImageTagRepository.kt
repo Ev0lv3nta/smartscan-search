@@ -1,4 +1,4 @@
-package com.fpf.smartscan.data.images
+package com.fpf.smartscan.data.images.tags
 
 import com.fpf.smartscan.data.MediaTag
 import com.fpf.smartscan.data.MediaTagRepository
@@ -11,20 +11,11 @@ class ImageTagRepository(private val dao: ImageTagDao): MediaTagRepository {
 
     override suspend fun getTag(name: String): MediaTag? = dao.get(name)
 
-    override suspend fun insertTag(mediaTag: MediaTag) = dao.insert(mediaTag.toImageMediaTag())
+    override suspend fun insertTags(mediaTags: List<MediaTag>) = dao.insert(mediaTags.map{it.toImageMediaTag()})
 
-    override suspend fun upsertTag(mediaTag: MediaTag) {
-        val existing = dao.get(mediaTag.name)
-        if (existing == null) {
-            insertTag(mediaTag)
-        }
-        else {
-            val updated = existing.copy(
-                lastUsedAt = mediaTag.lastUsedAt ?: existing.lastUsedAt,
-            )
-            dao.update(updated)
-        }
-    }
+    override suspend fun updateTags(mediaTags: List<MediaTag>) = dao.update(mediaTags.map{it.toImageMediaTag()})
 
     override suspend fun deleteTag(mediaTag: MediaTag) = dao.delete(mediaTag.toImageMediaTag())
+
+    override suspend fun clear() = dao.clear()
 }

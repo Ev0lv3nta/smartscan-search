@@ -1,4 +1,4 @@
-package com.fpf.smartscan.data.images
+package com.fpf.smartscan.data.images.tags
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

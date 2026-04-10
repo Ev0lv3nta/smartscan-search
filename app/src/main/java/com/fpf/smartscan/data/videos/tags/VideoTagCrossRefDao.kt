@@ -1,6 +1,10 @@
-package com.fpf.smartscan.data.videos
+package com.fpf.smartscan.data.videos.tags
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Transaction
 
 @Dao
 interface VideoTagCrossRefDao {
@@ -17,7 +21,7 @@ interface VideoTagCrossRefDao {
     suspend fun getAllCrossRefs(): List<VideoTagCrossRef>
 
     @Transaction
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     suspend fun upsert(tags: List<VideoTagCrossRef>)
 
     @Transaction

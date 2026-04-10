@@ -10,9 +10,12 @@ interface MediaTagRepository {
 
     suspend fun getTag(name: String): MediaTag?
 
-    suspend fun insertTag(mediaTag: MediaTag)
+    suspend fun insertTags(mediaTags: List<MediaTag>)
 
-    suspend fun upsertTag(mediaTag: MediaTag)
+    suspend fun updateTags(mediaTags: List<MediaTag>)
 
     suspend fun deleteTag(mediaTag: MediaTag)
+
+    suspend fun clear()
+
 }

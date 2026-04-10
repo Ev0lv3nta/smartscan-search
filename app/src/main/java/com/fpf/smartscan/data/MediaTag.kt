@@ -1,7 +1,7 @@
 package com.fpf.smartscan.data
 
-import com.fpf.smartscan.data.images.ImageTag
-import com.fpf.smartscan.data.videos.VideoTag
+import com.fpf.smartscan.data.images.tags.ImageTag
+import com.fpf.smartscan.data.videos.tags.VideoTag
 
 open class MediaTag (
     open val name: String,
