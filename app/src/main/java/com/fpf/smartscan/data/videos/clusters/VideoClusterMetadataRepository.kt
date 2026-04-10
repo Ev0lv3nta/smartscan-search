@@ -7,9 +7,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 class VideoClusterMetadataRepository(private val dao: VideoClusterMetadataDao): MediaClusterMetadataRepository {
-    override val allMetadata: Flow<Map<Long, ClusterMetadata>> = dao.getAllFlow().map { list ->
-        list.associate { it.clusterId to it.toMetadata() }
-    }
+    override val allMetadata: Flow<List<MediaClusterMetadata>> = dao.getAllFlow()
+
     override val allLabels: Flow<List<String>> = dao.getLabels()
 
     override suspend fun getAllMetadata(): Map<Long, ClusterMetadata> = dao.getAll().associate {

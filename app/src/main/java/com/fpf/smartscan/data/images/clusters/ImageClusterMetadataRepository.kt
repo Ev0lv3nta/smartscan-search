@@ -8,9 +8,8 @@ import kotlinx.coroutines.flow.map
 import kotlin.collections.associate
 
 class ImageClusterMetadataRepository(private val dao: ImageClusterMetadataDao): MediaClusterMetadataRepository {
-    override val allMetadata: Flow<Map<Long, ClusterMetadata>> = dao.getAllFlow().map { list ->
-        list.associate { it.clusterId to it.toMetadata() }
-    }
+    override val allMetadata: Flow<List<MediaClusterMetadata>> = dao.getAllFlow()
+
 
     override val allLabels: Flow<List<String>> = dao.getLabels()
 

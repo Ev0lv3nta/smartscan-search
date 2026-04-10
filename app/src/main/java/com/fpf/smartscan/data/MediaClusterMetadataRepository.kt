@@ -4,7 +4,7 @@ import com.fpf.smartscansdk.core.cluster.ClusterMetadata
 import kotlinx.coroutines.flow.Flow
 
 interface MediaClusterMetadataRepository {
-    val allMetadata: Flow<Map<Long, ClusterMetadata>>
+    val allMetadata: Flow<List<MediaClusterMetadata>>
     val allLabels: Flow<List<String>>
 
     suspend fun getAllMetadata(): Map<Long, ClusterMetadata>
