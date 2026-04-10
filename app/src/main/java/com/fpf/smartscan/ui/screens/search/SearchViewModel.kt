@@ -20,8 +20,6 @@ import com.fpf.smartscan.data.images.tags.ImageTagCrossRefRepository
 import com.fpf.smartscan.data.images.tags.ImageTagRepository
 import com.fpf.smartscan.data.images.clusters.ImageClusterCrossRefRepository
 import com.fpf.smartscan.data.images.ImageDatabase
-import com.fpf.smartscan.data.images.OldImageDB
-import com.fpf.smartscan.data.videos.OldVideoDB
 import com.fpf.smartscan.data.videos.tags.VideoTagCrossRef
 import com.fpf.smartscan.data.videos.tags.VideoTagCrossRefRepository
 import com.fpf.smartscan.data.videos.tags.VideoTagRepository
@@ -448,7 +446,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         _state.update{currentState -> currentState.copy(selectedResults = emptyList(), suggestedTags = TagSuggestionsResult())}
     }
 
-    fun addTag(tag: String){
+    fun tagSelectedItems(tag: String){
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val ids = _state.value.selectedResults.map { ContentUris.parseId(it) }

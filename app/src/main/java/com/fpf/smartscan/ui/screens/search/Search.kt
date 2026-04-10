@@ -158,7 +158,7 @@ fun SearchScreen(
         suggestedTags = state.suggestedTags,
         autoCompleteTagResults = state.autoCompleteTagResults,
         onAddTag = {
-            searchViewModel.addTag(it)
+            searchViewModel.tagSelectedItems(it)
             searchViewModel.updateAutoCompleteResults(emptyList())
             isAddingTag = false
         },
