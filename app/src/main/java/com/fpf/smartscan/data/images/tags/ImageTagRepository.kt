@@ -17,5 +17,7 @@ class ImageTagRepository(private val dao: ImageTagDao): MediaTagRepository {
 
     override suspend fun deleteTag(mediaTag: MediaTag) = dao.delete(mediaTag.toImageMediaTag())
 
+    override suspend fun deleteTagByName(name: String) = dao.deleteByName(name)
+
     override suspend fun clear() = dao.clear()
 }

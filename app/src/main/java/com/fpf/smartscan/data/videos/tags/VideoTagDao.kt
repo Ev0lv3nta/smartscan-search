@@ -31,6 +31,9 @@ interface VideoTagDao {
     @Delete
     suspend fun delete(videoTag: VideoTag)
 
+    @Query("DELETE FROM video_tag WHERE name = :name")
+    suspend fun deleteByName(name: String)
+
     @Query("DELETE FROM video_tag")
     suspend fun clear()
 }

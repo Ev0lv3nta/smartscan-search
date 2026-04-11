@@ -17,6 +17,8 @@ interface MediaTagRepository {
 
     suspend fun deleteTag(mediaTag: MediaTag)
 
+    suspend fun deleteTagByName(name: String)
+
     suspend fun clear()
 
 }

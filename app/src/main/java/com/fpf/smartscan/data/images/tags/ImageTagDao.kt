@@ -31,6 +31,9 @@ interface ImageTagDao {
     @Delete
     suspend fun delete(imageTag: ImageTag)
 
+    @Query("DELETE FROM image_tag WHERE name = :name")
+    suspend fun deleteByName(name: String)
+
     @Query("DELETE FROM image_tag")
     suspend fun clear()
 }

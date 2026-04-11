@@ -12,6 +12,8 @@ class VideoTagRepository(private val dao: VideoTagDao): MediaTagRepository {
 
     override suspend fun updateTags(mediaTags: List<MediaTag>) = dao.update(mediaTags.map{it.toVideoMediaTag()})
     override suspend fun deleteTag(mediaTag: MediaTag) = dao.delete(mediaTag.toVideoMediaTag())
+    override suspend fun deleteTagByName(name: String) = dao.deleteByName(name)
+
     override suspend fun clear() = dao.clear()
 
 }
