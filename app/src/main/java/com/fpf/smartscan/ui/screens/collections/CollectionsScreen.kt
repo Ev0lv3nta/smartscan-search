@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fpf.smartscan.ui.components.SelectorModal
 import com.fpf.smartscan.ui.components.TextInputModal
 import com.fpf.smartscan.ui.components.collections.CollectionsActionBar
 import com.fpf.smartscan.ui.components.collections.MediaCollectionsList
@@ -51,6 +52,8 @@ fun CollectionsScreen(
 
     var isSelecting by remember { mutableStateOf(false) }
     var isRenamingCollection by remember { mutableStateOf(false) }
+    var isMergingCollections by remember { mutableStateOf(false) }
+
     val actionBarVisible = isSelecting && state.selectedCollections.isNotEmpty()
 
     BackHandler(enabled = isSelecting) {
@@ -75,6 +78,17 @@ fun CollectionsScreen(
                 false
             }
         }
+    )
+
+    SelectorModal(
+        isVisible = isMergingCollections && state.selectedCollections.isNotEmpty(),
+        title="Merge collections",
+        label = "Primary collection",
+        options = state.selectedCollections.map {it.name },
+        onConfirm = {
+            selected -> collectionsViewModel.mergeCollections(state.mediaType, selected, state.selectedCollections.filterNot { it.name == selected })
+                    },
+        onClose = { isMergingCollections = false }
     )
 
     Box(
@@ -140,6 +154,7 @@ fun CollectionsScreen(
                     isSelecting = false
                 },
                 onMerge = {
+                    isMergingCollections = true
                     isSelecting = false
                 },
                 onRename = {

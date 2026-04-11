@@ -125,11 +125,11 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
         }
     }
 
-    fun mergeCollections(mediaType: MediaType, primaryCollection: MediaCollection, otherCollections: List<MediaCollection>){
+    fun mergeCollections(mediaType: MediaType, primaryCollectionName: String, otherCollections: List<MediaCollection>){
         viewModelScope.launch (Dispatchers.IO) {
             when (mediaType) {
-                MediaType.IMAGE -> mergeTags(primaryCollection.name, otherCollections.map{it.name}, imageTagsRepository, imageTagsCrossRefRepository)
-                MediaType.VIDEO -> mergeTags(primaryCollection.name, otherCollections.map{it.name}, videoTagsRepository, videoTagsCrossRefRepository)
+                MediaType.IMAGE -> mergeTags(primaryCollectionName, otherCollections.map{it.name}, imageTagsRepository, imageTagsCrossRefRepository)
+                MediaType.VIDEO -> mergeTags(primaryCollectionName, otherCollections.map{it.name}, videoTagsRepository, videoTagsCrossRefRepository)
             }
             _state.update { it.copy(collections = it.collections - otherCollections, selectedCollections = emptyList()) }
         }
@@ -154,8 +154,9 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
     private suspend fun <T: MediaTag, K: MediaTagCrossRef>mergeTags(primaryTagName: String, namesOfTagsToMerge: List<String>, mediaTagRepository: MediaTagRepository<T>, mediaTagCrossRefRepository: MediaTagCrossRefRepository<K>){
             val primaryTag = mediaTagRepository.getTagsByName(listOf(primaryTagName)).firstOrNull()
             val tagsToMerge = mediaTagRepository.getTagsByName(namesOfTagsToMerge)
-            if(primaryTag != null && tagsToMerge.isNotEmpty()){
-                mediaTagCrossRefRepository.mergeTags(primaryTag.id, tagsToMerge.map{it.id})
+            val mediaToUpdate = tagsToMerge.map{mediaTagCrossRefRepository.getMediaIds(it.id)}.flatten()
+            if(primaryTag != null && mediaToUpdate.isNotEmpty()){
+                mediaTagCrossRefRepository.upsertTagCrossRefs(primaryTag.id, mediaToUpdate)
                 mediaTagRepository.deleteTags(tagsToMerge)
         }
     }
