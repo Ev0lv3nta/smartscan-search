@@ -14,7 +14,7 @@ import com.fpf.smartscan.media.getImageUriFromId
 import kotlinx.coroutines.Dispatchers
 import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
-import com.fpf.smartscan.data.MediaTag
+import com.fpf.smartscan.collections.MediaTag
 import com.fpf.smartscan.data.images.tags.ImageTagCrossRef
 import com.fpf.smartscan.data.images.tags.ImageTagCrossRefRepository
 import com.fpf.smartscan.data.images.tags.ImageTagRepository
