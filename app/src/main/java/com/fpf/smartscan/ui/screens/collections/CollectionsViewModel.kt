@@ -68,7 +68,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
             )
 
 
-    val mediaTagCounts: StateFlow<Map<String, Int>> = combine(
+    val mediaTagCounts: StateFlow<Map<MediaTag, Int>> = combine(
         imageTagsCrossRefRepository.getTagCounts(),
         videoTagsCrossRefRepository.getTagCounts(),
         _state
@@ -96,13 +96,13 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
         _state.update { it.copy(totalCollections = mediaTagCounts.value.size, collections =  getCollections(topTags.keys.toList(), it.mediaType))}
     }
 
-    private suspend fun getCollections(tags: List<String>, mediaType: MediaType): List<MediaCollection> {
+    private suspend fun getCollections(tags: List<MediaTag>, mediaType: MediaType): List<MediaCollection> {
         return tags.mapNotNull {
-            val id = getMediaMatchingTag(it, mediaType, limit = 1).firstOrNull()
+            val id = getMediaMatchingTag(it.id, mediaType, limit = 1).firstOrNull()
             val uri = id?.let { id -> getUriFromMediaId(id, mediaType) }
             uri?.let { uri ->
                 MediaCollection(
-                    name = it,
+                    name = it.name,
                     thumbNail = uri,
                     size = mediaTagCounts.value[it] ?:0
                 )
@@ -110,10 +110,10 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
         }
     }
 
-    private suspend fun getMediaMatchingTag(tag: String, mediaType: MediaType, limit: Int, offset: Int = 0): List<Long> {
+    private suspend fun getMediaMatchingTag(tagId: Long, mediaType: MediaType, limit: Int, offset: Int = 0): List<Long> {
         return when (mediaType) {
-            MediaType.IMAGE -> imageTagsCrossRefRepository.getMediaIds(tag, limit, offset)
-            MediaType.VIDEO -> videoTagsCrossRefRepository.getMediaIds(tag, limit, offset)
+            MediaType.IMAGE -> imageTagsCrossRefRepository.getMediaIds(tagId, limit, offset)
+            MediaType.VIDEO -> videoTagsCrossRefRepository.getMediaIds(tagId, limit, offset)
         }
     }
 

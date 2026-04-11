@@ -23,7 +23,7 @@ interface ImageTagDao {
     // MUST use ignore. Using replace will cause cascading deletes of cross refs
     @Transaction
     @Insert(onConflict = OnConflictStrategy.Companion.IGNORE)
-    suspend fun insert(imageTags: List<ImageTag>)
+    suspend fun insert(imageTags: List<ImageTag>): List<Long>
 
     @Update
     suspend fun update(imageTags: List<ImageTag>)

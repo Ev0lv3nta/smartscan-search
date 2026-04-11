@@ -23,7 +23,7 @@ interface VideoTagDao {
     // MUST use ignore. Using replace will cause cascading deletes of cross refs
     @Transaction
     @Insert(onConflict = OnConflictStrategy.Companion.IGNORE)
-    suspend fun insert(videoTags: List<VideoTag>)
+    suspend fun insert(videoTags: List<VideoTag>):  List<Long>
 
     @Update
     suspend fun update(videoTags: List<VideoTag>)
