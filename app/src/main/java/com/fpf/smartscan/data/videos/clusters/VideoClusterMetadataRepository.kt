@@ -6,8 +6,8 @@ import com.fpf.smartscansdk.core.cluster.ClusterMetadata
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-class VideoClusterMetadataRepository(private val dao: VideoClusterMetadataDao): MediaClusterMetadataRepository {
-    override val allMetadata: Flow<List<MediaClusterMetadata>> = dao.getAllFlow()
+class VideoClusterMetadataRepository(private val dao: VideoClusterMetadataDao): MediaClusterMetadataRepository<VideoClusterMetadata> {
+    override val allMetadata: Flow<List<VideoClusterMetadata>> = dao.getAllFlow()
 
     override val allLabels: Flow<List<String>> = dao.getLabels()
 
@@ -19,7 +19,7 @@ class VideoClusterMetadataRepository(private val dao: VideoClusterMetadataDao): 
 
     override suspend fun getIdFromLabel(label: String): Long? = dao.getIdFromLabel(label)
 
-    override suspend fun upsertMetadatas(metadatas: List<MediaClusterMetadata>) = dao.upsert(metadatas.map{it.toVideoClusterMetadata()})
+    override suspend fun upsertMetadatas(metadatas: List<VideoClusterMetadata>) = dao.upsert(metadatas)
 
     override suspend fun deleteMetadata(id: Long) = dao.delete(id)
 }

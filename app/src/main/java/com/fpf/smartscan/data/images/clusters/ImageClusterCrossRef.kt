@@ -23,4 +23,4 @@ import com.fpf.smartscan.data.images.clusters.ImageClusterMetadata
 data class ImageClusterCrossRef(
     override val clusterId: Long,
     override val mediaId: Long
-): MediaClusterCrossRef(clusterId, mediaId)
+): MediaClusterCrossRef

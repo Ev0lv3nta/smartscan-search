@@ -1,10 +1,9 @@
 package com.fpf.smartscan.data.images.clusters
 
-import com.fpf.smartscan.data.MediaClusterCrossRef
 import com.fpf.smartscan.data.MediaClusterCrossRefRepository
 import java.util.LinkedHashMap
 
-class ImageClusterCrossRefRepository(private val dao: ImageClusterCrossRefDao): MediaClusterCrossRefRepository {
+class ImageClusterCrossRefRepository(private val dao: ImageClusterCrossRefDao): MediaClusterCrossRefRepository<ImageClusterCrossRef> {
     private var clusterImageIdsMap: LinkedHashMap<Long, MutableSet<Long>> = LinkedHashMap()
 
     override suspend fun getAllClusters(): Set<Long> = dao.getAllClusters().toSet()
@@ -20,7 +19,7 @@ class ImageClusterCrossRefRepository(private val dao: ImageClusterCrossRefDao): 
         return clusterImageIdsMap
     }
 
-    override suspend fun addMedia(mediaClusterCrossRefs: List<MediaClusterCrossRef>) = dao.addImages(mediaClusterCrossRefs.map{it.toImageCrossRef()})
+    override suspend fun addMedia(mediaClusterCrossRefs: List<ImageClusterCrossRef>) = dao.addImages(mediaClusterCrossRefs)
 
     override suspend fun deleteByClusterIds(ids: List<Long>) = dao.deleteByClusterIds(ids)
 
