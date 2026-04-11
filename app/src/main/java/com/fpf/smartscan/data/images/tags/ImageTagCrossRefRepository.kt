@@ -16,4 +16,5 @@ class ImageTagCrossRefRepository(private val dao: ImageTagCrossRefDao): MediaTag
     override suspend fun clear() = dao.clear()
     override suspend fun count(tagId: Long) = dao.count(tagId)
     override fun getTagCounts(): Flow<Map<MediaTag, Int>> = dao.getTagCounts().map{ list -> list.associate { it.toImageTag() to it.count } }
+    override suspend fun mergeTags(primaryTag: Long, tagsToMerge: List<Long>) = dao.mergeTags(primaryTag, tagsToMerge)
 }

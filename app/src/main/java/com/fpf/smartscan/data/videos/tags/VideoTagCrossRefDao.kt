@@ -48,4 +48,11 @@ interface VideoTagCrossRefDao {
     ORDER BY count DESC
     """)
     fun getTagCounts(): Flow<List<TagWithCount>>
+
+    @Query("""
+    UPDATE video_tag_crossref
+    SET tagId = :primaryTag
+    WHERE tagId IN (:tagsToMerge)
+    """)
+    suspend fun mergeTags(primaryTag: Long, tagsToMerge: List<Long>)
 }

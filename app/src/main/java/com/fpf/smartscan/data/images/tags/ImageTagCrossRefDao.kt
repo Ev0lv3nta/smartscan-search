@@ -22,6 +22,10 @@ interface ImageTagCrossRefDao {
     suspend fun getImageIds(tagId: Long, limit: Int, offset: Int): List<Long>
 
     @Transaction
+    @Insert(onConflict = OnConflictStrategy.Companion.IGNORE)
+    suspend fun insert(tags: List<ImageTagCrossRef>)
+
+    @Transaction
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     suspend fun upsert(tags: List<ImageTagCrossRef>)
 
@@ -47,4 +51,11 @@ interface ImageTagCrossRefDao {
     ORDER BY count DESC
     """)
     fun getTagCounts(): Flow<List<TagWithCount>>
+
+    @Query("""
+    UPDATE image_tag_crossref
+    SET tagId = :primaryTag
+    WHERE tagId IN (:tagsToMerge)
+    """)
+    suspend fun mergeTags(primaryTag: Long, tagsToMerge: List<Long>)
 }
