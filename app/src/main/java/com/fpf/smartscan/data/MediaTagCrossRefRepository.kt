@@ -13,6 +13,7 @@ interface MediaTagCrossRefRepository<T: MediaTagCrossRef> {
     suspend fun getMediaIds(tagId: Long, limit: Int, offset: Int = 0): List<Long>
 
     suspend fun upsertTagCrossRefs(crossRefs: List<T>)
+    suspend fun upsertTagCrossRefs(tagId: Long, mediaIds: List<Long>)
 
     suspend fun deleteByMediaIds(ids: List<Long>)
 
@@ -23,6 +24,4 @@ interface MediaTagCrossRefRepository<T: MediaTagCrossRef> {
     suspend fun count(tagId: Long): Int
 
     fun getTagCounts():  Flow<Map<MediaTag, Int>>
-
-    suspend fun mergeTags(primaryTag: Long, tagsToMerge: List<Long>)
 }
