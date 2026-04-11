@@ -2,6 +2,8 @@ package com.fpf.smartscan.data.images.tags
 
 import com.fpf.smartscan.data.MediaTagCrossRef
 import com.fpf.smartscan.data.MediaTagCrossRefRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 class ImageTagCrossRefRepository(private val dao: ImageTagCrossRefDao): MediaTagCrossRefRepository {
     override suspend fun getAllCrossRefs(): List<MediaTagCrossRef> = dao.getAllCrossRefs()
@@ -14,4 +16,5 @@ class ImageTagCrossRefRepository(private val dao: ImageTagCrossRefDao): MediaTag
     override suspend fun deleteByTags(tags: List<String>) = dao.deleteByTags(tags)
     override suspend fun clear() = dao.clear()
     override suspend fun count(tag: String) = dao.count(tag)
+    override fun getTagCounts(): Flow<Map<String, Int>> = dao.getTagCounts().map{ list -> list.associate { it.tag to it.count } }
 }

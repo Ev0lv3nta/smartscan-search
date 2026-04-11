@@ -1,5 +1,7 @@
 package com.fpf.smartscan.data
 
+import kotlinx.coroutines.flow.Flow
+
 
 interface MediaTagCrossRefRepository {
 
@@ -21,4 +23,6 @@ interface MediaTagCrossRefRepository {
     suspend fun clear()
 
     suspend fun count(tag: String): Int
+
+    fun getTagCounts():  Flow<Map<String, Int>>
 }

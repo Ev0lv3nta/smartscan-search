@@ -5,6 +5,8 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import com.fpf.smartscan.data.TagCount
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface VideoTagCrossRefDao {
@@ -37,4 +39,7 @@ interface VideoTagCrossRefDao {
 
     @Query("SELECT COUNT(*) FROM video_tag_crossref WHERE tag = :tag")
     suspend fun count(tag: String): Int
+
+    @Query("SELECT tag, COUNT(mediaId) AS count FROM video_tag_crossref GROUP BY tag ORDER BY count DESC")
+    fun getTagCounts(): Flow<List<TagCount>>
 }
