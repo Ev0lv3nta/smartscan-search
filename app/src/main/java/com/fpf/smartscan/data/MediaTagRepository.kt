@@ -8,15 +8,19 @@ interface MediaTagRepository<T: MediaTag> {
 
     suspend fun getAllTags(): List<T>
 
-    suspend fun getTag(name: String): T?
+    suspend fun getTagsByName(names: List<String>): List<T>
+
+    suspend fun getTagsById(ids: List<Long>): List<T>
 
     suspend fun insertTags(mediaTags: List<T>): List<Long>
 
     suspend fun updateTags(mediaTags: List<T>)
 
-    suspend fun deleteTag(mediaTag: T)
+    suspend fun deleteTags(mediaTags: List<T>)
 
-    suspend fun deleteTagByName(name: String)
+    suspend fun deleteTagsByName(names: List<String>)
+
+    suspend fun deleteTagsById(ids: List<Long>)
 
     suspend fun clear()
 

@@ -17,8 +17,11 @@ interface ImageTagDao {
     @Query("SELECT * FROM image_tag")
     suspend fun getAll(): List<ImageTag>
 
-    @Query("SELECT * FROM image_tag WHERE name = :name")
-    suspend fun get(name: String): ImageTag?
+    @Query("SELECT * FROM image_tag WHERE name in (:names)")
+    suspend fun getByNames(names: List<String>): List<ImageTag>
+
+    @Query("SELECT * FROM image_tag WHERE id in (:ids)")
+    suspend fun getByIds(ids: List<Long>): List<ImageTag>
 
     // MUST use ignore. Using replace will cause cascading deletes of cross refs
     @Transaction
@@ -29,10 +32,13 @@ interface ImageTagDao {
     suspend fun update(imageTags: List<ImageTag>)
 
     @Delete
-    suspend fun delete(imageTag: ImageTag)
+    suspend fun delete(imageTags: List<ImageTag>)
 
-    @Query("DELETE FROM image_tag WHERE name = :name")
-    suspend fun deleteByName(name: String)
+    @Query("DELETE FROM image_tag WHERE name in (:names)")
+    suspend fun deleteByNames(names: List<String>)
+
+    @Query("DELETE FROM image_tag WHERE id in (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
 
     @Query("DELETE FROM image_tag")
     suspend fun clear()

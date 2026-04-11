@@ -17,8 +17,11 @@ interface VideoTagDao {
     @Query("SELECT * FROM video_tag")
     fun getAll(): List<VideoTag>
 
-    @Query("SELECT * FROM video_tag WHERE name = :name")
-    suspend fun get(name: String): VideoTag?
+    @Query("SELECT * FROM video_tag WHERE name in (:names)")
+    suspend fun getByNames(names: List<String>): List<VideoTag>
+
+    @Query("SELECT * FROM video_tag WHERE id in (:ids)")
+    suspend fun getByIds(ids: List<Long>): List<VideoTag>
 
     // MUST use ignore. Using replace will cause cascading deletes of cross refs
     @Transaction
@@ -29,10 +32,13 @@ interface VideoTagDao {
     suspend fun update(videoTags: List<VideoTag>)
 
     @Delete
-    suspend fun delete(videoTag: VideoTag)
+    suspend fun delete(videoTags: List<VideoTag>)
 
-    @Query("DELETE FROM video_tag WHERE name = :name")
-    suspend fun deleteByName(name: String)
+    @Query("DELETE FROM video_tag WHERE name in (:names)")
+    suspend fun deleteByNames(names: List<String>)
+
+    @Query("DELETE FROM video_tag WHERE id in (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
 
     @Query("DELETE FROM video_tag")
     suspend fun clear()
