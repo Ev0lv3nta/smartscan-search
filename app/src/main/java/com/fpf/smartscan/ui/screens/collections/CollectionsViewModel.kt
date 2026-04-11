@@ -23,6 +23,7 @@ import com.fpf.smartscan.data.MediaTagRepository
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.getImageUriFromId
 import com.fpf.smartscan.media.getVideoUriFromId
+import com.fpf.smartscan.search.TagSuggestionsResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -32,6 +33,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.collections.plus
 
 
 class CollectionsViewModel( application: Application) : AndroidViewModel(application) {
@@ -100,13 +102,15 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
             when (mediaType) {
                 MediaType.IMAGE -> {
                     val tag = imageTagsRepository.getTagsByName(listOf(collection.name)).firstOrNull()
-                    tag?.let{imageTagsRepository.updateTags(listOf(it.copy(name = newName)))}
+                    tag?.let{imageTagsRepository.updateTags(listOf((it).copy(name = newName)))}
                 }
                 MediaType.VIDEO -> {
                     val tag = videoTagsRepository.getTagsByName(listOf(collection.name)).firstOrNull()
                     tag?.let{videoTagsRepository.updateTags(listOf(it.copy(name = newName)))}
                 }
             }
+            // TODO: update name in collection. However mapping is not efficient using StateFlow for list may be better suited
+            _state.update { it.copy(collections = it.collections, selectedCollections = emptyList()) }
         }
     }
 
@@ -117,6 +121,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
                 MediaType.IMAGE -> imageTagsRepository.deleteTagsByName(listOf(collection.name))
                 MediaType.VIDEO -> videoTagsRepository.deleteTagsByName(listOf(collection.name))
             }
+            _state.update { it.copy(collections = it.collections - collection, selectedCollections = emptyList()) }
         }
     }
 
@@ -126,7 +131,24 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
                 MediaType.IMAGE -> mergeTags(primaryCollection.name, otherCollections.map{it.name}, imageTagsRepository, imageTagsCrossRefRepository)
                 MediaType.VIDEO -> mergeTags(primaryCollection.name, otherCollections.map{it.name}, videoTagsRepository, videoTagsCrossRefRepository)
             }
+            _state.update { it.copy(collections = it.collections - otherCollections, selectedCollections = emptyList()) }
         }
+    }
+
+    fun toggleSelectedCollection(collection: MediaCollection){
+        _state.update { currentState ->
+            if (collection in currentState.selectedCollections) {
+                val updatedSelectedResults = currentState.selectedCollections - collection
+                currentState.copy(selectedCollections = updatedSelectedResults)
+            } else {
+                val updatedSelectedResults = currentState.selectedCollections + collection
+                currentState.copy(selectedCollections = updatedSelectedResults)
+            }
+        }
+    }
+
+    fun clearSelectedCollections(){
+        _state.update{currentState -> currentState.copy(selectedCollections = emptyList())}
     }
 
     private suspend fun <T: MediaTag, K: MediaTagCrossRef>mergeTags(primaryTagName: String, namesOfTagsToMerge: List<String>, mediaTagRepository: MediaTagRepository<T>, mediaTagCrossRefRepository: MediaTagCrossRefRepository<K>){
