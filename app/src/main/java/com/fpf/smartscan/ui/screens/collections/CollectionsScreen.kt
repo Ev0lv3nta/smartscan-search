@@ -19,7 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.fpf.smartscan.ui.components.media.MediaCollectionsList
+import com.fpf.smartscan.ui.components.collections.MediaCollectionsList
 import com.fpf.smartscan.ui.screens.search.SearchViewModel.Companion.RESULTS_BATCH_SIZE
 import com.fpf.smartscan.ui.screens.settings.SettingsViewModel
 import kotlinx.coroutines.FlowPreview

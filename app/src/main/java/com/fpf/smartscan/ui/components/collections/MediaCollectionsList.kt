@@ -1,4 +1,4 @@
-package com.fpf.smartscan.ui.components.media
+package com.fpf.smartscan.ui.components.collections
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import com.fpf.smartscan.collections.MediaCollection
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.ui.components.CircularCheckbox
+import com.fpf.smartscan.ui.components.media.ImageDisplay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
