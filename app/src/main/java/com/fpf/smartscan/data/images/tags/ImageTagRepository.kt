@@ -1,6 +1,6 @@
 package com.fpf.smartscan.data.images.tags
 
-import com.fpf.smartscan.collections.MediaTag
+import com.fpf.smartscan.model.MediaTag
 import com.fpf.smartscan.data.MediaTagRepository
 import kotlinx.coroutines.flow.Flow
 

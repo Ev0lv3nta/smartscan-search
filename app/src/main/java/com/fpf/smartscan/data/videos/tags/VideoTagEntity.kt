@@ -2,7 +2,7 @@ package com.fpf.smartscan.data.videos.tags
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.fpf.smartscan.collections.MediaTag
+import com.fpf.smartscan.model.MediaTag
 
 @Entity(tableName = "video_tag")
 data class VideoTag(
