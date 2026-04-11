@@ -1,5 +1,6 @@
 package com.fpf.smartscan.ui.screens.collections
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,6 +10,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Tag
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -24,6 +28,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fpf.smartscan.ui.components.TextInputModal
 import com.fpf.smartscan.ui.components.collections.CollectionsActionBar
 import com.fpf.smartscan.ui.components.collections.MediaCollectionsList
 import com.fpf.smartscan.ui.screens.search.SearchViewModel.Companion.RESULTS_BATCH_SIZE
@@ -40,16 +45,37 @@ fun CollectionsScreen(
     val state by collectionsViewModel.state.collectAsState()
     val mediaClusters by collectionsViewModel.mediaClusters.collectAsState()
     val appSettings by settingsViewModel.appSettings.collectAsState()
-
     val collectionsEmpty = state.collections.isEmpty()
 
+    val context = LocalContext.current
+
     var isSelecting by remember { mutableStateOf(false) }
+    var isRenamingCollection by remember { mutableStateOf(false) }
     val actionBarVisible = isSelecting && state.selectedCollections.isNotEmpty()
 
     BackHandler(enabled = isSelecting) {
         isSelecting = false
         collectionsViewModel.clearSelectedCollections()
     }
+
+    TextInputModal(
+        isVisible = isRenamingCollection && state.selectedCollections.size == 1,
+        title="Rename collection",
+        placeholder = "Enter new collection name",
+        onClose = {isRenamingCollection = false},
+        onConfirm = {
+            newName -> collectionsViewModel.renameCollection(state.mediaType, state.selectedCollections.first(), newName)
+                    },
+        leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
+        onValueChange = {
+            if (!it.text.contains(" ")) {
+                true
+            } else {
+                Toast.makeText(context, "Spaces are not allowed", Toast.LENGTH_SHORT).show()
+                false
+            }
+        }
+    )
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -117,6 +143,7 @@ fun CollectionsScreen(
                     isSelecting = false
                 },
                 onRename = {
+                    isRenamingCollection = true
                     isSelecting = false
                 }
             )
