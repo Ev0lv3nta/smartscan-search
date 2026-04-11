@@ -1,12 +1,10 @@
 package com.fpf.smartscan.data
 
-import com.fpf.smartscan.model.MediaTag
 import kotlinx.coroutines.flow.Flow
 
+interface MediaTagCrossRefRepository<T: MediaTagCrossRef> {
 
-interface MediaTagCrossRefRepository {
-
-    suspend fun getAllCrossRefs(): List<MediaTagCrossRef>
+    suspend fun getAllCrossRefs(): List<T>
 
     suspend fun getTagsForMedia(mediaId: Long): List<Long>
 
@@ -14,7 +12,7 @@ interface MediaTagCrossRefRepository {
 
     suspend fun getMediaIds(tagId: Long, limit: Int, offset: Int = 0): List<Long>
 
-    suspend fun upsertTagCrossRefs(crossRefs: List<MediaTagCrossRef>)
+    suspend fun upsertTagCrossRefs(crossRefs: List<T>)
 
     suspend fun deleteByMediaIds(ids: List<Long>)
 

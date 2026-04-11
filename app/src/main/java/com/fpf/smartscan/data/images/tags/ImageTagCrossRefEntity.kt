@@ -21,4 +21,4 @@ import com.fpf.smartscan.data.MediaTagCrossRef
 data class ImageTagCrossRef(
     override val mediaId: Long,
     override val tagId: Long
-): MediaTagCrossRef(mediaId, tagId)
+): MediaTagCrossRef

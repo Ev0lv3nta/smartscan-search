@@ -17,7 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.TimeUnit
-import com.fpf.smartscan.model.MediaTag
+import com.fpf.smartscan.data.MediaTag
 import com.fpf.smartscan.data.images.ImageDatabase
 import com.fpf.smartscan.data.videos.VideoDatabase
 

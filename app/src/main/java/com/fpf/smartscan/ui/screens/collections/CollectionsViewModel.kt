@@ -4,7 +4,6 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.fpf.smartscan.model.MediaTag
 import com.fpf.smartscan.data.images.ImageDatabase
 import com.fpf.smartscan.data.images.clusters.ImageClusterCrossRefRepository
 import com.fpf.smartscan.data.images.clusters.ImageClusterMetadataRepository
@@ -17,6 +16,7 @@ import com.fpf.smartscan.data.videos.tags.VideoTagCrossRefRepository
 import com.fpf.smartscan.data.videos.tags.VideoTagRepository
 import com.fpf.smartscan.collections.MediaCollection
 import com.fpf.smartscan.data.MediaClusterMetadata
+import com.fpf.smartscan.data.MediaTag
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.getImageUriFromId
 import com.fpf.smartscan.media.getVideoUriFromId

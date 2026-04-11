@@ -1,6 +1,7 @@
 package com.fpf.smartscan.data
 
-import com.fpf.smartscan.model.MediaTag
+import com.fpf.smartscan.data.images.tags.ImageTag
+import com.fpf.smartscan.data.videos.tags.VideoTag
 
 data class TagWithCount(
     val id: Long,
@@ -8,5 +9,6 @@ data class TagWithCount(
     val lastUsedAt: Long?,
     val count: Int
 ){
-    fun toMediaCount() = MediaTag(id, name, lastUsedAt)
+    fun toImageTag() = ImageTag(id, name, lastUsedAt)
+    fun toVideoTag() = VideoTag(id, name, lastUsedAt)
 }

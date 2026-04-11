@@ -14,7 +14,7 @@ import com.fpf.smartscan.media.getImageUriFromId
 import kotlinx.coroutines.Dispatchers
 import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
-import com.fpf.smartscan.model.MediaTag
+import com.fpf.smartscan.data.MediaTag
 import com.fpf.smartscan.data.images.tags.ImageTagCrossRef
 import com.fpf.smartscan.data.images.tags.ImageTagCrossRefRepository
 import com.fpf.smartscan.data.images.tags.ImageTagRepository
@@ -599,11 +599,11 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         when(_state.value.mediaType){
             MediaType.VIDEO -> {
                 val videoTag = allVideoTags.value.find { it.name == tag }?: return
-                videoTagsRepository.updateTags(listOf(MediaTag(videoTag.id,videoTag.name, System.currentTimeMillis())))
+                videoTagsRepository.updateTags(listOf(VideoTag(videoTag.id,videoTag.name, System.currentTimeMillis())))
             }
             MediaType.IMAGE -> {
                 val imageTag = allImageTags.value.find { it.name == tag }?: return
-                imageTagsRepository.updateTags(listOf(MediaTag(imageTag.id, imageTag.name, System.currentTimeMillis())))
+                imageTagsRepository.updateTags(listOf(ImageTag(imageTag.id, imageTag.name, System.currentTimeMillis())))
             }
         }
     }
