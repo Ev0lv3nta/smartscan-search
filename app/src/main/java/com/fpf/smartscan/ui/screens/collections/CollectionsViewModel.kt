@@ -17,9 +17,13 @@ import com.fpf.smartscan.data.videos.tags.VideoTagRepository
 import com.fpf.smartscan.collections.MediaCollection
 import com.fpf.smartscan.data.MediaClusterMetadata
 import com.fpf.smartscan.data.MediaTag
+import com.fpf.smartscan.data.MediaTagCrossRef
+import com.fpf.smartscan.data.MediaTagCrossRefRepository
+import com.fpf.smartscan.data.MediaTagRepository
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.getImageUriFromId
 import com.fpf.smartscan.media.getVideoUriFromId
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -88,6 +92,49 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
         viewModelScope.launch {
             mediaTagCounts.first { it.isNotEmpty() }
             loadInitialCollections(topK = 6)
+        }
+    }
+
+    fun renameCollection(mediaType: MediaType, collection: MediaCollection, newName: String){
+        viewModelScope.launch (Dispatchers.IO){
+            when (mediaType) {
+                MediaType.IMAGE -> {
+                    val tag = imageTagsRepository.getTagsByName(listOf(collection.name)).firstOrNull()
+                    tag?.let{imageTagsRepository.updateTags(listOf(it.copy(name = newName)))}
+                }
+                MediaType.VIDEO -> {
+                    val tag = videoTagsRepository.getTagsByName(listOf(collection.name)).firstOrNull()
+                    tag?.let{videoTagsRepository.updateTags(listOf(it.copy(name = newName)))}
+                }
+            }
+        }
+    }
+
+
+    fun deleteCollection(mediaType: MediaType, collection: MediaCollection){
+        viewModelScope.launch (Dispatchers.IO){
+            when (mediaType) {
+                MediaType.IMAGE -> imageTagsRepository.deleteTagsByName(listOf(collection.name))
+                MediaType.VIDEO -> videoTagsRepository.deleteTagsByName(listOf(collection.name))
+            }
+        }
+    }
+
+    fun mergeCollections(mediaType: MediaType, primaryCollection: MediaCollection, otherCollections: List<MediaCollection>){
+        viewModelScope.launch (Dispatchers.IO) {
+            when (mediaType) {
+                MediaType.IMAGE -> mergeTags(primaryCollection.name, otherCollections.map{it.name}, imageTagsRepository, imageTagsCrossRefRepository)
+                MediaType.VIDEO -> mergeTags(primaryCollection.name, otherCollections.map{it.name}, videoTagsRepository, videoTagsCrossRefRepository)
+            }
+        }
+    }
+
+    private suspend fun <T: MediaTag, K: MediaTagCrossRef>mergeTags(primaryTagName: String, namesOfTagsToMerge: List<String>, mediaTagRepository: MediaTagRepository<T>, mediaTagCrossRefRepository: MediaTagCrossRefRepository<K>){
+            val primaryTag = mediaTagRepository.getTagsByName(listOf(primaryTagName)).firstOrNull()
+            val tagsToMerge = mediaTagRepository.getTagsByName(namesOfTagsToMerge)
+            if(primaryTag != null && tagsToMerge.isNotEmpty()){
+                mediaTagCrossRefRepository.mergeTags(primaryTag.id, tagsToMerge.map{it.id})
+                mediaTagRepository.deleteTags(tagsToMerge)
         }
     }
 
