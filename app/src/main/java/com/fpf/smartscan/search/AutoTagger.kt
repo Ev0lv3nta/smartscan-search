@@ -1,6 +1,6 @@
 package com.fpf.smartscan.search
 
-import com.fpf.smartscan.collections.MediaTag
+import com.fpf.smartscan.model.MediaTag
 import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.updatePrototypeEmbedding

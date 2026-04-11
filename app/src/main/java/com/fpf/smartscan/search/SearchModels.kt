@@ -1,6 +1,6 @@
 package com.fpf.smartscan.search
 
-import com.fpf.smartscan.collections.MediaTag
+import com.fpf.smartscan.model.MediaTag
 
 enum class QueryType {
     TEXT, IMAGE
