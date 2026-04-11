@@ -455,7 +455,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
                 when (_state.value.mediaType) {
                     MediaType.IMAGE -> {
-                        val existing = imageTagsRepository.getTag(tag)
+                        val existing = imageTagsRepository.getTagsByName(listOf(tag)).firstOrNull()
                         var id = existing?.id
                         if(id == null){
                             id = imageTagsRepository.insertTags(listOf(ImageTag(name=tag.trim()))).first()
@@ -464,7 +464,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                         imageTagsCrossRefRepository.upsertTagCrossRefs(tagEntries)
                     }
                     MediaType.VIDEO -> {
-                        val existing = videoTagsRepository.getTag(tag)
+                        val existing = videoTagsRepository.getTagsByName(listOf(tag)).firstOrNull()
                         var id = existing?.id
                         if(id == null){
                             id = videoTagsRepository.insertTags(listOf(VideoTag(name=tag.trim()))).first()
@@ -571,11 +571,11 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         tagName?: return emptyList()
         return when (mediaType){
             MediaType.IMAGE -> {
-                val tag = imageTagsRepository.getTag(tagName)
+                val tag = imageTagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
                 tag?.let { imageTagsCrossRefRepository.getMediaIds(it.id, limit, offset) } ?: emptyList()
             }
             MediaType.VIDEO -> {
-                val tag = videoTagsRepository.getTag(tagName)
+                val tag = videoTagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
                 tag?.let { videoTagsCrossRefRepository.getMediaIds(it.id, limit, offset) } ?: emptyList()
             }
         }
@@ -586,11 +586,11 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         tagName?: return 0
         return when (mediaType) {
             MediaType.IMAGE -> {
-                val tag = imageTagsRepository.getTag(tagName)
+                val tag = imageTagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
                 tag?.let{imageTagsCrossRefRepository.count(it.id)}?: 0
             }
             MediaType.VIDEO -> {
-                val tag = videoTagsRepository.getTag(tagName)
+                val tag = videoTagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
                 tag?.let{videoTagsCrossRefRepository.count(it.id)}?: 0
             }
         }
