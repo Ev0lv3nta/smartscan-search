@@ -1,13 +1,11 @@
 package com.fpf.smartscan.ui.components
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -19,8 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
@@ -44,26 +41,12 @@ fun OverflowMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             offset = DpOffset(x = 0.dp, y = (-40).dp),
+            shape= RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.2f)),
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.setting_refresh_image_index)) },
-                leadingIcon = {
-                    Box {
-                        Icon(
-                            imageVector = Icons.Filled.Image,
-                            contentDescription = "Image"
-                        )
-                        Icon(
-                            imageVector = Icons.Filled.Refresh,
-                            contentDescription = "Refresh",
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .size(16.dp)
-                                .offset(x= 6.dp, y = 6.dp)
-                        )
-                    }
-                },
                 onClick = {
                     expanded = false
                     onRefreshImageIndex()
@@ -71,22 +54,6 @@ fun OverflowMenu(
             )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.setting_refresh_video_index)) },
-                leadingIcon = {
-                    Box {
-                        Icon(
-                            imageVector = Icons.Filled.VideoLibrary,
-                            contentDescription = "Video"
-                        )
-                        Icon(
-                            imageVector = Icons.Filled.Refresh,
-                            contentDescription = "Refresh",
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .size(16.dp)
-                                .offset(x= 6.dp, y = 6.dp)
-                        )
-                    }
-                },
                 onClick = {
                     expanded = false
                     onRefreshVideoIndex()
