@@ -33,7 +33,6 @@ import com.fpf.smartscan.ui.components.SelectorModal
 import com.fpf.smartscan.ui.components.TextInputModal
 import com.fpf.smartscan.ui.components.collections.CollectionsActionBar
 import com.fpf.smartscan.ui.components.collections.MediaCollectionsList
-import com.fpf.smartscan.ui.screens.search.SearchViewModel.Companion.RESULTS_BATCH_SIZE
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.StateFlow
 
@@ -41,12 +40,12 @@ import kotlinx.coroutines.flow.StateFlow
 @OptIn(FlowPreview::class)
 @Composable
 fun CollectionsScreen(
-    collectionsViewModel: CollectionsViewModel = viewModel(),
+    viewModel: CollectionsViewModel = viewModel(),
     appSettings: StateFlow<AppSettings>,
 ) {
-    val state by collectionsViewModel.state.collectAsState()
-    val mediaClusters by collectionsViewModel.mediaClusters.collectAsState()
-    val mediaCollections by collectionsViewModel.mediaCollections.collectAsState()
+    val state by viewModel.state.collectAsState()
+    val mediaClusters by viewModel.mediaClusters.collectAsState()
+    val mediaCollections by viewModel.mediaCollections.collectAsState()
     val appSettings by appSettings.collectAsState()
     val collectionsEmpty = mediaCollections.isEmpty()
 
@@ -60,7 +59,7 @@ fun CollectionsScreen(
 
     BackHandler(enabled = isSelecting) {
         isSelecting = false
-        collectionsViewModel.clearSelectedCollections()
+        viewModel.clearSelectedCollections()
     }
 
     TextInputModal(
@@ -69,7 +68,7 @@ fun CollectionsScreen(
         placeholder = "Enter new collection name",
         onClose = {isRenamingCollection = false},
         onConfirm = {
-            newName -> collectionsViewModel.renameCollection(state.mediaType, state.selectedCollections.first(), newName)
+            newName -> viewModel.renameCollection(state.mediaType, state.selectedCollections.first(), newName)
                     },
         leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
         onValueChange = {
@@ -88,7 +87,7 @@ fun CollectionsScreen(
         label = "Primary collection",
         options = state.selectedCollections.map {it.name },
         onConfirm = {
-            selected -> collectionsViewModel.mergeCollections(state.mediaType, selected, state.selectedCollections.filterNot { it.name == selected })
+            selected -> viewModel.mergeCollections(state.mediaType, selected, state.selectedCollections.filterNot { it.name == selected })
                     },
         onClose = { isMergingCollections = false }
     )
@@ -114,7 +113,7 @@ fun CollectionsScreen(
                     style = MaterialTheme.typography.titleMedium,
                 )
 
-                TextButton(onClick = {}) {
+                TextButton(onClick = {viewModel.toggleViewAllCollections()}) {
                     Text(
                         text = "View all",
                         style = MaterialTheme.typography.bodyMedium,
@@ -131,7 +130,7 @@ fun CollectionsScreen(
                 isSelecting = isSelecting,
                 selectedItems = state.selectedCollections,
                 onViewItem = { },
-                onToggleSelected = collectionsViewModel::toggleSelectedCollection,
+                onToggleSelected = viewModel::toggleSelectedCollection,
                 onToggleSelectionMode = {
                     isSelecting = !isSelecting
                 },
@@ -149,7 +148,7 @@ fun CollectionsScreen(
                     .height(70.dp)
                     .zIndex(1f),
                 onDelete = {
-                    collectionsViewModel.deleteCollection(state.mediaType, state.selectedCollections.first())
+                    viewModel.deleteCollection(state.mediaType, state.selectedCollections.first())
                     isSelecting = false
                 },
                 onMerge = {

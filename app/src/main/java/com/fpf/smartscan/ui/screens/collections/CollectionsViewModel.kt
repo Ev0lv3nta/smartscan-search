@@ -149,6 +149,10 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
         _state.update{currentState -> currentState.copy(selectedCollections = emptyList())}
     }
 
+    fun toggleViewAllCollections(){
+        _state.update{ it.copy(showAllCollections = !it.showAllCollections)}
+    }
+
     private suspend fun <T: MediaTag, K: MediaTagCrossRef>mergeTags(primaryTagName: String, namesOfTagsToMerge: List<String>, mediaTagRepository: MediaTagRepository<T>, mediaTagCrossRefRepository: MediaTagCrossRefRepository<K>){
             val primaryTag = mediaTagRepository.getTagsByName(listOf(primaryTagName)).firstOrNull()
             val tagsToMerge = mediaTagRepository.getTagsByName(namesOfTagsToMerge)
