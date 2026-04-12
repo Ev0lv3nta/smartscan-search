@@ -64,7 +64,7 @@ fun CollectionItemsScreen(
         ) {
             CollectionItemsList(
                 isVisible = !collectionsEmpty,
-                numGridColumns = 3,
+                numGridColumns = appSettings.resultsPerRow,
                 mediaType = state.mediaType,
                 items = mediaItems,
                 isSelecting = isSelecting,
