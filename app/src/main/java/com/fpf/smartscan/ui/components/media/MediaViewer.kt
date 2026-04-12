@@ -47,7 +47,7 @@ fun MediaViewer(
     uri: Uri,
     type: MediaType,
     onClose: () -> Unit,
-    onUpdateSearchImage: (uri: Uri) -> Unit,
+    onUpdateSearchImage: ((uri: Uri) -> Unit)?,
     maxSize: Int = 2048
 ){
     var isActionsVisible by remember { mutableStateOf(true) }
@@ -94,7 +94,7 @@ fun ActionRow(
     uri: Uri,
     type: MediaType,
     onClose: () -> Unit,
-    onUpdateSearchImage: (uri: Uri) -> Unit,
+    onUpdateSearchImage: ((uri: Uri) -> Unit)?,
     isVisible: Boolean
 ){
     val context = LocalContext.current
@@ -147,7 +147,7 @@ fun ActionRow(
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
-                if(type == MediaType.IMAGE) {
+                if(type == MediaType.IMAGE && onUpdateSearchImage != null) {
                     IconButton(onClick = { onUpdateSearchImage(uri) }) {
                         Icon(
                             Icons.Filled.Search,
