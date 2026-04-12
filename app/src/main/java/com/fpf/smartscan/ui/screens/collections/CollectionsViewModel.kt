@@ -107,7 +107,6 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
                     tag?.let{videoTagsRepository.updateTags(listOf(it.copy(name = newName)))}
                 }
             }
-            // TODO: update name in collection. However mapping is not efficient using StateFlow for list may be better suited
             _state.update { it.copy(selectedCollections = emptyList()) }
         }
     }
@@ -151,6 +150,16 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
 
     fun toggleViewAllCollections(){
         _state.update{ it.copy(showAllCollections = !it.showAllCollections)}
+    }
+
+    fun viewCollection(mediaType: MediaType, collection: MediaCollection){
+        viewModelScope.launch {
+            val tag= when(mediaType) {
+                MediaType.IMAGE -> imageTagsRepository.getTagsByName(listOf(collection.name)).firstOrNull()
+                MediaType.VIDEO -> videoTagsRepository.getTagsByName(listOf(collection.name)).firstOrNull()
+            }
+            tag?.let{_state.update { it.copy(collectToView = tag.id) }}
+        }
     }
 
     private suspend fun <T: MediaTag, K: MediaTagCrossRef>mergeTags(primaryTagName: String, namesOfTagsToMerge: List<String>, mediaTagRepository: MediaTagRepository<T>, mediaTagCrossRefRepository: MediaTagCrossRefRepository<K>){
