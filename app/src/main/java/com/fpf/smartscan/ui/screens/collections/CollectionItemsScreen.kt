@@ -1,6 +1,7 @@
 package com.fpf.smartscan.ui.screens.collections
 
 import android.content.ClipData
+import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -21,6 +22,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -49,21 +51,28 @@ fun CollectionItemsScreen(
     appSettings: StateFlow<AppSettings>,
     viewModel: CollectionItemsViewModel = viewModel(),
     ) {
-    val state by viewModel.state.collectAsState()
-    val mediaItems by viewModel.mediaItems.collectAsState()
-    val appSettings by appSettings.collectAsState()
-    val collectionsEmpty = mediaItems.isEmpty()
 
     val context = LocalContext.current
     val clipboard = LocalClipboard.current
 
-    var isSelecting by remember { mutableStateOf(false) }
+    val mediaItems = remember { mutableStateListOf<Uri>() }
 
-    val actionBarVisible = isSelecting && state.selectedMediaItems.isNotEmpty()
+    val state by viewModel.state.collectAsState()
+    val appSettings by appSettings.collectAsState()
+
+    var isSelecting by remember { mutableStateOf(false) }
 
     var offset by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val maxCollapsablePx = with(density) { 70.dp.toPx() }.toInt()
+
+
+    LaunchedEffect(collectionName) {
+        mediaItems.clear()
+        viewModel.mediaItems.collect { batch ->
+            mediaItems.addAll(batch)
+        }
+    }
 
     LaunchedEffect(collectionName) {
         collectionName?.let{viewModel.setCollection(it)}
@@ -86,7 +95,7 @@ fun CollectionItemsScreen(
             verticalArrangement = Arrangement.Top
         ) {
             CollectionItemsList(
-                isVisible = !collectionsEmpty,
+                isVisible = mediaItems.isNotEmpty(),
                 numGridColumns = appSettings.resultsPerRow,
                 mediaType = state.mediaType,
                 items = mediaItems,

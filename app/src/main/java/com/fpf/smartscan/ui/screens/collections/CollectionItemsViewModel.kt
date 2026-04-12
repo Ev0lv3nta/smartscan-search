@@ -18,16 +18,15 @@ import com.fpf.smartscan.media.getImageUriFromId
 import com.fpf.smartscan.media.getVideoUriFromId
 import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
-import com.fpf.smartscan.utils.canOpenUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.collections.plus
@@ -49,32 +48,33 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
     val state: StateFlow<CollectionItemsState> = _state
 
 
+    // batched incremental streaming to reduce time-to-first-render.
     @OptIn(ExperimentalCoroutinesApi::class)
-    val mediaItems: StateFlow<List<Uri>> = _state.flatMapLatest { state ->
-                val id = getTag(state.mediaType, state.collectionName)?.id
+    val mediaItems: Flow<List<Uri>> = _state.flatMapLatest { state ->
+            val tagId = getTag(state.mediaType, state.collectionName)?.id
 
-                if (id == null) {
-                    flowOf(emptyList())
-                } else {
-                    combine(
-                        imageTagsCrossRefRepository.getMediaIdsFlow(id),
-                        videoTagsCrossRefRepository.getMediaIdsFlow(id),
-                        flowOf(state.mediaType)
-                    ) { imageIds, videoIds, mediaType ->
-                        when (mediaType) {
-                            // TODO: use background worker to purge stale media
-                            MediaType.IMAGE -> imageIds.map { mediaIdToUri(it, mediaType)}
-                            MediaType.VIDEO -> videoIds.map { mediaIdToUri(it, mediaType)}
-                        }
-                    }
+            if(tagId == null){
+                flowOf(emptyList())
+            }else {
+                val idsFlow = when (state.mediaType) {
+                    MediaType.IMAGE -> imageTagsCrossRefRepository.getMediaIdsFlow(tagId)
+                    MediaType.VIDEO -> videoTagsCrossRefRepository.getMediaIdsFlow(tagId)
+                }
+
+                idsFlow.flatMapLatest { ids ->
+                    uriBatchFlow(ids, state.mediaType, batchSize = 100)
                 }
             }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.Eagerly,
-                initialValue = emptyList()
-            )
+        }
 
+
+    private fun uriBatchFlow(ids: List<Long>, mediaType: MediaType, batchSize: Int = 100) = flow {
+        ids.chunked(batchSize).forEach { chunk ->
+            emit(chunk.map { id ->
+                mediaIdToUri(id, mediaType)
+            })
+        }
+    }.flowOn(Dispatchers.IO)
 
     fun removeItems(mediaType: MediaType, mediaUris: List<Uri>){
         val mediaIds = mediaUris.map{uriToMediaId(it)}
