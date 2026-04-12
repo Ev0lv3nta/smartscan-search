@@ -4,9 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -16,7 +14,6 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -24,7 +21,6 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -62,10 +58,10 @@ fun MediaCollectionsList(
     items: List<MediaCollection>,
     selectedItems: List<MediaCollection>,
     mediaType: MediaType,
-    onViewItem: (collection: MediaCollection) -> Unit,
-    onToggleSelected: (MediaCollection) -> Unit,
-    onToggleSelectionMode: () -> Unit,
-    onOffsetChange: (Int) -> Unit,
+    onItemClick: (MediaCollection) -> Unit,
+    onToggleSelected: ((MediaCollection) -> Unit)? = null,
+    onToggleSelectionMode: (() -> Unit)? = null,
+    onOffsetChange: ((Int) -> Unit)? = null,
     numGridColumns: Int = 3,
     maxCollapsePx: Int = 0,
     isSelecting: Boolean = false,
@@ -86,7 +82,7 @@ fun MediaCollectionsList(
             ): Offset {
                 val deltaPx = -available.y
                 totalScrollPx = (totalScrollPx + deltaPx.roundToInt()).coerceIn(0, maxCollapsePx)
-                onOffsetChange(totalScrollPx)
+                onOffsetChange?.invoke(totalScrollPx)
                 return Offset.Zero
             }
         }
@@ -127,8 +123,7 @@ fun MediaCollectionsList(
             items(items) { item ->
                 val shape = RoundedCornerShape(12.dp)
 
-                Column(
-                ) {
+                Column{
                     Box(
                         modifier = Modifier
                             .aspectRatio(1f)
@@ -139,14 +134,14 @@ fun MediaCollectionsList(
                                 indication = null,
                                 interactionSource = remember { MutableInteractionSource() },
                                 onClick = {
-                                    if (isSelecting) onToggleSelected(item) else onViewItem(
+                                    if (isSelecting) onToggleSelected?.invoke(item) else onItemClick(
                                         item
                                     )
                                 },
                                 onLongClick = {
                                     if (!isSelecting) {
-                                        onToggleSelectionMode()
-                                        onToggleSelected(item)
+                                        onToggleSelectionMode?.invoke()
+                                        onToggleSelected?.invoke(item)
                                     }
                                 }
                             )
@@ -161,7 +156,7 @@ fun MediaCollectionsList(
                         if (isSelecting) {
                             CircularCheckbox(
                                 checked = item in selectedItems,
-                                onCheckedChange = { onToggleSelected(item) },
+                                onCheckedChange = { onToggleSelected?.invoke(item) },
                                 modifier = Modifier
                                     .offset(x = 8.dp, y = 8.dp)
                                     .align(Alignment.TopStart),
@@ -197,7 +192,7 @@ fun MediaCollectionsList(
             FloatingActionButton(onClick = {
                 scope.launch {
                     showScrollToTop = false
-                    onOffsetChange(0)
+                    onOffsetChange?.invoke(0)
                     gridState.scrollToItem(0)
                 }
             }) {
