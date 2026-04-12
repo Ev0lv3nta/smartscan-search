@@ -46,8 +46,9 @@ fun CollectionsScreen(
 ) {
     val state by collectionsViewModel.state.collectAsState()
     val mediaClusters by collectionsViewModel.mediaClusters.collectAsState()
+    val mediaCollections by collectionsViewModel.mediaCollections.collectAsState()
     val appSettings by appSettings.collectAsState()
-    val collectionsEmpty = state.collections.isEmpty()
+    val collectionsEmpty = mediaCollections.isEmpty()
 
     val context = LocalContext.current
 
@@ -126,13 +127,10 @@ fun CollectionsScreen(
                 isVisible = !collectionsEmpty,
                 numGridColumns = 3,
                 mediaType = state.mediaType,
-                items = state.collections,
-                totalItems = state.totalCollections,
+                items = mediaCollections,
                 isSelecting = isSelecting,
                 selectedItems = state.selectedCollections,
-                loadMoreBuffer = (RESULTS_BATCH_SIZE * 0.4).toInt(),
                 onViewItem = { },
-                onLoadMore = {},
                 onToggleSelected = collectionsViewModel::toggleSelectedCollection,
                 onToggleSelectionMode = {
                     isSelecting = !isSelecting

@@ -4,8 +4,6 @@ import com.fpf.smartscan.collections.MediaCollection
 import com.fpf.smartscan.media.MediaType
 
 data class CollectionsState(
-    val collections: List<MediaCollection> = emptyList(),
-    val totalCollections: Int = 0,
     val showAllCollections: Boolean = false,
     val mediaType: MediaType = MediaType.IMAGE,
     val loading: Boolean = false,

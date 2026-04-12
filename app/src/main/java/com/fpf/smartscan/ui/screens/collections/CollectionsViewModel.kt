@@ -20,16 +20,15 @@ import com.fpf.smartscan.data.MediaTag
 import com.fpf.smartscan.data.MediaTagCrossRef
 import com.fpf.smartscan.data.MediaTagCrossRefRepository
 import com.fpf.smartscan.data.MediaTagRepository
+import com.fpf.smartscan.data.TagWithCount
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.getImageUriFromId
 import com.fpf.smartscan.media.getVideoUriFromId
-import com.fpf.smartscan.search.TagSuggestionsResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -74,28 +73,27 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
             )
 
 
-    val mediaTagCounts: StateFlow<Map<MediaTag, Int>> = combine(
-        imageTagsCrossRefRepository.getTagCounts(),
-        videoTagsCrossRefRepository.getTagCounts(),
+    val mediaCollections: StateFlow<List<MediaCollection>> = combine(
+        imageTagsCrossRefRepository.getTagsWithCounts(),
+        videoTagsCrossRefRepository.getTagsWithCounts(),
         _state
     ) { imageTagCounts, videoTagCounts, state ->
         when (state.mediaType) {
-            MediaType.IMAGE -> imageTagCounts
-            MediaType.VIDEO -> videoTagCounts
+            MediaType.IMAGE -> {
+                val collections = getCollections(imageTagCounts, state.mediaType)
+                if(state.showAllCollections) collections else collections.take(6)
+            }
+            MediaType.VIDEO -> {
+                val collections = getCollections(videoTagCounts, state.mediaType)
+                if(state.showAllCollections) collections else collections.take(6)
+            }
         }
     }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.Eagerly,
-            initialValue = emptyMap()
+            initialValue = emptyList()
         )
-
-    init {
-        viewModelScope.launch {
-            mediaTagCounts.first { it.isNotEmpty() }
-            loadInitialCollections(topK = 6)
-        }
-    }
 
     fun renameCollection(mediaType: MediaType, collection: MediaCollection, newName: String){
         viewModelScope.launch (Dispatchers.IO){
@@ -110,7 +108,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
                 }
             }
             // TODO: update name in collection. However mapping is not efficient using StateFlow for list may be better suited
-            _state.update { it.copy(collections = it.collections, selectedCollections = emptyList()) }
+            _state.update { it.copy(selectedCollections = emptyList()) }
         }
     }
 
@@ -121,7 +119,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
                 MediaType.IMAGE -> imageTagsRepository.deleteTagsByName(listOf(collection.name))
                 MediaType.VIDEO -> videoTagsRepository.deleteTagsByName(listOf(collection.name))
             }
-            _state.update { it.copy(collections = it.collections - collection, selectedCollections = emptyList()) }
+            _state.update { it.copy(selectedCollections = emptyList()) }
         }
     }
 
@@ -131,7 +129,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
                 MediaType.IMAGE -> mergeTags(primaryCollectionName, otherCollections.map{it.name}, imageTagsRepository, imageTagsCrossRefRepository)
                 MediaType.VIDEO -> mergeTags(primaryCollectionName, otherCollections.map{it.name}, videoTagsRepository, videoTagsCrossRefRepository)
             }
-            _state.update { it.copy(collections = it.collections - otherCollections, selectedCollections = emptyList()) }
+            _state.update { it.copy( selectedCollections = emptyList()) }
         }
     }
 
@@ -161,12 +159,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
         }
     }
 
-    private suspend fun loadInitialCollections(topK: Int){
-        val topTags = mediaTagCounts.value.entries.sortedByDescending { it.value }.take(topK).associate { it.key to it.value }
-        _state.update { it.copy(totalCollections = mediaTagCounts.value.size, collections =  getCollections(topTags.keys.toList(), it.mediaType))}
-    }
-
-    private suspend fun getCollections(tags: List<MediaTag>, mediaType: MediaType): List<MediaCollection> {
+    private suspend fun getCollections(tags: List<TagWithCount>, mediaType: MediaType): List<MediaCollection> {
         return tags.mapNotNull {
             val id = getMediaMatchingTag(it.id, mediaType, limit = 1).firstOrNull()
             val uri = id?.let { id -> getUriFromMediaId(id, mediaType) }
@@ -174,7 +167,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
                 MediaCollection(
                     name = it.name,
                     thumbNail = uri,
-                    size = mediaTagCounts.value[it] ?:0
+                    size = it.count
                 )
             }
         }

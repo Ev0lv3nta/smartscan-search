@@ -61,14 +61,11 @@ fun MediaCollectionsList(
     items: List<MediaCollection>,
     selectedItems: List<MediaCollection>,
     mediaType: MediaType,
-    totalItems: Int,
-    onLoadMore: () -> Unit,
     onViewItem: (collection: MediaCollection?) -> Unit,
     onToggleSelected: (MediaCollection) -> Unit,
     onToggleSelectionMode: () -> Unit,
     onOffsetChange: (Int) -> Unit,
     numGridColumns: Int = 3,
-    loadMoreBuffer: Int = 5,
     maxCollapsePx: Int = 0,
     isSelecting: Boolean = false,
 ) {
@@ -91,19 +88,6 @@ fun MediaCollectionsList(
                 onOffsetChange(totalScrollPx)
                 return Offset.Zero
             }
-        }
-    }
-
-    LaunchedEffect(gridState) {
-        snapshotFlow {
-            val layoutInfo = gridState.layoutInfo
-            val visibleItems = layoutInfo.visibleItemsInfo
-            if (visibleItems.isEmpty()) return@snapshotFlow false
-            val lastVisibleItem = visibleItems.last().index
-            val totalItemsCount = layoutInfo.totalItemsCount
-            lastVisibleItem + loadMoreBuffer >= totalItemsCount && totalItemsCount < totalItems
-        }.collect { shouldLoadMore ->
-            if (shouldLoadMore) onLoadMore()
         }
     }
 
