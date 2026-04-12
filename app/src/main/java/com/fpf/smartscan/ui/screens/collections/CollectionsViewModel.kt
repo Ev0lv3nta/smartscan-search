@@ -158,8 +158,12 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
                 MediaType.IMAGE -> imageTagsRepository.getTagsByName(listOf(collection.name)).firstOrNull()
                 MediaType.VIDEO -> videoTagsRepository.getTagsByName(listOf(collection.name)).firstOrNull()
             }
-            tag?.let{_state.update { it.copy(collectToView = tag.id) }}
+            setCollectionToView(tag?.id)
         }
+    }
+
+    fun setCollectionToView(collection: Long?){
+        _state.update { it.copy(collectToView = collection) }
     }
 
     private suspend fun <T: MediaTag, K: MediaTagCrossRef>mergeTags(primaryTagName: String, namesOfTagsToMerge: List<String>, mediaTagRepository: MediaTagRepository<T>, mediaTagCrossRefRepository: MediaTagCrossRefRepository<K>){

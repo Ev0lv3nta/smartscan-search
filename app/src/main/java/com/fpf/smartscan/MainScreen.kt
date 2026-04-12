@@ -26,6 +26,7 @@ import com.fpf.smartscan.ui.components.OverflowMenu
 import com.fpf.smartscan.ui.components.UpdatePopUp
 import com.fpf.smartscan.ui.permissions.StorageAccess
 import com.fpf.smartscan.ui.permissions.getStorageAccess
+import com.fpf.smartscan.ui.screens.collections.CollectionItemsScreen
 import com.fpf.smartscan.ui.screens.collections.CollectionsScreen
 import com.fpf.smartscan.ui.screens.collections.CollectionsViewModel
 import com.fpf.smartscan.ui.screens.donate.DonateScreen
@@ -66,7 +67,9 @@ fun MainScreen(intentSearchQuery: SearchQuery?) {
         else -> ""
     }
 
-    val showBackButton = currentRoute?.startsWith(Routes.SETTINGS.split("/")[0]) == true || currentRoute in listOf( Routes.DONATE, Routes.HELP)
+    val showBackButton = currentRoute?.startsWith(Routes.SETTINGS.split("/")[0]) == true
+            || currentRoute?.startsWith(Routes.COLLECTION_ITEMS.split("/")[0]) == true
+            || currentRoute in listOf( Routes.DONATE, Routes.HELP)
 
     if(isUpdatePopUpVisible) {
         UpdatePopUp(
@@ -124,6 +127,19 @@ fun MainScreen(intentSearchQuery: SearchQuery?) {
                 }
                 composable(Routes.COLLECTIONS) {
                     CollectionsScreen(
+                        appSettings = settingsViewModel.appSettings,
+                        onNavigate = { route: String ->
+                            navController.navigate(route)
+                        }
+                    )
+                }
+                composable(
+                    route = Routes.COLLECTION_ITEMS,
+                    arguments = listOf(navArgument("collectionId") { type = NavType.LongType })
+                ) { backStackEntry ->
+                    val collectionId = backStackEntry.arguments?.getLong("collectionId")
+                    CollectionItemsScreen(
+                        collectionId = collectionId,
                         appSettings = settingsViewModel.appSettings,
                     )
                 }

@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +29,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fpf.smartscan.constants.Routes
 import com.fpf.smartscan.settings.AppSettings
 import com.fpf.smartscan.ui.components.SelectorModal
 import com.fpf.smartscan.ui.components.TextInputModal
@@ -40,9 +42,10 @@ import kotlinx.coroutines.flow.StateFlow
 @OptIn(FlowPreview::class)
 @Composable
 fun CollectionsScreen(
-    viewModel: CollectionsViewModel = viewModel(),
     appSettings: StateFlow<AppSettings>,
-) {
+    onNavigate: (String) -> Unit,
+    viewModel: CollectionsViewModel = viewModel(),
+    ) {
     val state by viewModel.state.collectAsState()
     val mediaClusters by viewModel.mediaClusters.collectAsState()
     val mediaCollections by viewModel.mediaCollections.collectAsState()
@@ -56,6 +59,13 @@ fun CollectionsScreen(
     var isMergingCollections by remember { mutableStateOf(false) }
 
     val actionBarVisible = isSelecting && state.selectedCollections.isNotEmpty()
+
+    LaunchedEffect(state.collectToView) {
+        state.collectToView?.let{
+            onNavigate(Routes.viewCollection(it))
+            viewModel.setCollectionToView(null)
+        }
+    }
 
     BackHandler(enabled = isSelecting) {
         isSelecting = false
@@ -129,7 +139,7 @@ fun CollectionsScreen(
                 items = mediaCollections,
                 isSelecting = isSelecting,
                 selectedItems = state.selectedCollections,
-                onViewItem = { },
+                onViewItem = {collection -> viewModel.viewCollection(state.mediaType, collection)},
                 onToggleSelected = viewModel::toggleSelectedCollection,
                 onToggleSelectionMode = {
                     isSelecting = !isSelecting
