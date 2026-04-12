@@ -47,6 +47,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.fpf.smartscan.collections.MediaCollection
 import com.fpf.smartscan.media.MediaType
@@ -169,13 +170,15 @@ fun MediaCollectionsList(
                     }
                     Text(
                         text = item.name.replaceFirstChar { char -> char.uppercase() },
-                        style = MaterialTheme.typography.labelLarge,
+                        style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding( start = 2.dp),
-                        color= MaterialTheme.colorScheme.primary
+                        color= MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = item.size.toString(),
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(bottom = 4.dp, start = 2.dp),
                         color= MaterialTheme.colorScheme.primary
                     )
