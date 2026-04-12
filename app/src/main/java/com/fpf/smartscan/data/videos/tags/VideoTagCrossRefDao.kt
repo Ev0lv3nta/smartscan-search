@@ -47,5 +47,5 @@ interface VideoTagCrossRefDao {
     GROUP BY c.tagId
     ORDER BY count DESC
     """)
-    fun getTagCounts(): Flow<List<TagWithCount>>
+    fun getTagsWithCounts(): Flow<List<TagWithCount>>
 }

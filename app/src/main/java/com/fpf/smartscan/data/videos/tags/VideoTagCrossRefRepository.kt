@@ -1,9 +1,8 @@
 package com.fpf.smartscan.data.videos.tags
 
 import com.fpf.smartscan.data.MediaTagCrossRefRepository
-import com.fpf.smartscan.data.MediaTag
+import com.fpf.smartscan.data.TagWithCount
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 
 class VideoTagCrossRefRepository(private val dao: VideoTagCrossRefDao): MediaTagCrossRefRepository<VideoTagCrossRef> {
     override suspend fun getAllCrossRefs(): List<VideoTagCrossRef> = dao.getAllCrossRefs()
@@ -16,5 +15,5 @@ class VideoTagCrossRefRepository(private val dao: VideoTagCrossRefDao): MediaTag
     override suspend fun deleteByTagIds(ids: List<Long>) = dao.deleteByTagIds(ids)
     override suspend fun clear() = dao.clear()
     override suspend fun count(tagId: Long) = dao.count(tagId)
-    override fun getTagCounts(): Flow<Map<MediaTag, Int>> = dao.getTagCounts().map{ list -> list.associate { it.toVideoTag() to it.count } }
+    override fun getTagsWithCounts(): Flow<List<TagWithCount>> = dao.getTagsWithCounts()
 }
