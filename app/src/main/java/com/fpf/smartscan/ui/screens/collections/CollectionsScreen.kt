@@ -139,7 +139,7 @@ fun CollectionsScreen(
                 items = mediaCollections,
                 isSelecting = isSelecting,
                 selectedItems = state.selectedCollections,
-                onViewItem = viewModel::setCollectionToView,
+                onItemClick = viewModel::setCollectionToView,
                 onToggleSelected = viewModel::toggleSelectedCollection,
                 onToggleSelectionMode = {
                     isSelecting = !isSelecting
