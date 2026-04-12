@@ -62,7 +62,7 @@ fun MediaCollectionsList(
     items: List<MediaCollection>,
     selectedItems: List<MediaCollection>,
     mediaType: MediaType,
-    onViewItem: (collection: MediaCollection?) -> Unit,
+    onViewItem: (collection: MediaCollection) -> Unit,
     onToggleSelected: (MediaCollection) -> Unit,
     onToggleSelectionMode: () -> Unit,
     onOffsetChange: (Int) -> Unit,
