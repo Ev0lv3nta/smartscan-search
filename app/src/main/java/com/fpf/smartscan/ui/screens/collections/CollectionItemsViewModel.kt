@@ -2,6 +2,7 @@ package com.fpf.smartscan.ui.screens.collections
 
 import android.app.Application
 import android.content.ContentUris
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -15,6 +16,9 @@ import com.fpf.smartscan.data.videos.tags.VideoTagRepository
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.getImageUriFromId
 import com.fpf.smartscan.media.getVideoUriFromId
+import com.fpf.smartscan.media.openImageInGallery
+import com.fpf.smartscan.media.openVideoInGallery
+import com.fpf.smartscan.utils.canOpenUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -58,8 +62,15 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
                         flowOf(state.mediaType)
                     ) { imageIds, videoIds, mediaType ->
                         when (mediaType) {
-                            MediaType.IMAGE -> imageIds.map { mediaIdToUri(it, mediaType) }
-                            MediaType.VIDEO -> videoIds.map { mediaIdToUri(it, mediaType) }
+                            // TODO: remove any which cant open
+                            MediaType.IMAGE -> imageIds.mapNotNull {
+                                val uri = mediaIdToUri(it, mediaType)
+                                if(canOpenUri(application, uri))uri else null
+                            }
+                            MediaType.VIDEO -> videoIds.mapNotNull {
+                                val uri = mediaIdToUri(it, mediaType)
+                                if(canOpenUri(application, uri))uri else null
+                            }
                         }
                     }
                 }
@@ -71,7 +82,8 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
             )
 
 
-    fun deleteItems(mediaType: MediaType, mediaIds: List<Long>){
+    fun removeItems(mediaType: MediaType, mediaUris: List<Uri>){
+        val mediaIds = mediaUris.map{uriToMediaId(it)}
         viewModelScope.launch (Dispatchers.IO){
             when (mediaType) {
                 MediaType.IMAGE -> imageTagsCrossRefRepository.deleteByMediaIds(mediaIds)
@@ -100,6 +112,22 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
     fun setCollection(name: String?){
         _state.update { it.copy(collectionName=name) }
     }
+
+    fun setMediaToView(context: Context, uri: Uri?, autoOpenInGallery: Boolean? = null, isSelecting: Boolean = false){
+        if(autoOpenInGallery == true && !isSelecting) {
+            when(_state.value.mediaType){
+                MediaType.IMAGE -> {
+                    uri?.let{openImageInGallery(context, it)}
+                }
+                MediaType.VIDEO -> {
+                    uri?.let{openVideoInGallery(context, it)}
+                }
+            }
+        }else{
+            _state.update { it.copy(mediaToView =uri) }
+        }
+    }
+
 
     private suspend fun getTag(mediaType: MediaType, collectionName: String?): MediaTag?{
         collectionName?: return null

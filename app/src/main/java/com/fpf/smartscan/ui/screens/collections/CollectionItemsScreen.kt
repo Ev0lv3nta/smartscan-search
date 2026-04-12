@@ -1,25 +1,43 @@
 package com.fpf.smartscan.ui.screens.collections
 
+import android.content.ClipData
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fpf.smartscan.media.shareMediaMulti
 import com.fpf.smartscan.settings.AppSettings
+import com.fpf.smartscan.ui.components.SlideRevealBox
+import com.fpf.smartscan.ui.components.collections.CollectionItemsActionBar
 import com.fpf.smartscan.ui.components.collections.CollectionItemsList
+import com.fpf.smartscan.ui.components.media.MediaViewer
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.StateFlow
 
@@ -37,10 +55,15 @@ fun CollectionItemsScreen(
     val collectionsEmpty = mediaItems.isEmpty()
 
     val context = LocalContext.current
+    val clipboard = LocalClipboard.current
 
     var isSelecting by remember { mutableStateOf(false) }
 
     val actionBarVisible = isSelecting && state.selectedMediaItems.isNotEmpty()
+
+    var offset by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
+    val maxCollapsablePx = with(density) { 70.dp.toPx() }.toInt()
 
     LaunchedEffect(collectionName) {
         collectionName?.let{viewModel.setCollection(it)}
@@ -69,35 +92,71 @@ fun CollectionItemsScreen(
                 items = mediaItems,
                 isSelecting = isSelecting,
                 selectedItems = state.selectedMediaItems,
-                onViewItem = { },
+                onViewItem = { uri -> viewModel.setMediaToView(context, uri, appSettings.enableDirectGalleryOpen, isSelecting) },
                 onToggleSelected = viewModel::toggleSelectedItem,
                 onToggleSelectionMode = {
                     isSelecting = !isSelecting
                 },
-                onOffsetChange = { },
-                maxCollapsePx = 0
+                onOffsetChange = {  offset = it },
+                maxCollapsePx = maxCollapsablePx
             )
         }
 
-//        if (actionBarVisible) {
-//            CollectionsActionBar(
-//                modifier = Modifier
-//                    .align(Alignment.BottomCenter)
-//                    .height(70.dp)
-//                    .zIndex(1f),
-//                onDelete = {
-//                    viewModel.deleteCollection(state.mediaType, state.selectedCollections.first())
-//                    isSelecting = false
-//                },
-//                onMerge = {
-//                    isMergingCollections = true
-//                    isSelecting = false
-//                },
-//                onRename = {
-//                    isRenamingCollection = true
-//                    isSelecting = false
-//                }
-//            )
-//        }
+        SlideRevealBox(
+            isVisible = isSelecting && state.selectedMediaItems.isNotEmpty(),
+            offsetPx = offset,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .zIndex(1f)
+                .then(
+                    if (offset != 0)
+                        Modifier.clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) {}
+                    else Modifier
+                )
+        ) {
+            CollectionItemsActionBar(
+                modifier = Modifier.height(70.dp),
+                onRemove = {
+                    viewModel.removeItems(state.mediaType, state.selectedMediaItems)
+                    isSelecting = false
+                },
+                onShare = {
+                    shareMediaMulti(context, state.selectedMediaItems)
+                    isSelecting = false
+                    viewModel.clearSelectedItems()
+                          },
+                onMove = {
+                    isSelecting = false
+                         },
+                onCopy = {
+                    clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", state.selectedMediaItems[0]))
+                    isSelecting = false
+                    viewModel.clearSelectedItems()
+                }
+            )
+        }
+        state.mediaToView?.let { uri ->
+            AnimatedVisibility(
+                visible = true,
+                enter = fadeIn(animationSpec = tween(500)) + scaleIn(
+                    initialScale = 0.8f,
+                    animationSpec = tween(500)
+                ),
+                exit = fadeOut(animationSpec = tween(300)) + scaleOut(
+                    targetScale = 0.8f,
+                    animationSpec = tween(300)
+                )
+            ) {
+                MediaViewer(
+                    uri = uri,
+                    type = state.mediaType,
+                    onClose = { viewModel.setMediaToView(context, null) },
+                    onUpdateSearchImage = null
+                )
+            }
+        }
     }
 }
