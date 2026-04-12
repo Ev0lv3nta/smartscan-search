@@ -46,8 +46,6 @@ fun MainScreen(intentSearchQuery: SearchQuery?) {
     val typeVal = navBackStackEntry?.arguments?.getString("type")
     val mainViewModel: MainViewModel = viewModel()
     val settingsViewModel: SettingsViewModel = viewModel()
-    val collectionsViewModel: CollectionsViewModel = viewModel()
-    val searchViewModel: SearchViewModel = viewModel()
     val isUpdatePopUpVisible by mainViewModel.isUpdatePopUpVisible.collectAsState()
 
     val headerTitle = when {
@@ -120,15 +118,13 @@ fun MainScreen(intentSearchQuery: SearchQuery?) {
             ) {
                 composable(Routes.SEARCH) {
                     SearchScreen(
-                        searchViewModel = searchViewModel,
-                        settingsViewModel = settingsViewModel,
+                        appSettings = settingsViewModel.appSettings,
                         intentSearchQuery = intentSearchQuery
                     )
                 }
                 composable(Routes.COLLECTIONS) {
                     CollectionsScreen(
-                        collectionsViewModel= collectionsViewModel,
-                        settingsViewModel = settingsViewModel,
+                        appSettings = settingsViewModel.appSettings,
                     )
                 }
                 composable(Routes.SETTINGS) {

@@ -28,24 +28,25 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fpf.smartscan.settings.AppSettings
 import com.fpf.smartscan.ui.components.SelectorModal
 import com.fpf.smartscan.ui.components.TextInputModal
 import com.fpf.smartscan.ui.components.collections.CollectionsActionBar
 import com.fpf.smartscan.ui.components.collections.MediaCollectionsList
 import com.fpf.smartscan.ui.screens.search.SearchViewModel.Companion.RESULTS_BATCH_SIZE
-import com.fpf.smartscan.ui.screens.settings.SettingsViewModel
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.StateFlow
 
 
 @OptIn(FlowPreview::class)
 @Composable
 fun CollectionsScreen(
     collectionsViewModel: CollectionsViewModel = viewModel(),
-    settingsViewModel: SettingsViewModel = viewModel(),
+    appSettings: StateFlow<AppSettings>,
 ) {
     val state by collectionsViewModel.state.collectAsState()
     val mediaClusters by collectionsViewModel.mediaClusters.collectAsState()
-    val appSettings by settingsViewModel.appSettings.collectAsState()
+    val appSettings by appSettings.collectAsState()
     val collectionsEmpty = state.collections.isEmpty()
 
     val context = LocalContext.current
