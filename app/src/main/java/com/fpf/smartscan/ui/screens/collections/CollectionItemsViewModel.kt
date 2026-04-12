@@ -62,15 +62,9 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
                         flowOf(state.mediaType)
                     ) { imageIds, videoIds, mediaType ->
                         when (mediaType) {
-                            // TODO: remove any which cant open
-                            MediaType.IMAGE -> imageIds.mapNotNull {
-                                val uri = mediaIdToUri(it, mediaType)
-                                if(canOpenUri(application, uri))uri else null
-                            }
-                            MediaType.VIDEO -> videoIds.mapNotNull {
-                                val uri = mediaIdToUri(it, mediaType)
-                                if(canOpenUri(application, uri))uri else null
-                            }
+                            // TODO: use background worker to purge stale media
+                            MediaType.IMAGE -> imageIds.map { mediaIdToUri(it, mediaType)}
+                            MediaType.VIDEO -> videoIds.map { mediaIdToUri(it, mediaType)}
                         }
                     }
                 }
