@@ -8,6 +8,6 @@ data class CollectionsState(
     val mediaType: MediaType = MediaType.IMAGE,
     val loading: Boolean = false,
     val error: String? = null,
-    val collectToView: Long? = null,
+    val collectToView: MediaCollection? = null,
     val selectedCollections: List<MediaCollection> = emptyList(),
 )

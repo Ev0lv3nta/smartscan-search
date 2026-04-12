@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.StateFlow
 @OptIn(FlowPreview::class)
 @Composable
 fun CollectionItemsScreen(
-    collectionId: Long?,
+    collectionName: String?,
     appSettings: StateFlow<AppSettings>,
     viewModel: CollectionItemsViewModel = viewModel(),
     ) {
@@ -42,8 +42,8 @@ fun CollectionItemsScreen(
 
     val actionBarVisible = isSelecting && state.selectedMediaItems.isNotEmpty()
 
-    LaunchedEffect(collectionId) {
-        collectionId?.let{viewModel.setCollectionId(it)}
+    LaunchedEffect(collectionName) {
+        collectionName?.let{viewModel.setCollection(it)}
     }
 
 

@@ -4,7 +4,7 @@ import android.net.Uri
 import com.fpf.smartscan.media.MediaType
 
 data class CollectionItemsState(
-    val collectionId: Long? = null,
+    val collectionName: String? = null,
     val mediaType: MediaType = MediaType.IMAGE,
     val loading: Boolean = false,
     val error: String? = null,

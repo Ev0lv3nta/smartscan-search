@@ -152,17 +152,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
         _state.update{ it.copy(showAllCollections = !it.showAllCollections)}
     }
 
-    fun viewCollection(mediaType: MediaType, collection: MediaCollection){
-        viewModelScope.launch {
-            val tag= when(mediaType) {
-                MediaType.IMAGE -> imageTagsRepository.getTagsByName(listOf(collection.name)).firstOrNull()
-                MediaType.VIDEO -> videoTagsRepository.getTagsByName(listOf(collection.name)).firstOrNull()
-            }
-            setCollectionToView(tag?.id)
-        }
-    }
-
-    fun setCollectionToView(collection: Long?){
+    fun setCollectionToView(collection: MediaCollection?){
         _state.update { it.copy(collectToView = collection) }
     }
 

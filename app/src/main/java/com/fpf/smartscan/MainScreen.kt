@@ -44,10 +44,13 @@ fun MainScreen(intentSearchQuery: SearchQuery?) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val typeVal = navBackStackEntry?.arguments?.getString("type")
     val mainViewModel: MainViewModel = viewModel()
     val settingsViewModel: SettingsViewModel = viewModel()
     val isUpdatePopUpVisible by mainViewModel.isUpdatePopUpVisible.collectAsState()
+
+    val settingsType = navBackStackEntry?.arguments?.getString("type")
+    val collectionName = navBackStackEntry?.arguments?.getString("collectionName")
+
 
     val headerTitle = when {
         currentRoute == Routes.SEARCH -> stringResource(R.string.title_search)
@@ -55,7 +58,8 @@ fun MainScreen(intentSearchQuery: SearchQuery?) {
         currentRoute == Routes.SETTINGS -> stringResource(R.string.title_settings)
         currentRoute == Routes.DONATE -> stringResource(R.string.title_donate)
         currentRoute == Routes.HELP -> stringResource(R.string.title_help)
-        currentRoute?.startsWith(Routes.SETTINGS.split("/")[0]) == true -> when (typeVal) {
+        currentRoute?.startsWith(Routes.COLLECTION_ITEMS) == true -> collectionName?: ""
+        currentRoute?.startsWith(Routes.SETTINGS.split("/")[0]) == true -> when (settingsType) {
             SettingTypes.THRESHOLD -> stringResource(R.string.setting_similarity_threshold)
             SettingTypes.MODELS -> stringResource(R.string.setting_models)
             SettingTypes.MANAGE_MODELS -> stringResource(R.string.setting_manage_models)
@@ -135,11 +139,11 @@ fun MainScreen(intentSearchQuery: SearchQuery?) {
                 }
                 composable(
                     route = Routes.COLLECTION_ITEMS,
-                    arguments = listOf(navArgument("collectionId") { type = NavType.LongType })
+                    arguments = listOf(navArgument("collectionName") { type = NavType.StringType })
                 ) { backStackEntry ->
-                    val collectionId = backStackEntry.arguments?.getLong("collectionId")
+                    val collectionName = backStackEntry.arguments?.getString("collectionName")
                     CollectionItemsScreen(
-                        collectionId = collectionId,
+                        collectionName = collectionName,
                         appSettings = settingsViewModel.appSettings,
                     )
                 }

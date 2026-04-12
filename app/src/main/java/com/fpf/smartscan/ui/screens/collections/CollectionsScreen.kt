@@ -62,7 +62,7 @@ fun CollectionsScreen(
 
     LaunchedEffect(state.collectToView) {
         state.collectToView?.let{
-            onNavigate(Routes.viewCollection(it))
+            onNavigate(Routes.viewCollection(it.name))
             viewModel.setCollectionToView(null)
         }
     }
@@ -139,7 +139,7 @@ fun CollectionsScreen(
                 items = mediaCollections,
                 isSelecting = isSelecting,
                 selectedItems = state.selectedCollections,
-                onViewItem = {collection -> viewModel.viewCollection(state.mediaType, collection)},
+                onViewItem = viewModel::setCollectionToView,
                 onToggleSelected = viewModel::toggleSelectedCollection,
                 onToggleSelectionMode = {
                     isSelecting = !isSelecting
