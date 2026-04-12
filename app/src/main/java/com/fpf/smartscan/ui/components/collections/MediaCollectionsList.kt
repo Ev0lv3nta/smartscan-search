@@ -56,9 +56,9 @@ import kotlin.math.roundToInt
 fun MediaCollectionsList(
     isVisible: Boolean,
     items: List<MediaCollection>,
-    selectedItems: List<MediaCollection>,
     mediaType: MediaType,
     onItemClick: (MediaCollection) -> Unit,
+    selectedItems: List<MediaCollection> = emptyList(),
     onToggleSelected: ((MediaCollection) -> Unit)? = null,
     onToggleSelectionMode: (() -> Unit)? = null,
     onOffsetChange: ((Int) -> Unit)? = null,
