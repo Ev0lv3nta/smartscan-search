@@ -8,6 +8,7 @@ class ImageTagCrossRefRepository(private val dao: ImageTagCrossRefDao): MediaTag
     override suspend fun getAllCrossRefs(): List<ImageTagCrossRef> = dao.getAllCrossRefs()
     override suspend fun getTagsForMedia(mediaId: Long): List<Long> = dao.getTagsForImage(mediaId)
     override suspend fun getMediaIds(tagId: Long): List<Long> = dao.getImageIds(tagId)
+    override fun getMediaIdsFlow(tagId: Long): Flow<List<Long>> = dao.getImageIdsFlow(tagId)
     override  suspend fun getMediaIds(tagId: Long, limit: Int, offset: Int): List<Long> = dao.getImageIds(tagId, limit, offset)
     override  suspend fun upsertTagCrossRefs(crossRefs: List<ImageTagCrossRef>) = dao.upsert(crossRefs)
     override  suspend fun upsertTagCrossRefs(tagId: Long, mediaIds: List<Long>) = dao.upsert(mediaIds.map{ ImageTagCrossRef(mediaId = it, tagId=tagId)})

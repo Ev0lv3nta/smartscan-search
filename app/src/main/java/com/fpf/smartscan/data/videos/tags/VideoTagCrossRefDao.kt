@@ -16,6 +16,9 @@ interface VideoTagCrossRefDao {
     @Query("SELECT mediaId FROM video_tag_crossref WHERE tagId = :tagId")
     suspend fun getVideoIds(tagId: Long): List<Long>
 
+    @Query("SELECT mediaId FROM video_tag_crossref WHERE tagId = :tagId")
+    fun getVideoIdsFlow(tagId: Long): Flow<List<Long>>
+
     @Query("SELECT mediaId FROM video_tag_crossref WHERE tagId = :tagId LIMIT :limit OFFSET :offset")
     suspend fun getVideoIds(tagId: Long, limit: Int, offset: Int): List<Long>
 

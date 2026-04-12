@@ -8,6 +8,8 @@ interface MediaTagCrossRefRepository<T: MediaTagCrossRef> {
 
     suspend fun getTagsForMedia(mediaId: Long): List<Long>
 
+    fun getMediaIdsFlow(tagId: Long): Flow<List<Long>>
+
     suspend fun getMediaIds(tagId: Long): List<Long>
 
     suspend fun getMediaIds(tagId: Long, limit: Int, offset: Int = 0): List<Long>

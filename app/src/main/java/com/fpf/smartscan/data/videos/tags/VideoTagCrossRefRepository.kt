@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 class VideoTagCrossRefRepository(private val dao: VideoTagCrossRefDao): MediaTagCrossRefRepository<VideoTagCrossRef> {
     override suspend fun getAllCrossRefs(): List<VideoTagCrossRef> = dao.getAllCrossRefs()
     override suspend fun getTagsForMedia(mediaId: Long): List<Long> = dao.getTagsForVideo(mediaId)
+    override fun getMediaIdsFlow(tagId: Long): Flow<List<Long>> = dao.getVideoIdsFlow(tagId)
     override suspend fun getMediaIds(tagId: Long): List<Long> = dao.getVideoIds(tagId)
     override  suspend fun getMediaIds(tagId: Long, limit: Int, offset: Int): List<Long> = dao.getVideoIds(tagId, limit, offset)
     override suspend fun upsertTagCrossRefs(crossRefs: List<VideoTagCrossRef>) = dao.upsert(crossRefs)

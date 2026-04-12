@@ -15,6 +15,9 @@ interface ImageTagCrossRefDao {
     @Query("SELECT mediaId FROM image_tag_crossref WHERE tagId = :tagId")
     suspend fun getImageIds(tagId: Long): List<Long>
 
+    @Query("SELECT mediaId FROM image_tag_crossref WHERE tagId = :tagId")
+    fun getImageIdsFlow(tagId: Long): Flow<List<Long>>
+
     @Query("SELECT * FROM image_tag_crossref")
     suspend fun getAllCrossRefs(): List<ImageTagCrossRef>
 
