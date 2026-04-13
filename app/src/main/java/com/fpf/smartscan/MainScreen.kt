@@ -26,6 +26,9 @@ import com.fpf.smartscan.ui.components.OverflowMenu
 import com.fpf.smartscan.ui.components.UpdatePopUp
 import com.fpf.smartscan.ui.permissions.StorageAccess
 import com.fpf.smartscan.ui.permissions.getStorageAccess
+import com.fpf.smartscan.ui.screens.collections.CollectionItemsScreen
+import com.fpf.smartscan.ui.screens.collections.CollectionsScreen
+import com.fpf.smartscan.ui.screens.collections.CollectionsViewModel
 import com.fpf.smartscan.ui.screens.donate.DonateScreen
 import com.fpf.smartscan.ui.screens.help.HelpScreen
 import com.fpf.smartscan.ui.screens.search.SearchScreen
@@ -41,18 +44,22 @@ fun MainScreen(intentSearchQuery: SearchQuery?) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val typeVal = navBackStackEntry?.arguments?.getString("type")
     val mainViewModel: MainViewModel = viewModel()
     val settingsViewModel: SettingsViewModel = viewModel()
-    val searchViewModel: SearchViewModel = viewModel()
     val isUpdatePopUpVisible by mainViewModel.isUpdatePopUpVisible.collectAsState()
+
+    val settingsType = navBackStackEntry?.arguments?.getString("type")
+    val collectionName = navBackStackEntry?.arguments?.getString("collectionName")
+
 
     val headerTitle = when {
         currentRoute == Routes.SEARCH -> stringResource(R.string.title_search)
+        currentRoute == Routes.COLLECTIONS -> stringResource(R.string.title_collections)
         currentRoute == Routes.SETTINGS -> stringResource(R.string.title_settings)
         currentRoute == Routes.DONATE -> stringResource(R.string.title_donate)
         currentRoute == Routes.HELP -> stringResource(R.string.title_help)
-        currentRoute?.startsWith(Routes.SETTINGS.split("/")[0]) == true -> when (typeVal) {
+        currentRoute?.startsWith(Routes.COLLECTION_ITEMS) == true -> collectionName?: ""
+        currentRoute?.startsWith(Routes.SETTINGS.split("/")[0]) == true -> when (settingsType) {
             SettingTypes.THRESHOLD -> stringResource(R.string.setting_similarity_threshold)
             SettingTypes.MODELS -> stringResource(R.string.setting_models)
             SettingTypes.MANAGE_MODELS -> stringResource(R.string.setting_manage_models)
@@ -64,7 +71,9 @@ fun MainScreen(intentSearchQuery: SearchQuery?) {
         else -> ""
     }
 
-    val showBackButton = currentRoute?.startsWith(Routes.SETTINGS.split("/")[0]) == true || currentRoute in listOf( Routes.DONATE, Routes.HELP)
+    val showBackButton = currentRoute?.startsWith(Routes.SETTINGS.split("/")[0]) == true
+            || currentRoute?.startsWith(Routes.COLLECTION_ITEMS.split("/")[0]) == true
+            || currentRoute in listOf( Routes.DONATE, Routes.HELP)
 
     if(isUpdatePopUpVisible) {
         UpdatePopUp(
@@ -116,9 +125,26 @@ fun MainScreen(intentSearchQuery: SearchQuery?) {
             ) {
                 composable(Routes.SEARCH) {
                     SearchScreen(
-                        searchViewModel = searchViewModel,
-                        settingsViewModel = settingsViewModel,
+                        appSettings = settingsViewModel.appSettings,
                         intentSearchQuery = intentSearchQuery
+                    )
+                }
+                composable(Routes.COLLECTIONS) {
+                    CollectionsScreen(
+                        appSettings = settingsViewModel.appSettings,
+                        onNavigate = { route: String ->
+                            navController.navigate(route)
+                        }
+                    )
+                }
+                composable(
+                    route = Routes.COLLECTION_ITEMS,
+                    arguments = listOf(navArgument("collectionName") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val collectionName = backStackEntry.arguments?.getString("collectionName")
+                    CollectionItemsScreen(
+                        collectionName = collectionName,
+                        appSettings = settingsViewModel.appSettings,
                     )
                 }
                 composable(Routes.SETTINGS) {

@@ -1,10 +1,9 @@
 package com.fpf.smartscan.data.videos.clusters
 
-import com.fpf.smartscan.data.MediaClusterCrossRef
 import com.fpf.smartscan.data.MediaClusterCrossRefRepository
 import java.util.LinkedHashMap
 
-class VideoClusterCrossRefRepository(private val dao: VideoClusterCrossRefDao): MediaClusterCrossRefRepository {
+class VideoClusterCrossRefRepository(private val dao: VideoClusterCrossRefDao): MediaClusterCrossRefRepository<VideoClusterCrossRef> {
     private var clusterVideoIdsMap:  LinkedHashMap<Long, MutableSet<Long>>  = LinkedHashMap()
 
     override suspend fun getAllClusters(): Set<Long> = dao.getAllClusters().toSet()
@@ -22,7 +21,7 @@ class VideoClusterCrossRefRepository(private val dao: VideoClusterCrossRefDao): 
         return clusterVideoIdsMap
     }
 
-    override suspend fun addMedia(mediaClusterCrossRefs: List<MediaClusterCrossRef>) = dao.addVideos(mediaClusterCrossRefs.map{it.toVideoCrossRef()})
+    override suspend fun addMedia(mediaClusterCrossRefs: List<VideoClusterCrossRef>) = dao.addVideos(mediaClusterCrossRefs)
 
     override suspend fun deleteByClusterIds(ids: List<Long>) = dao.deleteByClusterIds(ids)
 

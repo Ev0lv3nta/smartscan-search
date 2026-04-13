@@ -1,17 +1,21 @@
 package com.fpf.smartscan.data.images.tags
 
-import com.fpf.smartscan.data.MediaTagCrossRef
 import com.fpf.smartscan.data.MediaTagCrossRefRepository
+import com.fpf.smartscan.data.TagWithCount
+import kotlinx.coroutines.flow.Flow
 
-class ImageTagCrossRefRepository(private val dao: ImageTagCrossRefDao): MediaTagCrossRefRepository {
-    override suspend fun getAllCrossRefs(): List<MediaTagCrossRef> = dao.getAllCrossRefs()
-    override suspend fun getTagToMediaIdsMap(): Map<String, List<Long>> = dao.getAllCrossRefs().groupBy({it.tag}, {it.mediaId})
-    override suspend fun getTagsForMedia(mediaId: Long): List<String> = dao.getTagsForImage(mediaId)
-    override suspend fun getMediaIds(tag: String): List<Long> = dao.getImageIds(tag)
-    override  suspend fun getMediaIds(tag: String, limit: Int, offset: Int): List<Long> = dao.getImageIds(tag, limit, offset)
-    override  suspend fun upsertTagCrossRefs(crossRefs: List<MediaTagCrossRef>) = dao.upsert(crossRefs.map{it.toImageCrossRef()})
-    override suspend fun deleteByIds(ids: List<Long>) = dao.deleteByIds(ids)
-    override suspend fun deleteByTags(tags: List<String>) = dao.deleteByTags(tags)
+class ImageTagCrossRefRepository(private val dao: ImageTagCrossRefDao): MediaTagCrossRefRepository<ImageTagCrossRef> {
+    override suspend fun getAllCrossRefs(): List<ImageTagCrossRef> = dao.getAllCrossRefs()
+    override suspend fun getTagsForMedia(mediaId: Long): List<Long> = dao.getTagsForImage(mediaId)
+    override suspend fun getMediaIds(tagId: Long): List<Long> = dao.getImageIds(tagId)
+    override fun getMediaIdsFlow(tagId: Long): Flow<List<Long>> = dao.getImageIdsFlow(tagId)
+    override  suspend fun getMediaIds(tagId: Long, limit: Int, offset: Int): List<Long> = dao.getImageIds(tagId, limit, offset)
+    override  suspend fun upsertTagCrossRefs(crossRefs: List<ImageTagCrossRef>) = dao.upsert(crossRefs)
+    override  suspend fun upsertTagCrossRefs(tagId: Long, mediaIds: List<Long>) = dao.upsert(mediaIds.map{ ImageTagCrossRef(mediaId = it, tagId=tagId)})
+    override suspend fun deleteByMediaIds(ids: List<Long>) = dao.deleteByMediaIds(ids)
+    override suspend fun deleteMediaMatchTag(ids: List<Long>, tagId: Long) = dao.deleteMediaMatchTag(ids, tagId)
+    override suspend fun deleteByTagIds(ids: List<Long>) = dao.deleteByTags(ids)
     override suspend fun clear() = dao.clear()
-    override suspend fun count(tag: String) = dao.count(tag)
+    override suspend fun count(tagId: Long) = dao.count(tagId)
+    override fun getTagsWithCounts(): Flow<List<TagWithCount>> = dao.getTagCounts()
 }

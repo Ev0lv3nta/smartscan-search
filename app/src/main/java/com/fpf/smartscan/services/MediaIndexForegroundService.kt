@@ -25,7 +25,8 @@ import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscan.media.queryImageIds
 import com.fpf.smartscan.media.queryVideoIds
-import com.fpf.smartscan.search.ClusterManager
+import com.fpf.smartscan.search.clusterImages
+import com.fpf.smartscan.search.clusterVideos
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer
@@ -112,14 +113,14 @@ class MediaIndexForegroundService : Service() {
                     val imageStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE), imageEmbedder.embeddingDim)
                     val imageClusterStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE_CLUSTER), imageEmbedder.embeddingDim)
                     indexImages(imageStore, appSettings.searchableImageDirectories.map{it.toUri()})
-                    ClusterManager.clusterMedia(imageClusterCrossRefRepository, imageClusterStore, imageStore, imageClusterMetadataRepository)
+                    clusterImages(imageClusterCrossRefRepository, imageClusterStore, imageStore, imageClusterMetadataRepository)
                 }
 
                 if (mediaType == TYPE_VIDEO || mediaType == TYPE_BOTH) {
                     val videoStore = FileEmbeddingStore(File(application.filesDir,  EmbeddingStoresFiles.VIDEO), imageEmbedder.embeddingDim )
                     val videoClusterStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.VIDEO_CLUSTER), imageEmbedder.embeddingDim)
                     indexVideos(videoStore, appSettings.searchableVideoDirectories.map { it.toUri() })
-                    ClusterManager.clusterMedia(videoClusterCrossRefRepository, videoClusterStore, videoStore, videoClusterMetadataRepository)
+                    clusterVideos(videoClusterCrossRefRepository, videoClusterStore, videoStore, videoClusterMetadataRepository)
                 }
             } catch (e: CancellationException) {
                 // cancelled

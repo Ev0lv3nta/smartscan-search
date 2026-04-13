@@ -1,6 +1,6 @@
 package com.fpf.smartscan.data
 
-interface MediaClusterCrossRefRepository {
+interface MediaClusterCrossRefRepository<T: MediaClusterCrossRef> {
     suspend fun getAllClusters(): Set<Long>
 
     suspend fun getAllMedia(): Set<Long>
@@ -9,7 +9,7 @@ interface MediaClusterCrossRefRepository {
 
     suspend fun getClusterToMediaIdsMap(): LinkedHashMap<Long, MutableSet<Long>>
 
-    suspend fun addMedia(mediaClusterCrossRefs: List<MediaClusterCrossRef>)
+    suspend fun addMedia(mediaClusterCrossRefs: List<T>)
 
     suspend fun deleteByClusterIds(ids: List<Long>)
 

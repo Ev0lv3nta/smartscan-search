@@ -17,11 +17,11 @@ import kotlinx.coroutines.withContext
 object DBTransferHelper {
     const val TAG = "DBTransferHelper"
 
-    suspend fun transfer(
-        oldTagsRepository: MediaTagRepository,
-        oldTagsCrossRefRepository: MediaTagCrossRefRepository,
-        newTagsRepository: MediaTagRepository,
-        newTagsCrossRefRepository: MediaTagCrossRefRepository,
+    suspend fun <T: MediaTag, K: MediaTagCrossRef>transfer(
+        oldTagsRepository: MediaTagRepository<T>,
+        oldTagsCrossRefRepository: MediaTagCrossRefRepository<K>,
+        newTagsRepository: MediaTagRepository<T>,
+        newTagsCrossRefRepository: MediaTagCrossRefRepository<K>,
     ) {
         val tags = oldTagsRepository.getAllTags()
         val crossRefs = oldTagsCrossRefRepository.getAllCrossRefs()

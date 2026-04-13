@@ -2,19 +2,25 @@ package com.fpf.smartscan.data
 
 import kotlinx.coroutines.flow.Flow
 
-interface MediaTagRepository {
+interface MediaTagRepository<T: MediaTag> {
 
-    val allTags: Flow<List<MediaTag>>
+    val allTags: Flow<List<T>>
 
-    suspend fun getAllTags(): List<MediaTag>
+    suspend fun getAllTags(): List<T>
 
-    suspend fun getTag(name: String): MediaTag?
+    suspend fun getTagsByName(names: List<String>): List<T>
 
-    suspend fun insertTags(mediaTags: List<MediaTag>)
+    suspend fun getTagsById(ids: List<Long>): List<T>
 
-    suspend fun updateTags(mediaTags: List<MediaTag>)
+    suspend fun insertTags(mediaTags: List<T>): List<Long>
 
-    suspend fun deleteTag(mediaTag: MediaTag)
+    suspend fun updateTags(mediaTags: List<T>)
+
+    suspend fun deleteTags(mediaTags: List<T>)
+
+    suspend fun deleteTagsByName(names: List<String>)
+
+    suspend fun deleteTagsById(ids: List<Long>)
 
     suspend fun clear()
 

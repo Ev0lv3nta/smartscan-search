@@ -1,24 +1,31 @@
 package com.fpf.smartscan.data
 
+import kotlinx.coroutines.flow.Flow
 
-interface MediaTagCrossRefRepository {
+interface MediaTagCrossRefRepository<T: MediaTagCrossRef> {
 
-    suspend fun getAllCrossRefs(): List<MediaTagCrossRef>
-    suspend fun getTagToMediaIdsMap(): Map<String, List<Long>>
+    suspend fun getAllCrossRefs(): List<T>
 
-    suspend fun getTagsForMedia(mediaId: Long): List<String>
+    suspend fun getTagsForMedia(mediaId: Long): List<Long>
 
-    suspend fun getMediaIds(tag: String): List<Long>
+    fun getMediaIdsFlow(tagId: Long): Flow<List<Long>>
 
-    suspend fun getMediaIds(tag: String, limit: Int, offset: Int = 0): List<Long>
+    suspend fun getMediaIds(tagId: Long): List<Long>
 
-    suspend fun upsertTagCrossRefs(crossRefs: List<MediaTagCrossRef>)
+    suspend fun getMediaIds(tagId: Long, limit: Int, offset: Int = 0): List<Long>
 
-    suspend fun deleteByIds(ids: List<Long>)
+    suspend fun upsertTagCrossRefs(crossRefs: List<T>)
+    suspend fun upsertTagCrossRefs(tagId: Long, mediaIds: List<Long>)
 
-    suspend fun deleteByTags(tags: List<String>)
+    suspend fun deleteByMediaIds(ids: List<Long>)
+
+    suspend fun deleteByTagIds(ids: List<Long>)
+
+    suspend fun deleteMediaMatchTag(ids: List<Long>, tagId: Long)
 
     suspend fun clear()
 
-    suspend fun count(tag: String): Int
+    suspend fun count(tagId: Long): Int
+
+    fun getTagsWithCounts():  Flow<List<TagWithCount>>
 }

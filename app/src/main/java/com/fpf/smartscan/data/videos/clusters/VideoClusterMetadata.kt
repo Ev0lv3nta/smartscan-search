@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.fpf.smartscan.data.MediaClusterMetadata
+import com.fpf.smartscansdk.core.cluster.ClusterMetadata
 
 @Entity(
     tableName = "video_cluster_metadata",
@@ -16,4 +17,11 @@ data class VideoClusterMetadata (
     override val meanSimilarity: Float = 0f,
     override val stdSimilarity: Float = 0f,
     override val label: String? = null,
-): MediaClusterMetadata(clusterId, prototypeSize, meanSimilarity, stdSimilarity, label)
+): MediaClusterMetadata
+
+fun VideoClusterMetadata.toMetadata() = ClusterMetadata(
+    prototypeSize = prototypeSize,
+    meanSimilarity = meanSimilarity,
+    stdSimilarity = stdSimilarity,
+    label = label
+)

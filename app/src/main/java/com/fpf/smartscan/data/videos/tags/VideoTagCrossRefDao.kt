@@ -5,17 +5,22 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import com.fpf.smartscan.data.TagWithCount
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface VideoTagCrossRefDao {
-    @Query("SELECT DISTINCT tag FROM video_tag_crossref WHERE mediaId = :videoId")
-    suspend fun getTagsForVideo(videoId: Long): List<String>
+    @Query("SELECT DISTINCT tagId FROM video_tag_crossref WHERE mediaId = :videoId")
+    suspend fun getTagsForVideo(videoId: Long): List<Long>
 
-    @Query("SELECT mediaId FROM video_tag_crossref WHERE tag = :tag")
-    suspend fun getVideoIds(tag: String): List<Long>
+    @Query("SELECT mediaId FROM video_tag_crossref WHERE tagId = :tagId")
+    suspend fun getVideoIds(tagId: Long): List<Long>
 
-    @Query("SELECT mediaId FROM video_tag_crossref WHERE tag = :tag LIMIT :limit OFFSET :offset")
-    suspend fun getVideoIds(tag: String, limit: Int, offset: Int): List<Long>
+    @Query("SELECT mediaId FROM video_tag_crossref WHERE tagId = :tagId")
+    fun getVideoIdsFlow(tagId: Long): Flow<List<Long>>
+
+    @Query("SELECT mediaId FROM video_tag_crossref WHERE tagId = :tagId LIMIT :limit OFFSET :offset")
+    suspend fun getVideoIds(tagId: Long, limit: Int, offset: Int): List<Long>
 
     @Query("SELECT * FROM video_tag_crossref")
     suspend fun getAllCrossRefs(): List<VideoTagCrossRef>
@@ -26,15 +31,29 @@ interface VideoTagCrossRefDao {
 
     @Transaction
     @Query("DELETE FROM video_tag_crossref WHERE mediaId IN (:ids)")
-    suspend fun deleteByIds(ids: List<Long>)
+    suspend fun deleteByMediaIds(ids: List<Long>)
+
 
     @Transaction
-    @Query("DELETE FROM video_tag_crossref WHERE tag IN (:tags)")
-    suspend fun deleteByTags(tags: List<String>)
+    @Query("DELETE FROM video_tag_crossref WHERE tagId IN (:ids)")
+    suspend fun deleteByTagIds(ids: List<Long>)
+
+    @Transaction
+    @Query("DELETE FROM video_tag_crossref WHERE mediaId IN (:ids) AND tagId = :tagId")
+    suspend fun deleteMediaMatchTag(ids: List<Long>, tagId: Long)
 
     @Query("DELETE FROM video_tag_crossref")
     suspend fun clear()
 
-    @Query("SELECT COUNT(*) FROM video_tag_crossref WHERE tag = :tag")
-    suspend fun count(tag: String): Int
+    @Query("SELECT COUNT(*) FROM video_tag_crossref WHERE tagId = :tagId")
+    suspend fun count(tagId: Long): Int
+
+    @Query("""
+    SELECT t.id AS id, t.name AS name, COUNT(c.mediaId) AS count    
+    FROM video_tag_crossref c
+    JOIN video_tag t ON t.id = c.tagId
+    GROUP BY c.tagId
+    ORDER BY count DESC
+    """)
+    fun getTagsWithCounts(): Flow<List<TagWithCount>>
 }

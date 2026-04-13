@@ -38,6 +38,7 @@ import com.fpf.smartscan.media.shareMediaMulti
 import com.fpf.smartscan.search.IndexingStatus
 import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.search.SearchQuery
+import com.fpf.smartscan.settings.AppSettings
 import com.fpf.smartscan.ui.components.LoadingIndicator
 import com.fpf.smartscan.ui.components.media.MediaViewer
 import com.fpf.smartscan.ui.components.ProgressBar
@@ -51,18 +52,18 @@ import com.fpf.smartscan.ui.components.search.SearchResults
 import com.fpf.smartscan.ui.components.search.TagAdder
 import com.fpf.smartscan.ui.permissions.RequestPermissions
 import com.fpf.smartscan.ui.screens.search.SearchViewModel.Companion.RESULTS_BATCH_SIZE
-import com.fpf.smartscan.ui.screens.settings.SettingsViewModel
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.StateFlow
 
 
 @OptIn(FlowPreview::class)
 @Composable
 fun SearchScreen(
     searchViewModel: SearchViewModel = viewModel(),
-    settingsViewModel: SettingsViewModel = viewModel(),
+    appSettings:  StateFlow<AppSettings>,
     intentSearchQuery: SearchQuery? = null
 ) {
-    val appSettings by settingsViewModel.appSettings.collectAsState()
+    val appSettings by appSettings.collectAsState()
     val context = LocalContext.current
     val clipboard = LocalClipboard.current
 
@@ -158,7 +159,7 @@ fun SearchScreen(
         suggestedTags = state.suggestedTags,
         autoCompleteTagResults = state.autoCompleteTagResults,
         onAddTag = {
-            searchViewModel.addTag(it)
+            searchViewModel.tagSelectedItems(it)
             searchViewModel.updateAutoCompleteResults(emptyList())
             isAddingTag = false
         },

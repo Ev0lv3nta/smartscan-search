@@ -8,12 +8,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.fpf.smartscan.constants.Routes
 
 @Composable
 fun BottomNavigationBar(navController: NavController) {
     val items = listOf(
-        BottomNavItem("search", stringResource(R.string.title_search), Icons.Filled.ImageSearch),
-        BottomNavItem("settings", stringResource(R.string.title_settings), Icons.Filled.Settings)
+        BottomNavItem(Routes.SEARCH, stringResource(R.string.title_search), Icons.Filled.ImageSearch),
+        BottomNavItem(Routes.COLLECTIONS, stringResource(R.string.title_collections), Icons.Filled.PhotoLibrary),
+        BottomNavItem(Routes.SETTINGS, stringResource(R.string.title_settings), Icons.Filled.Settings)
     )
 
     NavigationBar() {

@@ -7,10 +7,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlin.collections.associate
 
-class ImageClusterMetadataRepository(private val dao: ImageClusterMetadataDao): MediaClusterMetadataRepository {
-    override val allMetadata: Flow<Map<Long, ClusterMetadata>> = dao.getAllFlow().map { list ->
-        list.associate { it.clusterId to it.toMetadata() }
-    }
+class ImageClusterMetadataRepository(private val dao: ImageClusterMetadataDao): MediaClusterMetadataRepository<ImageClusterMetadata> {
+    override val allMetadata: Flow<List<ImageClusterMetadata>> = dao.getAllFlow()
+
 
     override val allLabels: Flow<List<String>> = dao.getLabels()
 
@@ -22,7 +21,7 @@ class ImageClusterMetadataRepository(private val dao: ImageClusterMetadataDao): 
 
     override suspend fun getIdFromLabel(label: String): Long? = dao.getIdFromLabel(label)
 
-    override suspend fun upsertMetadatas(metadatas: List<MediaClusterMetadata>) = dao.upsert(metadatas.map{it.toImageClusterMetadata()})
+    override suspend fun upsertMetadatas(metadatas: List<ImageClusterMetadata>) = dao.upsert(metadatas)
 
     override suspend fun deleteMetadata(id: Long) = dao.delete(id)
 }
