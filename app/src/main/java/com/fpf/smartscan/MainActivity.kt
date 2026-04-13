@@ -21,20 +21,12 @@ import coil3.disk.directory
 import coil3.memory.MemoryCache
 import coil3.request.crossfade
 import coil3.video.VideoFrameDecoder
-import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.search.SearchQuery
-import com.fpf.smartscan.utils.isServiceRunning
 import com.fpf.smartscan.settings.loadSettings
-import com.fpf.smartscan.services.MediaIndexForegroundService
-import com.fpf.smartscan.services.startIndexing
-import com.fpf.smartscan.ui.permissions.StorageAccess
-import com.fpf.smartscan.ui.permissions.getStorageAccess
 import com.fpf.smartscan.ui.theme.ThemeManager
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import java.io.File
-import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
     private val sharedPrefs by lazy { application.getSharedPreferences("AsyncStorage", MODE_PRIVATE) }
@@ -97,28 +89,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume(){
         super.onResume()
-        val appSettings = loadSettings(sharedPrefs)
-        val lastIndexed = sharedPrefs.getString("lastIndexed", null)?.toLongOrNull() // getString used for backward-compat
-        if(lastIndexed == null) return
-
-        val now = System.currentTimeMillis()
-        val shouldIndex = when (appSettings.indexFrequency) {
-            "1 Day" -> (now - lastIndexed) > TimeUnit.DAYS.toMillis(1)
-            "1 Week" -> (now - lastIndexed) > TimeUnit.DAYS.toMillis(7)
-            else -> false
-        }
-
-        if (shouldIndex) {
-            if(isServiceRunning(application, MediaIndexForegroundService::class.java)) return // additional check to prevent service running again if condition met
-
-            val imageIndexFile = File(application.filesDir, EmbeddingStoresFiles.IMAGE)
-            val videoIndexFile = File(application.filesDir, EmbeddingStoresFiles.VIDEO)
-            if(!imageIndexFile.exists() || !videoIndexFile.exists()) return // prevent full re-index due to migration incomplete
-
-            val permissionType = getStorageAccess(application)
-            if(permissionType == StorageAccess.Denied) return
-            startIndexing(application, MediaIndexForegroundService.TYPE_BOTH)
-        }
     }
 
     private fun createNotificationChannel(channelId: String, channelName: String, description: String) {
@@ -134,5 +104,4 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = if (isDarkTheme) SystemBarStyle.dark(Color.Transparent.toArgb()) else SystemBarStyle.light(Color.Transparent.toArgb(), Color.Black.toArgb())
         )
     }
-
 }
