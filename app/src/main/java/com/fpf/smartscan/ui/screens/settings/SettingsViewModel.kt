@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.data.images.ImageDatabase
@@ -171,8 +172,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val indexZipFile = File(getApplication<Application>().cacheDir, BACKUP_FILENAME)
         _isRestoreLoading.value = true
 
+        ImageDatabase.close()
+        VideoDatabase.close()
+
         viewModelScope.launch(Dispatchers.IO){
             try {
+
                 copyFromUri(getApplication(), uri, indexZipFile)
                 val extractedFiles = unzipFiles(indexZipFile, getApplication<Application>().filesDir)
                 val expectedFileNames = setOf(EmbeddingStoresFiles.IMAGE,EmbeddingStoresFiles.VIDEO, EmbeddingStoresFiles.IMAGE_CLUSTER, EmbeddingStoresFiles.VIDEO_CLUSTER, ImageDatabase.DB_NAME, VideoDatabase.DB_NAME )
