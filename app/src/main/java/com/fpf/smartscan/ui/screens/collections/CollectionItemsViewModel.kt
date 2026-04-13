@@ -78,14 +78,18 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
 
     fun removeItems(mediaType: MediaType, mediaUris: List<Uri>){
         val mediaIds = mediaUris.map{uriToMediaId(it)}
+        val collectionName = _state.value.collectionName?: return
+
         viewModelScope.launch (Dispatchers.IO){
+            val tag = getTag(mediaType, collectionName)?: return@launch
             when (mediaType) {
-                MediaType.IMAGE -> imageTagsCrossRefRepository.deleteByMediaIds(mediaIds)
-                MediaType.VIDEO -> videoTagsCrossRefRepository.deleteByMediaIds(mediaIds)
+                MediaType.IMAGE -> imageTagsCrossRefRepository.deleteMediaMatchTag(mediaIds, tag.id)
+                MediaType.VIDEO -> videoTagsCrossRefRepository.deleteMediaMatchTag(mediaIds, tag.id)
             }
             _state.update { it.copy(selectedMediaItems = emptyList()) }
         }
     }
+
 
     fun toggleSelectedItem(item: Uri){
         _state.update { currentState ->
