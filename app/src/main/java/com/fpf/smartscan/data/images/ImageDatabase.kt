@@ -42,6 +42,11 @@ abstract class ImageDatabase : RoomDatabase() {
         const val OLD_DB_NAME = "image_tag_database"
         const val DB_NAME = "image_database"
 
+        fun close() {
+            INSTANCE?.close()
+            INSTANCE = null
+        }
+
         fun getDatabase(application: Application): ImageDatabase {
             return INSTANCE ?: synchronized(this) {
 

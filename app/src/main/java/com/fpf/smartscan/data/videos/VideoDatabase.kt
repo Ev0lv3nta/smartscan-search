@@ -42,6 +42,11 @@ abstract class VideoDatabase : RoomDatabase() {
         const val OLD_DB_NAME = "video_tag_database"
         const val DB_NAME = "video_database"
 
+        fun close() {
+            INSTANCE?.close()
+            INSTANCE = null
+        }
+
         fun getDatabase(application: Application): VideoDatabase {
             return INSTANCE ?: synchronized(this) {
 
