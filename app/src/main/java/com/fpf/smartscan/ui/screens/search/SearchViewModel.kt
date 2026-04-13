@@ -120,6 +120,8 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
     private var hasHandledExternalSearch = false
 
+    private var cachedIds: List<Long>? = null
+
 
     init {
         loadImageIndex()
@@ -184,6 +186,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     }
 
     fun search(threshold: Float){
+        cachedIds = null // clear on new search
         val store = getStore()
         if(!store.exists) {
             _state.update{ currentState -> currentState.copy(error = getApplication<Application>().getString(R.string.search_error_not_indexed))}
@@ -244,6 +247,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                     addAll(idsMatchingTag)
                 }
                 val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, filterIds)
+                cachedIds = queryResults
 //                val timeElapsed = System.currentTimeMillis() - start
 //                Log.d(TAG, "time elapsed: $timeElapsed | results: ${queryResults.size}")
                 handleQueryResults(queryResults, store)
@@ -276,6 +280,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                     }
                 }
                 val resultIds = store.query(embedding, Int.MAX_VALUE, threshold, mediaIdsInCluster)
+                cachedIds = resultIds
                 handleQueryResults(resultIds, store)
             } catch (e: Exception) {
                 Log.e(TAG, "$e")
@@ -346,17 +351,11 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val batch = if(_state.value.tagOnlySearch && _state.value.tagFilter != null){
-                    val offset = (currentItemsCount).coerceAtMost(_state.value.totalResults)
-                    getMediaMatchingTag(_state.value.tagFilter, _state.value.mediaType, RESULTS_BATCH_SIZE, offset = offset)
-                }else{
-                    val end = (currentItemsCount + RESULTS_BATCH_SIZE).coerceAtMost(_state.value.totalResults)
-                    store.query(currentItemsCount, end).take(RESULTS_BATCH_SIZE)
-                }
+                val batch = getPaginatedResult(currentItemsCount, store)
                 val (filteredResults, idsToPurge) = batch.map { id ->
                         val uri = if (_state.value.mediaType == MediaType.VIDEO) getVideoUriFromId(id) else getImageUriFromId(id)
                         id to uri
-                }.partition { (_, uri) -> canOpenUri(getApplication<Application>(), uri) }
+                }.partition { (_, uri) -> canOpenUri(getApplication(), uri) }
 
                 if (filteredResults.isNotEmpty()) {
                     val filteredSearchResults = _state.value.searchResults + filteredResults.map { it.second }
@@ -372,6 +371,26 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                 isLoadingMoreSearchResults.set(false)
             }
         }
+    }
+
+
+    private suspend fun getPaginatedResult(currentItemsCount: Int, store: FileEmbeddingStore): List<Long>{
+        return if(_state.value.tagOnlySearch && _state.value.tagFilter != null){
+            val offset = (currentItemsCount).coerceAtMost(_state.value.totalResults)
+            getMediaMatchingTag(_state.value.tagFilter, _state.value.mediaType, RESULTS_BATCH_SIZE, offset = offset)
+        }else{
+            val end = (currentItemsCount + RESULTS_BATCH_SIZE).coerceAtMost(_state.value.totalResults)
+            paginatedQuery(store, currentItemsCount, end).take(RESULTS_BATCH_SIZE)
+        }
+    }
+    private suspend fun paginatedQuery(store: FileEmbeddingStore,start: Int, end: Int): List<Long> {
+        val ids = cachedIds ?: return emptyList()
+        val s = start.coerceAtLeast(0)
+        val e = end.coerceAtMost(ids.size)
+        if (s >= e) return emptyList()
+
+        val batch = store.get(ids.subList(s, e))
+        return batch.map { it.id }
     }
 
     fun toggleViewResult(context: Context, uri: Uri?, autoOpenInGallery: Boolean? = null, isSelecting: Boolean = false){
