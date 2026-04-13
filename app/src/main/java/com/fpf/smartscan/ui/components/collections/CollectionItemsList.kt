@@ -41,6 +41,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.paging.compose.LazyPagingItems
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.ui.components.CircularCheckbox
 import com.fpf.smartscan.ui.components.media.ImageDisplay
@@ -50,7 +51,7 @@ import kotlin.math.roundToInt
 @Composable
 fun CollectionItemsList(
     isVisible: Boolean,
-    items: List<Uri>,
+    items: LazyPagingItems<Uri>,
     selectedItems: List<Uri>,
     mediaType: MediaType,
     onViewItem: (item: Uri?) -> Unit,
@@ -76,7 +77,9 @@ fun CollectionItemsList(
                 source: NestedScrollSource
             ): Offset {
                 val deltaPx = -available.y
-                totalScrollPx = (totalScrollPx + deltaPx.roundToInt()).coerceIn(0, maxCollapsePx)
+                totalScrollPx = (totalScrollPx + deltaPx.roundToInt())
+                    .coerceIn(0, maxCollapsePx)
+
                 onOffsetChange(totalScrollPx)
                 return Offset.Zero
             }
@@ -88,11 +91,15 @@ fun CollectionItemsList(
         var previousOffset = 0
 
         snapshotFlow {
-            gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset
+            gridState.firstVisibleItemIndex to
+                    gridState.firstVisibleItemScrollOffset
         }.collect { (index, offset) ->
 
-            val movedDown = index > previousIndex || (index == previousIndex && offset > previousOffset)
-            val movedUp = index < previousIndex || (index == previousIndex && offset < previousOffset)
+            val movedDown =
+                index > previousIndex || (index == previousIndex && offset > previousOffset)
+
+            val movedUp =
+                index < previousIndex || (index == previousIndex && offset < previousOffset)
 
             showScrollToTop = when {
                 index == 0 && offset == 0 -> false
@@ -107,6 +114,7 @@ fun CollectionItemsList(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(numGridColumns),
@@ -115,7 +123,11 @@ fun CollectionItemsList(
                 .nestedScroll(connection),
             contentPadding = PaddingValues(0.dp)
         ) {
-            items(items) { item ->
+
+            items(items.itemCount) { index ->
+                val item = items[index]
+
+                if (item != null) {
                     Box(
                         modifier = Modifier
                             .aspectRatio(1f)
@@ -125,9 +137,11 @@ fun CollectionItemsList(
                                 indication = null,
                                 interactionSource = remember { MutableInteractionSource() },
                                 onClick = {
-                                    if (isSelecting) onToggleSelected(item) else onViewItem(
-                                        item
-                                    )
+                                    if (isSelecting) {
+                                        onToggleSelected(item)
+                                    } else {
+                                        onViewItem(item)
+                                    }
                                 },
                                 onLongClick = {
                                     if (!isSelecting) {
@@ -153,6 +167,7 @@ fun CollectionItemsList(
                                     .align(Alignment.TopStart),
                             )
                         }
+                    }
                 }
             }
         }
