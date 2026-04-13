@@ -28,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.zIndex
@@ -54,6 +55,7 @@ import com.fpf.smartscan.ui.permissions.RequestPermissions
 import com.fpf.smartscan.ui.screens.search.SearchViewModel.Companion.RESULTS_BATCH_SIZE
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.StateFlow
+import kotlin.math.max
 
 
 @OptIn(FlowPreview::class)
@@ -91,6 +93,10 @@ fun SearchScreen(
     var isAddingTag by remember { mutableStateOf(false) }
     var isSelecting by remember { mutableStateOf(false) }
     var offset by remember { mutableStateOf(0) }
+    val density = LocalDensity.current
+    val actionBarHeight = with(density) { 70.dp.toPx() }
+    val searchBarHeight = with(density) { (if(state.queryType == QueryType.IMAGE) 200 else 120).dp.toPx() }
+    val maxCollapsePx = max(actionBarHeight, searchBarHeight).toInt()
 
     RequestPermissions { _, storageGranted ->
         hasStoragePermission = storageGranted
@@ -314,7 +320,6 @@ fun SearchScreen(
             SearchResults(
                 isVisible = !state.loading && state.searchResults.isNotEmpty(),
                 numGridColumns = appSettings.resultsPerRow,
-                queryType = state.queryType,
                 mediaType = state.mediaType,
                 searchResults = state.searchResults,
                 totalResults=state.totalResults,
@@ -329,6 +334,7 @@ fun SearchScreen(
                     offset = 0
                                         },
                 onOffsetChange = {  offset = it },
+                maxCollapsePx = maxCollapsePx
             )
         }
         SlideRevealBox(
