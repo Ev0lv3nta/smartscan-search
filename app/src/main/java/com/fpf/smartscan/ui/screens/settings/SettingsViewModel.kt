@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
@@ -185,7 +184,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 _event.emit("Restore successful")
                 ImageIndexListener.onComplete(getApplication(), Metrics.Success()) // call onComplete to trigger refresh in search screen
                 VideoIndexListener.onComplete(getApplication(), Metrics.Success())
-                sharedPrefs.edit { putString("lastIndexed", System.currentTimeMillis().toString()) } // so scheduling can be triggered
             }catch (e: Exception){
                 Log.e(TAG, "Error restoring: ${e.message}")
                 if (e.message == "Invalid backup file") _event.emit(e.message!!) else _event.emit("Restore failed")
