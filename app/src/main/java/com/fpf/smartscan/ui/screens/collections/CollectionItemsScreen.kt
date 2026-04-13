@@ -72,7 +72,6 @@ fun CollectionItemsScreen(
 
     val items = viewModel.mediaItems.collectAsLazyPagingItems()
 
-
     LaunchedEffect(collectionName) {
         collectionName?.let{viewModel.setCollection(it)}
     }
@@ -130,6 +129,7 @@ fun CollectionItemsScreen(
                 modifier = Modifier.height(70.dp),
                 onRemove = {
                     viewModel.removeItems(state.mediaType, state.selectedMediaItems)
+                    items.refresh()
                     isSelecting = false
                 },
                 onShare = {
@@ -185,6 +185,7 @@ fun CollectionItemsScreen(
                 onClose = { isMoving = false },
                 onSelectCollection = {
                     viewModel.moveItems(state.mediaType, state.selectedMediaItems, it)
+                    items.refresh()
                     isMoving = false
                 }
             )
