@@ -34,6 +34,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.fpf.smartscan.media.shareMediaMulti
 import com.fpf.smartscan.settings.AppSettings
 import com.fpf.smartscan.ui.components.SlideRevealBox
@@ -58,8 +59,7 @@ fun CollectionItemsScreen(
     val context = LocalContext.current
     val clipboard = LocalClipboard.current
 
-    val mediaItems = remember { mutableStateListOf<Uri>() }
-
+    val mediaCollections by viewModel.mediaCollections.collectAsState()
     val state by viewModel.state.collectAsState()
     val appSettings by appSettings.collectAsState()
 
@@ -70,14 +70,8 @@ fun CollectionItemsScreen(
     val density = LocalDensity.current
     val maxCollapsablePx = with(density) { 70.dp.toPx() }.toInt()
 
-    // collectLatest prevents overlapping collectors from appending duplicate batches to the shared list
-    LaunchedEffect(collectionName) {
-        viewModel.mediaItems
-            .distinctUntilChanged()
-            .collectLatest { batch ->
-                mediaItems.addAll(batch)
-            }
-    }
+    val items = viewModel.mediaItems.collectAsLazyPagingItems()
+
 
     LaunchedEffect(collectionName) {
         collectionName?.let{viewModel.setCollection(it)}
@@ -100,16 +94,17 @@ fun CollectionItemsScreen(
             verticalArrangement = Arrangement.Top
         ) {
             CollectionItemsList(
-                isVisible = mediaItems.isNotEmpty(),
+                isVisible = items.itemCount > 0,
                 numGridColumns = appSettings.resultsPerRow,
                 mediaType = state.mediaType,
-                items = mediaItems,
+                items = items,
                 isSelecting = isSelecting,
                 selectedItems = state.selectedMediaItems,
                 onViewItem = { uri -> viewModel.setMediaToView(context, uri, appSettings.enableDirectGalleryOpen, isSelecting) },
                 onToggleSelected = viewModel::toggleSelectedItem,
                 onToggleSelectionMode = {
                     isSelecting = !isSelecting
+                    offset = 0
                 },
                 onOffsetChange = {  offset = it },
                 maxCollapsePx = maxCollapsablePx
@@ -172,24 +167,27 @@ fun CollectionItemsScreen(
                     onUpdateSearchImage = null
                 )
             }
-                AnimatedVisibility(
-                    visible = isMoving,
-                    enter = fadeIn(animationSpec = tween(500)) + scaleIn(
-                        initialScale = 0.8f,
-                        animationSpec = tween(500)
-                    ),
-                    exit = fadeOut(animationSpec = tween(300)) + scaleOut(
-                        targetScale = 0.8f,
-                        animationSpec = tween(300)
-                    )
-                ) {
-                    CollectionPicker(
-                        collections = emptyList(),
-                        mediaType = state.mediaType,
-                        onClose = { isMoving = false },
-                        onSelectCollection = { viewModel.moveItems(state.mediaType, state.selectedMediaItems, it) }
-                    )
-                }
             }
+        AnimatedVisibility(
+            visible = isMoving,
+            enter = fadeIn(animationSpec = tween(500)) + scaleIn(
+                initialScale = 0.8f,
+                animationSpec = tween(500)
+            ),
+            exit = fadeOut(animationSpec = tween(300)) + scaleOut(
+                targetScale = 0.8f,
+                animationSpec = tween(300)
+            )
+        ) {
+            CollectionPicker(
+                collections = mediaCollections,
+                mediaType = state.mediaType,
+                onClose = { isMoving = false },
+                onSelectCollection = {
+                    viewModel.moveItems(state.mediaType, state.selectedMediaItems, it)
+                    isMoving = false
+                }
+            )
+        }
         }
     }
