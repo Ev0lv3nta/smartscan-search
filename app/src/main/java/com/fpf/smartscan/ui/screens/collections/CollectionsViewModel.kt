@@ -29,6 +29,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -76,20 +78,26 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
     val mediaCollections: StateFlow<List<MediaCollection>> = combine(
         imageTagsCrossRefRepository.getTagsWithCounts(),
         videoTagsCrossRefRepository.getTagsWithCounts(),
-        _state
-    ) { imageTagCounts, videoTagCounts, state ->
-        when (state.mediaType) {
+        _state.map{it.mediaType to it.showAllCollections}
+    ) { imageTagCounts, videoTagCounts, (mediaType, showAllCollections) ->
+        when (mediaType) {
             MediaType.IMAGE -> {
-                val collections = getCollections(imageTagCounts, state.mediaType)
-                if(state.showAllCollections) collections else collections.take(6)
+                if(showAllCollections) {
+                    getCollections(imageTagCounts, mediaType)
+                } else{
+                    getCollections(imageTagCounts.take(6), mediaType)
+                }
             }
+
             MediaType.VIDEO -> {
-                val collections = getCollections(videoTagCounts, state.mediaType)
-                if(state.showAllCollections) collections else collections.take(6)
+                if(showAllCollections) {
+                    getCollections(videoTagCounts, mediaType)
+                } else{
+                    getCollections(videoTagCounts.take(6), mediaType)
+                }
             }
         }
-    }
-        .stateIn(
+    }.flowOn(Dispatchers.IO).stateIn(
             scope = viewModelScope,
             started = SharingStarted.Eagerly,
             initialValue = emptyList()
