@@ -37,6 +37,10 @@ interface ImageTagCrossRefDao {
     suspend fun deleteByMediaIds(ids: List<Long>)
 
     @Transaction
+    @Query("DELETE FROM image_tag_crossref WHERE mediaId IN (:ids) AND tagId = :tagId")
+    suspend fun deleteMediaMatchTag(ids: List<Long>, tagId: Long)
+
+    @Transaction
     @Query("DELETE FROM image_tag_crossref WHERE tagId IN (:tagIds)")
     suspend fun deleteByTags(tagIds: List<Long>)
 

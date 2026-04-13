@@ -21,6 +21,8 @@ interface MediaTagCrossRefRepository<T: MediaTagCrossRef> {
 
     suspend fun deleteByTagIds(ids: List<Long>)
 
+    suspend fun deleteMediaMatchTag(ids: List<Long>, tagId: Long)
+
     suspend fun clear()
 
     suspend fun count(tagId: Long): Int

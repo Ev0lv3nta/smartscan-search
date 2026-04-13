@@ -14,6 +14,7 @@ class VideoTagCrossRefRepository(private val dao: VideoTagCrossRefDao): MediaTag
     override  suspend fun upsertTagCrossRefs(tagId: Long, mediaIds: List<Long>) = dao.upsert(mediaIds.map{ VideoTagCrossRef(mediaId = it, tagId=tagId)})
     override suspend fun deleteByMediaIds(ids: List<Long>) = dao.deleteByMediaIds(ids)
     override suspend fun deleteByTagIds(ids: List<Long>) = dao.deleteByTagIds(ids)
+    override suspend fun deleteMediaMatchTag(ids: List<Long>, tagId: Long) = dao.deleteMediaMatchTag(ids, tagId)
     override suspend fun clear() = dao.clear()
     override suspend fun count(tagId: Long) = dao.count(tagId)
     override fun getTagsWithCounts(): Flow<List<TagWithCount>> = dao.getTagsWithCounts()

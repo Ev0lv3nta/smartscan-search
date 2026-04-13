@@ -33,9 +33,14 @@ interface VideoTagCrossRefDao {
     @Query("DELETE FROM video_tag_crossref WHERE mediaId IN (:ids)")
     suspend fun deleteByMediaIds(ids: List<Long>)
 
+
     @Transaction
     @Query("DELETE FROM video_tag_crossref WHERE tagId IN (:ids)")
     suspend fun deleteByTagIds(ids: List<Long>)
+
+    @Transaction
+    @Query("DELETE FROM video_tag_crossref WHERE mediaId IN (:ids) AND tagId = :tagId")
+    suspend fun deleteMediaMatchTag(ids: List<Long>, tagId: Long)
 
     @Query("DELETE FROM video_tag_crossref")
     suspend fun clear()
