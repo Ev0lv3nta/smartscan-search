@@ -28,6 +28,7 @@ import com.fpf.smartscan.data.videos.clusters.VideoClusterCrossRefRepository
 import com.fpf.smartscan.data.videos.VideoDatabase
 import com.fpf.smartscan.data.videos.tags.VideoTag
 import com.fpf.smartscan.media.MediaType
+import com.fpf.smartscan.media.filterAccessibleMediaStoreIds
 import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.utils.canOpenUri
 import com.fpf.smartscan.media.getVideoUriFromId
@@ -301,13 +302,8 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     private suspend fun handleQueryResults(queryResults: List<Long>, store: FileEmbeddingStore, totalResults: Int? = null) {
         val totalCount = totalResults?: queryResults.size
         val initialBatch = queryResults.take(RESULTS_BATCH_SIZE) // initial results the rest loaded dynamically
-
-        val (unprocessedFilteredResults, idsToPurge) = initialBatch.map { id ->
-                val uri = if (_state.value.mediaType == MediaType.VIDEO) getVideoUriFromId(id) else getImageUriFromId(id)
-                id to uri
-        }.partition { (_, uri) -> canOpenUri(getApplication<Application>(), uri) }
-
-        val filteredSearchResults = unprocessedFilteredResults.map { it.second }
+        val (validIds, idsToPurge) = filterAccessibleMediaStoreIds(getApplication(), initialBatch, _state.value.mediaType)
+        val filteredSearchResults = validIds.map { mediaIdToUri(it, _state.value.mediaType) }
 
         _state.emit( _state.value.copy(totalResults = totalCount, searchResults = filteredSearchResults))
 
@@ -317,7 +313,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
         if(idsToPurge.isNotEmpty()){
             viewModelScope.launch(Dispatchers.IO) {
-                store.remove(idsToPurge.map { it.first })
+                store.remove(idsToPurge)
             }
         }
     }
@@ -352,19 +348,16 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val batch = getPaginatedResult(currentItemsCount, store)
-                val (filteredResults, idsToPurge) = batch.map { id ->
-                        val uri = if (_state.value.mediaType == MediaType.VIDEO) getVideoUriFromId(id) else getImageUriFromId(id)
-                        id to uri
-                }.partition { (_, uri) -> canOpenUri(getApplication(), uri) }
+                val (filteredResults, idsToPurge) = filterAccessibleMediaStoreIds(getApplication(), batch, _state.value.mediaType)
 
                 if (filteredResults.isNotEmpty()) {
-                    val filteredSearchResults = _state.value.searchResults + filteredResults.map { it.second }
+                    val filteredSearchResults = _state.value.searchResults + filteredResults.map { mediaIdToUri(it, _state.value.mediaType) }
                     _state.emit(_state.value.copy(searchResults = filteredSearchResults))
                 }
 
                 if (idsToPurge.isNotEmpty()) {
                     viewModelScope.launch(Dispatchers.IO) {
-                        store.remove(idsToPurge.map { it.first })
+                        store.remove(idsToPurge)
                     }
                 }
             }finally {
@@ -624,6 +617,13 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                 val imageTag = allImageTags.value.find { it.name == tag }?: return
                 imageTagsRepository.updateTags(listOf(ImageTag(imageTag.id, imageTag.name, System.currentTimeMillis())))
             }
+        }
+    }
+
+    private fun mediaIdToUri(id: Long, mediaType: MediaType): Uri {
+        return when (mediaType) {
+            MediaType.IMAGE -> getImageUriFromId(id)
+            MediaType.VIDEO -> getVideoUriFromId(id)
         }
     }
 
