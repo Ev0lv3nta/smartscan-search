@@ -41,7 +41,7 @@ import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.services.MediaIndexForegroundService
 import com.fpf.smartscan.services.startIndexing
 import com.fpf.smartscan.utils.isWorkScheduled
-import com.fpf.smartscan.workers.AutoTagWorker
+import com.fpf.smartscan.workers.IndexWorker
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.generatePrototypeEmbedding
 import com.fpf.smartscansdk.core.media.getBitmapFromUri
@@ -127,7 +127,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
             processQuery()
         }
         viewModelScope.launch(Dispatchers.IO){
-            if(!isWorkScheduled(context = application, workName = AutoTagWorker.TAG)) scheduleAutoTagging()
+            if(!isWorkScheduled(context = application, workName = IndexWorker.TAG)) scheduleIndexWorker()
         }
     }
 
@@ -529,9 +529,9 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         searchFieldState.edit { replace(0, searchFieldState.text.length, "#$tag ") }
     }
 
-    fun scheduleAutoTagging(){
+    private fun scheduleIndexWorker(){
         if (!imageStore.exists && !videoStore.exists) return
-        AutoTagWorker.scheduleWorker(getApplication(), Pair(1L, TimeUnit.DAYS))
+        IndexWorker.scheduleWorker(getApplication(), Pair(1L, TimeUnit.DAYS))
     }
 
     fun updateSuggestedTags(){
