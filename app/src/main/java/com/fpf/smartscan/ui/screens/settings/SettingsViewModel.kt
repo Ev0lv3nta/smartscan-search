@@ -63,13 +63,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     init {
         _appSettings.value = loadSettings(sharedPrefs)
-        ModelManager.listModels(application)
-    }
-
-    fun updateIndexFrequency(frequency: String) {
-        val currentSettings = _appSettings.value
-        _appSettings.value = currentSettings.copy(indexFrequency = frequency)
-        saveSettings(sharedPrefs, _appSettings.value)
     }
 
     fun updateSimilarityThreshold(threshold: Float) {
