@@ -39,9 +39,12 @@ import com.fpf.smartscan.settings.AppSettings
 import com.fpf.smartscan.ui.components.SlideRevealBox
 import com.fpf.smartscan.ui.components.collections.CollectionItemsActionBar
 import com.fpf.smartscan.ui.components.collections.CollectionItemsList
+import com.fpf.smartscan.ui.components.collections.CollectionPicker
 import com.fpf.smartscan.ui.components.media.MediaViewer
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 
 @OptIn(FlowPreview::class)
@@ -61,17 +64,19 @@ fun CollectionItemsScreen(
     val appSettings by appSettings.collectAsState()
 
     var isSelecting by remember { mutableStateOf(false) }
+    var isMoving by remember { mutableStateOf(false) }
 
     var offset by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val maxCollapsablePx = with(density) { 70.dp.toPx() }.toInt()
 
-
+    // collectLatest prevents overlapping collectors from appending duplicate batches to the shared list
     LaunchedEffect(collectionName) {
-        mediaItems.clear()
-        viewModel.mediaItems.collect { batch ->
-            mediaItems.addAll(batch)
-        }
+        viewModel.mediaItems
+            .distinctUntilChanged()
+            .collectLatest { batch ->
+                mediaItems.addAll(batch)
+            }
     }
 
     LaunchedEffect(collectionName) {
@@ -138,6 +143,7 @@ fun CollectionItemsScreen(
                     viewModel.clearSelectedItems()
                           },
                 onMove = {
+                    isMoving = true
                     isSelecting = false
                          },
                 onCopy = {
@@ -166,6 +172,24 @@ fun CollectionItemsScreen(
                     onUpdateSearchImage = null
                 )
             }
+                AnimatedVisibility(
+                    visible = isMoving,
+                    enter = fadeIn(animationSpec = tween(500)) + scaleIn(
+                        initialScale = 0.8f,
+                        animationSpec = tween(500)
+                    ),
+                    exit = fadeOut(animationSpec = tween(300)) + scaleOut(
+                        targetScale = 0.8f,
+                        animationSpec = tween(300)
+                    )
+                ) {
+                    CollectionPicker(
+                        collections = emptyList(),
+                        mediaType = state.mediaType,
+                        onClose = { isMoving = false },
+                        onSelectCollection = { viewModel.moveItems(state.mediaType, state.selectedMediaItems, it) }
+                    )
+                }
+            }
         }
     }
-}
