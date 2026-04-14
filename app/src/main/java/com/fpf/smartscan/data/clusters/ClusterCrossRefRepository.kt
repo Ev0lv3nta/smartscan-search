@@ -1,5 +1,6 @@
 package com.fpf.smartscan.data.clusters
 
+import com.fpf.smartscan.data.tags.TagCrossRef
 import java.util.LinkedHashMap
 
 class ClusterCrossRefRepository(private val dao: ClusterCrossRefDao) {
@@ -19,9 +20,12 @@ class ClusterCrossRefRepository(private val dao: ClusterCrossRefDao) {
         return clusterToMediaIdsMap
     }
 
-     suspend fun addMedia(mediaClusterCrossRefs: List<ClusterCrossRef>) = dao.addMedia(mediaClusterCrossRefs)
+    suspend fun upsertClusterCrossRefs(crossRefs: List<ClusterCrossRef>) = dao.upsert(crossRefs)
 
-     suspend fun deleteByClusterIds(ids: List<Long>) = dao.deleteByClusterIds(ids)
+    suspend fun upsertClusterCrossRefs(clusterId: Long, mediaIds: List<Long>) = dao.upsert(mediaIds.map{ ClusterCrossRef(mediaId = it, clusterId = clusterId)})
+
+
+    suspend fun deleteByClusterIds(ids: List<Long>) = dao.deleteByClusterIds(ids)
 
     suspend fun deleteByMediaIds(ids: List<Long>) = dao.deleteByMediaIds(ids)
 

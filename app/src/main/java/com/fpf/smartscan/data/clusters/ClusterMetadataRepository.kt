@@ -16,11 +16,13 @@ class ClusterMetadataRepository(private val dao: ClusterMetadataDao) {
             it.clusterId to it.toMetadata()
         }
 
-     suspend fun getMetadata(id: Long): ClusterMetadata? = dao.get(id)?.toMetadata()
+     suspend fun getMetadatas(ids: List<Long>): List<MediaClusterMetadata> = dao.get(ids)
 
      suspend fun getIdFromLabel(label: String): Long? = dao.getIdFromLabel(label)
 
-     suspend fun upsertMetadatas(metadatas: List<MediaClusterMetadata>) = dao.upsert(metadatas)
+     suspend fun insertMetadatas(metadatas: List<MediaClusterMetadata>) = dao.insert(metadatas)
 
-     suspend fun deleteMetadata(id: Long) = dao.delete(id)
+    suspend fun updateMetadatas(metadatas: List<MediaClusterMetadata>) = dao.update(metadatas)
+
+     suspend fun deleteMetadatas(ids: List<Long>) = dao.delete(ids)
 }

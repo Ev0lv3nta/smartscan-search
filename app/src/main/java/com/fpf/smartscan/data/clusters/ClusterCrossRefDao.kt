@@ -26,7 +26,7 @@ interface ClusterCrossRefDao {
 
     @Transaction
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
-    suspend fun addMedia(crossRefs: List<ClusterCrossRef>)
+    suspend fun upsert(crossRefs: List<ClusterCrossRef>)
 
     @Transaction
     @Query("DELETE FROM media_cluster_crossref WHERE clusterId IN (:ids)")
