@@ -1,15 +1,14 @@
 package com.fpf.smartscan.data.clusters
 
-import com.fpf.smartscan.data.tags.TagCrossRef
 import java.util.LinkedHashMap
 
 class ClusterCrossRefRepository(private val dao: ClusterCrossRefDao) {
     private var clusterToMediaIdsMap: LinkedHashMap<Long, MutableSet<Long>> = LinkedHashMap()
 
-    suspend fun getAllClusters(): Set<Long> = dao.getAllClusters().toSet()
-    suspend fun getAllMedia(): Set<Long> = dao.getAllMedia().toSet()
-    suspend fun getMediaIds(clusterId: Long): Set<Long> = dao.getMediaIds(clusterId).toSet()
-    suspend fun getMediaIds(clusterId: Long, limit: Int, offset: Int): Set<Long> = dao.getMediaIds(clusterId, limit, offset).toSet()
+    suspend fun getAllClusters(): List<Long> = dao.getAllClusters()
+    suspend fun getAllMedia(): List<Long> = dao.getAllMedia()
+    suspend fun getMediaIds(clusterId: Long): List<Long> = dao.getMediaIds(clusterId)
+    suspend fun getMediaIds(clusterId: Long, limit: Int, offset: Int): List<Long> = dao.getMediaIds(clusterId, limit, offset)
 
     suspend fun getClusterToMediaIdsMap(): LinkedHashMap<Long, MutableSet<Long>> {
         if (clusterToMediaIdsMap.isNotEmpty()) return clusterToMediaIdsMap
