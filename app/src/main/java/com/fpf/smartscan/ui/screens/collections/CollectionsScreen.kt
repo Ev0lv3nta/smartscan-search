@@ -78,7 +78,7 @@ fun CollectionsScreen(
         placeholder = "Enter new collection name",
         onClose = {isRenamingCollection = false},
         onConfirm = {
-            newName -> viewModel.renameCollection(state.mediaType, state.selectedCollections.first(), newName)
+            newName -> viewModel.renameCollection( state.selectedCollections.first(), newName)
                     },
         leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
         onValueChange = {
@@ -158,7 +158,7 @@ fun CollectionsScreen(
                     .height(70.dp)
                     .zIndex(1f),
                 onDelete = {
-                    viewModel.deleteCollection(state.mediaType, state.selectedCollections.first())
+                    viewModel.deleteCollection( state.selectedCollections.first())
                     isSelecting = false
                 },
                 onMerge = {

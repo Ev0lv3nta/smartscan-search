@@ -4,23 +4,14 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.fpf.smartscan.data.images.ImageDatabase
-import com.fpf.smartscan.data.images.clusters.ImageClusterCrossRefRepository
-import com.fpf.smartscan.data.images.clusters.ImageClusterMetadataRepository
-import com.fpf.smartscan.data.images.tags.ImageTagCrossRefRepository
-import com.fpf.smartscan.data.images.tags.ImageTagRepository
-import com.fpf.smartscan.data.videos.VideoDatabase
-import com.fpf.smartscan.data.videos.clusters.VideoClusterCrossRefRepository
-import com.fpf.smartscan.data.videos.clusters.VideoClusterMetadataRepository
-import com.fpf.smartscan.data.videos.tags.VideoTagCrossRefRepository
-import com.fpf.smartscan.data.videos.tags.VideoTagRepository
+import com.fpf.smartscan.data.tags.TagCrossRefRepository
+import com.fpf.smartscan.data.tags.TagRepository
 import com.fpf.smartscan.collections.MediaCollection
-import com.fpf.smartscan.data.MediaClusterMetadata
-import com.fpf.smartscan.data.MediaTag
-import com.fpf.smartscan.data.MediaTagCrossRef
-import com.fpf.smartscan.data.MediaTagCrossRefRepository
-import com.fpf.smartscan.data.MediaTagRepository
-import com.fpf.smartscan.data.TagWithCount
+import com.fpf.smartscan.data.MediaDatabase
+import com.fpf.smartscan.data.tags.TagWithCount
+import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
+import com.fpf.smartscan.data.clusters.MediaClusterMetadata
+import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.getImageUriFromId
 import com.fpf.smartscan.media.getVideoUriFromId
@@ -42,25 +33,19 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
         private const val TAG = "CollectionsViewModel"
     }
 
-    private val imageDB by lazy { ImageDatabase.getDatabase(application)}
-    private val videoDB by lazy { VideoDatabase.getDatabase(application)}
-    private val imageTagsRepository by lazy { ImageTagRepository(imageDB.tagDao())}
-    private val videoTagsRepository by lazy { VideoTagRepository(videoDB.tagDao())}
-    private val imageTagsCrossRefRepository by lazy { ImageTagCrossRefRepository( imageDB.imageTagCrossRefDao())}
-    private val videoTagsCrossRefRepository by lazy {  VideoTagCrossRefRepository(videoDB.videoTagCrossRefDao())}
+    private val db by lazy {  MediaDatabase.getDatabase(application)}
 
-    private val imageClusterCrossRefRepository by lazy {  ImageClusterCrossRefRepository(imageDB.imageClusterCrossRefDao())}
-    private val videoClusterCrossRefRepository by lazy {  VideoClusterCrossRefRepository(videoDB.videoClusterCrossRefDao())}
-
-    private val imageClusterMetadataRepository by lazy {  ImageClusterMetadataRepository(imageDB.imageClusterMetadataDao())}
-    private val videoClusterMetadataRepository by lazy {  VideoClusterMetadataRepository(videoDB.videoClusterMetadataDao())}
+    private val tagsRepository by lazy { TagRepository(db.tagDao())}
+    private val tagsCrossRefRepository by lazy { TagCrossRefRepository( db.tagCrossRefDao())}
+    private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
+    private val clusterMetadataRepository by lazy { ClusterMetadataRepository(db.clusterMetadataDao()) }
 
     private val _state = MutableStateFlow(CollectionsState())
     val state: StateFlow<CollectionsState> = _state
 
     val mediaClusters: StateFlow<List<MediaClusterMetadata>> = combine(
-            imageClusterMetadataRepository.allMetadata,
-            videoClusterMetadataRepository.allMetadata,
+        clusterMetadataRepository.getMetadataByTypeFlow(MediaType.IMAGE),
+        clusterMetadataRepository.getMetadataByTypeFlow(MediaType.VIDEO),
             _state
         ) { imageClusters, videoClusters, state ->
             when (state.mediaType) {
@@ -76,65 +61,44 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
 
 
     val mediaCollections: StateFlow<List<MediaCollection>> = combine(
-        imageTagsCrossRefRepository.getTagsWithCounts(),
-        videoTagsCrossRefRepository.getTagsWithCounts(),
+        tagsCrossRefRepository.getTagsWithCounts(),
         _state.map{it.mediaType to it.showAllCollections}
-    ) { imageTagCounts, videoTagCounts, (mediaType, showAllCollections) ->
-        when (mediaType) {
-            MediaType.IMAGE -> {
-                if(showAllCollections) {
-                    getCollections(imageTagCounts, mediaType)
-                } else{
-                    getCollections(imageTagCounts.take(6), mediaType)
-                }
+    ) { tagCounts, (mediaType, showAllCollections) ->
+            if(showAllCollections) {
+                getCollections(tagCounts, mediaType)
+            } else{
+                getCollections(tagCounts.take(6), mediaType)
             }
-
-            MediaType.VIDEO -> {
-                if(showAllCollections) {
-                    getCollections(videoTagCounts, mediaType)
-                } else{
-                    getCollections(videoTagCounts.take(6), mediaType)
-                }
-            }
-        }
     }.flowOn(Dispatchers.IO).stateIn(
             scope = viewModelScope,
             started = SharingStarted.Eagerly,
             initialValue = emptyList()
         )
 
-    fun renameCollection(mediaType: MediaType, collection: MediaCollection, newName: String){
+    fun renameCollection(collection: MediaCollection, newName: String){
         viewModelScope.launch (Dispatchers.IO){
-            when (mediaType) {
-                MediaType.IMAGE -> {
-                    val tag = imageTagsRepository.getTagsByName(listOf(collection.name)).firstOrNull()
-                    tag?.let{imageTagsRepository.updateTags(listOf((it).copy(name = newName)))}
-                }
-                MediaType.VIDEO -> {
-                    val tag = videoTagsRepository.getTagsByName(listOf(collection.name)).firstOrNull()
-                    tag?.let{videoTagsRepository.updateTags(listOf(it.copy(name = newName)))}
-                }
-            }
+            val tag = tagsRepository.getTagsByName(listOf(collection.name)).firstOrNull()
+            tag?.let{tagsRepository.updateTags(listOf((it).copy(name = newName)))}
             _state.update { it.copy(selectedCollections = emptyList()) }
         }
     }
 
 
-    fun deleteCollection(mediaType: MediaType, collection: MediaCollection){
+    fun deleteCollection(collection: MediaCollection){
         viewModelScope.launch (Dispatchers.IO){
-            when (mediaType) {
-                MediaType.IMAGE -> imageTagsRepository.deleteTagsByName(listOf(collection.name))
-                MediaType.VIDEO -> videoTagsRepository.deleteTagsByName(listOf(collection.name))
-            }
+            tagsRepository.deleteTagsByName(listOf(collection.name))
             _state.update { it.copy(selectedCollections = emptyList()) }
         }
     }
 
     fun mergeCollections(mediaType: MediaType, primaryCollectionName: String, otherCollections: List<MediaCollection>){
         viewModelScope.launch (Dispatchers.IO) {
-            when (mediaType) {
-                MediaType.IMAGE -> mergeTags(primaryCollectionName, otherCollections.map{it.name}, imageTagsRepository, imageTagsCrossRefRepository)
-                MediaType.VIDEO -> mergeTags(primaryCollectionName, otherCollections.map{it.name}, videoTagsRepository, videoTagsCrossRefRepository)
+            val primaryTag = tagsRepository.getTagsByName(listOf(primaryCollectionName)).firstOrNull()
+            val tagsToMerge = tagsRepository.getTagsByName(otherCollections.map{it.name})
+            val mediaToUpdate = tagsToMerge.map{tagsCrossRefRepository.getMediaIds(it.id)}.flatten()
+            if(primaryTag != null && mediaToUpdate.isNotEmpty()){
+                tagsCrossRefRepository.upsertTagCrossRefs(primaryTag.id, mediaToUpdate)
+                tagsRepository.deleteTags(tagsToMerge)
             }
             _state.update { it.copy( selectedCollections = emptyList()) }
         }
@@ -164,19 +128,9 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
         _state.update { it.copy(collectToView = collection) }
     }
 
-    private suspend fun <T: MediaTag, K: MediaTagCrossRef>mergeTags(primaryTagName: String, namesOfTagsToMerge: List<String>, mediaTagRepository: MediaTagRepository<T>, mediaTagCrossRefRepository: MediaTagCrossRefRepository<K>){
-            val primaryTag = mediaTagRepository.getTagsByName(listOf(primaryTagName)).firstOrNull()
-            val tagsToMerge = mediaTagRepository.getTagsByName(namesOfTagsToMerge)
-            val mediaToUpdate = tagsToMerge.map{mediaTagCrossRefRepository.getMediaIds(it.id)}.flatten()
-            if(primaryTag != null && mediaToUpdate.isNotEmpty()){
-                mediaTagCrossRefRepository.upsertTagCrossRefs(primaryTag.id, mediaToUpdate)
-                mediaTagRepository.deleteTags(tagsToMerge)
-        }
-    }
-
     private suspend fun getCollections(tags: List<TagWithCount>, mediaType: MediaType): List<MediaCollection> {
         return tags.mapNotNull {
-            val id = getMediaMatchingTag(it.id, mediaType, limit = 1).firstOrNull()
+            val id = tagsCrossRefRepository.getMediaIds(it.id, limit = 1, offset = 0).firstOrNull()
             val uri = id?.let { id -> getUriFromMediaId(id, mediaType) }
             uri?.let { uri ->
                 MediaCollection(
@@ -185,13 +139,6 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
                     size = it.count
                 )
             }
-        }
-    }
-
-    private suspend fun getMediaMatchingTag(tagId: Long, mediaType: MediaType, limit: Int, offset: Int = 0): List<Long> {
-        return when (mediaType) {
-            MediaType.IMAGE -> imageTagsCrossRefRepository.getMediaIds(tagId, limit, offset)
-            MediaType.VIDEO -> videoTagsCrossRefRepository.getMediaIds(tagId, limit, offset)
         }
     }
 

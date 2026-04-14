@@ -9,21 +9,18 @@ import androidx.core.net.toUri
 import androidx.work.*
 import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
+import com.fpf.smartscan.data.MediaDatabase
+import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
+import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.TimeUnit
-import com.fpf.smartscan.data.images.ImageDatabase
-import com.fpf.smartscan.data.images.clusters.ImageClusterCrossRefRepository
-import com.fpf.smartscan.data.images.clusters.ImageClusterMetadataRepository
-import com.fpf.smartscan.data.videos.VideoDatabase
-import com.fpf.smartscan.data.videos.clusters.VideoClusterCrossRefRepository
-import com.fpf.smartscan.data.videos.clusters.VideoClusterMetadataRepository
+import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.queryImageIds
 import com.fpf.smartscan.media.queryVideoIds
-import com.fpf.smartscan.search.clusterImages
-import com.fpf.smartscan.search.clusterVideos
+import com.fpf.smartscan.search.clusterMedia
 import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer
@@ -37,7 +34,6 @@ class IndexWorker(context: Context, workerParams: WorkerParameters) :
 
     companion object {
         const val TAG = "IndexWorker"
-        private const val NOTIFICATION_ID = 2000
         private const val PREFS_NAME = "AsyncStorage" // For backward-compatibility changing will break!!!
 
 
@@ -66,11 +62,9 @@ class IndexWorker(context: Context, workerParams: WorkerParameters) :
     private val sharedPrefs by lazy { applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)    }
     private val imageEmbedder by lazy { ClipImageEmbedder(applicationContext, ModelAssetSource.Resource(R.raw.clip_image_encoder_quant))}
 
-    private val imageClusterMetadataRepository by lazy { ImageClusterMetadataRepository(ImageDatabase.getDatabase(applicationContext as Application).imageClusterMetadataDao()) }
-    private val imageClusterCrossRefRepository by lazy { ImageClusterCrossRefRepository(ImageDatabase.getDatabase(applicationContext as Application).imageClusterCrossRefDao()) }
-
-    private val videoClusterMetadataRepository by lazy { VideoClusterMetadataRepository(VideoDatabase.getDatabase(applicationContext as Application).videoClusterMetadataDao()) }
-    private val videoClusterCrossRefRepository by lazy { VideoClusterCrossRefRepository(VideoDatabase.getDatabase(applicationContext as Application).videoClusterCrossRefDao()) }
+    private val db = MediaDatabase.getDatabase(applicationContext as Application)
+    private val clusterMetadataRepository by lazy { ClusterMetadataRepository(db.clusterMetadataDao()) }
+    private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
 
     private val imageStore by lazy { FileEmbeddingStore(File(applicationContext.filesDir, EmbeddingStoresFiles.IMAGE), imageEmbedder.embeddingDim)}
     private val imageClusterStore by lazy { FileEmbeddingStore(File(applicationContext.filesDir, EmbeddingStoresFiles.IMAGE_CLUSTER), imageEmbedder.embeddingDim)}
@@ -87,13 +81,13 @@ class IndexWorker(context: Context, workerParams: WorkerParameters) :
             // Prevents doing full indexes. That responsibility should be left to the foreground service
             if(imageStore.exists){
                 indexImages(imageStore, appSettings.searchableImageDirectories.map{it.toUri()})
-                clusterImages(imageClusterCrossRefRepository, imageClusterStore, imageStore, imageClusterMetadataRepository)
+                clusterMedia(clusterCrossRefRepository, imageClusterStore, imageStore, clusterMetadataRepository, MediaType.IMAGE)
             }
 
             // Prevents doing full indexes. That responsibility should be left to the foreground service
             if(videoStore.exists){
                 indexVideos(videoStore, appSettings.searchableVideoDirectories.map { it.toUri() })
-                clusterVideos(videoClusterCrossRefRepository, videoClusterStore, videoStore, videoClusterMetadataRepository)
+                clusterMedia(clusterCrossRefRepository, videoClusterStore, videoStore, clusterMetadataRepository, MediaType.VIDEO)
             }
 
             return@withContext Result.success()

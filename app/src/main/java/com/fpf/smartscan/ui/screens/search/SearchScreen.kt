@@ -79,8 +79,7 @@ fun SearchScreen(
 
     // Search state
     val state by searchViewModel.state.collectAsState()
-    val imageTags by searchViewModel.allImageTags.collectAsState()
-    val videoTags by searchViewModel.allVideoTags.collectAsState()
+    val tags by searchViewModel.allTags.collectAsState()
     val searchBarPlaceholders = listOf(
         when (state.mediaType) {
             MediaType.IMAGE -> "Search images"

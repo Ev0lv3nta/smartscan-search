@@ -14,19 +14,13 @@ import com.fpf.smartscan.media.getImageUriFromId
 import kotlinx.coroutines.Dispatchers
 import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
-import com.fpf.smartscan.data.MediaTag
-import com.fpf.smartscan.data.images.tags.ImageTagCrossRef
-import com.fpf.smartscan.data.images.tags.ImageTagCrossRefRepository
-import com.fpf.smartscan.data.images.tags.ImageTagRepository
-import com.fpf.smartscan.data.images.clusters.ImageClusterCrossRefRepository
-import com.fpf.smartscan.data.images.ImageDatabase
-import com.fpf.smartscan.data.images.tags.ImageTag
-import com.fpf.smartscan.data.videos.tags.VideoTagCrossRef
-import com.fpf.smartscan.data.videos.tags.VideoTagCrossRefRepository
-import com.fpf.smartscan.data.videos.tags.VideoTagRepository
-import com.fpf.smartscan.data.videos.clusters.VideoClusterCrossRefRepository
-import com.fpf.smartscan.data.videos.VideoDatabase
-import com.fpf.smartscan.data.videos.tags.VideoTag
+import com.fpf.smartscan.data.MediaDatabase
+import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
+import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
+import com.fpf.smartscan.data.tags.TagCrossRef
+import com.fpf.smartscan.data.tags.TagCrossRefRepository
+import com.fpf.smartscan.data.tags.TagRepository
+import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.filterAccessibleMediaStoreIds
 import com.fpf.smartscan.search.QueryType
@@ -87,22 +81,16 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
     val videoClusterStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.VIDEO_CLUSTER), imageEmbedder.embeddingDim )
 
-
     val tagStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.TAGS), imageEmbedder.embeddingDim)
 
 
-    private val imageDB = ImageDatabase.getDatabase(application)
-    private val videoDB = VideoDatabase.getDatabase(application)
+    private val db = MediaDatabase.getDatabase(application)
 
-    private val imageTagsRepository by lazy { ImageTagRepository(imageDB.tagDao())}
-    private val videoTagsRepository by lazy { VideoTagRepository(videoDB.tagDao())}
-    private val imageTagsCrossRefRepository by lazy { ImageTagCrossRefRepository( imageDB.imageTagCrossRefDao())}
-    private val videoTagsCrossRefRepository by lazy {  VideoTagCrossRefRepository(videoDB.videoTagCrossRefDao())}
-    private val imageClusterCrossRefRepository by lazy {  ImageClusterCrossRefRepository(imageDB.imageClusterCrossRefDao())}
-    private val videoClusterCrossRefRepository by lazy {  VideoClusterCrossRefRepository(videoDB.videoClusterCrossRefDao())}
+    private val tagsRepository by lazy { TagRepository(db.tagDao())}
+    private val tagsCrossRefRepository by lazy { TagCrossRefRepository( db.tagCrossRefDao())}
+    private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
 
-    val allImageTags: StateFlow<List<MediaTag>> = imageTagsRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
-    val allVideoTags: StateFlow<List<MediaTag>> = videoTagsRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val allTags: StateFlow<List<Tag>> = tagsRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val autoTagger = AutoTagger(tagStore)
 
@@ -243,11 +231,12 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                 val targetClusters = if (useClusterSearch) getTargetClusters(embedding, threshold, 3) else emptyList()
                 val filterIds: Set<Long> = buildSet {
                     for (clusterId in targetClusters) {
-                        val ids = getClusterToMediaIdsMap()[clusterId] ?: continue
+                        val ids = clusterCrossRefRepository.getClusterToMediaIdsMap()[clusterId] ?: continue
                         addAll(ids)
                     }
                     addAll(idsMatchingTag)
                 }
+//                Log.d(TAG, "Filter ids: ${filterIds.size} | target clusters: ${targetClusters.size} | use cluster: $useClusterSearch")
                 val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, filterIds)
                 cachedIds = queryResults
                 handleQueryResults(queryResults, store)
@@ -277,7 +266,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                 val embedding = imageEmbedder.embed(bitmap)
                 val mediaIdsInCluster: Set<Long> = if(useClusterSearch) buildSet {
                     for (clusterId in getTargetClusters(embedding, threshold, 3)) {
-                        val ids = getClusterToMediaIdsMap()[clusterId] ?: continue
+                        val ids = clusterCrossRefRepository.getClusterToMediaIdsMap()[clusterId] ?: continue
                         addAll(ids)
                     }
                 } else emptySet()
@@ -468,22 +457,22 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
                 when (_state.value.mediaType) {
                     MediaType.IMAGE -> {
-                        val existing = imageTagsRepository.getTagsByName(listOf(tag)).firstOrNull()
+                        val existing = tagsRepository.getTagsByName(listOf(tag)).firstOrNull()
                         var id = existing?.id
                         if(id == null){
-                            id = imageTagsRepository.insertTags(listOf(ImageTag(name=tag.trim()))).first()
+                            id = tagsRepository.insertTags(listOf(Tag(name=tag.trim()))).first()
                         }
-                        val tagEntries = selectedMediaIds.map { ImageTagCrossRef(mediaId = it, tagId = id) }
-                        imageTagsCrossRefRepository.upsertTagCrossRefs(tagEntries)
+                        val tagEntries = selectedMediaIds.map { TagCrossRef(mediaId = it, tagId = id) }
+                        tagsCrossRefRepository.upsertTagCrossRefs(tagEntries)
                     }
                     MediaType.VIDEO -> {
-                        val existing = videoTagsRepository.getTagsByName(listOf(tag)).firstOrNull()
+                        val existing = tagsRepository.getTagsByName(listOf(tag)).firstOrNull()
                         var id = existing?.id
                         if(id == null){
-                            id = videoTagsRepository.insertTags(listOf(VideoTag(name=tag.trim()))).first()
+                            id = tagsRepository.insertTags(listOf(Tag(name=tag.trim()))).first()
                         }
-                        val tagEntries = selectedMediaIds.map { VideoTagCrossRef(mediaId = it, tagId = id) }
-                        videoTagsCrossRefRepository.upsertTagCrossRefs(tagEntries)
+                        val tagEntries = selectedMediaIds.map { TagCrossRef(mediaId = it, tagId = id) }
+                        tagsCrossRefRepository.upsertTagCrossRefs(tagEntries)
                     }
                 }
             }finally {
@@ -508,20 +497,10 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         if (match != null) {
             val partialTag = match.groupValues[1]
             // Track autocomplete only while typing the tag
-            when(_state.value.mediaType){
-                MediaType.IMAGE -> {
-                    updateAutoCompleteResults(allImageTags.value
-                        .filter { it.name.startsWith(partialTag, ignoreCase = true) }
-                        .map { it.name }
-                    )
-                }
-                MediaType.VIDEO -> {
-                    updateAutoCompleteResults(allVideoTags.value
-                        .filter { it.name.startsWith(partialTag, ignoreCase = true) }
-                        .map { it.name }
-                    )
-                }
-            }
+            updateAutoCompleteResults(allTags.value
+                .filter { it.name.startsWith(partialTag, ignoreCase = true) }
+                .map { it.name }
+            )
         }
         else {
             updateAutoCompleteResults(emptyList())
@@ -544,7 +523,8 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
     private fun scheduleIndexWorker(){
         if (!imageStore.exists && !videoStore.exists) return
-        IndexWorker.scheduleWorker(getApplication(), Pair(1L, TimeUnit.DAYS))
+        // Delay is required to prevent race condition issues on first index
+        IndexWorker.scheduleWorker(getApplication(), Pair(1L, TimeUnit.DAYS), Pair(1L, TimeUnit.DAYS))
     }
 
     fun updateSuggestedTags(){
@@ -558,14 +538,14 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                     MediaType.IMAGE -> {
                         val imageEmbeddings = imageStore.get(ids)
                         val prototype = generatePrototypeEmbedding(imageEmbeddings.map{it.embedding})
-                        val suggestedTags = autoTagger.getSuggestedTags(allImageTags.value, prototype)
+                        val suggestedTags = autoTagger.getSuggestedTags(allTags.value, prototype)
                         _state.update{currentState -> currentState.copy(suggestedTags = suggestedTags)}
 
                     }
                     MediaType.VIDEO -> {
                         val videoEmbeddings = videoStore.get(ids)
                         val prototype = generatePrototypeEmbedding(videoEmbeddings.map{it.embedding})
-                        val suggestedTags = autoTagger.getSuggestedTags(allVideoTags.value, prototype)
+                        val suggestedTags = autoTagger.getSuggestedTags(allTags.value, prototype)
                         _state.update{currentState -> currentState.copy(suggestedTags = suggestedTags)}
                     }
                 }
@@ -578,18 +558,16 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     private fun getStore() = if(_state.value.mediaType == MediaType.VIDEO) videoStore else imageStore
     private fun getClusterStore() = if(_state.value.mediaType == MediaType.VIDEO) videoClusterStore else imageClusterStore
 
-    private suspend fun getClusterToMediaIdsMap() = if(_state.value.mediaType == MediaType.VIDEO) videoClusterCrossRefRepository.getClusterToMediaIdsMap() else imageClusterCrossRefRepository.getClusterToMediaIdsMap()
-
     private suspend fun getMediaMatchingTag(tagName: String?, mediaType: MediaType, limit: Int, offset: Int): List<Long>{
         tagName?: return emptyList()
         return when (mediaType){
             MediaType.IMAGE -> {
-                val tag = imageTagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
-                tag?.let { imageTagsCrossRefRepository.getMediaIds(it.id, limit, offset) } ?: emptyList()
+                val tag = tagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
+                tag?.let { tagsCrossRefRepository.getMediaIds(it.id, limit, offset) } ?: emptyList()
             }
             MediaType.VIDEO -> {
-                val tag = videoTagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
-                tag?.let { videoTagsCrossRefRepository.getMediaIds(it.id, limit, offset) } ?: emptyList()
+                val tag = tagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
+                tag?.let { tagsCrossRefRepository.getMediaIds(it.id, limit, offset) } ?: emptyList()
             }
         }
     }
@@ -599,26 +577,18 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         tagName?: return 0
         return when (mediaType) {
             MediaType.IMAGE -> {
-                val tag = imageTagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
-                tag?.let{imageTagsCrossRefRepository.count(it.id)}?: 0
+                val tag = tagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
+                tag?.let{tagsCrossRefRepository.count(it.id)}?: 0
             }
             MediaType.VIDEO -> {
-                val tag = videoTagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
-                tag?.let{videoTagsCrossRefRepository.count(it.id)}?: 0
+                val tag = tagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
+                tag?.let{tagsCrossRefRepository.count(it.id)}?: 0
             }
         }
     }
     private suspend fun updateTagLastUsage(tag: String){
-        when(_state.value.mediaType){
-            MediaType.VIDEO -> {
-                val videoTag = allVideoTags.value.find { it.name == tag }?: return
-                videoTagsRepository.updateTags(listOf(VideoTag(videoTag.id,videoTag.name, System.currentTimeMillis())))
-            }
-            MediaType.IMAGE -> {
-                val imageTag = allImageTags.value.find { it.name == tag }?: return
-                imageTagsRepository.updateTags(listOf(ImageTag(imageTag.id, imageTag.name, System.currentTimeMillis())))
-            }
-        }
+        val tag = allTags.value.find { it.name == tag }?: return
+        tagsRepository.updateTags(listOf(Tag(tag.id, tag.name, System.currentTimeMillis())))
     }
 
     private fun mediaIdToUri(id: Long, mediaType: MediaType): Uri {

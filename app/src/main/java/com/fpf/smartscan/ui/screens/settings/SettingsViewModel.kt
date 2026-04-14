@@ -5,11 +5,9 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
-import com.fpf.smartscan.data.images.ImageDatabase
-import com.fpf.smartscan.data.videos.VideoDatabase
+import com.fpf.smartscan.data.MediaDatabase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -141,11 +139,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val imageClusterEmbeddingStoreFile = File(getApplication<Application>().filesDir, EmbeddingStoresFiles.IMAGE_CLUSTER)
         val videoClusterEmbeddingStoreFile = File(getApplication<Application>().filesDir,  EmbeddingStoresFiles.VIDEO_CLUSTER)
         val hashFile = File(getApplication<Application>().cacheDir, HASH_FILENAME)
-        val imageDb = getApplication<Application>().getDatabasePath(ImageDatabase.DB_NAME)
-        val videoDb = getApplication<Application>().getDatabasePath(VideoDatabase.DB_NAME)
+        val dbPath = getApplication<Application>().getDatabasePath(MediaDatabase.DB_NAME)
 
         val embedStoreFiles = listOf(imageEmbeddingStoreFile, videoEmbeddingStoreFile, imageClusterEmbeddingStoreFile, videoClusterEmbeddingStoreFile)
-        val filesToZip = listOf( hashFile, imageDb, videoDb) + embedStoreFiles
+        val filesToZip = listOf( hashFile, dbPath) + embedStoreFiles
         _isBackupLoading.value = true
 
         viewModelScope.launch(Dispatchers.IO){
@@ -172,15 +169,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val indexZipFile = File(getApplication<Application>().cacheDir, BACKUP_FILENAME)
         _isRestoreLoading.value = true
 
-        ImageDatabase.close()
-        VideoDatabase.close()
+        MediaDatabase.close()
 
         viewModelScope.launch(Dispatchers.IO){
             try {
 
                 copyFromUri(getApplication(), uri, indexZipFile)
                 val extractedFiles = unzipFiles(indexZipFile, getApplication<Application>().filesDir)
-                val expectedFileNames = setOf(EmbeddingStoresFiles.IMAGE,EmbeddingStoresFiles.VIDEO, EmbeddingStoresFiles.IMAGE_CLUSTER, EmbeddingStoresFiles.VIDEO_CLUSTER, ImageDatabase.DB_NAME, VideoDatabase.DB_NAME )
+                val expectedFileNames = setOf(EmbeddingStoresFiles.IMAGE,EmbeddingStoresFiles.VIDEO, EmbeddingStoresFiles.IMAGE_CLUSTER, EmbeddingStoresFiles.VIDEO_CLUSTER, MediaDatabase.DB_NAME )
 
                 if(!isValidBackupFile(extractedFiles, expectedFileNames)){
                     extractedFiles.forEach { it.delete() }
