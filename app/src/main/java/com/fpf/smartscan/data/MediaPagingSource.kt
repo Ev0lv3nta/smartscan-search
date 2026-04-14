@@ -6,7 +6,6 @@ import androidx.paging.PagingState
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
 
-
 class MediaPagingSource(
     private val mediaType: MediaType,
     private val tagId: Long,
@@ -19,14 +18,20 @@ class MediaPagingSource(
         val pageSize = params.loadSize
         val offset = page * pageSize
 
+        // over-fetch by 1 item to detect end of data without using count()
         return try {
-            val ids = tagsCrossRefRepository.getMediaIds(tagId, pageSize, offset)
-            val uris = ids.map { id -> mediaIdToUri(id, mediaType) }
+            val ids = tagsCrossRefRepository.getMediaIds(tagId = tagId, limit = pageSize + 1, offset = offset)
+            val hasMore = ids.size > pageSize
+            val pageItems = if (hasMore) ids.dropLast(1) else ids
+
+            val uris = pageItems.map { id ->
+                mediaIdToUri(id, mediaType)
+            }
 
             LoadResult.Page(
                 data = uris,
                 prevKey = if (page == 0) null else page - 1,
-                nextKey = if (ids.size < pageSize) null else page + 1
+                nextKey = if (hasMore) page + 1 else null
             )
 
         } catch (e: Exception) {
