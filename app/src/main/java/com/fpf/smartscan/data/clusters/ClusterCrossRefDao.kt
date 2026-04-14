@@ -15,7 +15,11 @@ interface ClusterCrossRefDao {
     suspend fun getAllMedia(): List<Long>
 
     @Query("SELECT mediaId FROM media_cluster_crossref WHERE clusterId = :clusterId")
-    suspend fun getMediaInCluster(clusterId: Long): List<Long>
+    suspend fun getMediaIds(clusterId: Long): List<Long>
+
+    @Query("SELECT mediaId FROM media_cluster_crossref WHERE clusterId = :clusterId LIMIT :limit OFFSET :offset")
+    suspend fun getMediaIds(clusterId: Long, limit: Int, offset: Int): List<Long>
+
 
     @Query("SELECT * FROM media_cluster_crossref")
     suspend fun getAllCrossRefs(): List<ClusterCrossRef>

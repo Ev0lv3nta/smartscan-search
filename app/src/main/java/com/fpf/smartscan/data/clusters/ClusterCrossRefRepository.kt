@@ -5,11 +5,12 @@ import java.util.LinkedHashMap
 class ClusterCrossRefRepository(private val dao: ClusterCrossRefDao) {
     private var clusterToMediaIdsMap: LinkedHashMap<Long, MutableSet<Long>> = LinkedHashMap()
 
-     suspend fun getAllClusters(): Set<Long> = dao.getAllClusters().toSet()
-     suspend fun getAllMedia(): Set<Long> = dao.getAllMedia().toSet()
-     suspend fun getMediaInCluster(clusterId: Long): Set<Long> = dao.getMediaInCluster(clusterId).toSet()
+    suspend fun getAllClusters(): Set<Long> = dao.getAllClusters().toSet()
+    suspend fun getAllMedia(): Set<Long> = dao.getAllMedia().toSet()
+    suspend fun getMediaIds(clusterId: Long): Set<Long> = dao.getMediaIds(clusterId).toSet()
+    suspend fun getMediaIds(clusterId: Long, limit: Int, offset: Int): Set<Long> = dao.getMediaIds(clusterId, limit, offset).toSet()
 
-     suspend fun getClusterToMediaIdsMap(): LinkedHashMap<Long, MutableSet<Long>> {
+    suspend fun getClusterToMediaIdsMap(): LinkedHashMap<Long, MutableSet<Long>> {
         if (clusterToMediaIdsMap.isNotEmpty()) return clusterToMediaIdsMap
 
         for(ref in dao.getAllCrossRefs()){
