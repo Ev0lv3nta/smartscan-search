@@ -186,7 +186,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         _state.value = _state.value.copy(totalResults = 0, searchResults = emptyList(), selectedResults = emptyList(), autoCompleteTagResults = emptyList(), error = null, tagFilter = null, suggestedTags = TagSuggestionsResult(), tagOnlySearch = false)
     }
 
-    fun search(threshold: Float){
+    fun search(threshold: Float, useClusterSearch: Boolean){
         cachedIds = null // clear on new search
         val store = getStore()
         if(!store.exists) {
@@ -195,15 +195,15 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         }
         when(_state.value.queryType){
             QueryType.IMAGE -> {
-                imageSearch(store, threshold)
+                imageSearch(store, threshold, useClusterSearch)
             }
             QueryType.TEXT -> {
-                textSearch(store, threshold)
+                textSearch(store, threshold, useClusterSearch)
             }
         }
     }
 
-    private fun textSearch(store: FileEmbeddingStore, threshold: Float) {
+    private fun textSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean) {
         val query = searchFieldState.text.toString()
         if (query.isBlank()) {
             _state.update{currentState -> currentState.copy(error = getApplication<Application>().getString(R.string.search_error_empty_query))}
@@ -239,9 +239,9 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                 if(shouldShutdownModel(_state.value.imageEmbedderLastUsage)) imageEmbedder.closeSession() // prevent keeping both models open
 
                 val embedding = textEmbedder.embed(actualQuery)
-//                val start = System.currentTimeMillis()
+                val targetClusters = if (useClusterSearch) getTargetClusters(embedding, threshold, 3) else emptyList()
                 val filterIds: Set<Long> = buildSet {
-                    for (clusterId in getTargetClusters(embedding, threshold, 3)) {
+                    for (clusterId in targetClusters) {
                         val ids = getClusterToMediaIdsMap()[clusterId] ?: continue
                         addAll(ids)
                     }
@@ -249,8 +249,6 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                 }
                 val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, filterIds)
                 cachedIds = queryResults
-//                val timeElapsed = System.currentTimeMillis() - start
-//                Log.d(TAG, "time elapsed: $timeElapsed | results: ${queryResults.size}")
                 handleQueryResults(queryResults, store)
             } catch (e: Exception) {
                 Log.e(TAG, "$e")
@@ -261,7 +259,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         }
     }
 
-    private fun imageSearch(store: FileEmbeddingStore, threshold: Float) {
+    private fun imageSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean) {
         val queryImage = _state.value.queryImage?: return
 
         reset()
@@ -274,12 +272,12 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
                 val bitmap = getBitmapFromUri(getApplication<Application>(), queryImage, IMAGE_SIZE_X)
                 val embedding = imageEmbedder.embed(bitmap)
-                val mediaIdsInCluster: Set<Long> = buildSet {
+                val mediaIdsInCluster: Set<Long> = if(useClusterSearch) buildSet {
                     for (clusterId in getTargetClusters(embedding, threshold, 3)) {
                         val ids = getClusterToMediaIdsMap()[clusterId] ?: continue
                         addAll(ids)
                     }
-                }
+                } else emptySet()
                 val resultIds = store.query(embedding, Int.MAX_VALUE, threshold, mediaIdsInCluster)
                 cachedIds = resultIds
                 handleQueryResults(resultIds, store)
@@ -318,7 +316,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun externalSearch(intentSearchQuery: SearchQuery?, similarityThreshold: Float){
+    fun externalSearch(intentSearchQuery: SearchQuery?, similarityThreshold: Float, useClusterSearch: Boolean){
         if(intentSearchQuery == null || hasHandledExternalSearch) return
 
         when(intentSearchQuery) {
@@ -326,14 +324,14 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                 setMediaType(intentSearchQuery.mediaType)
                 updateSearchImageUri(intentSearchQuery.uri)
                 updateQueryType(QueryType.IMAGE)
-                search(similarityThreshold)
+                search(similarityThreshold, useClusterSearch)
                 hasHandledExternalSearch = true
             }
 
             is SearchQuery.TextQuery -> {
                setMediaType(intentSearchQuery.mediaType)
                 searchFieldState.edit { replace(0, searchFieldState.text.length, intentSearchQuery.text) }
-                search( similarityThreshold)
+                search( similarityThreshold, useClusterSearch)
                 hasHandledExternalSearch = true
             }
         }
