@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -90,7 +91,15 @@ fun CollectionItemsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.Top
         ) {
-            if (isSelecting) {
+            SlideRevealBox(
+                isVisible = isSelecting,
+                reverse = true,
+                offsetPx = offset,
+                modifier = Modifier
+                    .zIndex(1f)
+                    .heightIn(max=maxCollapsablePx.dp)
+                    .padding(bottom = 8.dp)
+            ) {
                 val text = if (state.selectedMediaItems.isNotEmpty()) "${state.selectedMediaItems.size} Selected" else "Select items"
                 Text(text, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp), color = MaterialTheme.colorScheme.primary)
             }
