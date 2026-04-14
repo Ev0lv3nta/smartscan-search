@@ -187,7 +187,6 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     }
 
     fun search(threshold: Float, useClusterSearch: Boolean){
-        cachedIds = null // clear on new search
         val store = getStore()
         if(!store.exists) {
             _state.update{ currentState -> currentState.copy(error = getApplication<Application>().getString(R.string.search_error_not_indexed))}
@@ -204,6 +203,8 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     }
 
     private fun textSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean) {
+        cachedIds = null // clear on new search
+
         val query = searchFieldState.text.toString()
         if (query.isBlank()) {
             _state.update{currentState -> currentState.copy(error = getApplication<Application>().getString(R.string.search_error_empty_query))}
@@ -260,6 +261,8 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     }
 
     private fun imageSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean) {
+        cachedIds = null // clear on new search
+
         val queryImage = _state.value.queryImage?: return
 
         reset()
