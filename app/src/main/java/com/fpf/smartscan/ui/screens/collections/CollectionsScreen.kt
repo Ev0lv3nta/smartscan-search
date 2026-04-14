@@ -105,7 +105,7 @@ fun CollectionsScreen(
         label = "Primary collection",
         options = state.selectedCollections.map {it.name },
         onConfirm = {
-            selected -> viewModel.mergeCollections(state.mediaType, selected, state.selectedCollections.filterNot { it.name == selected })
+            selected -> viewModel.mergeCollections( selected, state.selectedCollections.filterNot { it.name == selected })
                     },
         onClose = { isMergingCollections = false }
     )
