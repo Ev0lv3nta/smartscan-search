@@ -13,6 +13,7 @@ import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.data.tags.TagCrossRefDao
 import com.fpf.smartscan.data.tags.TagDao
+import kotlinx.coroutines.runBlocking
 import java.io.File
 
 @Database(
@@ -37,8 +38,11 @@ abstract class MediaDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: MediaDatabase? = null
 
-        const val OLD_DB_NAME = "image_tag_database"
+        const val OLD_DB_IMAGE_NAME = "image_tag_database"
+        const val OLD_DB_VIDEO_NAME = "video_tag_database"
         const val DB_NAME = "media_database"
+
+        const val TAG = "MediaDatabase"
 
         fun close() {
             INSTANCE?.close()
@@ -68,17 +72,29 @@ abstract class MediaDatabase : RoomDatabase() {
 
                 INSTANCE = instance
 
-                val oldTagDbFile = application.getDatabasePath(OLD_DB_NAME)
-                if (oldTagDbFile.exists()) {
-                    Log.d("MediaDatabase", "Old DB detected, transferring...")
 
-//                    runBlocking {
-//                        DBTransferHelper.transferVideos(
-//                            application = application,
-//                            newDb = instance
-//                        )
-//                    }
-                    oldTagDbFile.delete()
+                val oldImageTagDbStagedFile = File(application.filesDir, OLD_DB_IMAGE_NAME)
+                val oldVideoTagDbStagedFile = File(application.filesDir, OLD_DB_VIDEO_NAME)
+
+                if (oldImageTagDbStagedFile.exists() && oldVideoTagDbStagedFile.exists()) {
+                    val oldImageTagDbPath = application.getDatabasePath(OLD_DB_IMAGE_NAME)
+                    val oldVideoTagDbPath = application.getDatabasePath(OLD_DB_VIDEO_NAME)
+
+                    Log.d(TAG, "Old DB detected, transferring...")
+
+                    oldImageTagDbStagedFile.copyTo(oldImageTagDbPath, overwrite = true)
+                    oldVideoTagDbStagedFile.copyTo(oldVideoTagDbPath, overwrite = true)
+
+                    runBlocking {
+                        DBTransferHelper.transfer(
+                            application = application,
+                            newDb = instance
+                        )
+                    }
+                    oldImageTagDbStagedFile.delete()
+                    oldVideoTagDbStagedFile.delete()
+                    oldImageTagDbPath.delete()
+                    oldVideoTagDbPath.delete()
                 }
                 instance
             }
