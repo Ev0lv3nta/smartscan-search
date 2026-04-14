@@ -217,4 +217,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _appSettings.update{currentSettings -> currentSettings.copy(resultsPerRow = n)}
         saveSettings(sharedPrefs, _appSettings.value)
     }
+
+    fun updateEnableClusterSearch(enable: Boolean){
+        _appSettings.update{currentSettings -> currentSettings.copy(enableClusterSearch = enable)}
+        saveSettings(sharedPrefs, _appSettings.value)
+    }
 }

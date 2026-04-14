@@ -122,7 +122,12 @@ fun SettingsScreen(
                     checked = appSettings.enableDirectGalleryOpen,
                     onCheckedChange = viewModel::updateEnableDirectionGalleryOpen,
                 )
-
+                SwitchItem(
+                    text=stringResource(R.string.setting_enable_cluster_search),
+                    description = stringResource(R.string.setting_enable_cluster_search_description),
+                    checked = appSettings.enableClusterSearch,
+                    onCheckedChange = viewModel::updateEnableClusterSearch,
+                )
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
