@@ -11,15 +11,11 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.fpf.smartscan.collections.MediaCollection
+import com.fpf.smartscan.data.MediaDatabase
 import com.fpf.smartscan.data.MediaPagingSource
-import com.fpf.smartscan.data.MediaTag
-import com.fpf.smartscan.data.TagWithCount
-import com.fpf.smartscan.data.images.ImageDatabase
-import com.fpf.smartscan.data.images.tags.ImageTagCrossRefRepository
-import com.fpf.smartscan.data.images.tags.ImageTagRepository
-import com.fpf.smartscan.data.videos.VideoDatabase
-import com.fpf.smartscan.data.videos.tags.VideoTagCrossRefRepository
-import com.fpf.smartscan.data.videos.tags.VideoTagRepository
+import com.fpf.smartscan.data.tags.TagWithCount
+import com.fpf.smartscan.data.tags.TagCrossRefRepository
+import com.fpf.smartscan.data.tags.TagRepository
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.getImageUriFromId
 import com.fpf.smartscan.media.getVideoUriFromId
@@ -47,12 +43,12 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
         private const val TAG = "CollectionItemsViewModel"
     }
 
-    private val imageDB by lazy { ImageDatabase.getDatabase(application)}
-    private val videoDB by lazy { VideoDatabase.getDatabase(application)}
-    private val imageTagsCrossRefRepository by lazy { ImageTagCrossRefRepository( imageDB.imageTagCrossRefDao())}
-    private val videoTagsCrossRefRepository by lazy {  VideoTagCrossRefRepository(videoDB.videoTagCrossRefDao())}
-    private val imageTagsRepository by lazy { ImageTagRepository(imageDB.tagDao())}
-    private val videoTagsRepository by lazy { VideoTagRepository(videoDB.tagDao())}
+
+    private val db = MediaDatabase.getDatabase(application)
+
+    private val tagsRepository by lazy { TagRepository(db.tagDao())}
+    private val tagsCrossRefRepository by lazy { TagCrossRefRepository( db.tagCrossRefDao())}
+
 
     private val _state = MutableStateFlow(CollectionItemsState())
     val state: StateFlow<CollectionItemsState> = _state
@@ -63,7 +59,7 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
         .distinctUntilChanged()
         .flatMapLatest { (mediaType, collectionName) ->
 
-            val tagId = getTag(mediaType, collectionName)?.id
+            val tagId = collectionName?.let{tagsRepository.getTagsByName(listOf(it)).firstOrNull()?.id}
 
             if (tagId == null) {
                 flowOf(PagingData.empty())
@@ -78,8 +74,7 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
                         MediaPagingSource(
                             mediaType = mediaType,
                             tagId = tagId,
-                            imageRepo = imageTagsCrossRefRepository,
-                            videoRepo = videoTagsCrossRefRepository,
+                            tagsCrossRefRepository = tagsCrossRefRepository,
                             mediaIdToUri = ::mediaIdToUri
                         )
                     }
@@ -89,47 +84,36 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
         .cachedIn(viewModelScope)
 
     val mediaCollections: StateFlow<List<MediaCollection>> = combine(
-            imageTagsCrossRefRepository.getTagsWithCounts(),
-            videoTagsCrossRefRepository.getTagsWithCounts(),
-            _state.map { it.mediaType }
-        ) { imageTagCounts, videoTagCounts, mediaType ->
+        tagsCrossRefRepository.getTagsWithCounts(),
+        _state.map { it.mediaType }
+    ) { tagCounts, mediaType -> getCollections(tagCounts, mediaType)
+    }.flowOn(Dispatchers.IO).stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Lazily,
+        initialValue = emptyList()
+    )
 
-            when (mediaType) {
-                MediaType.IMAGE -> getCollections(imageTagCounts, mediaType)
-                MediaType.VIDEO -> getCollections(videoTagCounts, mediaType)
-            }
-        }
-            .flowOn(Dispatchers.IO)
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.Lazily,
-                initialValue = emptyList()
-            )
-
-    fun removeItems(mediaType: MediaType, mediaUris: List<Uri>){
+    fun removeItems(mediaUris: List<Uri>){
         val mediaIds = mediaUris.map{uriToMediaId(it)}
         val collectionName = _state.value.collectionName?: return
 
         viewModelScope.launch (Dispatchers.IO){
-            val tag = getTag(mediaType, collectionName)?: return@launch
-            deleteMediaMatchingTag(mediaType, mediaIds, tag.id)
+            val tag = tagsRepository.getTagsByName(listOf(collectionName)).firstOrNull()?: return@launch
+            tagsCrossRefRepository.deleteMediaMatchTag( mediaIds, tag.id)
             _state.update { it.copy(selectedMediaItems = emptyList()) }
         }
     }
 
-    fun moveItems(mediaType: MediaType, mediaUris: List<Uri>, newCollection: MediaCollection){
+    fun moveItems(mediaUris: List<Uri>, newCollection: MediaCollection){
         val mediaIds = mediaUris.map{uriToMediaId(it)}
         val oldCollectionName = _state.value.collectionName?: return
 
         viewModelScope.launch (Dispatchers.IO){
-            val oldTag = getTag(mediaType, oldCollectionName)?: return@launch
-            val newTag = getTag(mediaType, newCollection.name)?: return@launch
+            val oldTag = tagsRepository.getTagsByName(listOf(oldCollectionName)).firstOrNull()?: return@launch
+            val newTag = tagsRepository.getTagsByName(listOf(newCollection.name)).firstOrNull()?: return@launch
 
-            when (mediaType) {
-                MediaType.IMAGE -> imageTagsCrossRefRepository.upsertTagCrossRefs(newTag.id, mediaIds)
-                MediaType.VIDEO -> videoTagsCrossRefRepository.upsertTagCrossRefs(newTag.id, mediaIds)
-            }
-            deleteMediaMatchingTag(mediaType, mediaIds, oldTag.id)
+            tagsCrossRefRepository.upsertTagCrossRefs(newTag.id, mediaIds)
+            tagsCrossRefRepository.deleteMediaMatchTag( mediaIds, oldTag.id)
             _state.update { it.copy(selectedMediaItems = emptyList()) }
         }
     }
@@ -172,7 +156,7 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
 
     private suspend fun getCollections(tags: List<TagWithCount>, mediaType: MediaType): List<MediaCollection> {
         return tags.mapNotNull {
-            val id = getMediaMatchingTag(it.id, mediaType, limit = 1).firstOrNull()
+            val id = tagsCrossRefRepository.getMediaIds(it.id, limit = 1, offset = 0).firstOrNull()
             val uri = id?.let { id -> mediaIdToUri(id, mediaType) }
             uri?.let { uri ->
                 MediaCollection(
@@ -184,26 +168,6 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
         }
     }
 
-    private suspend fun getMediaMatchingTag(tagId: Long, mediaType: MediaType, limit: Int, offset: Int = 0): List<Long> {
-        return when (mediaType) {
-            MediaType.IMAGE -> imageTagsCrossRefRepository.getMediaIds(tagId, limit, offset)
-            MediaType.VIDEO -> videoTagsCrossRefRepository.getMediaIds(tagId, limit, offset)
-        }
-    }
-    private suspend fun getTag(mediaType: MediaType, collectionName: String?): MediaTag?{
-        collectionName?: return null
-        return when (mediaType) {
-            MediaType.IMAGE -> imageTagsRepository.getTagsByName(listOf(collectionName)).firstOrNull()
-            MediaType.VIDEO -> videoTagsRepository.getTagsByName(listOf(collectionName)).firstOrNull()
-        }
-    }
-
-    private suspend fun deleteMediaMatchingTag(mediaType: MediaType, mediaIds: List<Long>, tagId: Long){
-        when (mediaType) {
-            MediaType.IMAGE -> imageTagsCrossRefRepository.deleteMediaMatchTag(mediaIds, tagId)
-            MediaType.VIDEO -> videoTagsCrossRefRepository.deleteMediaMatchTag(mediaIds, tagId)
-        }
-    }
     private fun mediaIdToUri(id: Long, mediaType: MediaType): Uri {
         return when (mediaType) {
             MediaType.IMAGE -> getImageUriFromId(id)

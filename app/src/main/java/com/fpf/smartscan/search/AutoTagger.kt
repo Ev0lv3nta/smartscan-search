@@ -1,6 +1,6 @@
 package com.fpf.smartscan.search
 
-import com.fpf.smartscan.data.MediaTag
+import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.updatePrototypeEmbedding
@@ -14,7 +14,7 @@ class AutoTagger(private val store: FileEmbeddingStore) {
         val prototype = generatePrototypeEmbedding(sampleEmbeddings)
         store.add(listOf(StoredEmbedding(id = id, embedding = prototype, date = System.currentTimeMillis())))
     }
-    suspend fun updateTagPrototype(tag: MediaTag, newEmbeddings: List<FloatArray>): Int{
+    suspend fun updateTagPrototype(tag: Tag, newEmbeddings: List<FloatArray>): Int{
         if(!store.exists){
 //            generateTagPrototype(tag.prototypeId, newEmbeddings )
             return newEmbeddings.size
@@ -32,7 +32,7 @@ class AutoTagger(private val store: FileEmbeddingStore) {
         return 0
     }
 
-    suspend fun calculateCohesionScore(tag: MediaTag, sampleEmbeddings: List<FloatArray>): Float?{
+    suspend fun calculateCohesionScore(tag: Tag, sampleEmbeddings: List<FloatArray>): Float?{
 //        if(!store.exists) return null
 //        val results = store.get(listOf((tag.prototypeId)))
 //        if(results.isEmpty()) null
@@ -42,14 +42,14 @@ class AutoTagger(private val store: FileEmbeddingStore) {
         return 0f
     }
 
-    suspend fun getSuggestedTags(tags: List<MediaTag>, embedding: FloatArray): TagSuggestionsResult {
+    suspend fun getSuggestedTags(tags: List<Tag>, embedding: FloatArray): TagSuggestionsResult {
         if(!store.exists) return TagSuggestionsResult()
 
-        var suggestedTag: MediaTag? = null
+        var suggestedTag: Tag? = null
         var bestSim = 0f
         var secondBestSim = 0f
 
-        var lastUsedTag: MediaTag? = null
+        var lastUsedTag: Tag? = null
         var lastUsed = 0L
 
 //        for(tag in tags) {

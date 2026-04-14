@@ -28,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.zIndex
@@ -54,6 +55,7 @@ import com.fpf.smartscan.ui.permissions.RequestPermissions
 import com.fpf.smartscan.ui.screens.search.SearchViewModel.Companion.RESULTS_BATCH_SIZE
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.StateFlow
+import kotlin.math.max
 
 
 @OptIn(FlowPreview::class)
@@ -77,8 +79,7 @@ fun SearchScreen(
 
     // Search state
     val state by searchViewModel.state.collectAsState()
-    val imageTags by searchViewModel.allImageTags.collectAsState()
-    val videoTags by searchViewModel.allVideoTags.collectAsState()
+    val tags by searchViewModel.allTags.collectAsState()
     val searchBarPlaceholders = listOf(
         when (state.mediaType) {
             MediaType.IMAGE -> "Search images"
@@ -91,6 +92,10 @@ fun SearchScreen(
     var isAddingTag by remember { mutableStateOf(false) }
     var isSelecting by remember { mutableStateOf(false) }
     var offset by remember { mutableStateOf(0) }
+    val density = LocalDensity.current
+    val actionBarHeight = with(density) { 70.dp.toPx() }
+    val searchBarHeight = with(density) { (if(state.queryType == QueryType.IMAGE) 200 else 120).dp.toPx() }
+    val maxCollapsePx = max(actionBarHeight, searchBarHeight).toInt()
 
     RequestPermissions { _, storageGranted ->
         hasStoragePermission = storageGranted
@@ -121,7 +126,7 @@ fun SearchScreen(
     }
 
     LaunchedEffect(Unit) {
-        searchViewModel.externalSearch(intentSearchQuery, appSettings.similarityThreshold)
+        searchViewModel.externalSearch(intentSearchQuery, appSettings.similarityThreshold, appSettings.enableClusterSearch)
     }
 
     DisposableEffect(Unit) {
@@ -220,7 +225,7 @@ fun SearchScreen(
                             imageSize = 160.dp,
                             mediaTypeSelectorEnabled = (videoIndexStatus != IndexingStatus.ACTIVE && imageIndexStatus != IndexingStatus.ACTIVE), // prevent switching modes when indexing in progress
                             onSearch = {
-                                searchViewModel.search(appSettings.similarityThreshold)
+                                searchViewModel.search(appSettings.similarityThreshold, appSettings.enableClusterSearch)
                                 isSelecting = false
                             },
                             onMediaTypeChange = searchViewModel::setMediaType,
@@ -251,19 +256,19 @@ fun SearchScreen(
                             searchFieldState = searchViewModel.searchFieldState,
                             enabled = hasStoragePermission && !state.loading,
                             onSearch = {
-                                searchViewModel.search(appSettings.similarityThreshold)
+                                searchViewModel.search(appSettings.similarityThreshold, appSettings.enableClusterSearch)
                                 isSelecting = false
                             },
                             onImageSelected = {
                                 searchViewModel.updateSearchImageUri(it)
                                 searchViewModel.updateQueryType(QueryType.IMAGE)
-                                searchViewModel.search(appSettings.similarityThreshold)
+                                searchViewModel.search(appSettings.similarityThreshold, appSettings.enableClusterSearch)
                                 isSelecting = false
                             },
                             onImagePasted = {
                                 searchViewModel.updateSearchImageUri(it)
                                 searchViewModel.updateQueryType(QueryType.IMAGE)
-                                searchViewModel.search(appSettings.similarityThreshold)
+                                searchViewModel.search(appSettings.similarityThreshold, appSettings.enableClusterSearch)
                                 isSelecting = false
                             },
                             onClearResults = {
@@ -314,7 +319,6 @@ fun SearchScreen(
             SearchResults(
                 isVisible = !state.loading && state.searchResults.isNotEmpty(),
                 numGridColumns = appSettings.resultsPerRow,
-                queryType = state.queryType,
                 mediaType = state.mediaType,
                 searchResults = state.searchResults,
                 totalResults=state.totalResults,
@@ -329,6 +333,7 @@ fun SearchScreen(
                     offset = 0
                                         },
                 onOffsetChange = {  offset = it },
+                maxCollapsePx = maxCollapsePx
             )
         }
         SlideRevealBox(
@@ -355,7 +360,7 @@ fun SearchScreen(
                         searchViewModel.updateQueryType(QueryType.IMAGE)
                         isSelecting = false
                         searchViewModel.clearSelectedResults()
-                        searchViewModel.search(appSettings.similarityThreshold)
+                        searchViewModel.search(appSettings.similarityThreshold, appSettings.enableClusterSearch)
                     }
                 },
                 onShare = {
@@ -388,7 +393,7 @@ fun SearchScreen(
                     onUpdateSearchImage = {
                         searchViewModel.updateSearchImageUri(uri)
                         searchViewModel.updateQueryType(QueryType.IMAGE)
-                        searchViewModel.search(appSettings.similarityThreshold)
+                        searchViewModel.search(appSettings.similarityThreshold, appSettings.enableClusterSearch)
                         searchViewModel.toggleViewResult(context, null)
                     }
                 )

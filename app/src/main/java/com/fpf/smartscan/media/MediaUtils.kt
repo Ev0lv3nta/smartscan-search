@@ -214,3 +214,41 @@ fun shareMediaMulti(context: Context, uris: List<Uri>){
         context.startActivity(Intent.createChooser(shareIntent, null))
     }
 }
+
+fun filterAccessibleMediaStoreIds(
+    context: Context,
+    ids: List<Long>,
+    mediaType: MediaType
+): Pair<List<Long>, List<Long>> {
+
+    if (ids.isEmpty()) return emptyList<Long>() to emptyList()
+
+    val uri = when (mediaType) {
+        MediaType.VIDEO -> MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+        else -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+    }
+
+    val selection = "${MediaStore.MediaColumns._ID} IN (${
+        ids.joinToString(",") { "?" }
+    })"
+
+    val selectionArgs = ids.map { it.toString() }.toTypedArray()
+
+    val existingIds = HashSet<Long>()
+
+    context.contentResolver.query(
+        uri,
+        arrayOf(MediaStore.MediaColumns._ID),
+        selection,
+        selectionArgs,
+        null
+    )?.use { cursor ->
+        val idIndex = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
+        while (cursor.moveToNext()) {
+            existingIds.add(cursor.getLong(idIndex))
+        }
+    }
+
+    val (valid, invalid) = ids.partition { it in existingIds }
+    return valid to invalid
+}

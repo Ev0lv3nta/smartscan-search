@@ -63,9 +63,9 @@
 
     <!--Search Settings-->
     <string name="setting_auto_open_gallery">Auto-open in gallery</string>
-    <string name="setting_index_frequency">Index frequency</string>
+    <string name="setting_enable_cluster_search">Cluster search</string>
+    <string name="setting_enable_cluster_search_description">Faster, more relevant results, but may occasionally miss some matching items</string>
     <string name="setting_search_result_columns">Results per row</string>
-    <string name="setting_index_frequency_description">Schedule for auto-updates of video and image indexes.</string>
     <string name="setting_similarity_threshold">Similarity threshold</string>
     <string name="setting_similarity_threshold_description">Minimum similarity score for matching results</string>
     <string name="setting_max_search_results">Max search results</string>
@@ -77,8 +77,6 @@
     <string name="setting_searchable_image_folders">Searchable images</string>
     <string name="setting_searchable_video_folders">Searchable videos</string>
     <string name="setting_searchable_folders_description">Optionally select folders which should be indexed for search. If none are selected all will be indexed except those with `.nomedia` files.</string>
-    <string name="scan_frequency_1d">1 Day</string>
-    <string name="scan_frequency_1w">1 Week</string>
 
     <!--Advanced Settings-->
     <string name="setting_models">Models</string>

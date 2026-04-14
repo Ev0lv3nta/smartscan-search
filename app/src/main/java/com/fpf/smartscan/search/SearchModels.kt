@@ -1,6 +1,6 @@
 package com.fpf.smartscan.search
 
-import com.fpf.smartscan.data.MediaTag
+import com.fpf.smartscan.data.tags.Tag
 
 enum class QueryType {
     TEXT, IMAGE
@@ -9,8 +9,8 @@ enum class QueryType {
 enum class IndexingStatus {IDLE, ACTIVE, COMPLETE, FAILED }
 
 data class TagSuggestionsResult(
-    val bestMatch: MediaTag? = null,
-    val lastedUsed: MediaTag? = null,
+    val bestMatch: Tag? = null,
+    val lastedUsed: Tag? = null,
     val confidence: Float = 0f
 )
 

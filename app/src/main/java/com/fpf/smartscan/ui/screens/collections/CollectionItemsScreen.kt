@@ -1,7 +1,6 @@
 package com.fpf.smartscan.ui.screens.collections
 
 import android.content.ClipData
-import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -22,7 +21,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -44,8 +42,6 @@ import com.fpf.smartscan.ui.components.collections.CollectionPicker
 import com.fpf.smartscan.ui.components.media.MediaViewer
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
 
 
 @OptIn(FlowPreview::class)
@@ -71,7 +67,6 @@ fun CollectionItemsScreen(
     val maxCollapsablePx = with(density) { 70.dp.toPx() }.toInt()
 
     val items = viewModel.mediaItems.collectAsLazyPagingItems()
-
 
     LaunchedEffect(collectionName) {
         collectionName?.let{viewModel.setCollection(it)}
@@ -129,7 +124,8 @@ fun CollectionItemsScreen(
             CollectionItemsActionBar(
                 modifier = Modifier.height(70.dp),
                 onRemove = {
-                    viewModel.removeItems(state.mediaType, state.selectedMediaItems)
+                    viewModel.removeItems(state.selectedMediaItems)
+                    items.refresh()
                     isSelecting = false
                 },
                 onShare = {
@@ -184,7 +180,8 @@ fun CollectionItemsScreen(
                 mediaType = state.mediaType,
                 onClose = { isMoving = false },
                 onSelectCollection = {
-                    viewModel.moveItems(state.mediaType, state.selectedMediaItems, it)
+                    viewModel.moveItems(state.selectedMediaItems, it)
+                    items.refresh()
                     isMoving = false
                 }
             )

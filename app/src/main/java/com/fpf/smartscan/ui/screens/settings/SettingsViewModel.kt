@@ -4,12 +4,10 @@ import android.app.Application
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
-import com.fpf.smartscan.data.images.ImageDatabase
-import com.fpf.smartscan.data.videos.VideoDatabase
+import com.fpf.smartscan.data.MediaDatabase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -63,13 +61,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     init {
         _appSettings.value = loadSettings(sharedPrefs)
-        ModelManager.listModels(application)
-    }
-
-    fun updateIndexFrequency(frequency: String) {
-        val currentSettings = _appSettings.value
-        _appSettings.value = currentSettings.copy(indexFrequency = frequency)
-        saveSettings(sharedPrefs, _appSettings.value)
     }
 
     fun updateSimilarityThreshold(threshold: Float) {
@@ -148,11 +139,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val imageClusterEmbeddingStoreFile = File(getApplication<Application>().filesDir, EmbeddingStoresFiles.IMAGE_CLUSTER)
         val videoClusterEmbeddingStoreFile = File(getApplication<Application>().filesDir,  EmbeddingStoresFiles.VIDEO_CLUSTER)
         val hashFile = File(getApplication<Application>().cacheDir, HASH_FILENAME)
-        val imageDb = getApplication<Application>().getDatabasePath(ImageDatabase.DB_NAME)
-        val videoDb = getApplication<Application>().getDatabasePath(VideoDatabase.DB_NAME)
+        val dbPath = getApplication<Application>().getDatabasePath(MediaDatabase.DB_NAME)
 
         val embedStoreFiles = listOf(imageEmbeddingStoreFile, videoEmbeddingStoreFile, imageClusterEmbeddingStoreFile, videoClusterEmbeddingStoreFile)
-        val filesToZip = listOf( hashFile, imageDb, videoDb) + embedStoreFiles
+        val filesToZip = listOf( hashFile, dbPath) + embedStoreFiles
         _isBackupLoading.value = true
 
         viewModelScope.launch(Dispatchers.IO){
@@ -179,20 +169,22 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val indexZipFile = File(getApplication<Application>().cacheDir, BACKUP_FILENAME)
         _isRestoreLoading.value = true
 
+        MediaDatabase.close()
+
         viewModelScope.launch(Dispatchers.IO){
             try {
+
                 copyFromUri(getApplication(), uri, indexZipFile)
                 val extractedFiles = unzipFiles(indexZipFile, getApplication<Application>().filesDir)
-                val expectedFileNames = setOf(EmbeddingStoresFiles.IMAGE,EmbeddingStoresFiles.VIDEO, EmbeddingStoresFiles.IMAGE_CLUSTER, EmbeddingStoresFiles.VIDEO_CLUSTER, ImageDatabase.DB_NAME, VideoDatabase.DB_NAME )
+//                val expectedFileNames = setOf(EmbeddingStoresFiles.IMAGE,EmbeddingStoresFiles.VIDEO, EmbeddingStoresFiles.IMAGE_CLUSTER, EmbeddingStoresFiles.VIDEO_CLUSTER, MediaDatabase.DB_NAME )
 
-                if(!isValidBackupFile(extractedFiles, expectedFileNames)){
+                if(!isValidBackupFile(extractedFiles)){
                     extractedFiles.forEach { it.delete() }
                     error("Invalid backup file")
                 }
                 _event.emit("Restore successful")
                 ImageIndexListener.onComplete(getApplication(), Metrics.Success()) // call onComplete to trigger refresh in search screen
                 VideoIndexListener.onComplete(getApplication(), Metrics.Success())
-                sharedPrefs.edit { putString("lastIndexed", System.currentTimeMillis().toString()) } // so scheduling can be triggered
             }catch (e: Exception){
                 Log.e(TAG, "Error restoring: ${e.message}")
                 if (e.message == "Invalid backup file") _event.emit(e.message!!) else _event.emit("Restore failed")
@@ -203,14 +195,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    private suspend fun isValidBackupFile(extractedFiles: List<File>, expectedFilesNames: Set<String>): Boolean{
+    private suspend fun isValidBackupFile(extractedFiles: List<File>): Boolean{
         val hashFile = extractedFiles.find { it.name == HASH_FILENAME }?: return false
         val hashesFromFile: List<String> = hashFile.readLines()
         if(hashesFromFile.isEmpty()) return false
 
         val otherFiles = extractedFiles.filterNot{it.name == HASH_FILENAME}
         val otherFileHashes = otherFiles.map{hashFile(it)}
-        return hashesFromFile.toSet() == otherFileHashes.toSet() && otherFiles.map { it.name}.toSet() == expectedFilesNames
+        return hashesFromFile.toSet() == otherFileHashes.toSet()
     }
 
     fun updateEnableDirectionGalleryOpen(enable: Boolean){
@@ -219,6 +211,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
     fun updateResultsPerRow(n: Int){
         _appSettings.update{currentSettings -> currentSettings.copy(resultsPerRow = n)}
+        saveSettings(sharedPrefs, _appSettings.value)
+    }
+
+    fun updateEnableClusterSearch(enable: Boolean){
+        _appSettings.update{currentSettings -> currentSettings.copy(enableClusterSearch = enable)}
         saveSettings(sharedPrefs, _appSettings.value)
     }
 }

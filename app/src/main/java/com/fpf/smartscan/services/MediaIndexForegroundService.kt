@@ -14,19 +14,16 @@ import androidx.core.net.toUri
 import com.fpf.smartscan.R
 import com.fpf.smartscan.MainActivity
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
-import com.fpf.smartscan.data.images.clusters.ImageClusterCrossRefRepository
-import com.fpf.smartscan.data.images.ImageDatabase
-import com.fpf.smartscan.data.images.clusters.ImageClusterMetadataRepository
-import com.fpf.smartscan.data.videos.clusters.VideoClusterCrossRefRepository
-import com.fpf.smartscan.data.videos.VideoDatabase
-import com.fpf.smartscan.data.videos.clusters.VideoClusterMetadataRepository
+import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
+import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
+import com.fpf.smartscan.data.MediaDatabase
+import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.search.ImageIndexListener
 import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscan.media.queryImageIds
 import com.fpf.smartscan.media.queryVideoIds
-import com.fpf.smartscan.search.clusterImages
-import com.fpf.smartscan.search.clusterVideos
+import com.fpf.smartscan.search.clusterMedia
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer
@@ -59,11 +56,9 @@ class MediaIndexForegroundService : Service() {
     private val sharedPrefs by lazy { application.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)    }
     private val imageEmbedder by lazy { ClipImageEmbedder(application, ModelAssetSource.Resource(R.raw.clip_image_encoder_quant))}
 
-    private val imageClusterMetadataRepository by lazy { ImageClusterMetadataRepository(ImageDatabase.getDatabase(application).imageClusterMetadataDao()) }
-    private val imageClusterCrossRefRepository by lazy { ImageClusterCrossRefRepository(ImageDatabase.getDatabase(application).imageClusterCrossRefDao()) }
-
-    private val videoClusterMetadataRepository by lazy { VideoClusterMetadataRepository(VideoDatabase.getDatabase(application).videoClusterMetadataDao()) }
-    private val videoClusterCrossRefRepository by lazy { VideoClusterCrossRefRepository(VideoDatabase.getDatabase(application).videoClusterCrossRefDao()) }
+    private val db by lazy {MediaDatabase.getDatabase(application)}
+    private val clusterMetadataRepository by lazy { ClusterMetadataRepository(db.clusterMetadataDao()) }
+    private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
 
 
     override fun onCreate() {
@@ -113,14 +108,14 @@ class MediaIndexForegroundService : Service() {
                     val imageStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE), imageEmbedder.embeddingDim)
                     val imageClusterStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE_CLUSTER), imageEmbedder.embeddingDim)
                     indexImages(imageStore, appSettings.searchableImageDirectories.map{it.toUri()})
-                    clusterImages(imageClusterCrossRefRepository, imageClusterStore, imageStore, imageClusterMetadataRepository)
+                    clusterMedia(clusterCrossRefRepository, imageClusterStore, imageStore, clusterMetadataRepository, MediaType.IMAGE)
                 }
 
                 if (mediaType == TYPE_VIDEO || mediaType == TYPE_BOTH) {
                     val videoStore = FileEmbeddingStore(File(application.filesDir,  EmbeddingStoresFiles.VIDEO), imageEmbedder.embeddingDim )
                     val videoClusterStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.VIDEO_CLUSTER), imageEmbedder.embeddingDim)
                     indexVideos(videoStore, appSettings.searchableVideoDirectories.map { it.toUri() })
-                    clusterVideos(videoClusterCrossRefRepository, videoClusterStore, videoStore, videoClusterMetadataRepository)
+                    clusterMedia(clusterCrossRefRepository, videoClusterStore, videoStore, clusterMetadataRepository, MediaType.VIDEO)
                 }
             } catch (e: CancellationException) {
                 // cancelled

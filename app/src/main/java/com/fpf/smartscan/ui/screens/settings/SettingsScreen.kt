@@ -109,18 +109,6 @@ fun SettingsScreen(
                     onClick = { onNavigate(Routes.settingsDetail(SettingTypes.SEARCHABLE_VID_DIRS)) }
                 )
                 SelectorItem(
-                    label = stringResource(id = R.string.setting_index_frequency),
-                    options = listOf(
-                        stringResource(id = R.string.scan_frequency_1d),
-                        stringResource(id = R.string.scan_frequency_1w)
-                    ),
-                    selectedOption = appSettings.indexFrequency,
-                    onOptionSelected = { selected ->
-                        viewModel.updateIndexFrequency(selected)
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                SelectorItem(
                     label = stringResource(id = R.string.setting_search_result_columns),
                     options = (3 until 6).map { it.toString() },
                     selectedOption = appSettings.resultsPerRow.toString(),
@@ -134,7 +122,12 @@ fun SettingsScreen(
                     checked = appSettings.enableDirectGalleryOpen,
                     onCheckedChange = viewModel::updateEnableDirectionGalleryOpen,
                 )
-
+                SwitchItem(
+                    text=stringResource(R.string.setting_enable_cluster_search),
+                    description = stringResource(R.string.setting_enable_cluster_search_description),
+                    checked = appSettings.enableClusterSearch,
+                    onCheckedChange = viewModel::updateEnableClusterSearch,
+                )
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
