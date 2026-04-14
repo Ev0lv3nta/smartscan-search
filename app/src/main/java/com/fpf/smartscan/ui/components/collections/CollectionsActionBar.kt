@@ -27,7 +27,10 @@ fun CollectionsActionBar(
     onDelete: () -> Unit,
     onRename: () -> Unit,
     modifier: Modifier = Modifier,
-) {
+    deleteEnabled: Boolean = true,
+    mergeEnabled: Boolean = true,
+    renameEnabled: Boolean = true,
+    ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -37,6 +40,7 @@ fun CollectionsActionBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Button (
+            enabled = mergeEnabled,
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.Transparent,
                 disabledContainerColor = Color.Transparent,
@@ -55,6 +59,7 @@ fun CollectionsActionBar(
             }
         }
         Button (
+            enabled = renameEnabled,
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.Transparent,
                 disabledContainerColor = Color.Transparent,
@@ -73,6 +78,7 @@ fun CollectionsActionBar(
             }
         }
         Button (
+            enabled = deleteEnabled,
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.Transparent,
                 disabledContainerColor = Color.Transparent,
