@@ -28,6 +28,10 @@ interface ClusterCrossRefDao {
     @Query("DELETE FROM media_cluster_crossref WHERE clusterId IN (:ids)")
     suspend fun deleteByClusterIds(ids: List<Long>)
 
+    @Transaction
+    @Query("DELETE FROM media_cluster_crossref WHERE mediaId IN (:ids)")
+    suspend fun deleteByMediaIds(ids: List<Long>)
+
     @Query("DELETE FROM media_cluster_crossref")
     suspend fun clear()
 

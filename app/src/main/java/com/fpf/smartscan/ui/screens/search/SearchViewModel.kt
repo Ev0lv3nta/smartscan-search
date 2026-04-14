@@ -302,9 +302,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         }
 
         if(idsToPurge.isNotEmpty()){
-            viewModelScope.launch(Dispatchers.IO) {
-                store.remove(idsToPurge)
-            }
+            purgeStaleItems(store, idsToPurge)
         }
     }
 
@@ -346,9 +344,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                 }
 
                 if (idsToPurge.isNotEmpty()) {
-                    viewModelScope.launch(Dispatchers.IO) {
-                        store.remove(idsToPurge)
-                    }
+                    purgeStaleItems(store, idsToPurge)
                 }
             }finally {
                 isLoadingMoreSearchResults.set(false)
@@ -356,6 +352,13 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         }
     }
 
+    private fun purgeStaleItems(store: FileEmbeddingStore, idsToPurge: List<Long>){
+        viewModelScope.launch(Dispatchers.IO) {
+            store.remove(idsToPurge)
+            tagsCrossRefRepository.deleteByMediaIds(idsToPurge)
+            clusterCrossRefRepository.deleteByMediaIds(idsToPurge)
+        }
+    }
 
     private suspend fun getPaginatedResult(currentItemsCount: Int, store: FileEmbeddingStore): List<Long>{
         return if(_state.value.tagOnlySearch && _state.value.tagFilter != null){
