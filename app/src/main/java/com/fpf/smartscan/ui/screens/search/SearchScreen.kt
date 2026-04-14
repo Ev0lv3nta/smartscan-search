@@ -215,8 +215,7 @@ fun SearchScreen(
                     Column {
                         if (isSelecting) {
                             val text = if (state.selectedResults.isNotEmpty()) "${state.selectedResults.size} Selected" else "Select items"
-                            Text(text, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 8.dp)
-                            )
+                            Text(text, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp), color = MaterialTheme.colorScheme.primary)
                         }
 
                         ImageSearcher(
@@ -250,7 +249,7 @@ fun SearchScreen(
                     Column {
                         if (isSelecting) {
                             val text = if (state.selectedResults.isNotEmpty()) "${state.selectedResults.size} Selected" else "Select items"
-                            Text(text, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 8.dp))
+                            Text(text, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp), color = MaterialTheme.colorScheme.primary)
                         }
                         SearchBar(
                             searchFieldState = searchViewModel.searchFieldState,
