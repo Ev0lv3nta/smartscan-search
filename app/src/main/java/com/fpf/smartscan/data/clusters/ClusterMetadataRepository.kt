@@ -8,7 +8,8 @@ import kotlin.collections.associate
 
 class ClusterMetadataRepository(private val dao: ClusterMetadataDao) {
     fun getAllMetadataFlow(): Flow<List<MediaClusterMetadata>> = dao.getAllFlow()
-    fun getMetadataByTypeFlow(type: MediaType): Flow<List<MediaClusterMetadata>> = dao.getByTypeFlow(type)
+    fun getMetadataByTypeFlow(type: MediaType, minSize: Int = 1): Flow<List<MediaClusterMetadata>> = dao.getByTypeFlow(type, minSize)
+
     fun getAllLabelFlow(): Flow<List<String>> = dao.getLabels()
 
      suspend fun getAllMetadataAsMap(): Map<Long, ClusterMetadata> = dao.getAll().associate {

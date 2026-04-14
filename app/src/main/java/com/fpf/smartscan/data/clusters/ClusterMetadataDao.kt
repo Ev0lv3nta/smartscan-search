@@ -13,8 +13,8 @@ interface ClusterMetadataDao {
     @Query("SELECT * FROM cluster_metadata")
     fun getAllFlow(): Flow<List<MediaClusterMetadata>>
 
-    @Query("SELECT * FROM cluster_metadata WHERE type = :type")
-    fun getByTypeFlow(type: MediaType): Flow<List<MediaClusterMetadata>>
+    @Query("SELECT * FROM cluster_metadata WHERE type = :type AND (prototypeSize >= :minSize)")
+    fun getByTypeFlow(type: MediaType, minSize: Int = 1): Flow<List<MediaClusterMetadata>>
 
     @Query("SELECT * FROM cluster_metadata")
     suspend fun getAll(): List<MediaClusterMetadata>
