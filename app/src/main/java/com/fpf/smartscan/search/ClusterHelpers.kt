@@ -28,7 +28,7 @@ suspend fun clusterMedia(crossRefRepository: ClusterCrossRefRepository, clusterS
 //    Log.d("clusterMedia", "N clusters: ${result.clusters.size} | N: ${result.assignments.size}" )
 
     // Must update clusters before updating assignments to prevent foreign key related errors
-    updateClusters(result, clusterMetadataRepository, clusterStore, mediaType)
+    updateClusters(result, clusterMetadataRepository, existingClusters, clusterStore, mediaType)
     updateAssignments(result, crossRefRepository)
 }
 
@@ -41,23 +41,25 @@ private suspend fun getExistingClusters(store: FileEmbeddingStore, clusterMetada
     } else emptyMap()
 }
 
-suspend fun updateClusters(clusterResult: ClusterResult, clusterMetadataRepository: ClusterMetadataRepository, store: FileEmbeddingStore, mediaType: MediaType){
-    val clusterMetadatas = clusterResult.clusters.values.map{ MediaClusterMetadata(
+private suspend fun updateClusters(clusterResult: ClusterResult, clusterMetadataRepository: ClusterMetadataRepository, existingClusters: Map<Long, Cluster>, store: FileEmbeddingStore, mediaType: MediaType){
+    val (existing, new) = clusterResult.clusters.values.map{ MediaClusterMetadata(
         clusterId = it.prototypeId,
         prototypeSize = it.metadata.prototypeSize,
         meanSimilarity = it.metadata.meanSimilarity,
         stdSimilarity = it.metadata.stdSimilarity,
         label = it.metadata.label,
         type = mediaType
-    ) }
-    clusterMetadataRepository.upsertMetadatas(clusterMetadatas)
+    ) }.partition { it.clusterId in existingClusters }
+
+    clusterMetadataRepository.updateMetadatas(existing)
+    clusterMetadataRepository.updateMetadatas(new)
 
     val clusterEmbeddings = clusterResult.clusters.values.map { StoredEmbedding(id = it.prototypeId, embedding = it.embedding, date = System.currentTimeMillis()) }
     store.add(clusterEmbeddings)
 }
 
 
-suspend fun updateAssignments(clusterResult: ClusterResult, crossRefRepository: ClusterCrossRefRepository){
+private suspend fun updateAssignments(clusterResult: ClusterResult, crossRefRepository: ClusterCrossRefRepository){
     val crossRefs = clusterResult.assignments.map { ClusterCrossRef(clusterId = it.value, mediaId = it.key) }
-    crossRefRepository.addMedia(crossRefs)
+    crossRefRepository.upsertClusterCrossRefs(crossRefs)
 }
