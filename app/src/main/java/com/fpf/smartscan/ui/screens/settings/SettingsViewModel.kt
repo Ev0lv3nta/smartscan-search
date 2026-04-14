@@ -176,9 +176,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
                 copyFromUri(getApplication(), uri, indexZipFile)
                 val extractedFiles = unzipFiles(indexZipFile, getApplication<Application>().filesDir)
-                val expectedFileNames = setOf(EmbeddingStoresFiles.IMAGE,EmbeddingStoresFiles.VIDEO, EmbeddingStoresFiles.IMAGE_CLUSTER, EmbeddingStoresFiles.VIDEO_CLUSTER, MediaDatabase.DB_NAME )
+//                val expectedFileNames = setOf(EmbeddingStoresFiles.IMAGE,EmbeddingStoresFiles.VIDEO, EmbeddingStoresFiles.IMAGE_CLUSTER, EmbeddingStoresFiles.VIDEO_CLUSTER, MediaDatabase.DB_NAME )
 
-                if(!isValidBackupFile(extractedFiles, expectedFileNames)){
+                if(!isValidBackupFile(extractedFiles)){
                     extractedFiles.forEach { it.delete() }
                     error("Invalid backup file")
                 }
@@ -195,14 +195,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    private suspend fun isValidBackupFile(extractedFiles: List<File>, expectedFilesNames: Set<String>): Boolean{
+    private suspend fun isValidBackupFile(extractedFiles: List<File>): Boolean{
         val hashFile = extractedFiles.find { it.name == HASH_FILENAME }?: return false
         val hashesFromFile: List<String> = hashFile.readLines()
         if(hashesFromFile.isEmpty()) return false
 
         val otherFiles = extractedFiles.filterNot{it.name == HASH_FILENAME}
         val otherFileHashes = otherFiles.map{hashFile(it)}
-        return hashesFromFile.toSet() == otherFileHashes.toSet() && otherFiles.map { it.name}.toSet() == expectedFilesNames
+        return hashesFromFile.toSet() == otherFileHashes.toSet()
     }
 
     fun updateEnableDirectionGalleryOpen(enable: Boolean){
