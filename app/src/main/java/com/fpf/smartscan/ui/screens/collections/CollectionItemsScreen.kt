@@ -1,7 +1,6 @@
 package com.fpf.smartscan.ui.screens.collections
 
 import android.content.ClipData
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -73,11 +72,11 @@ fun CollectionItemsScreen(
 
     val tagCollectionItems = viewModel.tagItems.collectAsLazyPagingItems()
     val clusterCollectionItems = viewModel.clusterItems.collectAsLazyPagingItems()
+    val isTagCollection = state.clusterId == -1L
 
 
     LaunchedEffect(collectionName, clusterId) {
         viewModel.setCollection(collectionName, clusterId)
-        Log.d("CollectionItemsScreen", "Clusterid: $clusterId")
     }
 
     BackHandler(enabled = isSelecting) {
@@ -109,7 +108,7 @@ fun CollectionItemsScreen(
             CollectionItemsList(
                 isVisible = tagCollectionItems.itemCount > 0 || clusterCollectionItems.itemCount> 0,
                 numGridColumns = appSettings.resultsPerRow,
-                items = if(state.clusterId != -1L) clusterCollectionItems else tagCollectionItems,
+                items = if(isTagCollection) tagCollectionItems else clusterCollectionItems,
                 isSelecting = isSelecting,
                 selectedItems = state.selectedMediaItems,
                 onViewItem = { uri -> viewModel.setMediaToView(context, uri, appSettings.enableDirectGalleryOpen, isSelecting) },
@@ -142,10 +141,10 @@ fun CollectionItemsScreen(
                 modifier = Modifier.height(70.dp),
                 onRemove = {
                     viewModel.removeItems(state.selectedMediaItems)
-                    if(state.clusterId != -1L) clusterCollectionItems.refresh() else tagCollectionItems.refresh()
+                    if(isTagCollection) tagCollectionItems.refresh() else clusterCollectionItems.refresh()
                     isSelecting = false
                 },
-                removeEnabled = state.clusterId == -1L,
+                removeEnabled = isTagCollection,
                 onShare = {
                     shareMediaMulti(context, state.selectedMediaItems.map{it.uri})
                     isSelecting = false
@@ -155,7 +154,7 @@ fun CollectionItemsScreen(
                     isMoving = true
                     isSelecting = false
                          },
-                moveEnabled = state.clusterId == -1L,
+                moveEnabled = isTagCollection,
                 onCopy = {
                     clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", state.selectedMediaItems[0].uri))
                     isSelecting = false
@@ -199,10 +198,10 @@ fun CollectionItemsScreen(
                 onClose = { isMoving = false },
                 onSelectCollection = {
                     viewModel.moveItems(state.selectedMediaItems, it)
-                    if(state.clusterId != -1L) clusterCollectionItems.refresh() else tagCollectionItems.refresh()
+                    if(isTagCollection) tagCollectionItems.refresh() else clusterCollectionItems.refresh()
                     isMoving = false
                 }
             )
         }
-        }
     }
+}
