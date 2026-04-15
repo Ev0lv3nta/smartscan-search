@@ -28,7 +28,7 @@ class ClusterPagingSource(
             val pageItems = if (hasMore) crossRefs.dropLast(1) else crossRefs
 
             val uris = pageItems.map { crossRef ->
-                mediaIdToUri(crossRef.clusterId, crossRef.type)
+                mediaIdToUri(crossRef.mediaId, crossRef.type)
             }
 
             LoadResult.Page(
