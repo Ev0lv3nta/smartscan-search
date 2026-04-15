@@ -458,14 +458,14 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
             try {
                 val selectedMediaIds = _state.value.selectedResults.map { ContentUris.parseId(it) }
 
-                when (_state.value.mediaType) {
+                when (val mediaType = _state.value.mediaType) {
                     MediaType.IMAGE -> {
                         val existing = tagsRepository.getTagsByName(listOf(tag)).firstOrNull()
                         var id = existing?.id
                         if(id == null){
                             id = tagsRepository.insertTags(listOf(Tag(name=tag.trim()))).first()
                         }
-                        val tagEntries = selectedMediaIds.map { TagCrossRef(mediaId = it, tagId = id) }
+                        val tagEntries = selectedMediaIds.map { TagCrossRef(mediaId = it, tagId = id, type = mediaType) }
                         tagsCrossRefRepository.upsertTagCrossRefs(tagEntries)
                     }
                     MediaType.VIDEO -> {
@@ -474,7 +474,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                         if(id == null){
                             id = tagsRepository.insertTags(listOf(Tag(name=tag.trim()))).first()
                         }
-                        val tagEntries = selectedMediaIds.map { TagCrossRef(mediaId = it, tagId = id) }
+                        val tagEntries = selectedMediaIds.map { TagCrossRef(mediaId = it, tagId = id, type = mediaType) }
                         tagsCrossRefRepository.upsertTagCrossRefs(tagEntries)
                     }
                 }
