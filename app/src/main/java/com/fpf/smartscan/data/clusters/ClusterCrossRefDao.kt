@@ -5,24 +5,25 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import com.fpf.smartscan.media.MediaType
 
 @Dao
 interface ClusterCrossRefDao {
-    @Query("SELECT clusterId FROM media_cluster_crossref")
-    suspend fun getAllClusters(): List<Long>
-
-    @Query("SELECT mediaId FROM media_cluster_crossref")
-    suspend fun getAllMedia(): List<Long>
-
-    @Query("SELECT mediaId FROM media_cluster_crossref WHERE clusterId = :clusterId")
-    suspend fun getMediaIds(clusterId: Long): List<Long>
-
-    @Query("SELECT mediaId FROM media_cluster_crossref WHERE clusterId = :clusterId LIMIT :limit OFFSET :offset")
-    suspend fun getMediaIds(clusterId: Long, limit: Int, offset: Int): List<Long>
-
-
     @Query("SELECT * FROM media_cluster_crossref")
-    suspend fun getAllCrossRefs(): List<ClusterCrossRef>
+    suspend fun getAll(): List<ClusterCrossRef>
+
+    @Query("SELECT * FROM media_cluster_crossref WHERE clusterId = :clusterId")
+    suspend fun getByClusterId(clusterId: Long): List<ClusterCrossRef>
+
+    @Query("SELECT * FROM media_cluster_crossref WHERE clusterId = :clusterId LIMIT :limit OFFSET :offset")
+    suspend fun getByClusterId(clusterId: Long, limit: Int, offset: Int): List<ClusterCrossRef>
+
+
+    @Query("SELECT * FROM media_cluster_crossref WHERE clusterId = :clusterId AND type =:type")
+    suspend fun getByClusterIdAndType(clusterId: Long, type: MediaType): List<ClusterCrossRef>
+
+    @Query("SELECT * FROM media_cluster_crossref WHERE clusterId = :clusterId  AND type =:type LIMIT :limit OFFSET :offset")
+    suspend fun getByClusterIdAndType(clusterId: Long, type: MediaType, limit: Int, offset: Int): List<ClusterCrossRef>
 
     @Transaction
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
