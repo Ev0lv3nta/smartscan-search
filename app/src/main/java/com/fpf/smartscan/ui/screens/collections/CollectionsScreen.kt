@@ -280,7 +280,7 @@ fun CollectionsScreen(
                     isMergingCollections = true
                     isSelecting = false
                 },
-                mergeEnabled = state.viewAutoCollections,
+                mergeEnabled = !state.viewAutoCollections,
                 onRename = {
                     isRenamingCollection = true
                     isSelecting = false
