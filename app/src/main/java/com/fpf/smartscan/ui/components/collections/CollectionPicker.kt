@@ -20,13 +20,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Text
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import com.fpf.smartscan.collections.MediaCollection
+import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.media.MediaType
 
 @Composable
 fun CollectionPicker(
     collections: List<MediaCollection>,
-    mediaType: MediaType,
     onClose: () -> Unit,
     onSelectCollection: (collection: MediaCollection) -> Unit,
 ) {
@@ -69,7 +68,6 @@ fun CollectionPicker(
                     MediaCollectionsList(
                         isVisible = true,
                         numGridColumns = 3,
-                        mediaType = mediaType,
                         items = collections,
                         onItemClick = onSelectCollection,
                     )

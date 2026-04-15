@@ -1,6 +1,6 @@
 package com.fpf.smartscan.ui.screens.collections
 
-import com.fpf.smartscan.collections.MediaCollection
+import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.media.MediaType
 
 data class CollectionsState(

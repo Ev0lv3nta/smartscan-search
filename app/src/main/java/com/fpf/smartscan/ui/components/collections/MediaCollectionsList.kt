@@ -45,7 +45,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.fpf.smartscan.collections.MediaCollection
+import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.ui.components.CircularCheckbox
 import com.fpf.smartscan.ui.components.media.ImageDisplay
@@ -56,7 +56,6 @@ import kotlin.math.roundToInt
 fun MediaCollectionsList(
     isVisible: Boolean,
     items: List<MediaCollection>,
-    mediaType: MediaType,
     onItemClick: (MediaCollection) -> Unit,
     selectedItems: List<MediaCollection> = emptyList(),
     onToggleSelected: ((MediaCollection) -> Unit)? = null,
@@ -150,7 +149,7 @@ fun MediaCollectionsList(
                             uri = item.thumbNail,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop,
-                            mediaType = mediaType
+                            mediaType = MediaType.IMAGE
                         )
 
                         if (isSelecting) {

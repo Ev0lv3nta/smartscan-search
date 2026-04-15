@@ -109,7 +109,6 @@ fun CollectionItemsScreen(
             CollectionItemsList(
                 isVisible = tagCollectionItems.itemCount > 0 || clusterCollectionItems.itemCount> 0,
                 numGridColumns = appSettings.resultsPerRow,
-                mediaType = state.mediaType,
                 items = if(state.clusterId != -1L) clusterCollectionItems else tagCollectionItems,
                 isSelecting = isSelecting,
                 selectedItems = state.selectedMediaItems,
@@ -148,7 +147,7 @@ fun CollectionItemsScreen(
                 },
                 removeEnabled = state.clusterId == -1L,
                 onShare = {
-                    shareMediaMulti(context, state.selectedMediaItems)
+                    shareMediaMulti(context, state.selectedMediaItems.map{it.uri})
                     isSelecting = false
                     viewModel.clearSelectedItems()
                           },
@@ -158,13 +157,13 @@ fun CollectionItemsScreen(
                          },
                 moveEnabled = state.clusterId == -1L,
                 onCopy = {
-                    clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", state.selectedMediaItems[0]))
+                    clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", state.selectedMediaItems[0].uri))
                     isSelecting = false
                     viewModel.clearSelectedItems()
                 }
             )
         }
-        state.mediaToView?.let { uri ->
+        state.mediaToView?.let { item ->
             AnimatedVisibility(
                 visible = true,
                 enter = fadeIn(animationSpec = tween(500)) + scaleIn(
@@ -177,8 +176,8 @@ fun CollectionItemsScreen(
                 )
             ) {
                 MediaViewer(
-                    uri = uri,
-                    type = state.mediaType,
+                    uri = item.uri,
+                    type = item.type,
                     onClose = { viewModel.setMediaToView(context, null) },
                     onUpdateSearchImage = null
                 )
@@ -197,7 +196,6 @@ fun CollectionItemsScreen(
         ) {
             CollectionPicker(
                 collections = mediaCollections,
-                mediaType = state.mediaType,
                 onClose = { isMoving = false },
                 onSelectCollection = {
                     viewModel.moveItems(state.selectedMediaItems, it)

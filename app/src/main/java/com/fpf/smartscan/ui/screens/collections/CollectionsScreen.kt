@@ -121,11 +121,11 @@ fun CollectionsScreen(
         label = "Primary collection",
         options = state.selectedCollections.map {it.name },
         onConfirm = { selected ->
-            if(state.viewAutoCollections){
-                viewModel.mergeClusterCollections(selected, state.selectedCollections.filterNot { it.name == selected })
-            }else {
-                viewModel.mergeTagCollections(selected, state.selectedCollections.filterNot { it.name == selected })
-            }
+//            if(state.viewAutoCollections){
+//                viewModel.mergeClusterCollections(selected, state.selectedCollections.filterNot { it.name == selected })
+//            }else {
+//                viewModel.group(selected, state.selectedCollections.filterNot { it.name == selected })
+//            }
                     },
         onClose = { isMergingCollections = false }
     )
@@ -235,7 +235,6 @@ fun CollectionsScreen(
             MediaCollectionsList(
                 isVisible = isCollectionVisible,
                 numGridColumns = 3,
-                mediaType = state.mediaType,
                 items = if(state.viewAutoCollections) clusterCollections else tagCollections,
                 isSelecting = isSelecting,
                 selectedItems = state.selectedCollections,
@@ -281,7 +280,7 @@ fun CollectionsScreen(
                     isMergingCollections = true
                     isSelecting = false
                 },
-                mergeEnabled = !state.viewAutoCollections,
+                mergeEnabled = state.viewAutoCollections,
                 onRename = {
                     isRenamingCollection = true
                     isSelecting = false

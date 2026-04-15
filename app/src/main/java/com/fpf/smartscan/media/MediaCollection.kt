@@ -1,4 +1,4 @@
-package com.fpf.smartscan.collections
+package com.fpf.smartscan.media
 
 import android.net.Uri
 

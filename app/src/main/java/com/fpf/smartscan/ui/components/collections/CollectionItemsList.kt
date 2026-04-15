@@ -1,7 +1,5 @@
 package com.fpf.smartscan.ui.components.collections
 
-
-import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -17,7 +15,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -42,7 +39,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
-import com.fpf.smartscan.media.MediaType
+import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.ui.components.CircularCheckbox
 import com.fpf.smartscan.ui.components.media.ImageDisplay
 import kotlinx.coroutines.launch
@@ -51,11 +48,10 @@ import kotlin.math.roundToInt
 @Composable
 fun CollectionItemsList(
     isVisible: Boolean,
-    items: LazyPagingItems<Uri>,
-    selectedItems: List<Uri>,
-    mediaType: MediaType,
-    onViewItem: (item: Uri?) -> Unit,
-    onToggleSelected: (Uri) -> Unit,
+    items: LazyPagingItems<MediaItem>,
+    selectedItems: List<MediaItem>,
+    onViewItem: (item: MediaItem?) -> Unit,
+    onToggleSelected: (MediaItem) -> Unit,
     onToggleSelectionMode: () -> Unit,
     onOffsetChange: (Int) -> Unit,
     numGridColumns: Int = 3,
@@ -152,10 +148,10 @@ fun CollectionItemsList(
                             )
                     ) {
                         ImageDisplay(
-                            uri = item,
+                            uri = item.uri,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop,
-                            mediaType = mediaType
+                            mediaType = item.type
                         )
 
                         if (isSelecting) {

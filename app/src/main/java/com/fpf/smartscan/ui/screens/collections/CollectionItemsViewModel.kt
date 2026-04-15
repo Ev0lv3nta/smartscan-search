@@ -10,15 +10,17 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
-import com.fpf.smartscan.collections.MediaCollection
+import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.data.MediaDatabase
 import com.fpf.smartscan.data.tags.TagPagingSource
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.clusters.ClusterPagingSource
+import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.data.tags.TagWithCount
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
 import com.fpf.smartscan.data.tags.TagRepository
+import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.getImageUriFromId
 import com.fpf.smartscan.media.getVideoUriFromId
@@ -119,15 +121,15 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
     val mediaCollections: StateFlow<List<MediaCollection>> = combine(
         tagsCrossRefRepository.getTagsWithCounts(),
         _state.map { it.mediaType }
-    ) { tagCounts, mediaType -> getCollections(tagCounts, mediaType)
+    ) { tagCounts, mediaType -> getCollections(tagCounts)
     }.flowOn(Dispatchers.IO).stateIn(
         scope = viewModelScope,
         started = SharingStarted.Lazily,
         initialValue = emptyList()
     )
 
-    fun removeItems(mediaUris: List<Uri>){
-        val mediaIds = mediaUris.map{uriToMediaId(it)}
+    fun removeItems(items: List<MediaItem>){
+        val mediaIds = items.map{it.id}
         val collectionName = _state.value.collectionName?: return
 
         viewModelScope.launch (Dispatchers.IO){
@@ -137,22 +139,22 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
         }
     }
 
-    fun moveItems(mediaUris: List<Uri>, newCollection: MediaCollection){
-        val mediaIds = mediaUris.map{uriToMediaId(it)}
+    fun moveItems(items: List<MediaItem>, newCollection: MediaCollection){
+        val mediaIds = items.map{it.id}
         val oldCollectionName = _state.value.collectionName?: return
 
         viewModelScope.launch (Dispatchers.IO){
             val oldTag = tagsRepository.getTagsByName(listOf(oldCollectionName)).firstOrNull()?: return@launch
             val newTag = tagsRepository.getTagsByName(listOf(newCollection.name)).firstOrNull()?: return@launch
-
-            tagsCrossRefRepository.upsertTagCrossRefs(newTag.id, mediaIds)
+            val updatedCrossRef = items.map{ TagCrossRef(mediaId = it.id, tagId=newTag.id, type=it.type)}
+            tagsCrossRefRepository.upsertTagCrossRefs(updatedCrossRef)
             tagsCrossRefRepository.deleteMediaMatchTag( mediaIds, oldTag.id)
             _state.update { it.copy(selectedMediaItems = emptyList()) }
         }
     }
 
 
-    fun toggleSelectedItem(item: Uri){
+    fun toggleSelectedItem(item: MediaItem){
         _state.update { currentState ->
             if (item in currentState.selectedMediaItems) {
                 val updatedSelectedResults = currentState.selectedMediaItems - item
@@ -172,25 +174,22 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
         _state.update { it.copy(collectionName=name, clusterId = clusterId) }
     }
 
-    fun setMediaToView(context: Context, uri: Uri?, autoOpenInGallery: Boolean? = null, isSelecting: Boolean = false){
+    fun setMediaToView(context: Context, item: MediaItem?, autoOpenInGallery: Boolean? = null, isSelecting: Boolean = false){
         if(autoOpenInGallery == true && !isSelecting) {
-            when(_state.value.mediaType){
-                MediaType.IMAGE -> {
-                    uri?.let{openImageInGallery(context, it)}
-                }
-                MediaType.VIDEO -> {
-                    uri?.let{openVideoInGallery(context, it)}
-                }
+            when(item?.type){
+                MediaType.IMAGE -> openImageInGallery(context, item.uri)
+                MediaType.VIDEO -> openVideoInGallery(context, item.uri)
+                else -> {}
             }
         }else{
-            _state.update { it.copy(mediaToView =uri) }
+            _state.update { it.copy(mediaToView =item) }
         }
     }
 
-    private suspend fun getCollections(tags: List<TagWithCount>, mediaType: MediaType): List<MediaCollection> {
+    private suspend fun getCollections(tags: List<TagWithCount>): List<MediaCollection> {
         return tags.mapNotNull {
-            val id = tagsCrossRefRepository.getMediaIds(it.id, limit = 1, offset = 0).firstOrNull()
-            val uri = id?.let { id -> mediaIdToUri(id, mediaType) }
+            val crossRef = tagsCrossRefRepository.getByTag(it.id, limit = 1, offset = 0).firstOrNull()
+            val uri = crossRef?.let { crossRef -> mediaIdToUri(crossRef.mediaId, crossRef.type) }
             uri?.let { uri ->
                 MediaCollection(
                     id = it.id,
@@ -207,9 +206,5 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
             MediaType.IMAGE -> getImageUriFromId(id)
             MediaType.VIDEO -> getVideoUriFromId(id)
         }
-    }
-
-    private fun uriToMediaId(uri: Uri): Long {
-        return ContentUris.parseId(uri)
     }
 }

@@ -3,6 +3,7 @@ package com.fpf.smartscan.data.clusters
 import android.net.Uri
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.media.MediaType
 
 class ClusterPagingSource(
@@ -10,9 +11,9 @@ class ClusterPagingSource(
     private val clusterId: Long,
     private val clusterCrossRefRepository: ClusterCrossRefRepository,
     private val mediaIdToUri: (Long, MediaType) -> Uri
-) : PagingSource<Int, Uri>() {
+) : PagingSource<Int, MediaItem>() {
 
-    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Uri> {
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, MediaItem> {
         val page = params.key ?: 0
         val pageSize = params.loadSize
         val offset = page * pageSize
@@ -27,12 +28,16 @@ class ClusterPagingSource(
             val hasMore = crossRefs.size > pageSize
             val pageItems = if (hasMore) crossRefs.dropLast(1) else crossRefs
 
-            val uris = pageItems.map { crossRef ->
-                mediaIdToUri(crossRef.mediaId, crossRef.type)
+            val mediaItems = pageItems.map {
+                MediaItem(
+                    id=it.mediaId,
+                    uri=mediaIdToUri(it.mediaId, it.type),
+                    type = it.type
+                )
             }
 
             LoadResult.Page(
-                data = uris,
+                data = mediaItems,
                 prevKey = if (page == 0) null else page - 1,
                 nextKey = if (hasMore) page + 1 else null
             )
@@ -42,7 +47,7 @@ class ClusterPagingSource(
         }
     }
 
-    override fun getRefreshKey(state: PagingState<Int, Uri>): Int? {
+    override fun getRefreshKey(state: PagingState<Int, MediaItem>): Int? {
         return state.anchorPosition?.let { pos ->
             state.closestPageToPosition(pos)?.prevKey?.plus(1)
                 ?: state.closestPageToPosition(pos)?.nextKey?.minus(1)
