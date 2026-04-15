@@ -53,15 +53,10 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
     val state: StateFlow<CollectionsState> = _state
 
     val clusterCollections: StateFlow<List<MediaCollection>> = combine(
-        clusterMetadataRepository.getMetadataByTypeFlow(MediaType.IMAGE),
-        clusterMetadataRepository.getMetadataByTypeFlow(MediaType.VIDEO),
+        clusterMetadataRepository.getAllMetadataFlow(),
         _state.map { it.mediaType to it.showAllCollections }.distinctUntilChanged()
-    ) { imageClusters, videoClusters, (mediaType, showAllCollections) ->
+    ) { clusters, (mediaType, showAllCollections) ->
 
-        val clusters = when (mediaType) {
-            MediaType.IMAGE -> imageClusters
-            MediaType.VIDEO -> videoClusters
-        }
         val filteredClusters = if (showAllCollections) clusters else clusters.take(6)
 
         clustersToCollections(filteredClusters)
