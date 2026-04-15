@@ -52,7 +52,7 @@ private suspend fun updateClusters(clusterResult: ClusterResult, clusterMetadata
     ) }.partition { it.clusterId in existingClusters }
 
     clusterMetadataRepository.updateMetadatas(existing)
-    clusterMetadataRepository.updateMetadatas(new)
+    clusterMetadataRepository.insertMetadatas(new)
 
     val clusterEmbeddings = clusterResult.clusters.values.map { StoredEmbedding(id = it.prototypeId, embedding = it.embedding, date = System.currentTimeMillis()) }
     store.add(clusterEmbeddings)
