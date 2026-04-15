@@ -121,11 +121,9 @@ fun CollectionsScreen(
         label = "Primary collection",
         options = state.selectedCollections.map {it.name },
         onConfirm = { selected ->
-//            if(state.viewAutoCollections){
-//                viewModel.mergeClusterCollections(selected, state.selectedCollections.filterNot { it.name == selected })
-//            }else {
-//                viewModel.group(selected, state.selectedCollections.filterNot { it.name == selected })
-//            }
+            if(!state.viewAutoCollections){
+                viewModel.mergeCollections(selected, state.selectedCollections.filterNot { it.name == selected })
+            }
                     },
         onClose = { isMergingCollections = false }
     )

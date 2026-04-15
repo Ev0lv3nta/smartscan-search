@@ -7,17 +7,14 @@ import androidx.lifecycle.viewModelScope
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
 import com.fpf.smartscan.data.tags.TagRepository
 import com.fpf.smartscan.media.MediaCollection
-import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.data.MediaDatabase
 import com.fpf.smartscan.data.tags.TagWithCount
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
-import com.fpf.smartscan.data.clusters.MediaClusterMetadata
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataWithCount
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.getImageUriFromId
 import com.fpf.smartscan.media.getVideoUriFromId
-import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -29,7 +26,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.File
 import kotlin.collections.plus
 
 
@@ -44,11 +40,6 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
     private val tagsCrossRefRepository by lazy { TagCrossRefRepository( db.tagCrossRefDao())}
     private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
     private val clusterMetadataRepository by lazy { ClusterMetadataRepository(db.clusterMetadataDao()) }
-
-    private val imageClusterStore by lazy { FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE_CLUSTER), 512)}
-
-    private val videoClusterStore  by lazy { FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.VIDEO_CLUSTER), 512 )}
-
 
     private val _state = MutableStateFlow(CollectionsState())
     val state: StateFlow<CollectionsState> = _state
@@ -97,9 +88,19 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
         }
     }
 
-//    fun groupTagCollections(primaryCollectionName: String, otherCollections: List<MediaCollection>){
-//
-//    }
+    fun mergeCollections(primaryCollectionName: String, otherCollections: List<MediaCollection>){
+        viewModelScope.launch (Dispatchers.IO) {
+            val primaryTag = tagsRepository.getTagsByName(listOf(primaryCollectionName)).firstOrNull()
+            val tagsToMerge = tagsRepository.getTagsByName(otherCollections.map{it.name})
+            val mediaToUpdate = tagsToMerge.flatMap { tagsCrossRefRepository.getByTag(it.id) }
+            if(primaryTag != null && mediaToUpdate.isNotEmpty()){
+                val updated = mediaToUpdate.map{it.copy(tagId = primaryTag.id)}
+                tagsCrossRefRepository.upsertTagCrossRefs(updated)
+                tagsRepository.deleteTags(tagsToMerge)
+            }
+            _state.update { it.copy( selectedCollections = emptyList()) }
+        }
+    }
 
     fun renameClusterCollection(collection: MediaCollection, newName: String){
         viewModelScope.launch(Dispatchers.IO) {
@@ -108,71 +109,6 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
             cluster?.let { clusterMetadataRepository.updateMetadatas(listOf(it.copy(label = newName))) }
             _state.update { it.copy(selectedCollections = emptyList()) }
         }
-    }
-
-  fun mergeClusterCollections(primaryCollectionName: String, otherCollections: List<MediaCollection>){
-        val primaryCollection = _state.value.selectedCollections.find { it.name == primaryCollectionName }?: return
-        viewModelScope.launch(Dispatchers.IO) {
-            val primaryCluster = clusterMetadataRepository.getMetadatas(listOf(primaryCollection.id)).firstOrNull()
-            val idsToMerge = otherCollections.map { it.id }
-            val clustersToMerge = clusterMetadataRepository.getMetadatas(idsToMerge)
-            val mediaToUpdate = clustersToMerge.flatMap { clusterCrossRefRepository.getByClusterId(it.clusterId) }
-            if (primaryCluster != null && mediaToUpdate.isNotEmpty()) {
-                val store =
-                    if (primaryCluster.type == MediaType.IMAGE) imageClusterStore else videoClusterStore
-                val storedEmbeds = store.get(listOf(primaryCollection.id) + idsToMerge)
-                if (storedEmbeds.size != otherCollections.size + 1) error("Missing cluster in embed store")
-                val embeddings = mutableListOf<FloatArray>()
-                val counts = mutableListOf<Int>()
-                val idToClusterMetadata = clustersToMerge.associateBy { it.clusterId }
-                for (emb in storedEmbeds) {
-                    val meta = idToClusterMetadata[emb.id] ?: continue
-                    counts.add(meta.prototypeSize)
-                    embeddings.add(emb.embedding)
-                }
-
-
-                val newPrototype = mergePrototypes(embeddings, counts)
-                val newSize = counts.sum()
-                val updatedMeta = primaryCluster.copy(prototypeSize = newSize)
-
-                // TODO: need to add update method to embedding store
-                // TODO: need to recompute std and mean sim
-//            clusterMetadataRepository.updateMetadatas(listOf(updatedMeta))
-//            clusterCrossRefRepository.upsertClusterCrossRefs(primaryCluster.clusterId, mediaToUpdate)
-//            clusterMetadataRepository.deleteMetadatas(idsToMerge)
-            }
-            _state.update { it.copy(selectedCollections = emptyList()) }
-        }
-    }
-
-    private fun mergePrototypes(prototypes: List<FloatArray>, counts: List<Int>): FloatArray {
-        require(prototypes.isNotEmpty()) { "No prototypes provided" }
-        require(prototypes.size == counts.size) { "Mismatched inputs" }
-
-        val dim = prototypes[0].size
-        for (p in prototypes) {
-            require(p.size == dim) { "Embedding dimensions must match" }
-        }
-
-        val total = counts.sum()
-        require(total > 0) { "Total count must be > 0" }
-
-        val result = FloatArray(dim)
-
-        for (i in prototypes.indices) {
-            val p = prototypes[i]
-            val w = counts[i]
-            for (d in 0 until dim) {
-                result[d] += p[d] * w
-            }
-        }
-
-        for (d in 0 until dim) {
-            result[d] /= total
-        }
-
-        return result
     }
 
     fun toggleSelectedCollection(collection: MediaCollection){
