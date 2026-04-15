@@ -13,6 +13,7 @@ import com.fpf.smartscan.data.tags.TagWithCount
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.MediaClusterMetadata
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
+import com.fpf.smartscan.data.clusters.ClusterMetadataWithCount
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.getImageUriFromId
 import com.fpf.smartscan.media.getVideoUriFromId
@@ -53,7 +54,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
     val state: StateFlow<CollectionsState> = _state
 
     val clusterCollections: StateFlow<List<MediaCollection>> = combine(
-        clusterMetadataRepository.getAllMetadataFlow(),
+        clusterCrossRefRepository.getClustersWithCount(),
         _state.map { it.mediaType to it.showAllCollections }.distinctUntilChanged()
     ) { clusters, (mediaType, showAllCollections) ->
 
@@ -217,7 +218,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
         }
     }
 
-    private suspend fun clustersToCollections(clusters: List<MediaClusterMetadata>): List<MediaCollection> {
+    private suspend fun clustersToCollections(clusters: List<ClusterMetadataWithCount>): List<MediaCollection> {
         return clusters.mapNotNull {
             val id = clusterCrossRefRepository.getByClusterId(it.clusterId, limit = 1, offset = 0).firstOrNull()
             val uri = id?.let { id -> getUriFromMediaId(id.mediaId, it.type) }
@@ -226,7 +227,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
                     id = it.clusterId,
                     name = it.label?: "?",
                     thumbNail = uri,
-                    size = it.prototypeSize,
+                    size = it.count,
                     isAutoCollection = true
                 )
             }

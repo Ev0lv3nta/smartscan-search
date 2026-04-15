@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import com.fpf.smartscan.media.MediaType
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ClusterCrossRefDao {
@@ -42,5 +43,14 @@ interface ClusterCrossRefDao {
 
     @Query("SELECT COUNT(*) FROM media_cluster_crossref WHERE clusterId = :clusterId ")
     suspend fun count(clusterId: Long): Int
+
+    @Query("""
+    SELECT m.*, COUNT(c.mediaId) AS count
+    FROM media_cluster_crossref c
+    JOIN cluster_metadata m ON m.clusterId = c.clusterId
+    GROUP BY c.clusterId
+    ORDER BY count DESC
+    """)
+    fun getClustersWithCount(): Flow<List<ClusterMetadataWithCount>>
 
 }
