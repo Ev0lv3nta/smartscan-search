@@ -1,6 +1,7 @@
 package com.fpf.smartscan.ui.screens.collections
 
 import android.content.ClipData
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -32,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -53,6 +53,7 @@ import kotlinx.coroutines.flow.StateFlow
 fun CollectionItemsScreen(
     collectionName: String?,
     appSettings: StateFlow<AppSettings>,
+    clusterId: Long = -1L, // null not allowed for longs in nav
     viewModel: CollectionItemsViewModel = viewModel(),
     ) {
 
@@ -70,12 +71,14 @@ fun CollectionItemsScreen(
     val density = LocalDensity.current
     val maxCollapsablePx = with(density) { 70.dp.toPx() }.toInt()
 
-    val items = viewModel.mediaItems.collectAsLazyPagingItems()
+    val tagCollectionItems = viewModel.tagItems.collectAsLazyPagingItems()
+    val clusterCollectionItems = viewModel.clusterItems.collectAsLazyPagingItems()
 
-    LaunchedEffect(collectionName) {
-        collectionName?.let{viewModel.setCollection(it)}
+
+    LaunchedEffect(collectionName, clusterId) {
+        viewModel.setCollection(collectionName, clusterId)
+        Log.d("CollectionItemsScreen", "Clusterid: $clusterId")
     }
-
 
     BackHandler(enabled = isSelecting) {
         isSelecting = false
@@ -104,10 +107,10 @@ fun CollectionItemsScreen(
                 Text(text, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp), color = MaterialTheme.colorScheme.primary)
             }
             CollectionItemsList(
-                isVisible = items.itemCount > 0,
+                isVisible = tagCollectionItems.itemCount > 0 || clusterCollectionItems.itemCount> 0,
                 numGridColumns = appSettings.resultsPerRow,
                 mediaType = state.mediaType,
-                items = items,
+                items = if(state.clusterId != -1L) clusterCollectionItems else tagCollectionItems,
                 isSelecting = isSelecting,
                 selectedItems = state.selectedMediaItems,
                 onViewItem = { uri -> viewModel.setMediaToView(context, uri, appSettings.enableDirectGalleryOpen, isSelecting) },
@@ -140,9 +143,10 @@ fun CollectionItemsScreen(
                 modifier = Modifier.height(70.dp),
                 onRemove = {
                     viewModel.removeItems(state.selectedMediaItems)
-                    items.refresh()
+                    if(state.clusterId != -1L) clusterCollectionItems.refresh() else tagCollectionItems.refresh()
                     isSelecting = false
                 },
+                removeEnabled = state.clusterId == -1L,
                 onShare = {
                     shareMediaMulti(context, state.selectedMediaItems)
                     isSelecting = false
@@ -152,6 +156,7 @@ fun CollectionItemsScreen(
                     isMoving = true
                     isSelecting = false
                          },
+                moveEnabled = state.clusterId == -1L,
                 onCopy = {
                     clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", state.selectedMediaItems[0]))
                     isSelecting = false
@@ -196,7 +201,7 @@ fun CollectionItemsScreen(
                 onClose = { isMoving = false },
                 onSelectCollection = {
                     viewModel.moveItems(state.selectedMediaItems, it)
-                    items.refresh()
+                    if(state.clusterId != -1L) clusterCollectionItems.refresh() else tagCollectionItems.refresh()
                     isMoving = false
                 }
             )

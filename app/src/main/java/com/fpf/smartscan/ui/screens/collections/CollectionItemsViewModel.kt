@@ -12,7 +12,10 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.fpf.smartscan.collections.MediaCollection
 import com.fpf.smartscan.data.MediaDatabase
-import com.fpf.smartscan.data.MediaPagingSource
+import com.fpf.smartscan.data.tags.TagPagingSource
+import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
+import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
+import com.fpf.smartscan.data.clusters.ClusterPagingSource
 import com.fpf.smartscan.data.tags.TagWithCount
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
 import com.fpf.smartscan.data.tags.TagRepository
@@ -48,13 +51,16 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
 
     private val tagsRepository by lazy { TagRepository(db.tagDao())}
     private val tagsCrossRefRepository by lazy { TagCrossRefRepository( db.tagCrossRefDao())}
+    private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
+    private val clusterMetadataRepository by lazy { ClusterMetadataRepository(db.clusterMetadataDao()) }
+
 
 
     private val _state = MutableStateFlow(CollectionItemsState())
     val state: StateFlow<CollectionItemsState> = _state
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val mediaItems = _state
+    val tagItems = _state
         .map { it.mediaType to it.collectionName }
         .distinctUntilChanged()
         .flatMapLatest { (mediaType, collectionName) ->
@@ -71,10 +77,37 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
                         enablePlaceholders = false
                     ),
                     pagingSourceFactory = {
-                        MediaPagingSource(
+                        TagPagingSource(
                             mediaType = mediaType,
                             tagId = tagId,
                             tagsCrossRefRepository = tagsCrossRefRepository,
+                            mediaIdToUri = ::mediaIdToUri
+                        )
+                    }
+                ).flow
+            }
+        }
+        .cachedIn(viewModelScope)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val clusterItems = _state
+        .map { Triple(it.mediaType, it.collectionName, it.clusterId) }
+        .distinctUntilChanged()
+        .flatMapLatest { (mediaType, collectionName, clusterId) ->
+            if (clusterId == -1L) {
+                flowOf(PagingData.empty())
+            } else {
+                Pager(
+                    config = PagingConfig(
+                        pageSize = 100,
+                        initialLoadSize = 100,
+                        enablePlaceholders = false
+                    ),
+                    pagingSourceFactory = {
+                        ClusterPagingSource(
+                            mediaType = mediaType,
+                            clusterId = clusterId,
+                            clusterCrossRefRepository = clusterCrossRefRepository,
                             mediaIdToUri = ::mediaIdToUri
                         )
                     }
@@ -135,8 +168,8 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
         _state.update{currentState -> currentState.copy(selectedMediaItems = emptyList())}
     }
 
-    fun setCollection(name: String?){
-        _state.update { it.copy(collectionName=name) }
+    fun setCollection(name: String?, clusterId: Long){
+        _state.update { it.copy(collectionName=name, clusterId = clusterId) }
     }
 
     fun setMediaToView(context: Context, uri: Uri?, autoOpenInGallery: Boolean? = null, isSelecting: Boolean = false){
@@ -160,6 +193,7 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
             val uri = id?.let { id -> mediaIdToUri(id, mediaType) }
             uri?.let { uri ->
                 MediaCollection(
+                    id = it.id,
                     name = it.name,
                     thumbNail = uri,
                     size = it.count

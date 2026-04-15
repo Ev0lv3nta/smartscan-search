@@ -1,7 +1,11 @@
 package com.fpf.smartscan.ui.screens.collections
 
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material3.Icon
@@ -29,6 +34,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -53,10 +60,11 @@ fun CollectionsScreen(
     viewModel: CollectionsViewModel = viewModel(),
     ) {
     val state by viewModel.state.collectAsState()
-    val mediaClusters by viewModel.mediaClusters.collectAsState()
-    val mediaCollections by viewModel.mediaCollections.collectAsState()
+    val clusterCollections by viewModel.clusterCollections.collectAsState()
+    val tagCollections by viewModel.tagCollections.collectAsState()
     val appSettings by appSettings.collectAsState()
-    val collectionsEmpty = mediaCollections.isEmpty()
+
+    val isCollectionVisible = tagCollections.isNotEmpty() && !state.viewAutoCollections || clusterCollections.isNotEmpty() && state.viewAutoCollections
 
     val context = LocalContext.current
 
@@ -70,7 +78,11 @@ fun CollectionsScreen(
 
     LaunchedEffect(state.collectToView) {
         state.collectToView?.let{
-            onNavigate(Routes.viewCollection(it.name))
+            if(it.isAutoCollection){
+                onNavigate(Routes.viewCollection(it.name, it.id))
+            }else{
+                onNavigate(Routes.viewCollection(it.name))
+            }
             viewModel.setCollectionToView(null)
         }
     }
@@ -85,8 +97,12 @@ fun CollectionsScreen(
         title="Rename collection",
         placeholder = "Enter new collection name",
         onClose = {isRenamingCollection = false},
-        onConfirm = {
-            newName -> viewModel.renameCollection( state.selectedCollections.first(), newName)
+        onConfirm = { newName ->
+            if(state.viewAutoCollections){
+                viewModel.renameClusterCollection( state.selectedCollections.first(), newName)
+            } else{
+                viewModel.renameTagCollection( state.selectedCollections.first(), newName)
+            }
                     },
         leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
         onValueChange = {
@@ -104,8 +120,12 @@ fun CollectionsScreen(
         title="Merge collections",
         label = "Primary collection",
         options = state.selectedCollections.map {it.name },
-        onConfirm = {
-            selected -> viewModel.mergeCollections( selected, state.selectedCollections.filterNot { it.name == selected })
+        onConfirm = { selected ->
+            if(state.viewAutoCollections){
+                viewModel.mergeClusterCollections(selected, state.selectedCollections.filterNot { it.name == selected })
+            }else {
+                viewModel.mergeTagCollections(selected, state.selectedCollections.filterNot { it.name == selected })
+            }
                     },
         onClose = { isMergingCollections = false }
     )
@@ -136,31 +156,87 @@ fun CollectionsScreen(
                     color = MaterialTheme.colorScheme.primary
                 )
             }
-
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+                    .clip(RoundedCornerShape(
+                        topStart = 12.dp,
+                        bottomStart = 0.dp,
+                        topEnd = 12.dp,
+                        bottomEnd = 0.dp
+                    ))
+                    .background(color = MaterialTheme.colorScheme.surfaceContainer)
+                    .border(
+                        BorderStroke(1.dp, Color.Gray),
+                        shape = RoundedCornerShape(
+                            topStart = 12.dp,
+                            bottomStart = 0.dp,
+                            topEnd = 12.dp,
+                            bottomEnd = 0.dp
+                        )
+                    ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "My collections",
-                    style = MaterialTheme.typography.titleMedium,
-                )
-
-                TextButton(onClick = {viewModel.toggleViewAllCollections()}) {
-                    Text(
-                        text = "View all",
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(8.dp)
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() },
+                            onClick = {viewModel.toggleViewAutoCollections()}
+                        )
+                ) {
+                    Text("Tag collections",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary
+                        color = if(!state.viewAutoCollections) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(color = MaterialTheme.colorScheme.surfaceContainer)
+                        .border(BorderStroke(1.dp, Color.Gray),
+                            shape = RoundedCornerShape(
+                                topStart = 0.dp,
+                                bottomStart = 0.dp,
+                                topEnd = 12.dp,
+                                bottomEnd = 0.dp
+                            )
+                        )
+                        .padding(8.dp)
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() },
+                            onClick = {viewModel.toggleViewAutoCollections()}
+                        )
+                ) {
+                    Text("Auto collections",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if(state.viewAutoCollections) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
 
+            TextButton(
+                modifier=Modifier.align(Alignment.End),
+                onClick = {viewModel.toggleViewAllCollections()}) {
+                Text(
+                    text = "View all",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
             MediaCollectionsList(
-                isVisible = !collectionsEmpty,
+                isVisible = isCollectionVisible,
                 numGridColumns = 3,
                 mediaType = state.mediaType,
-                items = mediaCollections,
+                items = if(state.viewAutoCollections) clusterCollections else tagCollections,
                 isSelecting = isSelecting,
                 selectedItems = state.selectedCollections,
                 onItemClick = viewModel::setCollectionToView,
@@ -173,7 +249,7 @@ fun CollectionsScreen(
                 maxCollapsePx = maxCollapsablePx
             )
 
-            EmptyCollectionScreen(collectionsEmpty)
+            EmptyCollectionScreen(!isCollectionVisible)
         }
 
         SlideRevealBox(
@@ -197,13 +273,15 @@ fun CollectionsScreen(
                     .height(70.dp)
                     .zIndex(1f),
                 onDelete = {
-                    viewModel.deleteCollection( state.selectedCollections.first())
+                    viewModel.deleteTagCollection( state.selectedCollections.first())
                     isSelecting = false
                 },
+                deleteEnabled = !state.viewAutoCollections,
                 onMerge = {
                     isMergingCollections = true
                     isSelecting = false
                 },
+                mergeEnabled = !state.viewAutoCollections,
                 onRename = {
                     isRenamingCollection = true
                     isSelecting = false
