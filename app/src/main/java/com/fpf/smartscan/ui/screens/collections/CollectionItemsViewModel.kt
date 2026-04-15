@@ -194,7 +194,7 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
 
     fun onErrorAsyncImage(error: AsyncImagePainter.State.Error){
         viewModelScope.launch (Dispatchers.IO){
-            onMediaLoadingError(application, error,
+            onMediaLoadingError(error,
                 imageEmbedStore = imageStore,
                 videoEmbedStore = videoStore,
                 tagsCrossRefRepository = tagsCrossRefRepository,
