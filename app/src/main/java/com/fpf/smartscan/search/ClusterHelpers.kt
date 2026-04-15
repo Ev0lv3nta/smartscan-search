@@ -16,7 +16,7 @@ import kotlin.collections.filterNot
 import kotlin.collections.mapNotNull
 
 suspend fun clusterMedia(crossRefRepository: ClusterCrossRefRepository, clusterStore: FileEmbeddingStore, itemStore: FileEmbeddingStore, clusterMetadataRepository: ClusterMetadataRepository, mediaType: MediaType){
-    val assignedIds = crossRefRepository.getAllMedia()
+    val assignedIds = crossRefRepository.getAssignments()
     val existingClusters: Map<Long, Cluster> = getExistingClusters(clusterStore, clusterMetadataRepository)
 
     var itemEmbeds = if(itemStore.exists) itemStore.get() else emptyList()
@@ -29,7 +29,7 @@ suspend fun clusterMedia(crossRefRepository: ClusterCrossRefRepository, clusterS
 
     // Must update clusters before updating assignments to prevent foreign key related errors
     updateClusters(result, clusterMetadataRepository, existingClusters, clusterStore, mediaType)
-    updateAssignments(result, crossRefRepository)
+    updateAssignments(result, crossRefRepository, mediaType)
 }
 
 private suspend fun getExistingClusters(store: FileEmbeddingStore, clusterMetadataRepository: ClusterMetadataRepository): Map<Long, Cluster>{
@@ -59,7 +59,7 @@ private suspend fun updateClusters(clusterResult: ClusterResult, clusterMetadata
 }
 
 
-private suspend fun updateAssignments(clusterResult: ClusterResult, crossRefRepository: ClusterCrossRefRepository){
-    val crossRefs = clusterResult.assignments.map { ClusterCrossRef(clusterId = it.value, mediaId = it.key) }
+private suspend fun updateAssignments(clusterResult: ClusterResult, crossRefRepository: ClusterCrossRefRepository, mediaType: MediaType){
+    val crossRefs = clusterResult.assignments.map { ClusterCrossRef(clusterId = it.value, mediaId = it.key, type = mediaType) }
     crossRefRepository.upsertClusterCrossRefs(crossRefs)
 }
