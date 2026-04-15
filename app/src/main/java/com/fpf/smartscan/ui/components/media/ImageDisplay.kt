@@ -41,15 +41,18 @@ fun ImageDisplay(
 
     Box(modifier = modifier.background(Color.Transparent), contentAlignment = Alignment.Center) {
         if(mediaType == MediaType.VIDEO){
-            Icon(Icons.Filled.PlayCircle, contentDescription = null, modifier = Modifier.align(
-                Alignment.Center).zIndex(1f))
+            Icon(Icons.Filled.PlayCircle, contentDescription = null, modifier = Modifier
+                .align(
+                    Alignment.Center
+                )
+                .zIndex(1f))
         }
         AsyncImage(
             model = request,
             contentDescription = "Displayed image",
             contentScale = contentScale,
             modifier = Modifier.fillMaxSize(),
-            onError = onError
+            onError = { onError?.invoke(it) }
         )
     }
 }

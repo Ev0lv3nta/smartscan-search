@@ -1,15 +1,17 @@
 package com.fpf.smartscan.ui.screens.collections
 
 import android.app.Application
-import android.content.ContentUris
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import coil3.compose.AsyncImagePainter
+import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.data.MediaDatabase
 import com.fpf.smartscan.data.tags.TagPagingSource
@@ -26,6 +28,8 @@ import com.fpf.smartscan.media.getImageUriFromId
 import com.fpf.smartscan.media.getVideoUriFromId
 import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
+import com.fpf.smartscan.media.onMediaLoadingError
+import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,6 +44,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
 import kotlin.collections.plus
 
 
@@ -56,7 +61,8 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
     private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
     private val clusterMetadataRepository by lazy { ClusterMetadataRepository(db.clusterMetadataDao()) }
 
-
+    val imageStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE), 512)
+    val videoStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.VIDEO), 512 )
 
     private val _state = MutableStateFlow(CollectionItemsState())
     val state: StateFlow<CollectionItemsState> = _state
@@ -183,6 +189,17 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
             }
         }else{
             _state.update { it.copy(mediaToView =item) }
+        }
+    }
+
+    fun onErrorAsyncImage(error: AsyncImagePainter.State.Error){
+        viewModelScope.launch (Dispatchers.IO){
+            onMediaLoadingError(application, error,
+                imageEmbedStore = imageStore,
+                videoEmbedStore = videoStore,
+                tagsCrossRefRepository = tagsCrossRefRepository,
+                clusterCrossRefRepository=clusterCrossRefRepository
+                )
         }
     }
 

@@ -39,6 +39,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
+import coil3.compose.AsyncImagePainter
 import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.ui.components.CircularCheckbox
 import com.fpf.smartscan.ui.components.media.ImageDisplay
@@ -57,6 +58,7 @@ fun CollectionItemsList(
     numGridColumns: Int = 3,
     maxCollapsePx: Int = 0,
     isSelecting: Boolean = false,
+    onError: ((AsyncImagePainter.State.Error) -> Unit)? = null
 ) {
     if (!isVisible) return
 
@@ -151,7 +153,8 @@ fun CollectionItemsList(
                             uri = item.uri,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop,
-                            mediaType = item.type
+                            mediaType = item.type,
+                            onError=onError
                         )
 
                         if (isSelecting) {

@@ -118,7 +118,8 @@ fun CollectionItemsScreen(
                     offset = 0
                 },
                 onOffsetChange = {  offset = it },
-                maxCollapsePx = maxCollapsablePx
+                maxCollapsePx = maxCollapsablePx,
+                onError = viewModel::onErrorAsyncImage
             )
         }
 

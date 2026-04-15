@@ -28,6 +28,7 @@ import com.fpf.smartscan.utils.canOpenUri
 import com.fpf.smartscan.media.getVideoUriFromId
 import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
+import com.fpf.smartscan.media.removeStaleMedia
 import com.fpf.smartscan.search.ImageIndexListener
 import com.fpf.smartscan.search.AutoTagger
 import com.fpf.smartscan.search.SearchQuery
@@ -354,9 +355,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
     private fun purgeStaleItems(store: FileEmbeddingStore, idsToPurge: List<Long>){
         viewModelScope.launch(Dispatchers.IO) {
-            store.remove(idsToPurge)
-            tagsCrossRefRepository.deleteByMediaIds(idsToPurge)
-            clusterCrossRefRepository.deleteByMediaIds(idsToPurge)
+            removeStaleMedia(idsToPurge, store, tagsCrossRefRepository, clusterCrossRefRepository)
         }
     }
 
