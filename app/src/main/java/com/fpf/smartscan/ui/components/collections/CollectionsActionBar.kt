@@ -39,7 +39,7 @@ fun CollectionsActionBar(
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (mergeEnabled) {
+
             Button(
                 enabled = mergeEnabled,
                 colors = ButtonDefaults.buttonColors(
@@ -60,7 +60,7 @@ fun CollectionsActionBar(
                     Text("Merge", style = MaterialTheme.typography.labelMedium)
                 }
             }
-        }
+
         Button(
             enabled = renameEnabled,
             colors = ButtonDefaults.buttonColors(
@@ -81,7 +81,7 @@ fun CollectionsActionBar(
                 Text("Rename", style = MaterialTheme.typography.labelMedium)
             }
         }
-        if (deleteEnabled) {
+
             Button(
                 enabled = deleteEnabled,
                 colors = ButtonDefaults.buttonColors(
@@ -101,7 +101,6 @@ fun CollectionsActionBar(
                     )
                     Text("Delete", style = MaterialTheme.typography.labelMedium)
                 }
-            }
         }
     }
 }
