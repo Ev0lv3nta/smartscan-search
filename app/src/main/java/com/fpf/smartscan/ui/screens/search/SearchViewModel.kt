@@ -566,11 +566,11 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         return when (mediaType){
             MediaType.IMAGE -> {
                 val tag = tagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
-                tag?.let { tagsCrossRefRepository.getMediaIds(it.id, limit, offset) } ?: emptyList()
+                tag?.let { tagsCrossRefRepository.getByTag(it.id, limit, offset).map{it.mediaId}  }?: emptyList()
             }
             MediaType.VIDEO -> {
                 val tag = tagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
-                tag?.let { tagsCrossRefRepository.getMediaIds(it.id, limit, offset) } ?: emptyList()
+                tag?.let { tagsCrossRefRepository.getByTag(it.id, limit, offset).map{it.mediaId} } ?: emptyList()
             }
         }
     }
