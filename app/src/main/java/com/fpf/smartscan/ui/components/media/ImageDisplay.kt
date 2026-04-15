@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -16,6 +15,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.zIndex
 import coil3.compose.AsyncImage
+import coil3.compose.AsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.request.crossfade
@@ -26,9 +26,10 @@ fun ImageDisplay(
     uri: Uri,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
-    maxSize:Int = 512,
     mediaType: MediaType,
-) {
+    maxSize:Int = 512,
+    onError: ((error:  AsyncImagePainter.State.Error)-> Unit)? = null
+    ) {
     val context = LocalContext.current
 
     val request = ImageRequest.Builder(context)
@@ -48,6 +49,7 @@ fun ImageDisplay(
             contentDescription = "Displayed image",
             contentScale = contentScale,
             modifier = Modifier.fillMaxSize(),
+            onError = onError
         )
     }
 }
