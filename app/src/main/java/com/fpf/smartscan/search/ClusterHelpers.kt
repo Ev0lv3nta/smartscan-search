@@ -54,7 +54,7 @@ private suspend fun updateClusters(clusterResult: ClusterResult, clusterMetadata
         )
     }
 
-    val newMetadata = existingClusters.map {
+    val newMetadata = newClusters.map {
         MediaClusterMetadata(
             clusterId = it.prototypeId,
             prototypeSize = it.metadata.prototypeSize,
