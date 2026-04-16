@@ -1,6 +1,7 @@
 package com.fpf.smartscan.ui.screens.collections
 
 import android.app.Application
+import android.database.sqlite.SQLiteConstraintException
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,6 +13,8 @@ import com.fpf.smartscan.data.tags.TagWithCount
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataWithCount
+import com.fpf.smartscan.data.tags.Tag
+import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.getImageUriFromId
 import com.fpf.smartscan.media.getVideoUriFromId
@@ -74,9 +77,13 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
 
     fun renameTagCollection(collection: MediaCollection, newName: String){
         viewModelScope.launch(Dispatchers.IO) {
-            val tag = tagsRepository.getTagsByName(listOf(collection.name)).firstOrNull()
-            tag?.let { tagsRepository.updateTags(listOf((it).copy(name = newName))) }
-            _state.update { it.copy(selectedCollections = emptyList()) }
+            try{
+                val tag = tagsRepository.getTagsByName(listOf(collection.name)).firstOrNull()
+                tag?.let { tagsRepository.updateTags(listOf((it).copy(name = newName))) }
+                _state.update { it.copy(selectedCollections = emptyList()) }
+            } catch (_: SQLiteConstraintException){
+                _state.update { it.copy(error="Collection already exists") }
+            }
         }
     }
 
@@ -104,11 +111,40 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
 
     fun renameClusterCollection(collection: MediaCollection, newName: String){
         viewModelScope.launch(Dispatchers.IO) {
-            val cluster =
-                clusterMetadataRepository.getMetadatas(listOf(collection.id)).firstOrNull()
-            cluster?.let { clusterMetadataRepository.updateMetadatas(listOf(it.copy(label = newName))) }
-            _state.update { it.copy(selectedCollections = emptyList()) }
+            try {
+                val cluster = clusterMetadataRepository.getMetadatas(listOf(collection.id)).firstOrNull()
+                cluster?.let { clusterMetadataRepository.updateMetadatas(listOf(it.copy(label = newName))) }
+                _state.update { it.copy(selectedCollections = emptyList()) }
+            } catch (_: SQLiteConstraintException){
+                _state.update { it.copy(error="Collection already exists") }
+            }
         }
+    }
+
+    fun copyFromClusterToTagCollection(clusterCollection: MediaCollection, tagCollection: MediaCollection){
+        viewModelScope.launch (Dispatchers.IO) {
+            val clusterCrossRefs = clusterCrossRefRepository.getByClusterId(clusterCollection.id)
+            tagsCrossRefRepository.upsertTagCrossRefs(clusterCrossRefs.map{ TagCrossRef(it.mediaId, tagCollection.id, it.type)})
+            _state.update { it.copy( selectedCollections = emptyList()) }
+        }
+    }
+
+    fun createNewCollectionAndCopy(clusterCollection: MediaCollection, newCollectionName: String){
+        viewModelScope.launch (Dispatchers.IO) {
+            try {
+                val insertedIds = tagsRepository.insertTags(listOf(Tag(name = newCollectionName)))
+                if(insertedIds.isEmpty()) return@launch
+                val clusterCrossRefs = clusterCrossRefRepository.getByClusterId(clusterCollection.id)
+                tagsCrossRefRepository.upsertTagCrossRefs(clusterCrossRefs.map{ TagCrossRef(it.mediaId, insertedIds.first(), it.type)})
+                _state.update { it.copy( selectedCollections = emptyList()) }
+            }catch (_: SQLiteConstraintException){
+             _state.update { it.copy(error="Collection already exists") }
+            }
+        }
+    }
+
+    fun resetErrorState(){
+        _state.update { it.copy(error=null) }
     }
 
     fun toggleSelectedCollection(collection: MediaCollection){

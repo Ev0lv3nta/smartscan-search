@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
+import androidx.compose.material.icons.filled.FolderCopy
 import androidx.compose.material.icons.filled.Merge
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -25,8 +26,10 @@ import androidx.compose.ui.unit.dp
 fun CollectionsActionBar(
     onMerge: () -> Unit,
     onDelete: () -> Unit,
+    onCopy: () -> Unit,
     onRename: () -> Unit,
     modifier: Modifier = Modifier,
+    copyEnabled: Boolean = true,
     deleteEnabled: Boolean = true,
     mergeEnabled: Boolean = true,
     renameEnabled: Boolean = true,
@@ -79,6 +82,27 @@ fun CollectionsActionBar(
                     contentDescription = "Rename",
                 )
                 Text("Rename", style = MaterialTheme.typography.labelMedium)
+            }
+        }
+
+        Button(
+            enabled = copyEnabled,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Transparent,
+                disabledContainerColor = Color.Transparent,
+                contentColor = MaterialTheme.colorScheme.onSurface
+            ),
+            onClick = { onCopy() }
+        ) {
+            Column(
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    Icons.Filled.FolderCopy,
+                    contentDescription = "Copy collection",
+                )
+                Text("Copy", style = MaterialTheme.typography.labelMedium)
             }
         }
 

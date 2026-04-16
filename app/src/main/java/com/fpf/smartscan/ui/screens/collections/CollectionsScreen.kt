@@ -3,6 +3,12 @@ package com.fpf.smartscan.ui.screens.collections
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -46,6 +52,7 @@ import com.fpf.smartscan.settings.AppSettings
 import com.fpf.smartscan.ui.components.SelectorModal
 import com.fpf.smartscan.ui.components.SlideRevealBox
 import com.fpf.smartscan.ui.components.TextInputModal
+import com.fpf.smartscan.ui.components.collections.CollectionPicker
 import com.fpf.smartscan.ui.components.collections.CollectionsActionBar
 import com.fpf.smartscan.ui.components.collections.MediaCollectionsList
 import kotlinx.coroutines.FlowPreview
@@ -71,6 +78,7 @@ fun CollectionsScreen(
     var isSelecting by remember { mutableStateOf(false) }
     var isRenamingCollection by remember { mutableStateOf(false) }
     var isMergingCollections by remember { mutableStateOf(false) }
+    var isCopyingCollection by remember { mutableStateOf(false) }
 
     var offset by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
@@ -84,6 +92,13 @@ fun CollectionsScreen(
                 onNavigate(Routes.viewCollection(it.name))
             }
             viewModel.setCollectionToView(null)
+        }
+    }
+
+    LaunchedEffect(state.error) {
+        if(state.error != null){
+            Toast.makeText(context, state.error, Toast.LENGTH_SHORT).show()
+            viewModel.resetErrorState()
         }
     }
 
@@ -282,7 +297,36 @@ fun CollectionsScreen(
                 onRename = {
                     isRenamingCollection = true
                     isSelecting = false
-                }
+                },
+                onCopy  = {
+                    isCopyingCollection = true
+                    isSelecting = false
+                },
+                copyEnabled = state.viewAutoCollections && state.selectedCollections.size == 1
+            )
+        }
+        AnimatedVisibility(
+            visible = isCopyingCollection,
+            enter = fadeIn(animationSpec = tween(500)) + scaleIn(
+                initialScale = 0.8f,
+                animationSpec = tween(500)
+            ),
+            exit = fadeOut(animationSpec = tween(300)) + scaleOut(
+                targetScale = 0.8f,
+                animationSpec = tween(300)
+            )
+        ) {
+            CollectionPicker(
+                collections = tagCollections,
+                onClose = {
+                    isCopyingCollection = false
+                    viewModel.clearSelectedCollections()
+                          },
+                onSelectCollection = {
+                    viewModel.copyFromClusterToTagCollection(state.selectedCollections.first(), it)
+                    isCopyingCollection = false
+                },
+                onCreateNewCollection = {viewModel.createNewCollectionAndCopy(state.selectedCollections.first(),it)}
             )
         }
     }

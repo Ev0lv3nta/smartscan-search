@@ -201,7 +201,7 @@ fun CollectionItemsScreen(
                     viewModel.moveItems(state.selectedMediaItems, it)
                     if(isTagCollection) tagCollectionItems.refresh() else clusterCollectionItems.refresh()
                     isMoving = false
-                }
+                },
             )
         }
     }
