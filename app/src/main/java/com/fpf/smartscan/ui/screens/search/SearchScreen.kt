@@ -332,7 +332,8 @@ fun SearchScreen(
                     offset = 0
                                         },
                 onOffsetChange = {  offset = it },
-                maxCollapsePx = maxCollapsePx
+                maxCollapsePx = maxCollapsePx,
+                onError = searchViewModel::onErrorAsyncImage
             )
         }
         SlideRevealBox(

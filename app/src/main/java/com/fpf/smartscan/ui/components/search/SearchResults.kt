@@ -45,6 +45,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import coil3.compose.AsyncImagePainter
 import com.fpf.smartscan.ui.components.CircularCheckbox
 import kotlin.math.roundToInt
 
@@ -60,6 +61,7 @@ fun SearchResults(
     onToggleSelected: (Uri) -> Unit,
     onToggleSelectionMode: () -> Unit,
     onOffsetChange: (Int) -> Unit,
+    onError: ((AsyncImagePainter.State.Error) -> Unit)? = null,
     numGridColumns: Int = 3,
     loadMoreBuffer: Int = 5,
     isSelecting: Boolean = false,
@@ -164,7 +166,8 @@ fun SearchResults(
                         uri = uri,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
-                        mediaType = mediaType
+                        mediaType = mediaType,
+                        onError=onError
                     )
                     if(isSelecting) {
                         CircularCheckbox(

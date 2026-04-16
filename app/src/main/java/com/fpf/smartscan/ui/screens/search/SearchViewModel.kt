@@ -10,6 +10,7 @@ import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.launch
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import coil3.compose.AsyncImagePainter
 import com.fpf.smartscan.media.getImageUriFromId
 import kotlinx.coroutines.Dispatchers
 import com.fpf.smartscan.R
@@ -26,6 +27,7 @@ import com.fpf.smartscan.media.filterAccessibleMediaStoreIds
 import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.utils.canOpenUri
 import com.fpf.smartscan.media.getVideoUriFromId
+import com.fpf.smartscan.media.onMediaLoadingError
 import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.media.removeStaleMedia
@@ -485,6 +487,17 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
     fun updateAutoCompleteResults(results: List<String>){
         _state.update{currentState -> currentState.copy(autoCompleteTagResults = results)}
+    }
+
+    fun onErrorAsyncImage(error: AsyncImagePainter.State.Error){
+        viewModelScope.launch (Dispatchers.IO){
+            onMediaLoadingError(error,
+                imageEmbedStore = imageStore,
+                videoEmbedStore = videoStore,
+                tagsCrossRefRepository = tagsCrossRefRepository,
+                clusterCrossRefRepository=clusterCrossRefRepository
+            )
+        }
     }
 
     fun handleAutoCompletionCheck(query: CharSequence, substringEnd: Int, startWithHashtag: Boolean =  true){
