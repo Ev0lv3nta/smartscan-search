@@ -41,21 +41,38 @@ private suspend fun getExistingClusters(store: FileEmbeddingStore, clusterMetada
     } else emptyMap()
 }
 
-private suspend fun updateClusters(clusterResult: ClusterResult, clusterMetadataRepository: ClusterMetadataRepository, existingClusters: Map<Long, Cluster>, store: FileEmbeddingStore, mediaType: MediaType){
-    val (existing, new) = clusterResult.clusters.values.map{ MediaClusterMetadata(
-        clusterId = it.prototypeId,
-        prototypeSize = it.metadata.prototypeSize,
-        meanSimilarity = it.metadata.meanSimilarity,
-        stdSimilarity = it.metadata.stdSimilarity,
-        label = it.metadata.label,
-        type = mediaType
-    ) }.partition { it.clusterId in existingClusters }
+private suspend fun updateClusters(clusterResult: ClusterResult, clusterMetadataRepository: ClusterMetadataRepository, existingClustersMap: Map<Long, Cluster>, store: FileEmbeddingStore, mediaType: MediaType){
+    val (existingClusters, newClusters) = clusterResult.clusters.values.partition { it.prototypeId in existingClustersMap }
+    val existingMetadata = existingClusters.map {
+        MediaClusterMetadata(
+            clusterId = it.prototypeId,
+            prototypeSize = it.metadata.prototypeSize,
+            meanSimilarity = it.metadata.meanSimilarity,
+            stdSimilarity = it.metadata.stdSimilarity,
+            label = it.metadata.label,
+            type = mediaType
+        )
+    }
 
-    clusterMetadataRepository.updateMetadatas(existing)
-    clusterMetadataRepository.insertMetadatas(new)
+    val newMetadata = existingClusters.map {
+        MediaClusterMetadata(
+            clusterId = it.prototypeId,
+            prototypeSize = it.metadata.prototypeSize,
+            meanSimilarity = it.metadata.meanSimilarity,
+            stdSimilarity = it.metadata.stdSimilarity,
+            label = it.metadata.label,
+            type = mediaType
+        )
+    }
 
-    val clusterEmbeddings = clusterResult.clusters.values.map { StoredEmbedding(id = it.prototypeId, embedding = it.embedding, date = System.currentTimeMillis()) }
-    store.add(clusterEmbeddings)
+    clusterMetadataRepository.updateMetadatas(existingMetadata)
+    clusterMetadataRepository.insertMetadatas(newMetadata)
+
+    val existingEmbeds = existingClusters.map { StoredEmbedding(id = it.prototypeId, embedding = it.embedding, date = System.currentTimeMillis()) }
+    val newEmbeds = newClusters.map { StoredEmbedding(id = it.prototypeId, embedding = it.embedding, date = System.currentTimeMillis()) }
+
+    store.add(newEmbeds)
+    store.update(existingEmbeds)
 }
 
 
