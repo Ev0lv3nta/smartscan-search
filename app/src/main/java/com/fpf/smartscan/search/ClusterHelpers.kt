@@ -16,7 +16,7 @@ import kotlin.collections.filterNot
 import kotlin.collections.mapNotNull
 
 suspend fun clusterMedia(crossRefRepository: ClusterCrossRefRepository, clusterStore: FileEmbeddingStore, itemStore: FileEmbeddingStore, clusterMetadataRepository: ClusterMetadataRepository, mediaType: MediaType){
-    val assignedIds = crossRefRepository.getAllMedia()
+    val assignedIds = crossRefRepository.getAssignments()
     val existingClusters: Map<Long, Cluster> = getExistingClusters(clusterStore, clusterMetadataRepository)
 
     var itemEmbeds = if(itemStore.exists) itemStore.get() else emptyList()
@@ -28,8 +28,8 @@ suspend fun clusterMedia(crossRefRepository: ClusterCrossRefRepository, clusterS
 //    Log.d("clusterMedia", "N clusters: ${result.clusters.size} | N: ${result.assignments.size}" )
 
     // Must update clusters before updating assignments to prevent foreign key related errors
-    updateClusters(result, clusterMetadataRepository, clusterStore, mediaType)
-    updateAssignments(result, crossRefRepository)
+    updateClusters(result, clusterMetadataRepository, existingClusters, clusterStore, mediaType)
+    updateAssignments(result, crossRefRepository, mediaType)
 }
 
 private suspend fun getExistingClusters(store: FileEmbeddingStore, clusterMetadataRepository: ClusterMetadataRepository): Map<Long, Cluster>{
@@ -41,23 +41,42 @@ private suspend fun getExistingClusters(store: FileEmbeddingStore, clusterMetada
     } else emptyMap()
 }
 
-suspend fun updateClusters(clusterResult: ClusterResult, clusterMetadataRepository: ClusterMetadataRepository, store: FileEmbeddingStore, mediaType: MediaType){
-    val clusterMetadatas = clusterResult.clusters.values.map{ MediaClusterMetadata(
-        clusterId = it.prototypeId,
-        prototypeSize = it.metadata.prototypeSize,
-        meanSimilarity = it.metadata.meanSimilarity,
-        stdSimilarity = it.metadata.stdSimilarity,
-        label = it.metadata.label,
-        type = mediaType
-    ) }
-    clusterMetadataRepository.upsertMetadatas(clusterMetadatas)
+private suspend fun updateClusters(clusterResult: ClusterResult, clusterMetadataRepository: ClusterMetadataRepository, existingClustersMap: Map<Long, Cluster>, store: FileEmbeddingStore, mediaType: MediaType){
+    val (existingClusters, newClusters) = clusterResult.clusters.values.partition { it.prototypeId in existingClustersMap }
+    val existingMetadata = existingClusters.map {
+        MediaClusterMetadata(
+            clusterId = it.prototypeId,
+            prototypeSize = it.metadata.prototypeSize,
+            meanSimilarity = it.metadata.meanSimilarity,
+            stdSimilarity = it.metadata.stdSimilarity,
+            label = it.metadata.label,
+            type = mediaType
+        )
+    }
 
-    val clusterEmbeddings = clusterResult.clusters.values.map { StoredEmbedding(id = it.prototypeId, embedding = it.embedding, date = System.currentTimeMillis()) }
-    store.add(clusterEmbeddings)
+    val newMetadata = newClusters.map {
+        MediaClusterMetadata(
+            clusterId = it.prototypeId,
+            prototypeSize = it.metadata.prototypeSize,
+            meanSimilarity = it.metadata.meanSimilarity,
+            stdSimilarity = it.metadata.stdSimilarity,
+            label = it.metadata.label,
+            type = mediaType
+        )
+    }
+
+    clusterMetadataRepository.updateMetadatas(existingMetadata)
+    clusterMetadataRepository.insertMetadatas(newMetadata)
+
+    val existingEmbeds = existingClusters.map { StoredEmbedding(id = it.prototypeId, embedding = it.embedding, date = System.currentTimeMillis()) }
+    val newEmbeds = newClusters.map { StoredEmbedding(id = it.prototypeId, embedding = it.embedding, date = System.currentTimeMillis()) }
+
+    store.add(newEmbeds)
+    store.update(existingEmbeds)
 }
 
 
-suspend fun updateAssignments(clusterResult: ClusterResult, crossRefRepository: ClusterCrossRefRepository){
-    val crossRefs = clusterResult.assignments.map { ClusterCrossRef(clusterId = it.value, mediaId = it.key) }
-    crossRefRepository.addMedia(crossRefs)
+private suspend fun updateAssignments(clusterResult: ClusterResult, crossRefRepository: ClusterCrossRefRepository, mediaType: MediaType){
+    val crossRefs = clusterResult.assignments.map { ClusterCrossRef(clusterId = it.value, mediaId = it.key, type = mediaType) }
+    crossRefRepository.upsertClusterCrossRefs(crossRefs)
 }

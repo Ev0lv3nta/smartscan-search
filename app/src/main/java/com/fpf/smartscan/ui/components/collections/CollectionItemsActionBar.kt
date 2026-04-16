@@ -29,6 +29,8 @@ fun CollectionItemsActionBar(
     onRemove: () -> Unit,
     onCopy: () -> Unit,
     modifier: Modifier = Modifier,
+    moveEnabled: Boolean = true,
+    removeEnabled: Boolean = true,
 ) {
     Row(
         modifier = modifier
@@ -57,6 +59,7 @@ fun CollectionItemsActionBar(
             }
         }
         Button (
+            enabled = removeEnabled,
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.Transparent,
                 disabledContainerColor = Color.Transparent,
@@ -93,6 +96,7 @@ fun CollectionItemsActionBar(
             }
         }
         Button (
+            enabled = moveEnabled,
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.Transparent,
                 disabledContainerColor = Color.Transparent,

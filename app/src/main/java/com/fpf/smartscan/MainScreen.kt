@@ -139,10 +139,18 @@ fun MainScreen(intentSearchQuery: SearchQuery?) {
                 }
                 composable(
                     route = Routes.COLLECTION_ITEMS,
-                    arguments = listOf(navArgument("collectionName") { type = NavType.StringType })
+                    arguments = listOf(
+                        navArgument("collectionName") { type = NavType.StringType },
+                        navArgument("clusterId") {
+                            type = NavType.LongType
+                            defaultValue = -1L
+                        }
+                    )
                 ) { backStackEntry ->
                     val collectionName = backStackEntry.arguments?.getString("collectionName")
+                    val clusterId = backStackEntry.arguments?.getLong("clusterId")?: -1L
                     CollectionItemsScreen(
+                        clusterId= clusterId,
                         collectionName = collectionName,
                         appSettings = settingsViewModel.appSettings,
                     )

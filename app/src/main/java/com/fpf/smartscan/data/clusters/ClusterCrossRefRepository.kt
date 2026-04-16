@@ -1,28 +1,44 @@
 package com.fpf.smartscan.data.clusters
 
+import com.fpf.smartscan.media.MediaType
+import kotlinx.coroutines.flow.Flow
 import java.util.LinkedHashMap
 
 class ClusterCrossRefRepository(private val dao: ClusterCrossRefDao) {
-    private var clusterToMediaIdsMap: LinkedHashMap<Long, MutableSet<Long>> = LinkedHashMap()
+    private var clusterToMediaIdsMap: MutableMap<Long, MutableSet<Long>> = mutableMapOf()
+    private var assignments: MutableMap<Long, Long> = mutableMapOf()
 
-     suspend fun getAllClusters(): Set<Long> = dao.getAllClusters().toSet()
-     suspend fun getAllMedia(): Set<Long> = dao.getAllMedia().toSet()
-     suspend fun getMediaInCluster(clusterId: Long): Set<Long> = dao.getMediaInCluster(clusterId).toSet()
 
-     suspend fun getClusterToMediaIdsMap(): LinkedHashMap<Long, MutableSet<Long>> {
+    suspend fun getAllCrossRefs(): List<ClusterCrossRef> = dao.getAll()
+    suspend fun getByClusterId(clusterId: Long): List<ClusterCrossRef> = dao.getByClusterId(clusterId)
+    suspend fun getByClusterId(clusterId: Long, limit: Int, offset: Int): List<ClusterCrossRef> = dao.getByClusterId(clusterId, limit, offset)
+    suspend fun getByClusterIdAndType(clusterId: Long, type: MediaType): List<ClusterCrossRef> = dao.getByClusterIdAndType(clusterId, type)
+    suspend fun getByClusterIdAndType(clusterId: Long, type: MediaType, limit: Int, offset: Int): List<ClusterCrossRef> = dao.getByClusterIdAndType(clusterId, type, limit, offset)
+    fun getClustersWithCount(): Flow<List<ClusterMetadataWithCount>> = dao.getClustersWithCount()
+    suspend fun getClusterToMediaIdsMap(): Map<Long, MutableSet<Long>> {
         if (clusterToMediaIdsMap.isNotEmpty()) return clusterToMediaIdsMap
 
-        for(ref in dao.getAllCrossRefs()){
+        for(ref in dao.getAll()){
             clusterToMediaIdsMap.computeIfAbsent(ref.clusterId) { HashSet() }.add(ref.mediaId)
         }
         return clusterToMediaIdsMap
     }
 
-     suspend fun addMedia(mediaClusterCrossRefs: List<ClusterCrossRef>) = dao.addMedia(mediaClusterCrossRefs)
+    suspend fun getAssignments(): Map<Long, Long> {
+        if (assignments.isNotEmpty()) return assignments
 
-     suspend fun deleteByClusterIds(ids: List<Long>) = dao.deleteByClusterIds(ids)
+        for(ref in dao.getAll()){
+            assignments[ref.mediaId] = ref.clusterId
+        }
+        return assignments
+    }
+    suspend fun upsertClusterCrossRefs(crossRefs: List<ClusterCrossRef>) = dao.upsert(crossRefs)
 
-     suspend fun clear() = dao.clear()
+    suspend fun deleteByClusterIds(ids: List<Long>) = dao.deleteByClusterIds(ids)
+
+    suspend fun deleteByMediaIds(ids: List<Long>) = dao.deleteByMediaIds(ids)
+
+    suspend fun clear() = dao.clear()
 
      suspend fun count(clusterId: Long): Int = dao.count(clusterId)
 }

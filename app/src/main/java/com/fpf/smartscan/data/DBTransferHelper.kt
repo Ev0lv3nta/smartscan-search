@@ -12,6 +12,7 @@ import com.fpf.smartscan.data.old.videos.VideoTagDatabase
 import com.fpf.smartscan.data.old.videos.VideoTagRepository
 import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscan.data.tags.TagCrossRef
+import com.fpf.smartscan.media.MediaType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -38,7 +39,7 @@ object DBTransferHelper {
 
         val updatedImageCrossRefs = imageCrossRefs.mapNotNull{
             val tagId = nameToImageTagId[it.tag]?: return@mapNotNull  null
-            TagCrossRef(mediaId=it.imageId, tagId = tagId)}
+            TagCrossRef(mediaId=it.imageId, tagId = tagId, type = MediaType.IMAGE)}
 
         newTagsCrossRefRepository.upsertTagCrossRefs(updatedImageCrossRefs)
         oldImageDb.close()
@@ -61,7 +62,7 @@ object DBTransferHelper {
 
         val updatedVideoCrossRefs = videoCrossRefs.mapNotNull{
             val tagId = nameToVideoTagId[it.tag]?: return@mapNotNull  null
-            TagCrossRef(mediaId=it.videoId, tagId = tagId)}
+            TagCrossRef(mediaId=it.videoId, tagId = tagId, type = MediaType.VIDEO)}
 
         newTagsCrossRefRepository.upsertTagCrossRefs(updatedVideoCrossRefs)
         oldVideoDb.close()

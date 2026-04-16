@@ -28,6 +28,7 @@ import com.fpf.smartscan.utils.canOpenUri
 import com.fpf.smartscan.media.getVideoUriFromId
 import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
+import com.fpf.smartscan.media.removeStaleMedia
 import com.fpf.smartscan.search.ImageIndexListener
 import com.fpf.smartscan.search.AutoTagger
 import com.fpf.smartscan.search.SearchQuery
@@ -302,9 +303,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         }
 
         if(idsToPurge.isNotEmpty()){
-            viewModelScope.launch(Dispatchers.IO) {
-                store.remove(idsToPurge)
-            }
+            purgeStaleItems(store, idsToPurge)
         }
     }
 
@@ -346,9 +345,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                 }
 
                 if (idsToPurge.isNotEmpty()) {
-                    viewModelScope.launch(Dispatchers.IO) {
-                        store.remove(idsToPurge)
-                    }
+                    purgeStaleItems(store, idsToPurge)
                 }
             }finally {
                 isLoadingMoreSearchResults.set(false)
@@ -356,6 +353,11 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         }
     }
 
+    private fun purgeStaleItems(store: FileEmbeddingStore, idsToPurge: List<Long>){
+        viewModelScope.launch(Dispatchers.IO) {
+            removeStaleMedia(idsToPurge, store, tagsCrossRefRepository, clusterCrossRefRepository)
+        }
+    }
 
     private suspend fun getPaginatedResult(currentItemsCount: Int, store: FileEmbeddingStore): List<Long>{
         return if(_state.value.tagOnlySearch && _state.value.tagFilter != null){
@@ -455,14 +457,14 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
             try {
                 val selectedMediaIds = _state.value.selectedResults.map { ContentUris.parseId(it) }
 
-                when (_state.value.mediaType) {
+                when (val mediaType = _state.value.mediaType) {
                     MediaType.IMAGE -> {
                         val existing = tagsRepository.getTagsByName(listOf(tag)).firstOrNull()
                         var id = existing?.id
                         if(id == null){
                             id = tagsRepository.insertTags(listOf(Tag(name=tag.trim()))).first()
                         }
-                        val tagEntries = selectedMediaIds.map { TagCrossRef(mediaId = it, tagId = id) }
+                        val tagEntries = selectedMediaIds.map { TagCrossRef(mediaId = it, tagId = id, type = mediaType) }
                         tagsCrossRefRepository.upsertTagCrossRefs(tagEntries)
                     }
                     MediaType.VIDEO -> {
@@ -471,7 +473,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                         if(id == null){
                             id = tagsRepository.insertTags(listOf(Tag(name=tag.trim()))).first()
                         }
-                        val tagEntries = selectedMediaIds.map { TagCrossRef(mediaId = it, tagId = id) }
+                        val tagEntries = selectedMediaIds.map { TagCrossRef(mediaId = it, tagId = id, type = mediaType) }
                         tagsCrossRefRepository.upsertTagCrossRefs(tagEntries)
                     }
                 }
@@ -563,11 +565,11 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         return when (mediaType){
             MediaType.IMAGE -> {
                 val tag = tagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
-                tag?.let { tagsCrossRefRepository.getMediaIds(it.id, limit, offset) } ?: emptyList()
+                tag?.let { tagsCrossRefRepository.getByTag(it.id, limit, offset).map{it.mediaId}  }?: emptyList()
             }
             MediaType.VIDEO -> {
                 val tag = tagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
-                tag?.let { tagsCrossRefRepository.getMediaIds(it.id, limit, offset) } ?: emptyList()
+                tag?.let { tagsCrossRefRepository.getByTag(it.id, limit, offset).map{it.mediaId} } ?: emptyList()
             }
         }
     }

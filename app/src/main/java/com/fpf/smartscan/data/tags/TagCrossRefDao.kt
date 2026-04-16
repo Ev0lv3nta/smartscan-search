@@ -5,27 +5,31 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import com.fpf.smartscan.media.MediaType
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TagCrossRefDao {
     @Query("SELECT DISTINCT tagId FROM tag_crossref WHERE mediaId = :mediaId")
     suspend fun getTagsForMedia(mediaId: Long): List<Long>
-    @Query("SELECT mediaId FROM tag_crossref WHERE tagId = :tagId")
-    suspend fun getMediaIds(tagId: Long): List<Long>
+    @Query("SELECT * FROM tag_crossref WHERE tagId = :tagId")
+    suspend fun getByTag(tagId: Long): List<TagCrossRef>
+
+    @Query("SELECT * FROM tag_crossref WHERE tagId = :tagId LIMIT :limit OFFSET :offset")
+    suspend fun getByTag(tagId: Long, limit: Int, offset: Int): List<TagCrossRef>
+
+    @Query("SELECT * FROM tag_crossref WHERE tagId = :tagId AND type =:type")
+    suspend fun getByTagAndType(tagId: Long, type: MediaType): List<TagCrossRef>
+
+    @Query("SELECT * FROM tag_crossref WHERE tagId = :tagId  AND type =:type LIMIT :limit OFFSET :offset")
+    suspend fun getByTagAndType(tagId: Long, type: MediaType, limit: Int, offset: Int): List<TagCrossRef>
+
 
     @Query("SELECT mediaId FROM tag_crossref WHERE tagId = :tagId")
     fun getMediaIdsFlow(tagId: Long): Flow<List<Long>>
 
     @Query("SELECT * FROM tag_crossref")
     suspend fun getAllCrossRefs(): List<TagCrossRef>
-
-    @Query("SELECT mediaId FROM tag_crossref WHERE tagId = :tagId LIMIT :limit OFFSET :offset")
-    suspend fun getMediaIds(tagId: Long, limit: Int, offset: Int): List<Long>
-
-    @Transaction
-    @Insert(onConflict = OnConflictStrategy.Companion.IGNORE)
-    suspend fun insert(tags: List<TagCrossRef>)
 
     @Transaction
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)

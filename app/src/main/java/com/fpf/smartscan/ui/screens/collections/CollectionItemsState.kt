@@ -1,13 +1,14 @@
 package com.fpf.smartscan.ui.screens.collections
 
-import android.net.Uri
+import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.media.MediaType
 
 data class CollectionItemsState(
     val collectionName: String? = null,
-    val mediaType: MediaType = MediaType.IMAGE,
+    val clusterId: Long = -1L,
+    val mediaType: MediaType? = null,
     val loading: Boolean = false,
     val error: String? = null,
-    val mediaToView: Uri? = null,
-    val selectedMediaItems: List<Uri> = emptyList(),
+    val mediaToView: MediaItem? = null,
+    val selectedMediaItems: List<MediaItem> = emptyList(),
 )

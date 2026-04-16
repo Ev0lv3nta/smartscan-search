@@ -10,8 +10,10 @@ import com.fpf.smartscansdk.core.cluster.ClusterMetadata
 
 @Entity(
     tableName = "cluster_metadata",
-    indices = [Index(value = ["label"], unique = true)]
-)
+    indices = [
+        Index(value = ["label"], unique = true),
+        Index(value = ["type", "prototypeSize"])
+    ])
 @TypeConverters(MediaTypeConverter::class)
 data class MediaClusterMetadata (
     @PrimaryKey

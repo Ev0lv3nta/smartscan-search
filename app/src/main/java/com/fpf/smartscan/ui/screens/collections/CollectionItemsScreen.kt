@@ -15,7 +15,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -49,6 +52,7 @@ import kotlinx.coroutines.flow.StateFlow
 fun CollectionItemsScreen(
     collectionName: String?,
     appSettings: StateFlow<AppSettings>,
+    clusterId: Long = -1L, // null not allowed for longs in nav
     viewModel: CollectionItemsViewModel = viewModel(),
     ) {
 
@@ -66,12 +70,14 @@ fun CollectionItemsScreen(
     val density = LocalDensity.current
     val maxCollapsablePx = with(density) { 70.dp.toPx() }.toInt()
 
-    val items = viewModel.mediaItems.collectAsLazyPagingItems()
+    val tagCollectionItems = viewModel.tagItems.collectAsLazyPagingItems()
+    val clusterCollectionItems = viewModel.clusterItems.collectAsLazyPagingItems()
+    val isTagCollection = state.clusterId == -1L
 
-    LaunchedEffect(collectionName) {
-        collectionName?.let{viewModel.setCollection(it)}
+
+    LaunchedEffect(collectionName, clusterId) {
+        viewModel.setCollection(collectionName, clusterId)
     }
-
 
     BackHandler(enabled = isSelecting) {
         isSelecting = false
@@ -85,14 +91,24 @@ fun CollectionItemsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
+            SlideRevealBox(
+                isVisible = isSelecting,
+                reverse = true,
+                offsetPx = offset,
+                modifier = Modifier
+                    .zIndex(1f)
+                    .heightIn(max=maxCollapsablePx.dp)
+                    .padding(bottom = 8.dp)
+            ) {
+                val text = if (state.selectedMediaItems.isNotEmpty()) "${state.selectedMediaItems.size} Selected" else "Select items"
+                Text(text, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp), color = MaterialTheme.colorScheme.primary)
+            }
             CollectionItemsList(
-                isVisible = items.itemCount > 0,
+                isVisible = tagCollectionItems.itemCount > 0 || clusterCollectionItems.itemCount> 0,
                 numGridColumns = appSettings.resultsPerRow,
-                mediaType = state.mediaType,
-                items = items,
+                items = if(isTagCollection) tagCollectionItems else clusterCollectionItems,
                 isSelecting = isSelecting,
                 selectedItems = state.selectedMediaItems,
                 onViewItem = { uri -> viewModel.setMediaToView(context, uri, appSettings.enableDirectGalleryOpen, isSelecting) },
@@ -102,7 +118,8 @@ fun CollectionItemsScreen(
                     offset = 0
                 },
                 onOffsetChange = {  offset = it },
-                maxCollapsePx = maxCollapsablePx
+                maxCollapsePx = maxCollapsablePx,
+                onError = viewModel::onErrorAsyncImage
             )
         }
 
@@ -125,11 +142,12 @@ fun CollectionItemsScreen(
                 modifier = Modifier.height(70.dp),
                 onRemove = {
                     viewModel.removeItems(state.selectedMediaItems)
-                    items.refresh()
+                    if(isTagCollection) tagCollectionItems.refresh() else clusterCollectionItems.refresh()
                     isSelecting = false
                 },
+                removeEnabled = isTagCollection,
                 onShare = {
-                    shareMediaMulti(context, state.selectedMediaItems)
+                    shareMediaMulti(context, state.selectedMediaItems.map{it.uri})
                     isSelecting = false
                     viewModel.clearSelectedItems()
                           },
@@ -137,14 +155,15 @@ fun CollectionItemsScreen(
                     isMoving = true
                     isSelecting = false
                          },
+                moveEnabled = isTagCollection,
                 onCopy = {
-                    clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", state.selectedMediaItems[0]))
+                    clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", state.selectedMediaItems[0].uri))
                     isSelecting = false
                     viewModel.clearSelectedItems()
                 }
             )
         }
-        state.mediaToView?.let { uri ->
+        state.mediaToView?.let { item ->
             AnimatedVisibility(
                 visible = true,
                 enter = fadeIn(animationSpec = tween(500)) + scaleIn(
@@ -157,8 +176,8 @@ fun CollectionItemsScreen(
                 )
             ) {
                 MediaViewer(
-                    uri = uri,
-                    type = state.mediaType,
+                    uri = item.uri,
+                    type = item.type,
                     onClose = { viewModel.setMediaToView(context, null) },
                     onUpdateSearchImage = null
                 )
@@ -177,14 +196,13 @@ fun CollectionItemsScreen(
         ) {
             CollectionPicker(
                 collections = mediaCollections,
-                mediaType = state.mediaType,
                 onClose = { isMoving = false },
                 onSelectCollection = {
                     viewModel.moveItems(state.selectedMediaItems, it)
-                    items.refresh()
+                    if(isTagCollection) tagCollectionItems.refresh() else clusterCollectionItems.refresh()
                     isMoving = false
-                }
+                },
             )
         }
-        }
     }
+}
