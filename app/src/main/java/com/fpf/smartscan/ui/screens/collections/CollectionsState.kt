@@ -11,4 +11,5 @@ data class CollectionsState(
     val error: String? = null,
     val collectToView: MediaCollection? = null,
     val selectedCollections: List<MediaCollection> = emptyList(),
+    val totalCollections: Int = 0
 )

@@ -1,6 +1,7 @@
 package com.fpf.smartscan.ui.screens.collections
 
 import android.util.Log
+import android.widget.Space
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -55,6 +57,7 @@ import com.fpf.smartscan.ui.components.TextInputModal
 import com.fpf.smartscan.ui.components.collections.CollectionPicker
 import com.fpf.smartscan.ui.components.collections.CollectionsActionBar
 import com.fpf.smartscan.ui.components.collections.MediaCollectionsList
+import com.fpf.smartscan.ui.screens.collections.CollectionsViewModel.Companion.TOP_N
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.StateFlow
 
@@ -71,6 +74,7 @@ fun CollectionsScreen(
     val tagCollections by viewModel.tagCollections.collectAsState()
     val appSettings by appSettings.collectAsState()
 
+    val collections = if(state.viewAutoCollections) clusterCollections else tagCollections
     val isCollectionVisible = tagCollections.isNotEmpty() && !state.viewAutoCollections || clusterCollections.isNotEmpty() && state.viewAutoCollections
 
     val context = LocalContext.current
@@ -235,20 +239,24 @@ fun CollectionsScreen(
                 }
             }
 
-            TextButton(
-                modifier=Modifier.align(Alignment.End),
-                onClick = {viewModel.toggleViewAllCollections()}) {
-                Text(
-                    text = "View all",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
+            if(state.totalCollections >= TOP_N) {
+                TextButton(
+                    modifier = Modifier.align(Alignment.End),
+                    onClick = { viewModel.toggleViewAllCollections() }) {
+                    Text(
+                        text = if (state.showAllCollections) "Show less" else "Show all",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }else{
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
             MediaCollectionsList(
                 isVisible = isCollectionVisible,
                 numGridColumns = 3,
-                items = if(state.viewAutoCollections) clusterCollections else tagCollections,
+                items = collections,
                 isSelecting = isSelecting,
                 selectedItems = state.selectedCollections,
                 onItemClick = viewModel::setCollectionToView,
