@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
 import coil3.compose.AsyncImagePainter
 import com.fpf.smartscan.media.MediaItem
-import com.fpf.smartscan.media.MediaItemCard
+import com.fpf.smartscan.ui.components.media.MediaItemCard
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
