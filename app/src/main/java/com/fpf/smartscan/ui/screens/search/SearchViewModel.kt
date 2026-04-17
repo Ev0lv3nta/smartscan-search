@@ -339,7 +339,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val batch = getPaginatedResult(currentItemsCount, store)
+                val batch = getPaginatedResult(currentItemsCount)
                 val (filteredResults, idsToPurge) = filterAccessibleMediaStoreIds(getApplication(), batch, _state.value.mediaType)
 
                 if (filteredResults.isNotEmpty()) {
@@ -362,23 +362,17 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         }
     }
 
-    private suspend fun getPaginatedResult(currentItemsCount: Int, store: FileEmbeddingStore): List<Long>{
+    private suspend fun getPaginatedResult(currentItemsCount: Int): List<Long>{
         return if(_state.value.tagOnlySearch && _state.value.tagFilter != null){
             val offset = (currentItemsCount).coerceAtMost(_state.value.totalResults)
             getMediaMatchingTag(_state.value.tagFilter, _state.value.mediaType, RESULTS_BATCH_SIZE, offset = offset)
         }else{
+            val start = currentItemsCount.coerceAtLeast(0)
             val end = (currentItemsCount + RESULTS_BATCH_SIZE).coerceAtMost(_state.value.totalResults)
-            paginatedQuery(store, currentItemsCount, end).take(RESULTS_BATCH_SIZE)
+            val ids = cachedIds ?: return emptyList()
+            if (start >= end) return emptyList()
+            ids.subList(start, end)
         }
-    }
-    private suspend fun paginatedQuery(store: FileEmbeddingStore,start: Int, end: Int): List<Long> {
-        val ids = cachedIds ?: return emptyList()
-        val s = start.coerceAtLeast(0)
-        val e = end.coerceAtMost(ids.size)
-        if (s >= e) return emptyList()
-
-        val batch = store.get(ids.subList(s, e))
-        return batch.map { it.id }
     }
 
     fun toggleViewResult(context: Context, uri: Uri?, autoOpenInGallery: Boolean? = null, isSelecting: Boolean = false){
