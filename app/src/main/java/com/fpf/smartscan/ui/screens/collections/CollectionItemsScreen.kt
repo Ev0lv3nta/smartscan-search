@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -73,6 +74,7 @@ fun CollectionItemsScreen(
     val tagCollectionItems = viewModel.tagItems.collectAsLazyPagingItems()
     val clusterCollectionItems = viewModel.clusterItems.collectAsLazyPagingItems()
     val isTagCollection = state.clusterId == -1L
+    val items = if(isTagCollection) tagCollectionItems else clusterCollectionItems
 
 
     LaunchedEffect(collectionName, clusterId) {
@@ -108,7 +110,7 @@ fun CollectionItemsScreen(
             CollectionItemsList(
                 isVisible = tagCollectionItems.itemCount > 0 || clusterCollectionItems.itemCount> 0,
                 numGridColumns = appSettings.resultsPerRow,
-                items = if(isTagCollection) tagCollectionItems else clusterCollectionItems,
+                items = items,
                 isSelecting = isSelecting,
                 selectedItems = state.selectedMediaItems,
                 onViewItem = { uri -> viewModel.setMediaToView(context, uri, appSettings.enableDirectGalleryOpen, isSelecting) },
@@ -164,6 +166,11 @@ fun CollectionItemsScreen(
             )
         }
         state.mediaToView?.let { item ->
+            val uris by remember {
+                derivedStateOf {
+                    List(items.itemCount) { index -> items[index]?.uri }.filterNotNull()
+                }
+            }
             AnimatedVisibility(
                 visible = true,
                 enter = fadeIn(animationSpec = tween(500)) + scaleIn(
@@ -176,10 +183,13 @@ fun CollectionItemsScreen(
                 )
             ) {
                 MediaViewer(
-                    uri = item.uri,
+                    uris = uris,
+                    initialIndex = uris.indexOf(item.uri),
                     type = item.type,
                     onClose = { viewModel.setMediaToView(context, null) },
-                    onUpdateSearchImage = null
+                    onUpdateSearchImage = null,
+                    onLoadMore = { val lastIndex = (items.itemCount - 1).coerceAtLeast(0)
+                        items[lastIndex]}
                 )
             }
             }

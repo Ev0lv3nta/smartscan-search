@@ -3,73 +3,92 @@ package com.fpf.smartscan.ui.components.media
 import android.content.ClipData
 import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import com.fpf.smartscan.media.openImageInGallery
-import com.fpf.smartscan.media.openVideoInGallery
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.fpf.smartscan.media.MediaType
+import com.fpf.smartscan.media.openImageInGallery
+import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.media.shareMedia
+import com.fpf.smartscan.ui.components.ActionRowWithFade
 import com.fpf.smartscan.utils.canOpenUri
 
 @Composable
 fun MediaViewer(
-    uri: Uri,
+    uris: List<Uri>,
     type: MediaType,
+    initialIndex: Int,
     onClose: () -> Unit,
-    onUpdateSearchImage: ((uri: Uri) -> Unit)?,
+    onLoadMore: (() -> Unit)? = null,
+    onUpdateSearchImage: ((uri: Uri) -> Unit)? = null,
     maxSize: Int = 2048
-){
+) {
+    if (uris.isEmpty()) return
+
     var isActionsVisible by remember { mutableStateOf(true) }
+    var currentIndex by remember {
+        mutableIntStateOf(initialIndex.coerceIn(0, uris.lastIndex))
+    }
+
+    val currentUri = uris[currentIndex]
 
     Popup(
         onDismissRequest = { onClose() },
-        properties = PopupProperties(dismissOnBackPress = true,focusable = true)
-
+        properties = PopupProperties(
+            dismissOnBackPress = true,
+            focusable = true
+        )
     ) {
         Box(
-            modifier = Modifier.Companion
+            modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
             if (type == MediaType.IMAGE) {
                 ImageDisplay(
-                    uri = uri,
+                    uri = currentUri,
                     modifier = Modifier
                         .fillMaxSize()
-                        .pointerInput(Unit) {
-                            detectTapGestures(
-                                onTap = { isActionsVisible = !isActionsVisible }
+                        .pointerInput(currentIndex) {
+                            detectHorizontalDragGestures(
+                                onDragEnd = {
+                                    // handled by drag direction below
+                                },
+                                onHorizontalDrag = { _, dragAmount ->
+                                    if (dragAmount < -20 && currentIndex < uris.lastIndex) {
+                                        currentIndex += 1
+                                        if(currentIndex == uris.lastIndex - 1){
+                                         onLoadMore?.invoke()
+                                        }
+                                    } else if (dragAmount > 20 && currentIndex > 0) {
+                                        currentIndex -= 1
+                                    }
+                                }
                             )
                         },
                     contentScale = ContentScale.FillWidth,
@@ -78,16 +97,35 @@ fun MediaViewer(
                 )
             } else {
                 VideoDisplay(
-                    uri = uri,
+                    uri = currentUri,
                     modifier = Modifier.fillMaxSize(),
-                    onTap = { isActionsVisible = !isActionsVisible }
+                    onTap = { isActionsVisible = !isActionsVisible },
+                    onSwipeLeft = {
+                        if (currentIndex < uris.lastIndex) {
+                            currentIndex += 1
+                            if (currentIndex == uris.lastIndex - 1) {
+                                onLoadMore?.invoke()
+                            }
+                        }
+                    },
+                    onSwipeRight = {
+                        if (currentIndex > 0) {
+                            currentIndex -= 1
+                        }
+                    }
                 )
             }
-            ActionRow(uri=uri, type=type, onClose=onClose, onUpdateSearchImage=onUpdateSearchImage,isVisible = isActionsVisible)
+
+            ActionRow(
+                uri = currentUri,
+                type = type,
+                onClose = onClose,
+                onUpdateSearchImage = onUpdateSearchImage,
+                isVisible = isActionsVisible
+            )
         }
     }
 }
-
 
 @Composable
 fun ActionRow(
@@ -96,28 +134,25 @@ fun ActionRow(
     onClose: () -> Unit,
     onUpdateSearchImage: ((uri: Uri) -> Unit)?,
     isVisible: Boolean
-){
+) {
     val context = LocalContext.current
     val clipboard = LocalClipboard.current
     val isUriAccessible = canOpenUri(context, uri)
 
     ActionRowWithFade(visible = isVisible) {
-        IconButton(
-            onClick = { onClose() },
-            modifier = Modifier
-        ) {
+        IconButton(onClick = { onClose() }) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Close Image",
                 tint = MaterialTheme.colorScheme.onBackground
             )
         }
-        if(isUriAccessible) {
+
+        if (isUriAccessible) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
-            )
-            {
+            ) {
                 IconButton(onClick = { shareMedia(context, uri) }) {
                     Icon(
                         Icons.Filled.Share,
@@ -126,7 +161,9 @@ fun ActionRow(
                     )
                 }
                 IconButton(onClick = {
-                    clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", uri))
+                    clipboard.nativeClipboard.setPrimaryClip(
+                        ClipData.newUri(context.contentResolver, "smartscan_media", uri)
+                    )
                 }) {
                     Icon(
                         Icons.Filled.ContentCopy,
@@ -147,7 +184,7 @@ fun ActionRow(
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
-                if(type == MediaType.IMAGE && onUpdateSearchImage != null) {
+                if (type == MediaType.IMAGE && onUpdateSearchImage != null) {
                     IconButton(onClick = { onUpdateSearchImage(uri) }) {
                         Icon(
                             Icons.Filled.Search,
@@ -161,35 +198,3 @@ fun ActionRow(
     }
 }
 
-
-@Composable
-fun ActionRowWithFade(
-    visible: Boolean,
-    content: @Composable () -> Unit
-) {
-    val alpha by animateFloatAsState(
-        targetValue = if (visible) 1f else 0f,
-        animationSpec = tween(durationMillis = 300)
-    )
-    val translationY by animateFloatAsState(
-        targetValue = if (visible) 0f else -30f,
-        animationSpec = tween(durationMillis = 300)
-    )
-
-    if (alpha > 0f) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .graphicsLayer() {
-                    this.alpha = alpha
-                    this.translationY = translationY
-                }
-                .background(MaterialTheme.colorScheme.background.copy(alpha = 0.8f))
-                .padding(8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
-        ) {
-            content()
-        }
-    }
-}

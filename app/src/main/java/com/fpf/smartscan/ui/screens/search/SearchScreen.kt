@@ -387,7 +387,9 @@ fun SearchScreen(
                 exit = fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.8f, animationSpec = tween(300))
             ) {
                 MediaViewer(
-                    uri = uri,
+                    uris = state.searchResults,
+                    initialIndex = state.searchResults.indexOf(uri),
+                    onLoadMore = searchViewModel::onLoadMore,
                     type = state.mediaType,
                     onClose = { searchViewModel.toggleViewResult(context, null)},
                     onUpdateSearchImage = {
