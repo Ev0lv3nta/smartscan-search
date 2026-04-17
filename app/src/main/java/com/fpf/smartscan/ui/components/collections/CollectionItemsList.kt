@@ -114,7 +114,10 @@ fun CollectionItemsList(
             contentPadding = PaddingValues(0.dp)
         ) {
 
-            items(items.itemCount) { index ->
+            items(
+                count = items.itemCount,
+                key = { index -> items[index]?.id ?: index }
+            ) { index ->
                 val item = items[index]
 
                 if (item != null) {

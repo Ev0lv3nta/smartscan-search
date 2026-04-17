@@ -142,7 +142,7 @@ fun SearchResults(
                 }
             }
 
-            items(searchResults) { uri ->
+            items(searchResults, key = { it }) { uri ->
                 Box(
                     modifier = Modifier
                         .aspectRatio(1f)

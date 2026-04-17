@@ -119,7 +119,7 @@ fun MediaCollectionsList(
                 .nestedScroll(connection),
             contentPadding = PaddingValues(0.dp)
         ) {
-            items(items) { item ->
+            items(items, key = { it.id }) { item ->
                 val shape = RoundedCornerShape(12.dp)
 
                 Column{
