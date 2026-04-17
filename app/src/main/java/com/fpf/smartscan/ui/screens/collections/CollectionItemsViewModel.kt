@@ -44,6 +44,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.io.File
 import kotlin.collections.plus
 
@@ -223,5 +224,14 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
             MediaType.IMAGE -> getImageUriFromId(id)
             MediaType.VIDEO -> getVideoUriFromId(id)
         }
+    }
+
+    override fun onCleared() {
+        // required now that remove() method only removes from in-memory cache not disk
+        runBlocking {
+            imageStore.save()
+            videoStore.save()
+        }
+        super.onCleared()
     }
 }

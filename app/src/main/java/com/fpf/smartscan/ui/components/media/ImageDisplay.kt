@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,17 +28,23 @@ fun ImageDisplay(
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
     mediaType: MediaType,
-    maxSize:Int = 512,
+    maxSize:Int? = 512,
     onError: ((error:  AsyncImagePainter.State.Error)-> Unit)? = null
     ) {
     val context = LocalContext.current
 
-    val request = ImageRequest.Builder(context)
-        .allowHardware(true)
-        .crossfade(false)
-        .data(uri)
-        .size(maxSize, maxSize)
-        .build()
+    val request = remember(uri, maxSize) {
+        val builder = ImageRequest.Builder(context)
+            .allowHardware(true)
+            .crossfade(false)
+            .data(uri)
+
+        if (maxSize != null) {
+            builder.size(maxSize)
+        }
+
+        builder.build()
+    }
 
     Box(modifier = modifier.background(Color.Transparent), contentAlignment = Alignment.Center) {
         if(mediaType == MediaType.VIDEO){

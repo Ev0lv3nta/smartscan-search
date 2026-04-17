@@ -71,9 +71,11 @@ fun MainScreen(intentSearchQuery: SearchQuery?) {
         else -> ""
     }
 
-    val showBackButton = currentRoute?.startsWith(Routes.SETTINGS.split("/")[0]) == true
+    val showBackButton = currentRoute?.startsWith(Routes.SETTINGS_DETAIL.split("/")[0]) == true
             || currentRoute?.startsWith(Routes.COLLECTION_ITEMS.split("/")[0]) == true
             || currentRoute in listOf( Routes.DONATE, Routes.HELP)
+
+    val showSearchActions = currentRoute == Routes.SEARCH
 
     if(isUpdatePopUpVisible) {
         UpdatePopUp(
@@ -97,6 +99,7 @@ fun MainScreen(intentSearchQuery: SearchQuery?) {
                         }
                     },
                     actions = {
+                        if (!showSearchActions) return@TopAppBar
                         OverflowMenu(
                             onRefreshImageIndex = {
                                 val storageAccess = getStorageAccess(context)

@@ -10,6 +10,7 @@ import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.launch
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import coil3.compose.AsyncImagePainter
 import com.fpf.smartscan.media.getImageUriFromId
 import kotlinx.coroutines.Dispatchers
 import com.fpf.smartscan.R
@@ -26,6 +27,7 @@ import com.fpf.smartscan.media.filterAccessibleMediaStoreIds
 import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.utils.canOpenUri
 import com.fpf.smartscan.media.getVideoUriFromId
+import com.fpf.smartscan.media.onMediaLoadingError
 import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.media.removeStaleMedia
@@ -53,6 +55,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -487,6 +490,17 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         _state.update{currentState -> currentState.copy(autoCompleteTagResults = results)}
     }
 
+    fun onErrorAsyncImage(error: AsyncImagePainter.State.Error){
+        viewModelScope.launch (Dispatchers.IO){
+            onMediaLoadingError(error,
+                imageEmbedStore = imageStore,
+                videoEmbedStore = videoStore,
+                tagsCrossRefRepository = tagsCrossRefRepository,
+                clusterCrossRefRepository=clusterCrossRefRepository
+            )
+        }
+    }
+
     fun handleAutoCompletionCheck(query: CharSequence, substringEnd: Int, startWithHashtag: Boolean =  true){
         val text = query.toString()
         val prefix = text.substring(0, substringEnd)
@@ -603,6 +617,11 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     override fun onCleared() {
         textEmbedder.closeSession()
         imageEmbedder.closeSession()
+        // required now that remove() method only removes from in-memory cache not disk
+        runBlocking {
+            imageStore.save()
+            videoStore.save()
+        }
         super.onCleared()
     }
 }

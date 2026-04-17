@@ -35,6 +35,7 @@ import kotlin.collections.plus
 class CollectionsViewModel( application: Application) : AndroidViewModel(application) {
     companion object {
         private const val TAG = "CollectionsViewModel"
+        const val TOP_N = 6
     }
 
     private val db by lazy {  MediaDatabase.getDatabase(application)}
@@ -49,10 +50,12 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
 
     val clusterCollections: StateFlow<List<MediaCollection>> = combine(
         clusterCrossRefRepository.getClustersWithCount(),
-        _state.map { it.mediaType to it.showAllCollections }.distinctUntilChanged()
-    ) { clusters, (mediaType, showAllCollections) ->
-
-        val filteredClusters = if (showAllCollections) clusters else clusters.take(6)
+        _state.map { Triple(it.mediaType, it.showAllCollections, it.viewAutoCollections) }.distinctUntilChanged()
+    ) { clusters, (mediaType, showAllCollections, viewAutoCollections) ->
+        if(viewAutoCollections){
+            _state.update { it.copy(totalCollections = clusters.size) }
+        }
+        val filteredClusters = if (showAllCollections) clusters else clusters.take(TOP_N)
 
         clustersToCollections(filteredClusters)
     }.flowOn(Dispatchers.IO)
@@ -64,9 +67,12 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
 
     val tagCollections: StateFlow<List<MediaCollection>> = combine(
         tagsCrossRefRepository.getTagsWithCounts(),
-        _state.map { it.mediaType to it.showAllCollections }.distinctUntilChanged()
-    ) { tagsWithCount, (mediaType, showAllCollections) ->
-        val tags = if (showAllCollections) tagsWithCount else tagsWithCount.take(6)
+        _state.map { Triple(it.mediaType, it.showAllCollections, it.viewAutoCollections) }.distinctUntilChanged()
+    ) { tagsWithCount, (mediaType, showAllCollections, viewAutoCollections) ->
+        if(!viewAutoCollections){
+            _state.update { it.copy(totalCollections = tagsWithCount.size) }
+        }
+        val tags = if (showAllCollections) tagsWithCount else tagsWithCount.take(TOP_N)
         tagsToCollections(tags)
     }.flowOn(Dispatchers.IO)
         .stateIn(
