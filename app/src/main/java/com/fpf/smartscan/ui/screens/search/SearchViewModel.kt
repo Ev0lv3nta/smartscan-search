@@ -55,6 +55,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -616,6 +617,11 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     override fun onCleared() {
         textEmbedder.closeSession()
         imageEmbedder.closeSession()
+        // required now that remove() method only removes from in-memory cache not disk
+        runBlocking {
+            imageStore.save()
+            videoStore.save()
+        }
         super.onCleared()
     }
 }
