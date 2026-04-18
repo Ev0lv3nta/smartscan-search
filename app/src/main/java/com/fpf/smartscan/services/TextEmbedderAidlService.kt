@@ -17,6 +17,7 @@ import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
 import com.fpf.smartscansdk.ml.providers.embeddings.minilm.MiniLMTextEmbedder
 import kotlinx.coroutines.runBlocking
 import java.io.File
+import com.fpf.smartscansdk.core.embeddings.embedBatch
 
 class TextEmbedderAidlService: Service() {
     companion object {
@@ -67,7 +68,7 @@ class TextEmbedderAidlService: Service() {
             return runBlocking {
                 try {
                     if(!textEmbedder.isInitialized()) textEmbedder.initialize()
-                    val embeddings = textEmbedder.embedBatch(data)
+                    val embeddings = embedBatch(application, textEmbedder, data)
                     val flattenedEmbeddings = flattenEmbeddings(embeddings, textEmbedder.embeddingDim)
                     flattenedEmbeddings
                 }catch(e: Exception){

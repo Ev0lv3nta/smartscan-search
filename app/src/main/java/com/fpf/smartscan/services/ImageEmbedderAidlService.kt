@@ -16,6 +16,7 @@ import com.fpf.smartscansdk.core.models.ModelManager
 import com.fpf.smartscansdk.core.models.ModelType
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
 import kotlinx.coroutines.runBlocking
+import com.fpf.smartscansdk.core.embeddings.embedBatch
 
 
 class ImageEmbedderAidlService: Service() {
@@ -68,7 +69,7 @@ class ImageEmbedderAidlService: Service() {
                     if(!imageEmbedder.isInitialized()) imageEmbedder.initialize()
                     val decoded = decodeByteArrayPayload(data, delimiter)
                     val bitmaps = decoded.map { byteArrayToBitmap(it) }
-                    val embeddings = imageEmbedder.embedBatch(bitmaps)
+                    val embeddings = embedBatch(application, imageEmbedder, bitmaps)
                     flattenEmbeddings(embeddings, imageEmbedder.embeddingDim)
                 }catch(e: Exception){
                     Log.d(TAG, "EMBEDDING_ERROR: ${e.message}")
