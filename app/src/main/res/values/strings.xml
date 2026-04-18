@@ -114,9 +114,11 @@
     <string name="help_reverse_image_search">Reverse image search is generally more accurate than text queries, especially when searching videos.</string>
 
     <!--Updates-->
-    <string name="update_image_expansion">Added image expansion in selection mode</string>
-    <string name="update_search_crash_fix">Fixed crash when clicking a search result that was deleted after results were displayed</string>
-    <string name="update_external_search_fix">Fixed issue where external search re-triggered on Search screen recomposition</string>
-    <string name="update_ui_minor">Other minor UI improvements</string>
+    <string name="update_cluster_search">Added cluster-based search, improving search speed and relevance</string>
+    <string name="update_merge_collections">Added ability to merge collections (Tag Collections only)</string>
+    <string name="update_copy_to_tag_collections">Added bulk copy from Auto Collection to Tag Collection</string>
+    <string name="update_collections">Added collections (Tag Collections and Auto Collections)</string>
+    <string name="update_results_per_row_setting">Added setting to control number of results shown per grid row</string>
+    <string name="update_removed_index_frequency_setting">Removed index frequency setting (defaults to daily updates)</string>
 
 </resources>
