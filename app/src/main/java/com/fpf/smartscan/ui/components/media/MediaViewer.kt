@@ -46,7 +46,7 @@ fun MediaViewer(
     onClose: () -> Unit,
     onLoadMore: (() -> Unit)? = null,
     onUpdateSearchImage: ((uri: Uri) -> Unit)? = null,
-    maxSize: Int = 2048
+    maxSize: Int? = 1024
 ) {
     if (uris.isEmpty()) return
 
