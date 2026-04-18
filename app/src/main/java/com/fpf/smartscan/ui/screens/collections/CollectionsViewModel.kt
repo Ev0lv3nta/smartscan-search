@@ -94,9 +94,9 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
     }
 
 
-    fun deleteTagCollection(collection: MediaCollection){
+    fun deleteTagCollections(collections: Set<MediaCollection>){
         viewModelScope.launch(Dispatchers.IO) {
-            tagsRepository.deleteTagsByName(listOf(collection.name))
+            tagsRepository.deleteTagsByName(collections.map{it.name})
             _state.update { it.copy(selectedCollections = emptySet()) }
         }
     }
