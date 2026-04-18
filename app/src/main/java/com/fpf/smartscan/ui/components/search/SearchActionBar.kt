@@ -57,8 +57,9 @@ fun SearchActionBar(
                 Text("Share", style = MaterialTheme.typography.labelMedium)
             }
         }
-        if(searchEnabled) {
+
             Button(
+                enabled = searchEnabled,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.Transparent,
                     disabledContainerColor = Color.Transparent,
@@ -81,7 +82,7 @@ fun SearchActionBar(
                     )
                 }
             }
-        }
+
         Button (
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.Transparent,
