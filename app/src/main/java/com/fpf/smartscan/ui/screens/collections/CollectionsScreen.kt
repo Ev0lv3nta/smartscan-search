@@ -18,13 +18,16 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Tag
@@ -32,6 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -176,6 +180,7 @@ fun CollectionsScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height(IntrinsicSize.Min)
                     .padding(bottom = 8.dp)
                     .clip(RoundedCornerShape(
                         topStart = 12.dp,
@@ -185,7 +190,7 @@ fun CollectionsScreen(
                     ))
                     .background(color = MaterialTheme.colorScheme.surfaceContainer)
                     .border(
-                        BorderStroke(1.dp, Color.Gray),
+                        BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                         shape = RoundedCornerShape(
                             topStart = 12.dp,
                             bottomStart = 0.dp,
@@ -206,25 +211,18 @@ fun CollectionsScreen(
                             onClick = {viewModel.toggleViewAutoCollections()}
                         )
                 ) {
-                    Text("Tag collections",
+                    Text("Auto collections",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if(!state.viewAutoCollections) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        color = if(state.viewAutoCollections) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                     )
                 }
-
+                VerticalDivider(
+                    color = MaterialTheme.colorScheme.outline
+                )
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .weight(1f)
-                        .background(color = MaterialTheme.colorScheme.surfaceContainer)
-                        .border(BorderStroke(1.dp, Color.Gray),
-                            shape = RoundedCornerShape(
-                                topStart = 0.dp,
-                                bottomStart = 0.dp,
-                                topEnd = 12.dp,
-                                bottomEnd = 0.dp
-                            )
-                        )
                         .padding(8.dp)
                         .clickable(
                             indication = null,
@@ -232,9 +230,9 @@ fun CollectionsScreen(
                             onClick = {viewModel.toggleViewAutoCollections()}
                         )
                 ) {
-                    Text("Auto collections",
+                    Text("Tag collections",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if(state.viewAutoCollections) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        color = if(!state.viewAutoCollections) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
