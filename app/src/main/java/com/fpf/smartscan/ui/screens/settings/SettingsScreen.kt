@@ -130,17 +130,17 @@ fun SettingsScreen(
                 )
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Text(
-                    text = stringResource(id = R.string.advanced_settings),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    color = MaterialTheme.colorScheme.primary
-                )
-                ActionItem(
-                    text = stringResource(id = R.string.setting_models),
-                    onClick = { onNavigate(Routes.settingsDetail(SettingTypes.MODELS)) },
-                )
-                Spacer(modifier = Modifier.height(24.dp))
+//                Text(
+//                    text = stringResource(id = R.string.advanced_settings),
+//                    style = MaterialTheme.typography.titleMedium,
+//                    modifier = Modifier.padding(vertical = 8.dp),
+//                    color = MaterialTheme.colorScheme.primary
+//                )
+//                ActionItem(
+//                    text = stringResource(id = R.string.setting_models),
+//                    onClick = { onNavigate(Routes.settingsDetail(SettingTypes.MODELS)) },
+//                )
+//                Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
                     text = stringResource(id = R.string.other_settings),
