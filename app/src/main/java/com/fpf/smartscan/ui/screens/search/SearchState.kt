@@ -3,7 +3,6 @@ package com.fpf.smartscan.ui.screens.search
 import android.net.Uri
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.search.QueryType
-import com.fpf.smartscan.search.TagSuggestionsResult
 
 data class SearchState(
     val searchResults: List<Uri> = emptyList(),
@@ -21,6 +20,5 @@ data class SearchState(
     val textEmbedderLastUsage: Long? = null,
     val autoCompleteTagResults: List<String> = emptyList(),
     val tagFilter: String? = null,
-    val suggestedTags: TagSuggestionsResult = TagSuggestionsResult(),
     val tagOnlySearch: Boolean = false,
 )

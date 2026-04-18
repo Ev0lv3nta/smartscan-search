@@ -17,7 +17,6 @@ import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.data.MediaDatabase
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
-import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
 import com.fpf.smartscan.data.tags.TagRepository
@@ -32,16 +31,13 @@ import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.media.removeStaleMedia
 import com.fpf.smartscan.search.ImageIndexListener
-import com.fpf.smartscan.search.AutoTagger
 import com.fpf.smartscan.search.SearchQuery
-import com.fpf.smartscan.search.TagSuggestionsResult
 import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.services.MediaIndexForegroundService
 import com.fpf.smartscan.services.startIndexing
 import com.fpf.smartscan.utils.isWorkScheduled
 import com.fpf.smartscan.workers.IndexWorker
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
-import com.fpf.smartscansdk.core.embeddings.generatePrototypeEmbedding
 import com.fpf.smartscansdk.core.media.getBitmapFromUri
 import com.fpf.smartscansdk.core.models.ModelAssetSource
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
@@ -65,7 +61,6 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         private const val TAG = "SearchViewModel"
         const val RESULTS_BATCH_SIZE = 36
         private const val MODEL_SHUTDOWN_DURATION_THRESHOLD = 60_000L
-        private const val MAX_N_PROTOTYPE = 10
     }
 
     val imageIndexProgress = ImageIndexListener.progress
@@ -85,9 +80,6 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
     val videoClusterStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.VIDEO_CLUSTER), imageEmbedder.embeddingDim )
 
-    val tagStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.TAGS), imageEmbedder.embeddingDim)
-
-
     private val db = MediaDatabase.getDatabase(application)
 
     private val tagsRepository by lazy { TagRepository(db.tagDao())}
@@ -95,8 +87,6 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
 
     val allTags: StateFlow<List<Tag>> = tagsRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
-
-    val autoTagger = AutoTagger(tagStore)
 
     private val _state = MutableStateFlow(SearchState())
     val state: StateFlow<SearchState> = _state
@@ -175,7 +165,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     }
 
     fun reset(){
-        _state.value = _state.value.copy(totalResults = 0, searchResults = emptyList(), selectedResults = emptySet(), autoCompleteTagResults = emptyList(), error = null, tagFilter = null, suggestedTags = TagSuggestionsResult(), tagOnlySearch = false)
+        _state.value = _state.value.copy(totalResults = 0, searchResults = emptyList(), selectedResults = emptySet(), autoCompleteTagResults = emptyList(), error = null, tagFilter = null, tagOnlySearch = false)
     }
 
     fun search(threshold: Float, useClusterSearch: Boolean){
@@ -265,7 +255,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                 if(!imageEmbedder.isInitialized()) imageEmbedder.initialize()
                 if(shouldShutdownModel(_state.value.textEmbedderLastUsage)) textEmbedder.closeSession() // prevent keeping both models open
 
-                val bitmap = getBitmapFromUri(getApplication<Application>(), queryImage, IMAGE_SIZE_X)
+                val bitmap = getBitmapFromUri(getApplication(), queryImage, IMAGE_SIZE_X)
                 val embedding = imageEmbedder.embed(bitmap)
                 val mediaIdsInCluster: Set<Long> = if(useClusterSearch) buildSet {
                     for (clusterId in getTargetClusters(embedding, threshold, 3)) {
@@ -447,7 +437,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     }
 
     fun clearSelectedResults(){
-        _state.update{currentState -> currentState.copy(selectedResults = emptySet(), suggestedTags = TagSuggestionsResult())}
+        _state.update{currentState -> currentState.copy(selectedResults = emptySet())}
     }
 
     fun tagSelectedItems(tag: String){
@@ -536,34 +526,6 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         if (!imageStore.exists && !videoStore.exists) return
         // Delay is required to prevent race condition issues on first index
         IndexWorker.scheduleWorker(getApplication(), Pair(1L, TimeUnit.DAYS), Pair(1L, TimeUnit.DAYS))
-    }
-
-    fun updateSuggestedTags(){
-        if(!tagStore.exists) return
-        viewModelScope.launch(Dispatchers.IO){
-            val ids = _state.value.selectedResults.take(MAX_N_PROTOTYPE).map{ContentUris.parseId(it)}
-            _state.update{currentState -> currentState.copy(suggestedTags = TagSuggestionsResult())} // reset
-
-            try {
-                when(_state.value.mediaType){
-                    MediaType.IMAGE -> {
-                        val imageEmbeddings = imageStore.get(ids)
-                        val prototype = generatePrototypeEmbedding(imageEmbeddings.map{it.embedding})
-                        val suggestedTags = autoTagger.getSuggestedTags(allTags.value, prototype)
-                        _state.update{currentState -> currentState.copy(suggestedTags = suggestedTags)}
-
-                    }
-                    MediaType.VIDEO -> {
-                        val videoEmbeddings = videoStore.get(ids)
-                        val prototype = generatePrototypeEmbedding(videoEmbeddings.map{it.embedding})
-                        val suggestedTags = autoTagger.getSuggestedTags(allTags.value, prototype)
-                        _state.update{currentState -> currentState.copy(suggestedTags = suggestedTags)}
-                    }
-                }
-            }catch (e: Exception){
-                Log.e(TAG, "$e")
-            }
-        }
     }
 
     private fun getStore() = if(_state.value.mediaType == MediaType.VIDEO) videoStore else imageStore

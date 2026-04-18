@@ -161,7 +161,6 @@ fun SearchScreen(
 
     TagAdder(
         isVisible = isAddingTag,
-        suggestedTags = state.suggestedTags,
         autoCompleteTagResults = state.autoCompleteTagResults,
         onAddTag = {
             searchViewModel.tagSelectedItems(it)
@@ -369,7 +368,6 @@ fun SearchScreen(
                     searchViewModel.clearSelectedResults()
                 },
                 onAddTag = {
-                    searchViewModel.updateSuggestedTags()
                     isAddingTag = true
                     isSelecting = false
                 },
