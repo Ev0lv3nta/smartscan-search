@@ -175,7 +175,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     }
 
     fun reset(){
-        _state.value = _state.value.copy(totalResults = 0, searchResults = emptyList(), selectedResults = emptyList(), autoCompleteTagResults = emptyList(), error = null, tagFilter = null, suggestedTags = TagSuggestionsResult(), tagOnlySearch = false)
+        _state.value = _state.value.copy(totalResults = 0, searchResults = emptyList(), selectedResults = emptySet(), autoCompleteTagResults = emptyList(), error = null, tagFilter = null, suggestedTags = TagSuggestionsResult(), tagOnlySearch = false)
     }
 
     fun search(threshold: Float, useClusterSearch: Boolean){
@@ -447,7 +447,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     }
 
     fun clearSelectedResults(){
-        _state.update{currentState -> currentState.copy(selectedResults = emptyList(), suggestedTags = TagSuggestionsResult())}
+        _state.update{currentState -> currentState.copy(selectedResults = emptySet(), suggestedTags = TagSuggestionsResult())}
     }
 
     fun tagSelectedItems(tag: String){

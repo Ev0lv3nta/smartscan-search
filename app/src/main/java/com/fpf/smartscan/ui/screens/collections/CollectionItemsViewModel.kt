@@ -142,7 +142,7 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
         viewModelScope.launch (Dispatchers.IO){
             val tag = tagsRepository.getTagsByName(listOf(collectionName)).firstOrNull()?: return@launch
             tagsCrossRefRepository.deleteMediaMatchTag( mediaIds, tag.id)
-            _state.update { it.copy(selectedMediaItems = emptyList()) }
+            _state.update { it.copy(selectedMediaItems = emptySet()) }
         }
     }
 
@@ -156,7 +156,7 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
             val updatedCrossRef = items.map{ TagCrossRef(mediaId = it.id, tagId=newTag.id, type=it.type)}
             tagsCrossRefRepository.upsertTagCrossRefs(updatedCrossRef)
             tagsCrossRefRepository.deleteMediaMatchTag( mediaIds, oldTag.id)
-            _state.update { it.copy(selectedMediaItems = emptyList()) }
+            _state.update { it.copy(selectedMediaItems = emptySet()) }
         }
     }
 
@@ -174,7 +174,7 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
     }
 
     fun clearSelectedItems(){
-        _state.update{currentState -> currentState.copy(selectedMediaItems = emptyList())}
+        _state.update{currentState -> currentState.copy(selectedMediaItems = emptySet())}
     }
 
     fun setCollection(name: String?, clusterId: Long){

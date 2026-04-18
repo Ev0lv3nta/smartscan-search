@@ -53,7 +53,7 @@ import kotlin.math.roundToInt
 fun SearchResults(
     isVisible: Boolean,
     searchResults: List<Uri>,
-    selectedResults: List<Uri>,
+    selectedResults: Set<Uri>,
     mediaType: MediaType,
     totalResults: Int,
     onLoadMore: () -> Unit,

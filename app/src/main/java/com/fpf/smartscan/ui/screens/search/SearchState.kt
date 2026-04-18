@@ -16,7 +16,7 @@ data class SearchState(
     val loading: Boolean = false,
     val error: String? = null,
     val resultToView: Uri? = null,
-    val selectedResults: List<Uri> = emptyList(),
+    val selectedResults: Set<Uri> = emptySet(),
     val imageEmbedderLastUsage: Long? = null,
     val textEmbedderLastUsage: Long? = null,
     val autoCompleteTagResults: List<String> = emptyList(),

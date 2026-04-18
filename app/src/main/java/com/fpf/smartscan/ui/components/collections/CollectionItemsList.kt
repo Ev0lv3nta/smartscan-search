@@ -42,7 +42,7 @@ import kotlin.math.roundToInt
 fun CollectionItemsList(
     isVisible: Boolean,
     items: LazyPagingItems<MediaItem>,
-    selectedItems: List<MediaItem>,
+    selectedItems: Set<MediaItem>,
     onViewItem: (item: MediaItem?) -> Unit,
     onToggleSelected: (MediaItem) -> Unit,
     onToggleSelectionMode: () -> Unit,

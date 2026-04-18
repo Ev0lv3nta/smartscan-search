@@ -57,7 +57,7 @@ fun MediaCollectionsList(
     isVisible: Boolean,
     items: List<MediaCollection>,
     onItemClick: (MediaCollection) -> Unit,
-    selectedItems: List<MediaCollection> = emptyList(),
+    selectedItems: Set<MediaCollection> = emptySet(),
     onToggleSelected: ((MediaCollection) -> Unit)? = null,
     onToggleSelectionMode: (() -> Unit)? = null,
     onOffsetChange: ((Int) -> Unit)? = null,

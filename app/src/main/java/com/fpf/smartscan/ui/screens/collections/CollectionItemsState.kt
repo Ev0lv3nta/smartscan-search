@@ -10,5 +10,5 @@ data class CollectionItemsState(
     val loading: Boolean = false,
     val error: String? = null,
     val mediaToView: MediaItem? = null,
-    val selectedMediaItems: List<MediaItem> = emptyList(),
+    val selectedMediaItems: Set<MediaItem> = emptySet(),
 )

@@ -86,7 +86,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
             try{
                 val tag = tagsRepository.getTagsByName(listOf(collection.name)).firstOrNull()
                 tag?.let { tagsRepository.updateTags(listOf((it).copy(name = newName))) }
-                _state.update { it.copy(selectedCollections = emptyList()) }
+                _state.update { it.copy(selectedCollections = emptySet()) }
             } catch (_: SQLiteConstraintException){
                 _state.update { it.copy(error="Collection already exists") }
             }
@@ -97,7 +97,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
     fun deleteTagCollection(collection: MediaCollection){
         viewModelScope.launch(Dispatchers.IO) {
             tagsRepository.deleteTagsByName(listOf(collection.name))
-            _state.update { it.copy(selectedCollections = emptyList()) }
+            _state.update { it.copy(selectedCollections = emptySet()) }
         }
     }
 
@@ -111,7 +111,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
                 tagsCrossRefRepository.upsertTagCrossRefs(updated)
                 tagsRepository.deleteTags(tagsToMerge)
             }
-            _state.update { it.copy( selectedCollections = emptyList()) }
+            _state.update { it.copy( selectedCollections = emptySet()) }
         }
     }
 
@@ -120,7 +120,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
             try {
                 val cluster = clusterMetadataRepository.getMetadatas(listOf(collection.id)).firstOrNull()
                 cluster?.let { clusterMetadataRepository.updateMetadatas(listOf(it.copy(label = newName))) }
-                _state.update { it.copy(selectedCollections = emptyList()) }
+                _state.update { it.copy(selectedCollections = emptySet()) }
             } catch (_: SQLiteConstraintException){
                 _state.update { it.copy(error="Collection already exists") }
             }
@@ -131,7 +131,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
         viewModelScope.launch (Dispatchers.IO) {
             val clusterCrossRefs = clusterCrossRefRepository.getByClusterId(clusterCollection.id)
             tagsCrossRefRepository.upsertTagCrossRefs(clusterCrossRefs.map{ TagCrossRef(it.mediaId, tagCollection.id, it.type)})
-            _state.update { it.copy( selectedCollections = emptyList()) }
+            _state.update { it.copy( selectedCollections = emptySet()) }
         }
     }
 
@@ -142,7 +142,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
                 if(insertedIds.isEmpty()) return@launch
                 val clusterCrossRefs = clusterCrossRefRepository.getByClusterId(clusterCollection.id)
                 tagsCrossRefRepository.upsertTagCrossRefs(clusterCrossRefs.map{ TagCrossRef(it.mediaId, insertedIds.first(), it.type)})
-                _state.update { it.copy( selectedCollections = emptyList()) }
+                _state.update { it.copy( selectedCollections = emptySet()) }
             }catch (_: SQLiteConstraintException){
              _state.update { it.copy(error="Collection already exists") }
             }
@@ -166,7 +166,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
     }
 
     fun clearSelectedCollections(){
-        _state.update{currentState -> currentState.copy(selectedCollections = emptyList())}
+        _state.update{currentState -> currentState.copy(selectedCollections = emptySet())}
     }
 
     fun toggleViewAllCollections(){

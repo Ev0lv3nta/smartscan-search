@@ -143,7 +143,7 @@ fun CollectionItemsScreen(
             CollectionItemsActionBar(
                 modifier = Modifier.height(70.dp),
                 onRemove = {
-                    viewModel.removeItems(state.selectedMediaItems)
+                    viewModel.removeItems(state.selectedMediaItems.toList())
                     if(isTagCollection) tagCollectionItems.refresh() else clusterCollectionItems.refresh()
                     isSelecting = false
                 },
@@ -159,7 +159,7 @@ fun CollectionItemsScreen(
                          },
                 moveEnabled = isTagCollection,
                 onCopy = {
-                    clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", state.selectedMediaItems[0].uri))
+                    clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", state.selectedMediaItems.first().uri))
                     isSelecting = false
                     viewModel.clearSelectedItems()
                 }
@@ -208,7 +208,7 @@ fun CollectionItemsScreen(
                 collections = mediaCollections,
                 onClose = { isMoving = false },
                 onSelectCollection = {
-                    viewModel.moveItems(state.selectedMediaItems, it)
+                    viewModel.moveItems(state.selectedMediaItems.toList(), it)
                     if(isTagCollection) tagCollectionItems.refresh() else clusterCollectionItems.refresh()
                     isMoving = false
                 },

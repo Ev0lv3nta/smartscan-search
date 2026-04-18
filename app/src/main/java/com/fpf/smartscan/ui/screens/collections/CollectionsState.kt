@@ -10,6 +10,6 @@ data class CollectionsState(
     val loading: Boolean = false,
     val error: String? = null,
     val collectToView: MediaCollection? = null,
-    val selectedCollections: List<MediaCollection> = emptyList(),
+    val selectedCollections: Set<MediaCollection> = emptySet(),
     val totalCollections: Int = 0
 )

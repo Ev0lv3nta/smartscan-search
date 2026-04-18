@@ -356,7 +356,7 @@ fun SearchScreen(
                 searchEnabled = state.selectedResults.size == 1 && state.mediaType == MediaType.IMAGE,
                 onSearch = {
                     if (state.selectedResults.size == 1) {
-                        searchViewModel.updateSearchImageUri(state.selectedResults[0])
+                        searchViewModel.updateSearchImageUri(state.selectedResults.first())
                         searchViewModel.updateQueryType(QueryType.IMAGE)
                         isSelecting = false
                         searchViewModel.clearSelectedResults()
@@ -364,7 +364,7 @@ fun SearchScreen(
                     }
                 },
                 onShare = {
-                    shareMediaMulti(context, state.selectedResults)
+                    shareMediaMulti(context, state.selectedResults.toList())
                     isSelecting = false
                     searchViewModel.clearSelectedResults()
                 },
@@ -374,7 +374,7 @@ fun SearchScreen(
                     isSelecting = false
                 },
                 onCopy = {
-                    clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", state.selectedResults[0]))
+                    clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", state.selectedResults.first()))
                     isSelecting = false
                     searchViewModel.clearSelectedResults()
                 },
