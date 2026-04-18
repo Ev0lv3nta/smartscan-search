@@ -67,7 +67,6 @@ import androidx.compose.ui.res.stringResource
 @OptIn(FlowPreview::class)
 @Composable
 fun CollectionsScreen(
-    appSettings: StateFlow<AppSettings>,
     onNavigate: (String) -> Unit,
     viewModel: CollectionsViewModel = viewModel(),
     ) {

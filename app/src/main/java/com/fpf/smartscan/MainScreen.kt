@@ -28,11 +28,9 @@ import com.fpf.smartscan.ui.permissions.StorageAccess
 import com.fpf.smartscan.ui.permissions.getStorageAccess
 import com.fpf.smartscan.ui.screens.collections.CollectionItemsScreen
 import com.fpf.smartscan.ui.screens.collections.CollectionsScreen
-import com.fpf.smartscan.ui.screens.collections.CollectionsViewModel
 import com.fpf.smartscan.ui.screens.donate.DonateScreen
 import com.fpf.smartscan.ui.screens.help.HelpScreen
 import com.fpf.smartscan.ui.screens.search.SearchScreen
-import com.fpf.smartscan.ui.screens.search.SearchViewModel
 import com.fpf.smartscan.ui.screens.settings.SettingsDetailScreen
 import com.fpf.smartscan.ui.screens.settings.SettingsScreen
 import com.fpf.smartscan.ui.screens.settings.SettingsViewModel
@@ -134,7 +132,6 @@ fun MainScreen(intentSearchQuery: SearchQuery?) {
                 }
                 composable(Routes.COLLECTIONS) {
                     CollectionsScreen(
-                        appSettings = settingsViewModel.appSettings,
                         onNavigate = { route: String ->
                             navController.navigate(route)
                         }
