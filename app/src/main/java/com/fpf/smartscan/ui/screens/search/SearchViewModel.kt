@@ -113,7 +113,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
     private var hasHandledExternalSearch = false
 
-    private var cachedIds: List<Long>? = null
+    private var cachedIds= mutableListOf<Long>()
 
 
     init {
@@ -195,7 +195,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     }
 
     private fun textSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean) {
-        cachedIds = null // clear on new search
+        cachedIds = mutableListOf() // clear on new search
 
         val query = searchFieldState.text.toString()
         if (query.isBlank()) {
@@ -240,9 +240,8 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                     }
                     addAll(idsMatchingTag)
                 }
-//                Log.d(TAG, "Filter ids: ${filterIds.size} | target clusters: ${targetClusters.size} | use cluster: $useClusterSearch")
                 val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, filterIds)
-                cachedIds = queryResults
+                cachedIds.addAll(queryResults)
                 handleQueryResults(queryResults, store)
             } catch (e: Exception) {
                 Log.e(TAG, "$e")
@@ -254,7 +253,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     }
 
     private fun imageSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean) {
-        cachedIds = null // clear on new search
+        cachedIds = mutableListOf() // clear on new search
 
         val queryImage = _state.value.queryImage?: return
 
@@ -275,7 +274,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                     }
                 } else emptySet()
                 val resultIds = store.query(embedding, Int.MAX_VALUE, threshold, mediaIdsInCluster)
-                cachedIds = resultIds
+                cachedIds.addAll(resultIds)
                 handleQueryResults(resultIds, store)
             } catch (e: Exception) {
                 Log.e(TAG, "$e")
@@ -299,13 +298,15 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         val (validIds, idsToPurge) = filterAccessibleMediaStoreIds(getApplication(), initialBatch, _state.value.mediaType)
         val filteredSearchResults = validIds.map { mediaIdToUri(it, _state.value.mediaType) }
 
-        _state.emit( _state.value.copy(totalResults = totalCount, searchResults = filteredSearchResults))
+
+        _state.emit( _state.value.copy(totalResults = totalCount - idsToPurge.size, searchResults = filteredSearchResults))
 
         if (filteredSearchResults.isEmpty()) {
             _state.emit(_state.value.copy(error = getApplication<Application>().getString(R.string.search_error_no_results)))
         }
 
         if(idsToPurge.isNotEmpty()){
+            cachedIds.removeAll(idsToPurge) // PREVENTS duplicates
             purgeStaleItems(store, idsToPurge)
         }
     }
@@ -348,6 +349,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                 }
 
                 if (idsToPurge.isNotEmpty()) {
+                    cachedIds.removeAll(idsToPurge) // PREVENTS duplicates
                     purgeStaleItems(store, idsToPurge)
                 }
             }finally {
@@ -368,10 +370,9 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
             getMediaMatchingTag(_state.value.tagFilter, _state.value.mediaType, RESULTS_BATCH_SIZE, offset = offset)
         }else{
             val start = currentItemsCount.coerceAtLeast(0)
-            val end = (currentItemsCount + RESULTS_BATCH_SIZE).coerceAtMost(_state.value.totalResults)
-            val ids = cachedIds ?: return emptyList()
+            val end = (start + RESULTS_BATCH_SIZE).coerceAtMost(cachedIds.size)
             if (start >= end) return emptyList()
-            ids.subList(start, end)
+            cachedIds.subList(start, end)
         }
     }
 
