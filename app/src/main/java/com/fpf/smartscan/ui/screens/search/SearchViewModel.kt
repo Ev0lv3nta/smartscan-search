@@ -208,13 +208,14 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                 val actualQueryStart = if(!tag.isNullOrBlank()) tag.length + 1 else 0
                 val actualQuery = query.substring(actualQueryStart).trim()
                 val idsMatchingTag: List<Long> = getMediaMatchingTag(tag, _state.value.mediaType,RESULTS_BATCH_SIZE, 0) // load initial
-                val totalResults = countMediaMatchingTag(tag, _state.value.mediaType)
-
                 val tagOnlySearch = idsMatchingTag.isNotEmpty() && actualQuery.isBlank()
+
                 if(tagOnlySearch){
+                    val totalResults = countMediaMatchingTag(tag, _state.value.mediaType)
                     _state.update { currentState -> currentState.copy(tagOnlySearch = true) }
                     return@launch handleQueryResults(idsMatchingTag, store, totalResults)
-                }else if(actualQuery.isBlank()){
+                }
+                if(actualQuery.isBlank()){
                     return@launch handleQueryResults(emptyList(), store)
                 }
 
@@ -223,13 +224,13 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
                 val embedding = textEmbedder.embed(actualQuery)
                 val targetClusters = if (useClusterSearch) getTargetClusters(embedding, threshold, 3) else emptyList()
-                val filterIds: Set<Long> = buildSet {
+                val idsMatchingCluster: Set<Long> = buildSet {
                     for (clusterId in targetClusters) {
                         val ids = clusterCrossRefRepository.getClusterToMediaIdsMap()[clusterId] ?: continue
                         addAll(ids)
                     }
-                    addAll(idsMatchingTag)
                 }
+                val filterIds = if(tag != null) idsMatchingTag.toSet() else idsMatchingCluster
                 val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, filterIds)
                 cachedIds.addAll(queryResults)
                 handleQueryResults(queryResults, store)
@@ -287,7 +288,6 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         val initialBatch = queryResults.take(RESULTS_BATCH_SIZE) // initial results the rest loaded dynamically
         val (validIds, idsToPurge) = filterAccessibleMediaStoreIds(getApplication(), initialBatch, _state.value.mediaType)
         val filteredSearchResults = validIds.map { mediaIdToUri(it, _state.value.mediaType) }
-
 
         _state.emit( _state.value.copy(totalResults = totalCount - idsToPurge.size, searchResults = filteredSearchResults))
 
@@ -359,10 +359,9 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
             val offset = (currentItemsCount).coerceAtMost(_state.value.totalResults)
             getMediaMatchingTag(_state.value.tagFilter, _state.value.mediaType, RESULTS_BATCH_SIZE, offset = offset)
         }else{
-            val start = currentItemsCount.coerceAtLeast(0)
-            val end = (start + RESULTS_BATCH_SIZE).coerceAtMost(cachedIds.size)
-            if (start >= end) return emptyList()
-            cachedIds.subList(start, end)
+            val end = (currentItemsCount + RESULTS_BATCH_SIZE).coerceAtMost(cachedIds.size)
+            if (currentItemsCount >= end) return emptyList()
+            cachedIds.subList(currentItemsCount, end)
         }
     }
 
