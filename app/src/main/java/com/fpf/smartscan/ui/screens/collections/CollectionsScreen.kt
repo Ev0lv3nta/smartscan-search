@@ -1,7 +1,5 @@
 package com.fpf.smartscan.ui.screens.collections
 
-import android.util.Log
-import android.widget.Space
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -21,16 +19,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Tag
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -47,9 +44,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -64,7 +61,8 @@ import com.fpf.smartscan.ui.components.collections.MediaCollectionsList
 import com.fpf.smartscan.ui.screens.collections.CollectionsViewModel.Companion.TOP_N
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.StateFlow
-
+import com.fpf.smartscan.R
+import androidx.compose.ui.res.stringResource
 
 @OptIn(FlowPreview::class)
 @Composable
@@ -76,7 +74,6 @@ fun CollectionsScreen(
     val state by viewModel.state.collectAsState()
     val clusterCollections by viewModel.clusterCollections.collectAsState()
     val tagCollections by viewModel.tagCollections.collectAsState()
-    val appSettings by appSettings.collectAsState()
 
     val collections = if(state.viewAutoCollections) clusterCollections else tagCollections
     val isCollectionVisible = tagCollections.isNotEmpty() && !state.viewAutoCollections || clusterCollections.isNotEmpty() && state.viewAutoCollections
@@ -87,6 +84,7 @@ fun CollectionsScreen(
     var isRenamingCollection by remember { mutableStateOf(false) }
     var isMergingCollections by remember { mutableStateOf(false) }
     var isCopyingCollection by remember { mutableStateOf(false) }
+    var isDeletingCollection by remember { mutableStateOf(false) }
 
     var offset by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
@@ -150,6 +148,32 @@ fun CollectionsScreen(
                     },
         onClose = { isMergingCollections = false }
     )
+
+    if ( isDeletingCollection) {
+        val count = state.selectedCollections.size
+        val alertTitle = stringResource(R.string.collections_delete_collections_alert_title)
+        val alertDescription = stringResource(
+            R.string.collections_delete_collections_alert_description,
+            count,
+            pluralStringResource(R.plurals.collection_count, count)
+        )
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text(alertTitle) },
+            text = { Text(alertDescription) },
+            dismissButton = {
+                TextButton(onClick = { isDeletingCollection = false })
+                { Text("Cancel") }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteTagCollections( state.selectedCollections)
+                    isDeletingCollection = false
+                })
+                { Text("Confirm") }
+            }
+        )
+    }
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -291,7 +315,7 @@ fun CollectionsScreen(
                     .height(70.dp)
                     .zIndex(1f),
                 onDelete = {
-                    viewModel.deleteTagCollection( state.selectedCollections.first())
+                    isDeletingCollection = true
                     isSelecting = false
                 },
                 deleteEnabled = !state.viewAutoCollections,
