@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class AppSettings(
-    val similarityThreshold: Float = 0.21f,
+    val similarityThreshold: Float = 0.20f,
     val searchableImageDirectories: List<String> = emptyList(),
     val searchableVideoDirectories: List<String> = emptyList(),
     val theme: ThemeMode = ThemeMode.SYSTEM,
