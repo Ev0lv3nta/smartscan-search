@@ -5,8 +5,6 @@ import android.content.Context
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.application
-import com.fpf.smartscan.ui.permissions.StorageAccess
-import com.fpf.smartscan.ui.permissions.getStorageAccess
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -17,11 +15,6 @@ class MainViewModel( application: Application) : AndroidViewModel(application) {
         private const val UPDATES_KEY = "UPDATES_KEY"
     }
     private val sharedPrefs = application.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-
-    val refreshMessageFull = application.getString(R.string.setting_refresh_index_description_full)
-    val refreshMessagePartial = application.getString(R.string.setting_refresh_index_description_partial)
-    val refreshMessageDenied = application.getString(R.string.setting_refresh_index_description_denied)
-
 
     val versionName: String? = try {
         val packageInfo = application.packageManager.getPackageInfo(application.packageName, 0)
@@ -44,20 +37,11 @@ class MainViewModel( application: Application) : AndroidViewModel(application) {
     fun getUpdates(): List<String>{
         return listOf(
             application.getString(R.string.update_cluster_search),
+            application.getString(R.string.update_collections),
             application.getString(R.string.update_merge_collections),
             application.getString(R.string.update_copy_to_tag_collections),
-            application.getString(R.string.update_collections),
             application.getString(R.string.update_results_per_row_setting),
             application.getString(R.string.update_removed_index_frequency_setting)
         )
-    }
-
-    fun getRefreshMessage(): String{
-        val storageAccess = getStorageAccess(application)
-        return  when (storageAccess) {
-            StorageAccess.Full -> refreshMessageFull
-            StorageAccess.Partial -> refreshMessagePartial
-            StorageAccess.Denied -> refreshMessageDenied
-        }
     }
 }
