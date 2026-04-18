@@ -7,6 +7,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Parcelable
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -21,18 +22,21 @@ import coil3.disk.directory
 import coil3.memory.MemoryCache
 import coil3.request.crossfade
 import coil3.video.VideoFrameDecoder
+import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscan.ui.theme.ThemeManager
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.io.File
 
 class MainActivity : ComponentActivity() {
     private val sharedPrefs by lazy { application.getSharedPreferences("AsyncStorage", MODE_PRIVATE) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        cleanUp()
         val appSettings = loadSettings(sharedPrefs)
         ThemeManager.updateColorScheme(appSettings.color)
         ThemeManager.updateThemeMode(appSettings.theme)
@@ -103,5 +107,13 @@ class MainActivity : ComponentActivity() {
             statusBarStyle = if (isDarkTheme) SystemBarStyle.dark(Color.Transparent.toArgb()) else SystemBarStyle.light(Color.Transparent.toArgb(), Color.Black.toArgb()),
             navigationBarStyle = if (isDarkTheme) SystemBarStyle.dark(Color.Transparent.toArgb()) else SystemBarStyle.light(Color.Transparent.toArgb(), Color.Black.toArgb())
         )
+    }
+
+    private fun cleanUp(){
+        val tagFile = File(application.filesDir, EmbeddingStoresFiles.TAGS)
+        if(tagFile.exists()) {
+            Log.d("MainActivity", "Old tag embed store file removed")
+            tagFile.delete()
+        }
     }
 }
