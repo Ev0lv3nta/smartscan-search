@@ -36,7 +36,7 @@ fun ImageDisplay(
     val request = remember(uri, maxSize) {
         val builder = ImageRequest.Builder(context)
             .allowHardware(true)
-            .crossfade(false)
+            .crossfade(true)
             .data(uri)
 
         if (maxSize != null) {
