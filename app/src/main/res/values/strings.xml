@@ -37,7 +37,7 @@
     <string name="search_start_indexing_alert">Start indexing %1$s</string>
 
     <string name="collections_no_collections_title">No Collections</string>
-    <string name="collections_no_collections_description">Collection are created by automatically grouping similar items or when you tag items.</string>
+    <string name="collections_no_collections_description">Collections are created by automatically grouping similar items or when you tag items.</string>
 
     <!-- Donate screen -->
     <string name="label_btc">Bitcoin</string>
