@@ -32,6 +32,7 @@ import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.media.removeStaleMedia
 import com.fpf.smartscan.search.ImageIndexListener
+import com.fpf.smartscan.search.IndexingStatus
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.services.MediaIndexForegroundService
@@ -114,7 +115,9 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         }
         viewModelScope.launch(Dispatchers.IO){
             if(!isWorkScheduled(context = application, workName = IndexWorker.TAG)) scheduleIndexWorker()
-            if((imageStore.exists || videoStore.exists) && (!imageClusterStore.exists && !videoClusterStore.exists)){
+            val hasIndexedAndHasNotClustered = (imageStore.exists || videoStore.exists) && (!imageClusterStore.exists && !videoClusterStore.exists)
+            val isIndexing = imageIndexStatus.value == IndexingStatus.ACTIVE || videoIndexStatus.value == IndexingStatus.ACTIVE
+            if(hasIndexedAndHasNotClustered && !isIndexing){
                 startIndexing(application, MediaIndexForegroundService.TYPE_BOTH)
             }
         }
