@@ -113,6 +113,9 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         }
         viewModelScope.launch(Dispatchers.IO){
             if(!isWorkScheduled(context = application, workName = IndexWorker.TAG)) scheduleIndexWorker()
+            if((imageStore.exists || videoStore.exists) && (!imageClusterStore.exists && !videoClusterStore.exists)){
+                startIndexing(application, MediaIndexForegroundService.TYPE_BOTH)
+            }
         }
     }
 
