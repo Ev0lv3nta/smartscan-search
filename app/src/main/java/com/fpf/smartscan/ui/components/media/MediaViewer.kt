@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
@@ -40,22 +41,21 @@ import com.fpf.smartscan.utils.canOpenUri
 
 @Composable
 fun MediaViewer(
-    uris: List<Uri>,
-    type: MediaType,
+    items: List<MediaItem>,
     initialIndex: Int,
     onClose: () -> Unit,
     onLoadMore: (() -> Unit)? = null,
     onUpdateSearchImage: ((uri: Uri) -> Unit)? = null,
     maxSize: Int? = 1024
 ) {
-    if (uris.isEmpty()) return
+    if (items.isEmpty()) return
 
     var isActionsVisible by remember { mutableStateOf(true) }
     var currentIndex by remember {
-        mutableIntStateOf(initialIndex.coerceIn(0, uris.lastIndex))
+        mutableIntStateOf(initialIndex.coerceIn(0, items.lastIndex))
     }
 
-    val currentUri = uris[currentIndex]
+    val currentItem = items[currentIndex]
 
     Popup(
         onDismissRequest = { onClose() },
@@ -69,9 +69,9 @@ fun MediaViewer(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            if (type == MediaType.IMAGE) {
+            if (currentItem.type == MediaType.IMAGE) {
                 ImageDisplay(
-                    uri = currentUri,
+                    uri = currentItem.uri,
                     modifier = Modifier
                         .fillMaxSize()
                         .pointerInput(currentIndex) {
@@ -80,9 +80,9 @@ fun MediaViewer(
                                     // handled by drag direction below
                                 },
                                 onHorizontalDrag = { _, dragAmount ->
-                                    if (dragAmount < -20 && currentIndex < uris.lastIndex) {
+                                    if (dragAmount < -20 && currentIndex < items.lastIndex) {
                                         currentIndex += 1
-                                        if(currentIndex == uris.lastIndex - 1){
+                                        if(currentIndex == items.lastIndex - 1){
                                          onLoadMore?.invoke()
                                         }
                                     } else if (dragAmount > 20 && currentIndex > 0) {
@@ -93,17 +93,17 @@ fun MediaViewer(
                         },
                     contentScale = ContentScale.FillWidth,
                     maxSize = maxSize,
-                    mediaType = type
+                    mediaType = currentItem.type
                 )
             } else {
                 VideoDisplay(
-                    uri = currentUri,
+                    uri = currentItem.uri,
                     modifier = Modifier.fillMaxSize(),
                     onTap = { isActionsVisible = !isActionsVisible },
                     onSwipeLeft = {
-                        if (currentIndex < uris.lastIndex) {
+                        if (currentIndex < items.lastIndex) {
                             currentIndex += 1
-                            if (currentIndex == uris.lastIndex - 1) {
+                            if (currentIndex == items.lastIndex - 1) {
                                 onLoadMore?.invoke()
                             }
                         }
@@ -117,8 +117,8 @@ fun MediaViewer(
             }
 
             ActionRow(
-                uri = currentUri,
-                type = type,
+                uri = currentItem.uri,
+                type = currentItem.type,
                 onClose = onClose,
                 onUpdateSearchImage = onUpdateSearchImage,
                 isVisible = isActionsVisible

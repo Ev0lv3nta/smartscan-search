@@ -91,7 +91,7 @@ fun SearchScreen(
     var hasStoragePermission by remember { mutableStateOf(false) }
     var isAddingTag by remember { mutableStateOf(false) }
     var isSelecting by remember { mutableStateOf(false) }
-    var offset by remember { mutableStateOf(0) }
+    var offset by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val actionBarHeight = with(density) { 70.dp.toPx() }
     val searchBarHeight = with(density) { (if(state.queryType == QueryType.IMAGE) 200 else 120).dp.toPx() }
@@ -355,7 +355,7 @@ fun SearchScreen(
                 searchEnabled = state.selectedResults.size == 1 && state.mediaType == MediaType.IMAGE,
                 onSearch = {
                     if (state.selectedResults.size == 1) {
-                        searchViewModel.updateSearchImageUri(state.selectedResults.first())
+                        searchViewModel.updateSearchImageUri(state.selectedResults.first().uri)
                         searchViewModel.updateQueryType(QueryType.IMAGE)
                         isSelecting = false
                         searchViewModel.clearSelectedResults()
@@ -363,7 +363,7 @@ fun SearchScreen(
                     }
                 },
                 onShare = {
-                    shareMediaMulti(context, state.selectedResults.toList())
+                    shareMediaMulti(context, state.selectedResults.map{it.uri})
                     isSelecting = false
                     searchViewModel.clearSelectedResults()
                 },
@@ -372,26 +372,25 @@ fun SearchScreen(
                     isSelecting = false
                 },
                 onCopy = {
-                    clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", state.selectedResults.first()))
+                    clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", state.selectedResults.first().uri))
                     isSelecting = false
                     searchViewModel.clearSelectedResults()
                 },
             )
         }
-        state.resultToView?.let { uri ->
+        state.resultToView?.let { item ->
             AnimatedVisibility(
                 visible = true,
                 enter = fadeIn(animationSpec = tween(500)) + scaleIn(initialScale = 0.8f, animationSpec = tween(500)),
                 exit = fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.8f, animationSpec = tween(300))
             ) {
                 MediaViewer(
-                    uris = state.searchResults,
-                    initialIndex = state.searchResults.indexOf(uri),
+                    items = state.searchResults,
+                    initialIndex = state.searchResults.indexOf(item),
                     onLoadMore = searchViewModel::onLoadMore,
-                    type = state.mediaType,
                     onClose = { searchViewModel.toggleViewResult(context, null)},
                     onUpdateSearchImage = {
-                        searchViewModel.updateSearchImageUri(uri)
+                        searchViewModel.updateSearchImageUri(item.uri)
                         searchViewModel.updateQueryType(QueryType.IMAGE)
                         searchViewModel.search(appSettings.similarityThreshold, appSettings.enableClusterSearch)
                         searchViewModel.toggleViewResult(context, null)

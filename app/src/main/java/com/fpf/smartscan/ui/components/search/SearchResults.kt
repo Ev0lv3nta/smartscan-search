@@ -1,6 +1,5 @@
 package com.fpf.smartscan.ui.components.search
 
-import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -46,19 +45,20 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import coil3.compose.AsyncImagePainter
+import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.ui.components.CircularCheckbox
 import kotlin.math.roundToInt
 
 @Composable
 fun SearchResults(
     isVisible: Boolean,
-    searchResults: List<Uri>,
-    selectedResults: Set<Uri>,
+    searchResults: List<MediaItem>,
+    selectedResults: Set<MediaItem>,
     mediaType: MediaType,
     totalResults: Int,
     onLoadMore: () -> Unit,
-    onViewResult: (uri: Uri?) -> Unit,
-    onToggleSelected: (Uri) -> Unit,
+    onViewResult: (MediaItem?) -> Unit,
+    onToggleSelected: (MediaItem) -> Unit,
     onToggleSelectionMode: () -> Unit,
     onOffsetChange: (Int) -> Unit,
     onError: ((AsyncImagePainter.State.Error) -> Unit)? = null,
@@ -142,7 +142,7 @@ fun SearchResults(
                 }
             }
 
-            items(searchResults, key = { it }) { uri ->
+            items(searchResults, key = { it }) { item ->
                 Box(
                     modifier = Modifier
                         .aspectRatio(1f)
@@ -152,18 +152,18 @@ fun SearchResults(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() },
                             onClick = {
-                                if(isSelecting) onToggleSelected(uri) else onViewResult(uri)
+                                if(isSelecting) onToggleSelected(item) else onViewResult(item)
                             },
                             onLongClick = {
                                 if(!isSelecting) {
                                     onToggleSelectionMode()
-                                    onToggleSelected(uri)
+                                    onToggleSelected(item)
                                 }
                             }
                         )
                 ) {
                     ImageDisplay(
-                        uri = uri,
+                        uri = item.uri,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
                         mediaType = mediaType,
@@ -171,8 +171,8 @@ fun SearchResults(
                     )
                     if(isSelecting) {
                         CircularCheckbox(
-                            checked = uri in selectedResults,
-                            onCheckedChange = { onToggleSelected(uri) },
+                            checked = item in selectedResults,
+                            onCheckedChange = { onToggleSelected(item) },
                             modifier = Modifier
                                 .offset(x = 8.dp, y = 8.dp)
                                 .align(Alignment.TopStart),
@@ -183,7 +183,7 @@ fun SearchResults(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
                                 ) {
-                                    onViewResult(uri)
+                                    onViewResult(item)
                                 }
                                 .offset((-8).dp, (-8).dp)
                                 .align(Alignment.BottomEnd)

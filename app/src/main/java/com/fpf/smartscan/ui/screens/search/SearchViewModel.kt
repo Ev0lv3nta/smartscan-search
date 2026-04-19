@@ -21,6 +21,7 @@ import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
 import com.fpf.smartscan.data.tags.TagRepository
 import com.fpf.smartscan.data.tags.Tag
+import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.filterAccessibleMediaStoreIds
 import com.fpf.smartscan.search.QueryType
@@ -290,7 +291,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         val totalCount = totalResults?: queryResults.size
         val initialBatch = queryResults.take(RESULTS_BATCH_SIZE) // initial results the rest loaded dynamically
         val (validIds, idsToPurge) = filterAccessibleMediaStoreIds(getApplication(), initialBatch, _state.value.mediaType)
-        val filteredSearchResults = validIds.map { mediaIdToUri(it, _state.value.mediaType) }
+        val filteredSearchResults = validIds.map { toMediaItem(it, _state.value.mediaType) }
 
         _state.emit( _state.value.copy(totalResults = totalCount - idsToPurge.size, searchResults = filteredSearchResults))
 
@@ -337,7 +338,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                 val (filteredResults, idsToPurge) = filterAccessibleMediaStoreIds(getApplication(), batch, _state.value.mediaType)
 
                 if (filteredResults.isNotEmpty()) {
-                    val filteredSearchResults = _state.value.searchResults + filteredResults.map { mediaIdToUri(it, _state.value.mediaType) }
+                    val filteredSearchResults = _state.value.searchResults + filteredResults.map { toMediaItem(it, _state.value.mediaType) }
                     _state.emit(_state.value.copy(searchResults = filteredSearchResults))
                 }
 
@@ -368,23 +369,23 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun toggleViewResult(context: Context, uri: Uri?, autoOpenInGallery: Boolean? = null, isSelecting: Boolean = false){
-        if(uri != null && !canOpenUri(context, uri)){
-            _state.update { currentState -> currentState.copy(searchResults = currentState.searchResults - uri) }
+    fun toggleViewResult(context: Context, item: MediaItem?, autoOpenInGallery: Boolean? = null, isSelecting: Boolean = false){
+        if(item != null && !canOpenUri(context, item.uri)){
+            _state.update { currentState -> currentState.copy(searchResults = currentState.searchResults - item) }
             return
         }
 
         if(autoOpenInGallery == true && !isSelecting) {
             when(_state.value.mediaType){
                 MediaType.IMAGE -> {
-                    uri?.let{openImageInGallery(context, it)}
+                    item?.let{openImageInGallery(context, it.uri)}
                 }
                 MediaType.VIDEO -> {
-                    uri?.let{openVideoInGallery(context, it)}
+                    item?.let{openVideoInGallery(context, it.uri)}
                 }
             }
         }else{
-            _state.value = _state.value.copy(resultToView = uri)
+            _state.value = _state.value.copy(resultToView = item)
         }
     }
 
@@ -426,7 +427,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun toggleSelectedResult(item: Uri){
+    fun toggleSelectedResult(item: MediaItem){
         _state.update { currentState ->
             if (item in currentState.selectedResults) {
                 val updatedSelectedResults = currentState.selectedResults - item
@@ -445,7 +446,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     fun tagSelectedItems(tag: String){
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val selectedMediaIds = _state.value.selectedResults.map { ContentUris.parseId(it) }
+                val selectedMediaIds = _state.value.selectedResults.map { it.id }
 
                 when (val mediaType = _state.value.mediaType) {
                     MediaType.IMAGE -> {
@@ -571,6 +572,14 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
             MediaType.IMAGE -> getImageUriFromId(id)
             MediaType.VIDEO -> getVideoUriFromId(id)
         }
+    }
+
+    private fun toMediaItem(id: Long, type: MediaType): MediaItem{
+        return MediaItem(
+            id = id,
+            uri = mediaIdToUri(id, type),
+            type = type
+        )
     }
 
     override fun onCleared() {

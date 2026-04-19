@@ -175,9 +175,9 @@ fun CollectionItemsScreen(
             )
         }
         state.mediaToView?.let { item ->
-            val uris by remember {
+            val mediaItems by remember {
                 derivedStateOf {
-                    List(items.itemCount) { index -> items[index]?.uri }.filterNotNull()
+                    List(items.itemCount) { index -> items[index] }.filterNotNull()
                 }
             }
             AnimatedVisibility(
@@ -192,9 +192,8 @@ fun CollectionItemsScreen(
                 )
             ) {
                 MediaViewer(
-                    uris = uris,
-                    initialIndex = uris.indexOf(item.uri),
-                    type = item.type,
+                    items = mediaItems,
+                    initialIndex = mediaItems.indexOf(item),
                     onClose = { viewModel.setMediaToView(context, null) },
                     onUpdateSearchImage = null,
                     onLoadMore = { val lastIndex = (items.itemCount - 1).coerceAtLeast(0)
