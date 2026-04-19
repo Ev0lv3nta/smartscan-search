@@ -1,3 +1,17 @@
+## v1.3.0 - 19/04/2026
+
+### Added
+* Added cluster-based search improving search speed and relevance
+* Added collections (Tag Collections and Auto Collections)
+* Added ability to merge collections (Tag Collections only)
+* Added bulk copy from Auto Collections to Tag Collections``
+* Added setting to control number of results shown per grid row
+
+### Removed
+* Removed index frequency setting (defaults to daily updates)
+* Removed tag suggestions when tagging selected items
+
+
 ## v1.2.0 - 27/12/2025 
 
 ### Added 
