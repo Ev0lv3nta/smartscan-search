@@ -8,6 +8,9 @@
 * Added setting to control number of results shown per grid row
 * Added swipe gestures to MediaViewer to swipe through media items
 
+### Changed
+* Single unified DB for both images and videos
+
 ### Removed
 * Removed index frequency setting (defaults to daily updates)
 * Removed tag suggestions when tagging selected items
