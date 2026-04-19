@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
@@ -60,7 +59,6 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
     private val tagsRepository by lazy { TagRepository(db.tagDao())}
     private val tagsCrossRefRepository by lazy { TagCrossRefRepository( db.tagCrossRefDao())}
     private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
-    private val clusterMetadataRepository by lazy { ClusterMetadataRepository(db.clusterMetadataDao()) }
 
     val imageStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE), 512)
     val videoStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.VIDEO), 512 )
@@ -81,8 +79,9 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
             } else {
                 Pager(
                     config = PagingConfig(
-                        pageSize = 100,
-                        initialLoadSize = 100,
+                        pageSize = 50,
+                        initialLoadSize = 50,
+                        prefetchDistance = 25,
                         enablePlaceholders = false
                     ),
                     pagingSourceFactory = {
@@ -108,8 +107,9 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
             } else {
                 Pager(
                     config = PagingConfig(
-                        pageSize = 100,
-                        initialLoadSize = 100,
+                        pageSize = 50,
+                        initialLoadSize = 50,
+                        prefetchDistance = 25,
                         enablePlaceholders = false
                     ),
                     pagingSourceFactory = {
