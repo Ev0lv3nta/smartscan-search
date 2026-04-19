@@ -1,6 +1,5 @@
 # SmartScan - Media search engine app
 
-## ❗ This repository is no longer maintained.
 Search images and videos offline using text or by reverse image search with on-device AI.
 
 <div align="center">
@@ -27,16 +26,29 @@ The app is free, but if you enjoy using it and want to support project developme
 
 ## Key Features
 
-### Search Images and Videos
-- **Search Options:** Search using text or images.
-- **Tagging**: Add tags with auto-suggestions and auto-complete.
-- **Cross-App Search**: Search from other apps via Share/intent.
-- **Folder Selection:** Choose which image and video folders are allowed to be indexed.
-- **Gallery Access:** Open search results directly in the gallery.
-- **Auto-Refresh Index:** Automatically refresh image and video indexes for new content.
-
-### Fully On-Device
 All processing is handled entirely on-device, ensuring privacy, speed, and offline functionality.
+
+### Search:
+* Search images and videos
+* Search using text or images
+* Search by tag
+* Search by tag + text query
+* Search from other apps via share/intent
+* Search by pasting image in search bar
+* Cluster-based search
+* Automatically refresh image and video indexes for new content
+* Optionally configure searchable image and video folders
+* Optionally open search results in default gallery
+
+### Tagging:
+* Add tags to media
+* Tag autocomplete when searching or tagging
+
+### Collections:
+* Auto Collections: automatically groups similar media
+* Tag Collections: manually curate collections using tags
+* Merge Tag Collections
+* Bulk copy from Auto Collections to Tag Collections
 
 ---
 
