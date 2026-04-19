@@ -50,8 +50,8 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
 
     val clusterCollections: StateFlow<List<MediaCollection>> = combine(
         clusterCrossRefRepository.getClustersWithCount(),
-        _state.map { Triple(it.mediaType, it.showAllCollections, it.viewAutoCollections) }.distinctUntilChanged()
-    ) { clusters, (mediaType, showAllCollections, viewAutoCollections) ->
+        _state.map {  it.showAllCollections to  it.viewAutoCollections }.distinctUntilChanged()
+    ) { clusters, ( showAllCollections, viewAutoCollections) ->
         if(viewAutoCollections){
             _state.update { it.copy(totalCollections = clusters.size) }
         }
@@ -67,8 +67,8 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
 
     val tagCollections: StateFlow<List<MediaCollection>> = combine(
         tagsCrossRefRepository.getTagsWithCounts(),
-        _state.map { Triple(it.mediaType, it.showAllCollections, it.viewAutoCollections) }.distinctUntilChanged()
-    ) { tagsWithCount, (mediaType, showAllCollections, viewAutoCollections) ->
+        _state.map {  it.showAllCollections to  it.viewAutoCollections }.distinctUntilChanged()
+    ) { tagsWithCount, ( showAllCollections, viewAutoCollections) ->
         if(!viewAutoCollections){
             _state.update { it.copy(totalCollections = tagsWithCount.size) }
         }
