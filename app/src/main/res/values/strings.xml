@@ -68,7 +68,7 @@
 
     <!--Search Settings-->
     <string name="setting_auto_open_gallery">Auto-open in gallery</string>
-    <string name="setting_enable_cluster_search">Cluster search</string>
+    <string name="setting_enable_cluster_search">Cluster-based search</string>
     <string name="setting_enable_cluster_search_description">Faster, more relevant results, but may occasionally miss some matching items</string>
     <string name="setting_search_result_columns">Results per row</string>
     <string name="setting_similarity_threshold">Similarity threshold</string>
@@ -115,10 +115,11 @@
 
     <!--Updates-->
     <string name="update_cluster_search">Added cluster-based search, improving search speed and relevance</string>
-    <string name="update_merge_collections">Added ability to merge collections (Tag Collections only)</string>
-    <string name="update_copy_to_tag_collections">Added bulk copy from Auto Collection to Tag Collection</string>
     <string name="update_collections">Added collections (Tag Collections and Auto Collections)</string>
-    <string name="update_results_per_row_setting">Added setting to control number of results shown per grid row</string>
-    <string name="update_removed_index_frequency_setting">Removed index frequency setting (defaults to daily updates)</string>
+    <string name="update_merge_collections">Added ability to merge collections (Tag Collections only)</string>
+    <string name="update_copy_to_tag_collections">Added bulk copy from Auto Collections to Tag Collections</string>
+    <string name="update_swipe_gestures_media_viewer">Added swipe gestures to MediaViewer for browsing media items</string>
+    <string name="update_results_per_row_setting">Added setting to control number of results shown per row</string>
+    <string name="update_removed_index_frequency_setting">Removed index frequency setting (defaults to daily)</string>
 
 </resources>
