@@ -69,6 +69,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         saveSettings(sharedPrefs, _appSettings.value)
     }
 
+    fun updateImageSimilarityThreshold(threshold: Float) {
+        val currentSettings = _appSettings.value
+        _appSettings.value = currentSettings.copy(imageSimilarityThreshold = threshold)
+        saveSettings(sharedPrefs, _appSettings.value)
+    }
+
     fun onImportModel( uri: Uri, modelInfo: ModelInfo) {
         viewModelScope.launch(Dispatchers.IO) {
             try {

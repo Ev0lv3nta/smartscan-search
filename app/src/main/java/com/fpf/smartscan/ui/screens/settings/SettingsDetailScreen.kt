@@ -52,14 +52,22 @@ fun SettingsDetailScreen(
             when (type) {
                 SettingTypes.THRESHOLD -> {
                     CustomSlider(
-                        label = stringResource(R.string.setting_similarity_threshold),
+                        label = stringResource(R.string.setting_similarity_threshold_label, "text queries"),
                         minValue = 0.18f,
                         maxValue = 0.28f,
                         initialValue = appSettings.similarityThreshold,
                         onValueChange = { value ->
                             viewModel.updateSimilarityThreshold(value)
                         },
-                        description = stringResource(R.string.setting_similarity_threshold_description)
+                    )
+                    CustomSlider(
+                        label = stringResource(R.string.setting_similarity_threshold_label, "image queries"),
+                        minValue = 0.4f,
+                        maxValue = 0.8f,
+                        initialValue = appSettings.imageSimilarityThreshold,
+                        onValueChange = { value ->
+                            viewModel.updateImageSimilarityThreshold(value)
+                        },
                     )
                 }
                 SettingTypes.MODELS -> {

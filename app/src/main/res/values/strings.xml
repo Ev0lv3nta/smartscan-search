@@ -72,6 +72,7 @@
     <string name="setting_enable_cluster_search_description">Faster, more relevant results, but may occasionally miss some matching items</string>
     <string name="setting_search_result_columns">Results per row</string>
     <string name="setting_similarity_threshold">Similarity threshold</string>
+    <string name="setting_similarity_threshold_label">Similarity threshold (%1$s)</string>
     <string name="setting_similarity_threshold_description">Minimum similarity score for matching results</string>
     <string name="setting_max_search_results">Max search results</string>
     <string name="setting_refresh_image_index">Refresh image index</string>
