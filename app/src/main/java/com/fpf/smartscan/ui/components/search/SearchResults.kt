@@ -33,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.ui.components.media.ImageDisplay
 import kotlinx.coroutines.launch
 import androidx.compose.material3.FloatingActionButton
@@ -54,7 +53,6 @@ fun SearchResults(
     isVisible: Boolean,
     searchResults: List<MediaItem>,
     selectedResults: Set<MediaItem>,
-    mediaType: MediaType,
     totalResults: Int,
     onLoadMore: () -> Unit,
     onViewResult: (MediaItem?) -> Unit,
@@ -142,7 +140,7 @@ fun SearchResults(
                 }
             }
 
-            items(searchResults, key = { it }) { item ->
+            items(searchResults, key = { it.id }) { item ->
                 Box(
                     modifier = Modifier
                         .aspectRatio(1f)
@@ -166,7 +164,7 @@ fun SearchResults(
                         uri = item.uri,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
-                        mediaType = mediaType,
+                        mediaType = item.type,
                         onError=onError
                     )
                     if(isSelecting) {

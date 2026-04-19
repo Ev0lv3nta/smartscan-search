@@ -317,7 +317,6 @@ fun SearchScreen(
             SearchResults(
                 isVisible = !state.loading && state.searchResults.isNotEmpty(),
                 numGridColumns = appSettings.resultsPerRow,
-                mediaType = state.mediaType,
                 searchResults = state.searchResults,
                 totalResults=state.totalResults,
                 isSelecting = isSelecting,
