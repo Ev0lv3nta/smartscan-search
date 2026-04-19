@@ -39,7 +39,7 @@ import com.fpf.smartscan.utils.isWorkScheduled
 import com.fpf.smartscan.workers.IndexWorker
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.media.getBitmapFromUri
-import com.fpf.smartscansdk.core.models.ModelAssetSource
+import com.fpf.smartscansdk.ml.models.ModelAssetSource
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_X
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder

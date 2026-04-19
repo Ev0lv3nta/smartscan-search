@@ -11,9 +11,9 @@ import com.fpf.smartscan.IImageEmbedderService
 import com.fpf.smartscan.R
 import com.fpf.smartscansdk.core.embeddings.ImageEmbeddingProvider
 import com.fpf.smartscansdk.core.embeddings.flattenEmbeddings
-import com.fpf.smartscansdk.core.models.ModelAssetSource
-import com.fpf.smartscansdk.core.models.ModelManager
-import com.fpf.smartscansdk.core.models.ModelType
+import com.fpf.smartscansdk.ml.models.ModelAssetSource
+import com.fpf.smartscansdk.ml.models.ModelManager
+import com.fpf.smartscansdk.ml.models.ModelType
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
 import kotlinx.coroutines.runBlocking
 import com.fpf.smartscansdk.core.embeddings.embedBatch

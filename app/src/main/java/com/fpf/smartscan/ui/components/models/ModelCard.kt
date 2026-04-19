@@ -36,7 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fpf.smartscan.R
-import com.fpf.smartscansdk.core.models.ModelInfo
+import com.fpf.smartscansdk.ml.models.ModelInfo
 
 @Composable
 fun ModelCard(

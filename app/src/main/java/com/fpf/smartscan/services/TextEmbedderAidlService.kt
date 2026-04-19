@@ -8,11 +8,11 @@ import com.fpf.smartscan.ITextEmbedderService
 import com.fpf.smartscan.R
 import com.fpf.smartscansdk.core.embeddings.TextEmbeddingProvider
 import com.fpf.smartscansdk.core.embeddings.flattenEmbeddings
-import com.fpf.smartscansdk.core.models.ModelAssetSource
-import com.fpf.smartscansdk.core.models.ModelManager
-import com.fpf.smartscansdk.core.models.ModelName
-import com.fpf.smartscansdk.core.models.ModelRegistry
-import com.fpf.smartscansdk.core.models.ModelType
+import com.fpf.smartscansdk.ml.models.ModelAssetSource
+import com.fpf.smartscansdk.ml.models.ModelManager
+import com.fpf.smartscansdk.ml.models.ModelName
+import com.fpf.smartscansdk.ml.models.ModelRegistry
+import com.fpf.smartscansdk.ml.models.ModelType
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
 import com.fpf.smartscansdk.ml.providers.embeddings.minilm.MiniLMTextEmbedder
 import kotlinx.coroutines.runBlocking

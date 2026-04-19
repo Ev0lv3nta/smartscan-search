@@ -24,9 +24,9 @@ import com.fpf.smartscan.utils.zipFiles
 import com.fpf.smartscan.ui.theme.ColorSchemeType
 import com.fpf.smartscan.ui.theme.ThemeManager
 import com.fpf.smartscan.ui.theme.ThemeMode
-import com.fpf.smartscansdk.core.models.ModelInfo
-import com.fpf.smartscansdk.core.models.ModelManager
-import com.fpf.smartscansdk.core.models.ModelName
+import com.fpf.smartscansdk.ml.models.ModelInfo
+import com.fpf.smartscansdk.ml.models.ModelManager
+import com.fpf.smartscansdk.ml.models.ModelName
 import com.fpf.smartscansdk.core.processors.Metrics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow

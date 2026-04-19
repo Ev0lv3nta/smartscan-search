@@ -27,7 +27,7 @@ import com.fpf.smartscan.search.clusterMedia
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer
-import com.fpf.smartscansdk.core.models.ModelAssetSource
+import com.fpf.smartscansdk.ml.models.ModelAssetSource
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_X
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_Y

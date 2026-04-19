@@ -21,9 +21,9 @@ import com.fpf.smartscan.constants.SettingTypes
 import com.fpf.smartscan.ui.components.BackupAndRestore
 import com.fpf.smartscan.ui.components.models.ModelsList
 import com.fpf.smartscan.ui.screens.settings.SettingsViewModel.Companion.BACKUP_FILENAME
-import com.fpf.smartscansdk.core.models.ModelManager
-import com.fpf.smartscansdk.core.models.ModelName
-import com.fpf.smartscansdk.core.models.ModelRegistry
+import com.fpf.smartscansdk.ml.models.ModelManager
+import com.fpf.smartscansdk.ml.models.ModelName
+import com.fpf.smartscansdk.ml.models.ModelRegistry
 
 
 @OptIn(ExperimentalMaterial3Api::class)

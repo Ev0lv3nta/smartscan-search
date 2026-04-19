@@ -14,8 +14,8 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.fpf.smartscan.R
-import com.fpf.smartscansdk.core.models.ModelInfo
-import com.fpf.smartscansdk.core.models.ModelName
+import com.fpf.smartscansdk.ml.models.ModelInfo
+import com.fpf.smartscansdk.ml.models.ModelName
 
 @Composable
 fun ModelsList(
