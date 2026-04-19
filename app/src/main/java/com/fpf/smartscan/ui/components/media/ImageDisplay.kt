@@ -27,7 +27,7 @@ fun ImageDisplay(
     uri: Uri,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
-    mediaType: MediaType,
+    mediaType: MediaType? = null,
     maxSize:Int? = 512,
     onError: ((error:  AsyncImagePainter.State.Error)-> Unit)? = null
     ) {
