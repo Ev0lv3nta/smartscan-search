@@ -305,7 +305,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun externalSearch(intentSearchQuery: SearchQuery?, similarityThreshold: Float, useClusterSearch: Boolean){
+    fun externalSearch(intentSearchQuery: SearchQuery?, similarityThreshold: Float, imageSimilarityThreshold: Float, useClusterSearch: Boolean){
         if(intentSearchQuery == null || hasHandledExternalSearch) return
 
         when(intentSearchQuery) {
@@ -313,7 +313,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                 setMediaType(intentSearchQuery.mediaType)
                 updateSearchImageUri(intentSearchQuery.uri)
                 updateQueryType(QueryType.IMAGE)
-                search(similarityThreshold, useClusterSearch)
+                search(imageSimilarityThreshold, useClusterSearch)
                 hasHandledExternalSearch = true
             }
 

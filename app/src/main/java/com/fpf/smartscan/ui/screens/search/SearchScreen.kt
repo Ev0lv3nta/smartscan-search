@@ -126,7 +126,7 @@ fun SearchScreen(
     }
 
     LaunchedEffect(Unit) {
-        searchViewModel.externalSearch(intentSearchQuery, appSettings.similarityThreshold, appSettings.enableClusterSearch)
+        searchViewModel.externalSearch(intentSearchQuery, appSettings.similarityThreshold, appSettings.imageSimilarityThreshold, appSettings.enableClusterSearch)
     }
 
     DisposableEffect(Unit) {
@@ -223,7 +223,7 @@ fun SearchScreen(
                             imageSize = 140.dp,
                             mediaTypeSelectorEnabled = (videoIndexStatus != IndexingStatus.ACTIVE && imageIndexStatus != IndexingStatus.ACTIVE), // prevent switching modes when indexing in progress
                             onSearch = {
-                                searchViewModel.search(appSettings.similarityThreshold, appSettings.enableClusterSearch)
+                                searchViewModel.search(appSettings.imageSimilarityThreshold, appSettings.enableClusterSearch)
                                 isSelecting = false
                             },
                             onMediaTypeChange = searchViewModel::setMediaType,
@@ -260,13 +260,13 @@ fun SearchScreen(
                             onImageSelected = {
                                 searchViewModel.updateSearchImageUri(it)
                                 searchViewModel.updateQueryType(QueryType.IMAGE)
-                                searchViewModel.search(appSettings.similarityThreshold, appSettings.enableClusterSearch)
+                                searchViewModel.search(appSettings.imageSimilarityThreshold, appSettings.enableClusterSearch)
                                 isSelecting = false
                             },
                             onImagePasted = {
                                 searchViewModel.updateSearchImageUri(it)
                                 searchViewModel.updateQueryType(QueryType.IMAGE)
-                                searchViewModel.search(appSettings.similarityThreshold, appSettings.enableClusterSearch)
+                                searchViewModel.search(appSettings.imageSimilarityThreshold, appSettings.enableClusterSearch)
                                 isSelecting = false
                             },
                             onClearResults = {
@@ -358,7 +358,7 @@ fun SearchScreen(
                         searchViewModel.updateQueryType(QueryType.IMAGE)
                         isSelecting = false
                         searchViewModel.clearSelectedResults()
-                        searchViewModel.search(appSettings.similarityThreshold, appSettings.enableClusterSearch)
+                        searchViewModel.search(appSettings.imageSimilarityThreshold, appSettings.enableClusterSearch)
                     }
                 },
                 onShare = {
@@ -391,7 +391,7 @@ fun SearchScreen(
                     onUpdateSearchImage = {
                         searchViewModel.updateSearchImageUri(item.uri)
                         searchViewModel.updateQueryType(QueryType.IMAGE)
-                        searchViewModel.search(appSettings.similarityThreshold, appSettings.enableClusterSearch)
+                        searchViewModel.search(appSettings.imageSimilarityThreshold, appSettings.enableClusterSearch)
                         searchViewModel.toggleViewResult(context, null)
                     }
                 )
