@@ -43,7 +43,7 @@ fun VideoDisplay(
 
     AndroidView(
         factory = { ctx ->
-            SwipeAwarePlayerView(ctx).apply {
+            SwipeablePlayerView(ctx).apply {
                 player = exoPlayer
                 useController = true
 

@@ -8,7 +8,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import kotlin.math.abs
 
-class SwipeAwarePlayerView(
+class SwipeablePlayerView(
     context: Context,
     attrs: AttributeSet? = null
 ) : PlayerView(context, attrs) {
