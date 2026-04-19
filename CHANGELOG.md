@@ -6,6 +6,7 @@
 * Added ability to merge collections (Tag Collections only)
 * Added bulk copy from Auto Collections to Tag Collections``
 * Added setting to control number of results shown per grid row
+* Added swipe gestures to MediaViewer to swipe through media items
 
 ### Removed
 * Removed index frequency setting (defaults to daily updates)
