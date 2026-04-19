@@ -208,7 +208,7 @@ fun SearchScreen(
                     offsetPx = offset,
                     modifier = Modifier
                         .zIndex(1f)
-                        .heightIn(max=200.dp)
+                        .heightIn(max=180.dp)
                         .padding(bottom = 8.dp)
                 ) {
                     Column {
@@ -220,7 +220,7 @@ fun SearchScreen(
                         ImageSearcher(
                             uri = state.queryImage,
                             mediaType = state.mediaType,
-                            imageSize = 160.dp,
+                            imageSize = 140.dp,
                             mediaTypeSelectorEnabled = (videoIndexStatus != IndexingStatus.ACTIVE && imageIndexStatus != IndexingStatus.ACTIVE), // prevent switching modes when indexing in progress
                             onSearch = {
                                 searchViewModel.search(appSettings.similarityThreshold, appSettings.enableClusterSearch)
