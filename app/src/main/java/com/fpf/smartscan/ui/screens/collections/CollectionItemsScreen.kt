@@ -1,6 +1,7 @@
 package com.fpf.smartscan.ui.screens.collections
 
 import android.content.ClipData
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -81,6 +82,13 @@ fun CollectionItemsScreen(
         viewModel.setCollection(collectionName, clusterId)
     }
 
+    LaunchedEffect(state.error) {
+        if(state.error != null){
+            Toast.makeText(context, state.error, Toast.LENGTH_SHORT).show()
+            viewModel.resetErrorState()
+        }
+    }
+
     BackHandler(enabled = isSelecting) {
         isSelecting = false
         viewModel.clearSelectedItems()
@@ -143,8 +151,9 @@ fun CollectionItemsScreen(
             CollectionItemsActionBar(
                 modifier = Modifier.height(70.dp),
                 onRemove = {
-                    viewModel.removeItems(state.selectedMediaItems.toList())
-                    if(isTagCollection) tagCollectionItems.refresh() else clusterCollectionItems.refresh()
+                    viewModel.removeItems(state.selectedMediaItems.toList()){
+                        items.refresh()
+                    }
                     isSelecting = false
                 },
                 removeEnabled = isTagCollection,
@@ -208,10 +217,16 @@ fun CollectionItemsScreen(
                 collections = mediaCollections,
                 onClose = { isMoving = false },
                 onSelectCollection = {
-                    viewModel.moveItems(state.selectedMediaItems.toList(), it)
-                    if(isTagCollection) tagCollectionItems.refresh() else clusterCollectionItems.refresh()
-                    isMoving = false
+                    viewModel.moveItems(state.selectedMediaItems, it){
+                        items.refresh()
+                    }
                 },
+                onCreateNewCollection = {
+                    // for tags only
+                    viewModel.createNewCollectionAndMove(state.selectedMediaItems,it){
+                        items.refresh()
+                    }
+                }
             )
         }
     }

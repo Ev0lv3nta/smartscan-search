@@ -2,7 +2,9 @@ package com.fpf.smartscan.ui.screens.collections
 
 import android.app.Application
 import android.content.Context
+import android.database.sqlite.SQLiteConstraintException
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
@@ -17,6 +19,7 @@ import com.fpf.smartscan.data.tags.TagPagingSource
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.clusters.ClusterPagingSource
+import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.data.tags.TagWithCount
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
@@ -135,28 +138,50 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
         initialValue = emptyList()
     )
 
-    fun removeItems(items: List<MediaItem>){
+    fun removeItems(items: List<MediaItem>, onComplete: () -> Unit){
         val mediaIds = items.map{it.id}
         val collectionName = _state.value.collectionName?: return
 
         viewModelScope.launch (Dispatchers.IO){
             val tag = tagsRepository.getTagsByName(listOf(collectionName)).firstOrNull()?: return@launch
             tagsCrossRefRepository.deleteMediaMatchTag( mediaIds, tag.id)
+            onComplete()
             _state.update { it.copy(selectedMediaItems = emptySet()) }
         }
     }
 
-    fun moveItems(items: List<MediaItem>, newCollection: MediaCollection){
-        val mediaIds = items.map{it.id}
+    fun moveItems(items: Set<MediaItem>, newCollection: MediaCollection, onComplete: () -> Unit){
         val oldCollectionName = _state.value.collectionName?: return
 
         viewModelScope.launch (Dispatchers.IO){
-            val oldTag = tagsRepository.getTagsByName(listOf(oldCollectionName)).firstOrNull()?: return@launch
             val newTag = tagsRepository.getTagsByName(listOf(newCollection.name)).firstOrNull()?: return@launch
             val updatedCrossRef = items.map{ TagCrossRef(mediaId = it.id, tagId=newTag.id, type=it.type)}
             tagsCrossRefRepository.upsertTagCrossRefs(updatedCrossRef)
-            tagsCrossRefRepository.deleteMediaMatchTag( mediaIds, oldTag.id)
+
+            val oldTag = tagsRepository.getTagsByName(listOf(oldCollectionName)).firstOrNull()?: return@launch
+            tagsCrossRefRepository.deleteMediaMatchTag(  items.map{it.id}, oldTag.id)
+            onComplete()
             _state.update { it.copy(selectedMediaItems = emptySet()) }
+        }
+    }
+
+    fun createNewCollectionAndMove(items: Set<MediaItem>, newCollectionName: String, onComplete: () -> Unit){
+        val oldCollectionName = _state.value.collectionName?: return
+        if(oldCollectionName == newCollectionName) return
+
+        viewModelScope.launch (Dispatchers.IO) {
+            try {
+                val newTagId = tagsRepository.insertTags(listOf(Tag(name = newCollectionName))).firstOrNull()?: return@launch
+                val updatedCrossRef = items.map{ TagCrossRef(mediaId = it.id, tagId=newTagId, type=it.type)}
+                tagsCrossRefRepository.upsertTagCrossRefs(updatedCrossRef)
+
+                val oldTag = tagsRepository.getTagsByName(listOf(oldCollectionName)).firstOrNull()?: return@launch
+                tagsCrossRefRepository.deleteMediaMatchTag(  items.map{it.id}, oldTag.id)
+                onComplete()
+                _state.update { it.copy(selectedMediaItems = emptySet()) }
+            }catch (_: SQLiteConstraintException){
+                _state.update { it.copy(error="Collection already exists", selectedMediaItems = emptySet()) }
+            }
         }
     }
 
@@ -171,6 +196,10 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
                 currentState.copy(selectedMediaItems = updatedSelectedResults)
             }
         }
+    }
+
+    fun resetErrorState(){
+        _state.update { it.copy(error=null) }
     }
 
     fun clearSelectedItems(){
