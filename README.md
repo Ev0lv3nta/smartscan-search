@@ -18,7 +18,7 @@ The app is free, but if you enjoy using it and want to support project developme
 
 ### Donate with Kofi
 
- https://ko-fi.com/d41dev
+ https://ko-fi.com/d41dev/tip
 
 ### Donate with crypto
 
