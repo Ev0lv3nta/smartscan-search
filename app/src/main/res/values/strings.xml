@@ -44,6 +44,7 @@
         <item quantity="one">collection</item>
         <item quantity="other">collections</item>
     </plurals>
+
     <!-- Donate screen -->
     <string name="label_btc">Bitcoin</string>
     <string name="label_eth">Ethereum</string>
@@ -51,6 +52,8 @@
     <string name="btc_wallet">bc1qw46nxjp5gkh460ewamjd3jfeu0xv6ytq5et6xm</string>
     <string name="eth_wallet">0xa53aC18B25942C71019f85314AF67F6132E525ad</string>
     <string name="ltc_wallet">ltc1q2hspfea9rw5j2ymvv22hx7dmckh8c99sqk7av3</string>
+    <string name="donate_kofi_url">https://ko-fi.com/d41dev/tip</string>
+    <string name="donate_support_message">The app is free and open-source. If you enjoy using it, you can support the development with a tip. </string>
 
     <!-- Settings-Screen -->
     <string name="search_settings">Search</string>
