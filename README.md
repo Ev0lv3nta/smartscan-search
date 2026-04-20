@@ -19,7 +19,7 @@ The app is free, but if you enjoy using it and want to support project developme
 ### Donate with Kofi
 
 <a href="https://ko-fi.com/d41dev/tip">
-  <img src="assets/support_me_on_kofi_dark.webp" alt="kofi" style="max-width:100%;" width="200">
+  <img src="assets/kofi.webp" alt="kofi" style="max-width:100%;" width="200">
 </a>
 
 ### Donate with crypto
