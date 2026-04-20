@@ -22,7 +22,7 @@ suspend fun clusterMedia(crossRefRepository: ClusterCrossRefRepository, clusterS
     var itemEmbeds = if(itemStore.exists) itemStore.get() else emptyList()
     itemEmbeds = itemEmbeds.filterNot {it.id in assignedIds}
 
-    val clusterer = IncrementalClusterer(existingClusters = existingClusters, defaultThreshold = 0.4f)
+    val clusterer = IncrementalClusterer(existingClusters = existingClusters, defaultThreshold = 0.5f)
     val result = clusterer.cluster(itemEmbeds)
 
 //    Log.d("clusterMedia", "N clusters: ${result.clusters.size} | N: ${result.assignments.size}" )
