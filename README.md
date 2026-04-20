@@ -18,15 +18,9 @@ The app is free, but if you enjoy using it and want to support project developme
 
 ### Donate with Kofi
 
-<script src='https://storage.ko-fi.com/cdn/scripts/overlay-widget.js'></script>
-<script>
-  kofiWidgetOverlay.draw('d41dev', {
-    'type': 'floating-chat',
-    'floating-chat.donateButton.text': 'Support me',
-    'floating-chat.donateButton.background-color': '#794bc4',
-    'floating-chat.donateButton.text-color': '#fff'
-  });
-</script>
+<a href="https://ko-fi.com/d41dev/tip">
+  <img src="assets/support_me_on_kofi_dark.webp" alt="kofi" style="max-width:100%;" width="200">
+</a>
 
 ### Donate with crypto
 
