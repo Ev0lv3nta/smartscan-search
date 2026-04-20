@@ -89,18 +89,13 @@ class TextEmbedderAidlService: Service() {
             if(!availableModels.contains(modelNameStr)) return false
 
             val modelName = ModelName.entries.firstOrNull { it.name == modelNameStr }?: return false
-            val modelInfo = ModelRegistry[modelName]!!
-            val modelDir = ModelManager.getModelFile(application, modelInfo)
 
             selectedModel = modelNameStr
 
             textEmbedder = when(modelName){
                 ModelName.ALL_MINILM_L6_V2 -> {
                     textEmbedder.closeSession()
-                    val modelFile = File(modelDir, modelInfo.resourceFiles!![0] )
-                    val vocabFile = File(modelDir, modelInfo.resourceFiles!![1] )
-                    val configFile = File(modelDir, modelInfo.resourceFiles!![2] )
-                    MiniLMTextEmbedder(application, modelSource = ModelAssetSource.LocalFile(modelFile), vocabSource = ModelAssetSource.LocalFile(vocabFile), configSource = ModelAssetSource.LocalFile(configFile))
+                    ModelManager.getTextEmbedder(application, modelName)
                 }
                 ModelName.CLIP_VIT_B_32_TEXT -> {
                     textEmbedder.closeSession()
