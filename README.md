@@ -14,7 +14,13 @@ Search images and videos offline using text or by reverse image search with on-d
 
 ## Buy Me A Coffee
 
-The app is free, but if you enjoy using it and want to support project development and maintenance, please consider donating using one of the options below:
+The app is free, but if you enjoy using it and want to support project development and maintenance, consider donating using one of the options below. One of my main goals is training my own model to replace CLIP for improved accuracy.
+
+### Donate with Kofi
+
+ https://ko-fi.com/d41dev
+
+### Donate with crypto
 
 | Wallet   | Address                                     |
 |----------|---------------------------------------------|
