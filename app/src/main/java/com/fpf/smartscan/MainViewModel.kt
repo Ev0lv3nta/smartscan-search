@@ -43,7 +43,7 @@ class MainViewModel( application: Application) : AndroidViewModel(application) {
             application.getString(R.string.update_swipe_gestures_media_viewer),
             application.getString(R.string.update_results_per_row_setting),
             application.getString(R.string.update_similarity_threshold_setting),
-            application.getString(R.string.update_removed_index_frequency_setting)
+            application.getString(R.string.update_donate_kofi)
         )
     }
 }

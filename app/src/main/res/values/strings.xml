@@ -125,6 +125,6 @@
     <string name="update_swipe_gestures_media_viewer">Added swipe gestures to MediaViewer for browsing media items</string>
     <string name="update_results_per_row_setting">Added setting to control number of results shown per row</string>
     <string name="update_similarity_threshold_setting">Added setting to control similarity threshold for image queries</string>
-    <string name="update_removed_index_frequency_setting">Removed index frequency setting, defaults to daily</string>
+    <string name="update_donate_kofi">Added support for donations via ko-fi</string>
 
 </resources>
