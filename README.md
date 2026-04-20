@@ -1,6 +1,6 @@
 # SmartScan - Media search engine app
 
-Search images and videos offline using text or by reverse image search with on-device AI.
+Search images and videos offline using text or by reverse image search and organise media with on-device AI.
 
 <div align="center">
   <img src="fastlane/metadata/android/en-US/images/featureGraphic.png" alt="Banner" style="border-radius: 20px;">
@@ -14,7 +14,7 @@ Search images and videos offline using text or by reverse image search with on-d
 
 ## Buy Me A Coffee
 
-The app is free, but if you enjoy using it and want to support project development and maintenance, consider donating using one of the options below. One of my main goals is training my own model to replace CLIP for improved accuracy.
+The app is free, but if you enjoy using it and want to support project development and maintenance, consider donating using one of the options below.
 
 ### Donate with Kofi
 
