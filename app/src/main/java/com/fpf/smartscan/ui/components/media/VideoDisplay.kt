@@ -1,13 +1,12 @@
 package com.fpf.smartscan.ui.components.media
 
 import android.net.Uri
-import android.view.GestureDetector
-import android.view.MotionEvent
 import android.widget.FrameLayout
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -15,53 +14,56 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.PlayerView
 
 @Composable
 fun VideoDisplay(
     uri: Uri,
     modifier: Modifier = Modifier,
-    onTap: () -> Unit = {}
+    onTap: () -> Unit = {},
+    onSwipeLeft: () -> Unit = {},
+    onSwipeRight: () -> Unit = {},
 ) {
     val context = LocalContext.current
 
-    val exoPlayer = remember {
-        ExoPlayer.Builder(context).build().apply {
-            setMediaItem(MediaItem.fromUri(uri))
-            prepare()
+    val exoPlayer = remember(context) {
+        ExoPlayer.Builder(context).build()
+    }
+
+    LaunchedEffect(uri) {
+        exoPlayer.setMediaItem(MediaItem.fromUri(uri), true)
+        exoPlayer.prepare()
+        exoPlayer.playWhenReady = true
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            exoPlayer.release()
         }
-    }
-
-    val gestureDetector = remember(context) {
-        GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
-                onTap() 
-                return true // signal handled so we can call performClick()
-            }
-        })
-    }
-
-    DisposableEffect(exoPlayer) {
-        onDispose { exoPlayer.release() }
     }
 
     AndroidView(
         factory = { ctx ->
-            PlayerView(ctx).apply {
+            SwipeablePlayerView(ctx).apply {
                 player = exoPlayer
                 useController = true
+
+                this.onTap = onTap
+                this.onSwipeLeft = onSwipeLeft
+                this.onSwipeRight = onSwipeRight
+
                 layoutParams = FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.WRAP_CONTENT
+                    FrameLayout.LayoutParams.MATCH_PARENT
                 )
-                setOnTouchListener { view, event ->
-                    val handled = gestureDetector.onTouchEvent(event)
-                    if (handled) {
-                        view.performClick() // accessibility compliance
-                    }
-                    false // pass event to PlayerView so controls still work
-                }
             }
+        },
+        update = { view ->
+            if (view.player !== exoPlayer) {
+                view.player = exoPlayer
+            }
+            view.onTap = onTap
+            view.onSwipeLeft = onSwipeLeft
+            view.onSwipeRight = onSwipeRight
         },
         modifier = modifier
             .fillMaxSize()

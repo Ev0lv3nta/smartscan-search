@@ -9,14 +9,14 @@ import com.fpf.smartscan.utils.getTimeInMinutesAndSeconds
 import com.fpf.smartscan.utils.showNotification
 import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
 import com.fpf.smartscansdk.core.processors.Metrics
-import com.fpf.smartscansdk.core.processors.IProcessorListener
+import com.fpf.smartscansdk.core.processors.ProcessorListener
 
-abstract class BaseIndexListener(private val notificationId: Int, private val tag: String) : IProcessorListener<Long, StoredEmbedding> {
+abstract class BaseIndexListener(private val notificationId: Int, private val tag: String) : ProcessorListener<Long, StoredEmbedding> {
     private val _progress = MutableStateFlow(0f)
     val progress: StateFlow<Float> = _progress
 
-    private val _indexingStatus = MutableStateFlow(ProcessorStatus.IDLE)
-    val indexingStatus: StateFlow<ProcessorStatus> = _indexingStatus
+    private val _indexingStatus = MutableStateFlow(IndexingStatus.IDLE)
+    val indexingStatus: StateFlow<IndexingStatus> = _indexingStatus
 
     abstract val itemName: String
 
@@ -25,12 +25,12 @@ abstract class BaseIndexListener(private val notificationId: Int, private val ta
     }
 
     override suspend fun onActive(context: Context) {
-        _indexingStatus.value = ProcessorStatus.ACTIVE
+        _indexingStatus.value = IndexingStatus.ACTIVE
     }
 
     override suspend fun onComplete(context: Context, metrics: Metrics.Success) {
         try {
-            _indexingStatus.value = ProcessorStatus.COMPLETE
+            _indexingStatus.value = IndexingStatus.COMPLETE
             _progress.value = 0f
             if (metrics.totalProcessed == 0) return
             val (minutes, seconds) = getTimeInMinutesAndSeconds(metrics.timeElapsed)
@@ -48,7 +48,7 @@ abstract class BaseIndexListener(private val notificationId: Int, private val ta
 
     override suspend fun onFail(context: Context, failureMetrics: Metrics.Failure) {
         try {
-            _indexingStatus.value = ProcessorStatus.FAILED
+            _indexingStatus.value = IndexingStatus.FAILED
             _progress.value = 0f
             val title = context.getString(R.string.notif_title_index_error_service, itemName)
             val content = context.getString(R.string.notif_content_index_error_service, itemName.lowercase())

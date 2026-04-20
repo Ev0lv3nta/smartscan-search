@@ -1,0 +1,25 @@
+package com.fpf.smartscan.ui.screens.search
+
+import android.net.Uri
+import com.fpf.smartscan.media.MediaItem
+import com.fpf.smartscan.media.MediaType
+import com.fpf.smartscan.search.QueryType
+
+data class SearchState(
+    val searchResults: List<MediaItem> = emptyList(),
+    val totalResults: Int = 0,
+    val mediaType: MediaType = MediaType.IMAGE,
+    val queryType: QueryType = QueryType.TEXT,
+    val queryImage: Uri? = null,
+    val hasIndexedImages: Boolean? = null,
+    val hasIndexedVideos: Boolean? = null,
+    val loading: Boolean = false,
+    val error: String? = null,
+    val resultToView: MediaItem? = null,
+    val selectedResults: Set<MediaItem> = emptySet(),
+    val imageEmbedderLastUsage: Long? = null,
+    val textEmbedderLastUsage: Long? = null,
+    val autoCompleteTagResults: List<String> = emptyList(),
+    val tagFilter: String? = null,
+    val tagOnlySearch: Boolean = false,
+)

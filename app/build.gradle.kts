@@ -14,8 +14,8 @@ android {
         applicationId = "com.fpf.smartscan"
         minSdk = 30
         targetSdk = 34
-        versionCode = 18
-        versionName = "1.2.0"
+        versionCode = 19
+        versionName = "1.3.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -81,7 +81,6 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.documentfile)
     implementation(libs.smartscan.ml)
-
     // media loading
     implementation(libs.coil.compose)
     implementation(libs.coil.video)
@@ -102,6 +101,7 @@ dependencies {
 
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.paging.compose)
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.androidx.media3.exoplayer)

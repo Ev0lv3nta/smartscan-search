@@ -1,15 +1,34 @@
-Search images and videos offline using text or by reverse image search with on-device AI.
+Search images and videos offline using text or by reverse image search and organise media with on-device AI.
 
 <b>Key Features</b>
 
-<b>Search Images and Videos</b>
+<b>Search</b>
+
 <ul>
-<li><b>Search Options:</b> Search using text or images.</li>
-<li><b>Tagging:</b> Add tags with auto-suggestions and auto-complete.</li>
-<li><b>Cross-App Search:</b> Search from other apps via Share.</li>
-<li><b>Gallery Access:</b> Open search results directly in the gallery.</li>
-<li><b>Folder Selection:</b> Choose which image and video folders are allowed to be indexed.</li>
+<li><b>Search Images and Videos:</b> Search across your media library.</li>
+<li><b>Search Options:</b> Search using text or images, including pasting images into the search bar.</li>
+<li><b>Tag + Text Search:</b> Combine tags with text queries.</li>
+<li><b>Tag Search:</b> Search directly by tags.</li>
+<li><b>Cross-App Search:</b> Search from other apps via Share/Intent.</li>
 <li><b>Auto-Refresh Index:</b> Automatically refresh image and video indexes for new content.</li>
+<li><b>Folder Selection:</b> Optionally configure which image and video folders are indexed.</li>
+<li><b>Gallery Access:</b> Optionally open search results in the default gallery.</li>
+</ul>
+
+<b>Tagging</b>
+
+<ul>
+<li><b>Add Tags:</b> Add tags to media.</li>
+<li><b>Autocomplete:</b> Tag autocomplete when searching or tagging.</li>
+</ul>
+
+<b>Collections</b>
+
+<ul>
+<li><b>Auto Collections:</b> Automatically groups similar media.</li>
+<li><b>Tag Collections:</b> Manually curate collections using tags.</li>
+<li><b>Merge Collections:</b> Merge tag collections.</li>
+<li><b>Bulk Copy:</b> Copy media from auto collections to tag collections.</li>
 </ul>
 
 <b>Fully On-Device</b>

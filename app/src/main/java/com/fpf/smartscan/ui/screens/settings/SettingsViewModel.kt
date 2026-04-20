@@ -4,10 +4,10 @@ import android.app.Application
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
+import com.fpf.smartscan.data.MediaDatabase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -21,27 +21,26 @@ import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscan.settings.saveSettings
 import com.fpf.smartscan.utils.unzipFiles
 import com.fpf.smartscan.utils.zipFiles
-import com.fpf.smartscan.models.ImportedModel
-import com.fpf.smartscan.models.ModelManager
 import com.fpf.smartscan.ui.theme.ColorSchemeType
 import com.fpf.smartscan.ui.theme.ThemeManager
 import com.fpf.smartscan.ui.theme.ThemeMode
+import com.fpf.smartscansdk.ml.models.ModelInfo
+import com.fpf.smartscansdk.ml.models.ModelManager
+import com.fpf.smartscansdk.ml.models.ModelName
 import com.fpf.smartscansdk.core.processors.Metrics
-import com.fpf.smartscansdk.core.indexers.ImageIndexer
-import com.fpf.smartscansdk.core.indexers.VideoIndexer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
 import java.io.File
 
-class SettingsViewModel(private val application: Application) : AndroidViewModel(application) {
+class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val sharedPrefs = application.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
     private val _appSettings = MutableStateFlow(AppSettings())
     val appSettings: StateFlow<AppSettings> = _appSettings
 
-    private val _importedModels = MutableStateFlow(ModelManager.getImportedModels(application))
-    val importedModels: StateFlow<List<ImportedModel>> = _importedModels
+    private val _importedModels = MutableStateFlow(ModelManager.listModels(application))
+    val importedModels: StateFlow<List<ModelName>> = _importedModels
     private val _event = MutableSharedFlow<String>()
     val event = _event.asSharedFlow()
 
@@ -64,23 +63,23 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
         _appSettings.value = loadSettings(sharedPrefs)
     }
 
-    fun updateIndexFrequency(frequency: String) {
-        val currentSettings = _appSettings.value
-        _appSettings.value = currentSettings.copy(indexFrequency = frequency)
-        saveSettings(sharedPrefs, _appSettings.value)
-    }
-
     fun updateSimilarityThreshold(threshold: Float) {
         val currentSettings = _appSettings.value
         _appSettings.value = currentSettings.copy(similarityThreshold = threshold)
         saveSettings(sharedPrefs, _appSettings.value)
     }
 
-    fun onImportModel( uri: Uri) {
+    fun updateImageSimilarityThreshold(threshold: Float) {
+        val currentSettings = _appSettings.value
+        _appSettings.value = currentSettings.copy(imageSimilarityThreshold = threshold)
+        saveSettings(sharedPrefs, _appSettings.value)
+    }
+
+    fun onImportModel( uri: Uri, modelInfo: ModelInfo) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                ModelManager.importModel(application, uri)
-                _importedModels.value = ModelManager.getImportedModels(application)
+                ModelManager.importModel(getApplication(), modelInfo, uri)
+                _importedModels.value = ModelManager.listModels(getApplication())
                 _event.emit("Model imported successfully")
             } catch (e: Exception) {
                 val defaultErrorMessage = "Model import failed"
@@ -92,8 +91,10 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
         }
     }
 
-    fun onDeleteModel(model: ImportedModel){
-        if(ModelManager.deleteModel(application, model)) _importedModels.value = _importedModels.value - model
+    fun onDeleteModel(modelInfo: ModelInfo){
+        if(ModelManager.deleteModel(getApplication(), modelInfo)) {
+            _importedModels.value = ModelManager.listModels(getApplication())
+        }
     }
 
     fun addSearchableImageDirectory(dir: String) {
@@ -138,29 +139,30 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
     }
 
     fun backup(uri: Uri){
-        val indexZipFile = File(application.cacheDir, BACKUP_FILENAME)
-        val imageIndexFile = File(application.filesDir, EmbeddingStoresFiles.IMAGE)
-        val videoIndexFile = File(application.filesDir,  EmbeddingStoresFiles.VIDEO)
-        val tagsEmbedStoreFile = File(application.filesDir,  EmbeddingStoresFiles.TAGS)
-        val hashFile = File(application.cacheDir, HASH_FILENAME)
-        val imageTagDb = application.getDatabasePath("image_tag_database")
-        val videoTagDb = application.getDatabasePath("video_tag_database")
+        val indexZipFile = File(getApplication<Application>().cacheDir, BACKUP_FILENAME)
+        val imageEmbeddingStoreFile = File(getApplication<Application>().filesDir, EmbeddingStoresFiles.IMAGE)
+        val videoEmbeddingStoreFile = File(getApplication<Application>().filesDir,  EmbeddingStoresFiles.VIDEO)
+        val imageClusterEmbeddingStoreFile = File(getApplication<Application>().filesDir, EmbeddingStoresFiles.IMAGE_CLUSTER)
+        val videoClusterEmbeddingStoreFile = File(getApplication<Application>().filesDir,  EmbeddingStoresFiles.VIDEO_CLUSTER)
+        val hashFile = File(getApplication<Application>().cacheDir, HASH_FILENAME)
+        val dbPath = getApplication<Application>().getDatabasePath(MediaDatabase.DB_NAME)
 
-        val filesToZip = listOf(imageIndexFile, videoIndexFile, tagsEmbedStoreFile, hashFile, imageTagDb, videoTagDb)
+        val embedStoreFiles = listOf(imageEmbeddingStoreFile, videoEmbeddingStoreFile, imageClusterEmbeddingStoreFile, videoClusterEmbeddingStoreFile)
+        val filesToZip = listOf( hashFile, dbPath) + embedStoreFiles
         _isBackupLoading.value = true
 
         viewModelScope.launch(Dispatchers.IO){
             try {
-                if(!imageIndexFile.exists() && !videoIndexFile.exists()) error("Media not indexed")
+                if(embedStoreFiles.any{!it.exists()}) error("Missing index file(s)")
                 val hashes: List<String> = filesToZip.filter { it.exists() && it != hashFile }.map{hashFile(it)}
                 hashFile.writeText(hashes.joinToString("\n") )
 
                 zipFiles(indexZipFile, filesToZip)
-                copyToUri(application, uri, indexZipFile)
+                copyToUri(getApplication(), uri, indexZipFile)
                 _event.emit("Backup successful")
             }catch (e: Exception){
                 Log.e(TAG, "Error backing up: ${e.message}")
-                if(e.message == "Media not indexed") _event.emit(e.message!!) else _event.emit("Backup failed")
+                if(e.message == "Missing index file(s)") _event.emit(e.message!!) else _event.emit("Backup failed")
             }finally {
                 indexZipFile.delete()
                 hashFile.delete()
@@ -170,21 +172,25 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
     }
 
     fun restore(uri: Uri){
-        val indexZipFile = File(application.cacheDir, BACKUP_FILENAME)
+        val indexZipFile = File(getApplication<Application>().cacheDir, BACKUP_FILENAME)
         _isRestoreLoading.value = true
+
+        MediaDatabase.close()
 
         viewModelScope.launch(Dispatchers.IO){
             try {
-                copyFromUri(application, uri, indexZipFile)
-                val extractedFiles = unzipFiles(indexZipFile, application.filesDir)
-                if(!isValidBackupFile((extractedFiles))){
+
+                copyFromUri(getApplication(), uri, indexZipFile)
+                val extractedFiles = unzipFiles(indexZipFile, getApplication<Application>().filesDir)
+//                val expectedFileNames = setOf(EmbeddingStoresFiles.IMAGE,EmbeddingStoresFiles.VIDEO, EmbeddingStoresFiles.IMAGE_CLUSTER, EmbeddingStoresFiles.VIDEO_CLUSTER, MediaDatabase.DB_NAME )
+
+                if(!isValidBackupFile(extractedFiles)){
                     extractedFiles.forEach { it.delete() }
                     error("Invalid backup file")
                 }
                 _event.emit("Restore successful")
-                ImageIndexListener.onComplete(application, Metrics.Success()) // call onComplete to trigger refresh in search screen
-                VideoIndexListener.onComplete(application, Metrics.Success())
-                sharedPrefs.edit { putString("lastIndexed", System.currentTimeMillis().toString()) } // so scheduling can be triggered
+                ImageIndexListener.onComplete(getApplication(), Metrics.Success()) // call onComplete to trigger refresh in search screen
+                VideoIndexListener.onComplete(getApplication(), Metrics.Success())
             }catch (e: Exception){
                 Log.e(TAG, "Error restoring: ${e.message}")
                 if (e.message == "Invalid backup file") _event.emit(e.message!!) else _event.emit("Restore failed")
@@ -207,6 +213,15 @@ class SettingsViewModel(private val application: Application) : AndroidViewModel
 
     fun updateEnableDirectionGalleryOpen(enable: Boolean){
         _appSettings.update{currentSettings -> currentSettings.copy(enableDirectGalleryOpen = enable)}
+        saveSettings(sharedPrefs, _appSettings.value)
+    }
+    fun updateResultsPerRow(n: Int){
+        _appSettings.update{currentSettings -> currentSettings.copy(resultsPerRow = n)}
+        saveSettings(sharedPrefs, _appSettings.value)
+    }
+
+    fun updateEnableClusterSearch(enable: Boolean){
+        _appSettings.update{currentSettings -> currentSettings.copy(enableClusterSearch = enable)}
         saveSettings(sharedPrefs, _appSettings.value)
     }
 }

@@ -115,8 +115,13 @@ fun SwitchItem(
                 colors = SwitchDefaults.colors(checkedTrackColor = Color.Green)
             )
         }
-        if (description != null) {
-            Text(text = description, style = MaterialTheme.typography.bodyMedium, color = textColor)
+        description?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor,
+                modifier = Modifier.fillMaxWidth(0.7f).alpha(0.8f)
+            )
         }
     }
 }
@@ -190,11 +195,12 @@ fun IncrementorItem(
             }
 
 
-            if (description != null) {
+            description?.let {
                 Text(
-                    text = description,
-                    fontSize = 12.sp,
-                    color = textColor
+                    text = it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textColor,
+                    modifier = Modifier.fillMaxWidth(0.7f).alpha(0.8f)
                 )
             }
         }
@@ -263,13 +269,12 @@ fun SelectorItem(
             }
 
         }
-        if (description != null) {
+        description?.let {
             Text(
-                text = description,
+                text = it,
                 style = MaterialTheme.typography.bodyMedium,
                 color = textColor,
-                fontSize = 12.sp,
-                modifier = Modifier.fillMaxWidth(0.6f)
+                modifier = Modifier.fillMaxWidth(0.7f).alpha(0.8f)
             )
         }
     }

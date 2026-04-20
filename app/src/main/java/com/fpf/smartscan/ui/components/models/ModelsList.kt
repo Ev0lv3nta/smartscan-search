@@ -1,5 +1,6 @@
 package com.fpf.smartscan.ui.components.models
 
+import android.net.Uri
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -13,12 +14,16 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.fpf.smartscan.R
-import com.fpf.smartscan.models.ModelInfo
+import com.fpf.smartscansdk.ml.models.ModelInfo
+import com.fpf.smartscansdk.ml.models.ModelName
 
 @Composable
 fun ModelsList(
-    models: List<ModelInfo>,
+    importedModels: List<ModelName>,
+    availableModels: List<ModelInfo>,
     onDownload: (url: String) -> Unit,
+    onImport: (uri: Uri, modelInfo: ModelInfo) -> Unit,
+    onDelete: (model: ModelInfo) -> Unit
 ) {
     val scrollState = rememberScrollState()
 
@@ -27,6 +32,6 @@ fun ModelsList(
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.alpha(0.8f).padding(bottom = 16.dp),
         )
-        models.forEach { model -> DownloadableModelCard(data = model, onDownload = onDownload) }
+        availableModels.forEach { modelInfo -> ModelCard(modelInfo = modelInfo, onDownload = onDownload, onImport=onImport, onDelete = onDelete, isImported = importedModels.contains(modelInfo.name)) }
     }
 }

@@ -9,26 +9,26 @@ import android.os.IBinder
 import android.util.Log
 import com.fpf.smartscan.IImageEmbedderService
 import com.fpf.smartscan.R
-import com.fpf.smartscan.models.SmartScanModelType
-import com.fpf.smartscan.models.ModelManager
 import com.fpf.smartscansdk.core.embeddings.ImageEmbeddingProvider
 import com.fpf.smartscansdk.core.embeddings.flattenEmbeddings
-import com.fpf.smartscansdk.ml.models.loaders.ResourceId
+import com.fpf.smartscansdk.ml.models.ModelAssetSource
+import com.fpf.smartscansdk.ml.models.ModelManager
+import com.fpf.smartscansdk.ml.models.ModelType
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
 import kotlinx.coroutines.runBlocking
+import com.fpf.smartscansdk.core.embeddings.embedBatch
 
 
 class ImageEmbedderAidlService: Service() {
 
     companion object {
         const val TAG = "ImageEmbedderAidlService"
-        private const val DEFAULT_MODEL = "Default"
     }
     private lateinit var imageEmbedder: ImageEmbeddingProvider
 
     override fun onCreate() {
         super.onCreate()
-        imageEmbedder = ClipImageEmbedder(application, ResourceId(R.raw.clip_image_encoder_quant))
+        imageEmbedder = ClipImageEmbedder(application, ModelAssetSource.Resource(R.raw.clip_image_encoder_quant))
     }
 
     override fun onBind(intent: Intent): IBinder {
@@ -69,7 +69,7 @@ class ImageEmbedderAidlService: Service() {
                     if(!imageEmbedder.isInitialized()) imageEmbedder.initialize()
                     val decoded = decodeByteArrayPayload(data, delimiter)
                     val bitmaps = decoded.map { byteArrayToBitmap(it) }
-                    val embeddings = imageEmbedder.embedBatch(bitmaps)
+                    val embeddings = embedBatch(application, imageEmbedder, bitmaps)
                     flattenEmbeddings(embeddings, imageEmbedder.embeddingDim)
                 }catch(e: Exception){
                     Log.d(TAG, "EMBEDDING_ERROR: ${e.message}")
@@ -79,7 +79,7 @@ class ImageEmbedderAidlService: Service() {
         }
 
         override fun listModels(): List<String> {
-            return ModelManager.getImportedModels(application).filter { it.type == SmartScanModelType.IMAGE_ENCODER }.map { it.name }
+            return ModelManager.listModels(application, ModelType.IMAGE_ENCODER).map { it.name }
         }
 
         override fun selectModel(model: String): Boolean {

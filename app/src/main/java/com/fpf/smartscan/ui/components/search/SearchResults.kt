@@ -1,6 +1,5 @@
 package com.fpf.smartscan.ui.components.search
 
-import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -9,7 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
@@ -35,53 +33,43 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.ui.components.media.ImageDisplay
 import kotlinx.coroutines.launch
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalDensity
-import com.fpf.smartscan.search.QueryType
+import coil3.compose.AsyncImagePainter
+import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.ui.components.CircularCheckbox
-import kotlinx.coroutines.flow.drop
-import kotlin.math.abs
-import kotlin.math.max
 import kotlin.math.roundToInt
 
 @Composable
 fun SearchResults(
     isVisible: Boolean,
-    searchResults: List<Uri>,
-    selectedResults: List<Uri>,
-    queryType: QueryType,
-    mediaType: MediaType,
+    searchResults: List<MediaItem>,
+    selectedResults: Set<MediaItem>,
     totalResults: Int,
     onLoadMore: () -> Unit,
-    onViewResult: (uri: Uri?) -> Unit,
-    onToggleSelected: (Uri) -> Unit,
+    onViewResult: (MediaItem?) -> Unit,
+    onToggleSelected: (MediaItem) -> Unit,
     onToggleSelectionMode: () -> Unit,
     onOffsetChange: (Int) -> Unit,
+    onError: ((AsyncImagePainter.State.Error) -> Unit)? = null,
     numGridColumns: Int = 3,
     loadMoreBuffer: Int = 5,
     isSelecting: Boolean = false,
+    maxCollapsePx: Int = 0
     ) {
     if (!isVisible) return
     val scrollThreshold = 10
 
     val scope = rememberCoroutineScope()
     val gridState = rememberLazyGridState()
-    val density = LocalDensity.current
-
-    val actionBarHeight = with(density) { 70.dp.toPx() }
-    val searchBarHeight = with(density) { (if(queryType == QueryType.IMAGE) 200 else 120).dp.toPx() }
-    val maxCollapsePx = max(actionBarHeight, searchBarHeight).toInt()
     var showScrollToTop by remember { mutableStateOf(false) }
     var totalScrollPx by remember { mutableIntStateOf(0) }
 
@@ -152,7 +140,7 @@ fun SearchResults(
                 }
             }
 
-            items(searchResults) { uri ->
+            items(searchResults, key = { it.id }) { item ->
                 Box(
                     modifier = Modifier
                         .aspectRatio(1f)
@@ -162,26 +150,27 @@ fun SearchResults(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() },
                             onClick = {
-                                if(isSelecting) onToggleSelected(uri) else onViewResult(uri)
+                                if(isSelecting) onToggleSelected(item) else onViewResult(item)
                             },
                             onLongClick = {
                                 if(!isSelecting) {
                                     onToggleSelectionMode()
-                                    onToggleSelected(uri)
+                                    onToggleSelected(item)
                                 }
                             }
                         )
                 ) {
                     ImageDisplay(
-                        uri = uri,
+                        uri = item.uri,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
-                        mediaType = mediaType
+                        mediaType = item.type,
+                        onError=onError
                     )
                     if(isSelecting) {
                         CircularCheckbox(
-                            checked = uri in selectedResults,
-                            onCheckedChange = { onToggleSelected(uri) },
+                            checked = item in selectedResults,
+                            onCheckedChange = { onToggleSelected(item) },
                             modifier = Modifier
                                 .offset(x = 8.dp, y = 8.dp)
                                 .align(Alignment.TopStart),
@@ -192,7 +181,7 @@ fun SearchResults(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
                                 ) {
-                                    onViewResult(uri)
+                                    onViewResult(item)
                                 }
                                 .offset((-8).dp, (-8).dp)
                                 .align(Alignment.BottomEnd)

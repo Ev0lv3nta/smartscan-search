@@ -7,6 +7,7 @@
 
     <!-- Screen titles-->
     <string name="title_search">Search</string>
+    <string name="title_collections">Collections</string>
     <string name="title_settings">Settings</string>
     <string name="title_donate">Donate</string>
     <string name="title_help">Help</string>
@@ -35,6 +36,15 @@
     <string name="search_error_index_loading">Error loading index.</string>
     <string name="search_start_indexing_alert">Start indexing %1$s</string>
 
+    <string name="collections_no_collections_title">No Collections</string>
+    <string name="collections_no_collections_description">Collections are created by automatically grouping similar items or when you tag items.</string>
+    <string name="collections_delete_collections_alert_title">Delete collections</string>
+    <string name="collections_delete_collections_alert_description">Delete %1$d %2$s, removing all related tags?</string>
+    <plurals name="collection_count">
+        <item quantity="one">collection</item>
+        <item quantity="other">collections</item>
+    </plurals>
+
     <!-- Donate screen -->
     <string name="label_btc">Bitcoin</string>
     <string name="label_eth">Ethereum</string>
@@ -42,6 +52,8 @@
     <string name="btc_wallet">bc1qw46nxjp5gkh460ewamjd3jfeu0xv6ytq5et6xm</string>
     <string name="eth_wallet">0xa53aC18B25942C71019f85314AF67F6132E525ad</string>
     <string name="ltc_wallet">ltc1q2hspfea9rw5j2ymvv22hx7dmckh8c99sqk7av3</string>
+    <string name="donate_kofi_url">https://ko-fi.com/d41dev/tip</string>
+    <string name="donate_support_message">The app is free and open-source. If you enjoy using it, you can support the development with a tip. </string>
 
     <!-- Settings-Screen -->
     <string name="search_settings">Search</string>
@@ -59,9 +71,11 @@
 
     <!--Search Settings-->
     <string name="setting_auto_open_gallery">Auto-open in gallery</string>
-    <string name="setting_index_frequency">Index frequency</string>
-    <string name="setting_index_frequency_description">Schedule for auto-updates of video and image indexes.</string>
+    <string name="setting_enable_cluster_search">Cluster-based search</string>
+    <string name="setting_enable_cluster_search_description">Faster, more relevant results, but may occasionally miss some matching items</string>
+    <string name="setting_search_result_columns">Results per row</string>
     <string name="setting_similarity_threshold">Similarity threshold</string>
+    <string name="setting_similarity_threshold_label">Similarity threshold (%1$s)</string>
     <string name="setting_similarity_threshold_description">Minimum similarity score for matching results</string>
     <string name="setting_max_search_results">Max search results</string>
     <string name="setting_refresh_image_index">Refresh image index</string>
@@ -72,8 +86,6 @@
     <string name="setting_searchable_image_folders">Searchable images</string>
     <string name="setting_searchable_video_folders">Searchable videos</string>
     <string name="setting_searchable_folders_description">Optionally select folders which should be indexed for search. If none are selected all will be indexed except those with `.nomedia` files.</string>
-    <string name="scan_frequency_1d">1 Day</string>
-    <string name="scan_frequency_1w">1 Week</string>
 
     <!--Advanced Settings-->
     <string name="setting_models">Models</string>
@@ -106,9 +118,13 @@
     <string name="help_reverse_image_search">Reverse image search is generally more accurate than text queries, especially when searching videos.</string>
 
     <!--Updates-->
-    <string name="update_image_expansion">Added image expansion in selection mode</string>
-    <string name="update_search_crash_fix">Fixed crash when clicking a search result that was deleted after results were displayed</string>
-    <string name="update_external_search_fix">Fixed issue where external search re-triggered on Search screen recomposition</string>
-    <string name="update_ui_minor">Other minor UI improvements</string>
+    <string name="update_cluster_search">Added cluster-based search, improving search speed and relevance</string>
+    <string name="update_collections">Added Tag Collections and Auto Collections</string>
+    <string name="update_merge_collections">Added ability to merge Tag Collections </string>
+    <string name="update_copy_to_tag_collections">Added bulk copy from Auto Collections to Tag Collections</string>
+    <string name="update_swipe_gestures_media_viewer">Added swipe gestures to MediaViewer for browsing media items</string>
+    <string name="update_results_per_row_setting">Added setting to control number of results shown per row</string>
+    <string name="update_similarity_threshold_setting">Added setting to control similarity threshold for image queries</string>
+    <string name="update_donate_kofi">Added support for donations via ko-fi</string>
 
 </resources>

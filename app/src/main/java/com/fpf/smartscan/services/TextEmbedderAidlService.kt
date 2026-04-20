@@ -6,32 +6,30 @@ import android.os.IBinder
 import android.util.Log
 import com.fpf.smartscan.ITextEmbedderService
 import com.fpf.smartscan.R
-import com.fpf.smartscan.constants.miniLmTextEmbedderModel
-import com.fpf.smartscan.models.ModelManager
-import com.fpf.smartscan.models.SmartScanModelType
 import com.fpf.smartscansdk.core.embeddings.TextEmbeddingProvider
 import com.fpf.smartscansdk.core.embeddings.flattenEmbeddings
-import com.fpf.smartscansdk.ml.models.loaders.FilePath
-import com.fpf.smartscansdk.ml.models.loaders.ResourceId
+import com.fpf.smartscansdk.ml.models.ModelAssetSource
+import com.fpf.smartscansdk.ml.models.ModelManager
+import com.fpf.smartscansdk.ml.models.ModelName
+import com.fpf.smartscansdk.ml.models.ModelRegistry
+import com.fpf.smartscansdk.ml.models.ModelType
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
 import com.fpf.smartscansdk.ml.providers.embeddings.minilm.MiniLMTextEmbedder
 import kotlinx.coroutines.runBlocking
 import java.io.File
-
+import com.fpf.smartscansdk.core.embeddings.embedBatch
 
 class TextEmbedderAidlService: Service() {
-
     companion object {
         const val TAG = "TextEmbedderAidlService"
-        private const val DEFAULT_MODEL = "Default"
     }
     private lateinit var textEmbedder: TextEmbeddingProvider
 
-    private var selectedModel = DEFAULT_MODEL
+    private var selectedModel = ModelName.CLIP_VIT_B_32_TEXT.name
 
     override fun onCreate() {
         super.onCreate()
-        textEmbedder = ClipTextEmbedder(application, ResourceId(R.raw.clip_text_encoder_quant))
+        textEmbedder = ClipTextEmbedder(application, ModelAssetSource.Resource(R.raw.clip_text_encoder_quant), vocabSource = ModelAssetSource.Resource(R.raw.vocab), mergesSource = ModelAssetSource.Resource(R.raw.merges))
     }
 
     override fun onBind(intent: Intent): IBinder {
@@ -70,7 +68,7 @@ class TextEmbedderAidlService: Service() {
             return runBlocking {
                 try {
                     if(!textEmbedder.isInitialized()) textEmbedder.initialize()
-                    val embeddings = textEmbedder.embedBatch(data)
+                    val embeddings = embedBatch(application, textEmbedder, data)
                     val flattenedEmbeddings = flattenEmbeddings(embeddings, textEmbedder.embeddingDim)
                     flattenedEmbeddings
                 }catch(e: Exception){
@@ -81,28 +79,27 @@ class TextEmbedderAidlService: Service() {
         }
 
         override fun listModels(): List<String> {
-            return ModelManager.getImportedModels(application).filter { it.type == SmartScanModelType.TEXT_ENCODER }.map { it.name }
+            return ModelManager.listModels(application, ModelType.TEXT_ENCODER).map { it.name }
         }
 
-        override fun selectModel(model: String): Boolean {
-            if(model == selectedModel) return true
+        override fun selectModel(modelNameStr: String): Boolean {
+            if(modelNameStr == selectedModel) return true
 
-            val availableModels = listModels() + DEFAULT_MODEL
-            if(!availableModels.contains(model)) return false
+            val availableModels = listModels() + ModelName.CLIP_VIT_B_32_TEXT.name
+            if(!availableModels.contains(modelNameStr)) return false
 
-            selectedModel = model
+            val modelName = ModelName.entries.firstOrNull { it.name == modelNameStr }?: return false
 
-            val modelPathsMap = ModelManager.getModelPathMap()
-            val pathInfo = modelPathsMap[model]
+            selectedModel = modelNameStr
 
-            textEmbedder = when(model){
-                miniLmTextEmbedderModel.name -> {
+            textEmbedder = when(modelName){
+                ModelName.ALL_MINILM_L6_V2 -> {
                     textEmbedder.closeSession()
-                    MiniLMTextEmbedder(application, FilePath(File(application.filesDir, pathInfo!!.path).path))
+                    ModelManager.getTextEmbedder(application, modelName)
                 }
-                DEFAULT_MODEL -> {
+                ModelName.CLIP_VIT_B_32_TEXT -> {
                     textEmbedder.closeSession()
-                    ClipTextEmbedder(application, ResourceId(R.raw.clip_text_encoder_quant))
+                    ClipTextEmbedder(application, ModelAssetSource.Resource(R.raw.clip_text_encoder_quant), vocabSource = ModelAssetSource.Resource(R.raw.vocab), mergesSource = ModelAssetSource.Resource(R.raw.merges))
                 }
                 else -> return false
             }
