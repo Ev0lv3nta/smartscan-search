@@ -1,4 +1,4 @@
-Search images and videos offline using text or by reverse image search with on-device AI.
+Search images and videos offline using text or by reverse image search and organise media with on-device AI.
 
 <b>Key Features</b>
 
