@@ -4,8 +4,9 @@
 * Added cluster-based search improving search speed and relevance
 * Added collections (Tag Collections and Auto Collections)
 * Added ability to merge collections (Tag Collections only)
-* Added bulk copy from Auto Collections to Tag Collections``
+* Added bulk copy from Auto Collections to Tag Collections
 * Added setting to control number of results shown per grid row
+* Added setting to control similarity threshold for image queries
 * Added swipe gestures to MediaViewer to swipe through media items
 
 ### Changed
@@ -15,6 +16,7 @@
 * Removed index frequency setting (defaults to daily updates)
 * Removed tag suggestions when tagging selected items
 
+---
 
 ## v1.2.0 - 27/12/2025 
 
@@ -26,11 +28,15 @@
 * Fixed issue where external search would re-trigger when the Search screen was recomposed.
 * Other minor UI improvements.
 
+---
+
 ## v1.1.9 - 24/12/2025
 
 ### Fixed
 * Fixed UI bug where all results for tag only search were not viewable
 * Fixed other minor UI bugs
+
+---
 
 ## v1.1.8 - 18/12/2025
 
@@ -43,6 +49,7 @@
 ### Changed 
 * Auto-search when image is uploaded or selected
 
+---
 
 ## v1.1.7 – 27/10/2025
 
@@ -55,6 +62,8 @@
 
 ### Removed
 * Removed auto-organisation feature
+
+---
 
 ## v1.1.6 – 14/10/2025
 
@@ -69,10 +78,14 @@
 ### Fixed
 * Fixed auto-organisation bugs
 
+---
+
 ## v1.1.5 – 26/09/2025
 
 ### Fixed
 - Fixed bug that caused full re-indexing and duplication
+
+---
 
 ## v1.1.4 – 24/09/2025
 
@@ -86,16 +99,22 @@
 ### Changed
 - Minor UI changes
 
+---
+
 ## v1.1.3 – 20/08/2025
 
 ### Changed
 - Replace Room DB with file-based index storage for faster loading
 - Minor UI changes
 
+---
+
 ## v1.1.2 – 08/08/2025
 
 ### Changed
 - Clean, intuitive search UI with click-to-open media viewer and sharing features
+
+---
 
 ## v1.1.1 – 11/06/2025
 
@@ -108,6 +127,8 @@
 * UI freeze when selecting destination folders with many images
 * Out-of-memory (OOM) crashes when processing/loading large images
 * Double ONNX environment teardown bug
+
+---
 
 ## v1.1.0 – 19/05/2025
 
@@ -122,6 +143,8 @@
 ### Fixed
 - Reduced false positives in auto-organisation
 
+---
+
 ## v1.0.6 – 30/04/2025
 
 ### Added
@@ -134,6 +157,8 @@
 
 ### Removed
 - Unnecessary network info permission  
+
+---
 
 ## v1.0.5 – 13/04/2025
 
@@ -154,6 +179,8 @@
 - Text visibility in light mode on search screen
 - Fixed scan history not updating
 
+---
+
 ## v1.0.4 – 03/04/2025
 
 - Chained image index workers
@@ -164,12 +191,16 @@
 - Remove battery constraint on image indexer worker
 - Chained image index workers
 
+---
+
 ## v1.0.2 – 03/04/2025
 
 - Fix search bug that occurred due to changes in storage permissions
 - Added new feature that allows refreshing image index to handle changes in storage permissions
 - Fix bug that caused some files to be skipped in classification worker
 - Memory optimizations
+
+---
 
 ## v1.0.1 – 27/03/2025
 
