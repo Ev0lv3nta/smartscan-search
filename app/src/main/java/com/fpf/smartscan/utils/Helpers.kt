@@ -22,16 +22,30 @@ import java.util.Locale
 import java.util.TimeZone
 import kotlin.collections.any
 
+fun toEpochSeconds(dateString: String): Long {
+    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+    sdf.timeZone = TimeZone.getTimeZone("UTC")
+    val date = sdf.parse(dateString)!!
+    return date.time / 1000
+}
+
+fun toEpochSeconds(year: Int, month: Int, day: Int): Long {
+    val cal = java.util.Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+        set(year, month, day, 0, 0, 0)
+        set(java.util.Calendar.MILLISECOND, 0)
+    }
+    return cal.timeInMillis / 1000
+}
+
 fun toDateString(timestamp: Long): String {
     val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
     return sdf.format(Date(timestamp))
 }
 
-fun toEpochSeconds(dateString: String): Long {
+fun formatDate(epochSeconds: Long?): String? {
+    if (epochSeconds == null) return null
     val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    sdf.timeZone = TimeZone.getTimeZone("UTC")
-    val date: Date = sdf.parse(dateString)!!
-    return date.time / 1000
+    return sdf.format(Date(epochSeconds * 1000))
 }
 
 fun getTimeInMinutesAndSeconds(milliseconds: Long): Pair<Long, Long> {
@@ -39,7 +53,6 @@ fun getTimeInMinutesAndSeconds(milliseconds: Long): Pair<Long, Long> {
     val minutes = seconds / 60
     return Pair(minutes, seconds % 60)
 }
-
 fun showNotification(context: Context, title: String, text: String, id: Int = 1001) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         if (ContextCompat.checkSelfPermission(
