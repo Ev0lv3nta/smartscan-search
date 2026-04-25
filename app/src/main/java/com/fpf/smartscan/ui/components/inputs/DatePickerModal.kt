@@ -1,0 +1,50 @@
+package com.fpf.smartscan.ui.components.inputs
+
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.window.Dialog
+import java.util.Calendar
+
+@Composable
+fun DatePickerModal(
+    show: Boolean,
+    onDismiss: () -> Unit,
+    onDateSelected: (year: Int, month: Int, day: Int) -> Unit
+) {
+    if (!show) return
+
+    val calendar = Calendar.getInstance()
+
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = calendar.timeInMillis
+    )
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface {
+            DatePicker(
+                state = datePickerState,
+                showModeToggle = true
+            )
+
+            val selectedMillis = datePickerState.selectedDateMillis
+
+            Button(
+                onClick = {
+                    if (selectedMillis != null) {
+                        val cal = Calendar.getInstance().apply {
+                            timeInMillis = selectedMillis
+                        }
+                        onDateSelected(
+                            cal.get(Calendar.YEAR),
+                            cal.get(Calendar.MONTH),
+                            cal.get(Calendar.DAY_OF_MONTH)
+                        )
+                    }
+                    onDismiss()
+                }
+            ) {
+                Text("Select")
+            }
+        }
+    }
+}
