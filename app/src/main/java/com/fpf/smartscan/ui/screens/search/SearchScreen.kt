@@ -1,6 +1,7 @@
 package com.fpf.smartscan.ui.screens.search
 
 import android.content.ClipData
+import android.widget.DatePicker
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -19,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
@@ -41,6 +43,8 @@ import com.fpf.smartscan.ui.components.media.MediaViewer
 import com.fpf.smartscan.ui.components.ProgressBar
 import com.fpf.smartscan.ui.components.SelectorIconItem
 import com.fpf.smartscan.ui.components.SlideRevealBox
+import com.fpf.smartscan.ui.components.inputs.DatePickerModal
+import com.fpf.smartscan.ui.components.modals.BottomSheet
 import com.fpf.smartscan.ui.components.search.AutoCompleter
 import com.fpf.smartscan.ui.components.search.ImageSearcher
 import com.fpf.smartscan.ui.components.search.SearchActionBar
@@ -49,6 +53,8 @@ import com.fpf.smartscan.ui.components.search.SearchResults
 import com.fpf.smartscan.ui.components.search.TagAdder
 import com.fpf.smartscan.ui.permissions.RequestPermissions
 import com.fpf.smartscan.ui.screens.search.SearchViewModel.Companion.RESULTS_BATCH_SIZE
+import com.fpf.smartscan.utils.formatDate
+import com.fpf.smartscan.utils.toEpochSeconds
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.math.max
@@ -87,11 +93,20 @@ fun SearchScreen(
     var hasStoragePermission by remember { mutableStateOf(false) }
     var isAddingTag by remember { mutableStateOf(false) }
     var isSelecting by remember { mutableStateOf(false) }
+
+    // Dynamic hide animation
     var offset by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val actionBarHeight = with(density) { 70.dp.toPx() }
     val searchBarHeight = with(density) { (if(state.queryType == QueryType.IMAGE) 200 else 120).dp.toPx() }
     val maxCollapsePx = max(actionBarHeight, searchBarHeight).toInt()
+
+    // Filters
+    var showFilters by remember { mutableStateOf(false) }
+    var showStartDatePicker by remember { mutableStateOf(false) }
+    var showEndDatePicker by remember { mutableStateOf(false) }
+    var startDate by remember { mutableStateOf<Long?>(null) }
+    var endDate by remember { mutableStateOf<Long?>(null) }
 
     RequestPermissions { _, storageGranted ->
         hasStoragePermission = storageGranted
@@ -285,6 +300,12 @@ fun SearchScreen(
                                 )
                             }
                         )
+                        TextButton(
+                            onClick = { showFilters = true },
+                            modifier = Modifier.align(Alignment.Start)
+                        ) {
+                            Text(if(showFilters) "Hide filters" else "Show filters")
+                        }
                     }
                 }
                 AutoCompleter(
@@ -391,6 +412,70 @@ fun SearchScreen(
                         searchViewModel.toggleViewResult(context, null)
                     }
                 )
+            }
+        }
+        DatePickerModal(
+            show = showStartDatePicker,
+            onDismiss = { showStartDatePicker = false },
+            onDateSelected = { y, m, d ->
+                startDate = toEpochSeconds(y, m, d)
+                showStartDatePicker = false
+            }
+        )
+
+        DatePickerModal(
+            show = showEndDatePicker,
+            onDismiss = { showEndDatePicker = false },
+            onDateSelected = { y, m, d ->
+                endDate = toEpochSeconds(y, m, d)
+                showEndDatePicker = false
+            }
+        )
+        BottomSheet(
+            show = showFilters,
+            onDismiss = { showFilters = false }
+        ) {
+            Text("Filters", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
+
+            Spacer(Modifier.height(16.dp))
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Start date")
+                    TextButton(onClick = { showStartDatePicker = true }) {
+                        Text(startDate?.let { formatDate(it) } ?: "Any time")
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("End date")
+                    TextButton(onClick = { showEndDatePicker = true }) {
+                        Text(endDate?.let { formatDate(it) } ?: "Any time")
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(24.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                OutlinedButton (
+                    onClick = {
+                        startDate = null
+                        endDate = null
+                    }
+                ) {
+                    Text("Clear")
+                }
             }
         }
     }

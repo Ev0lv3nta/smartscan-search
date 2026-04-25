@@ -1,7 +1,6 @@
 package com.fpf.smartscan.ui.screens.search
 
 import android.app.Application
-import android.content.ContentUris
 import android.content.Context
 import android.net.Uri
 import android.util.Log
@@ -172,115 +171,117 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     }
 
     fun reset(){
-        _state.value = _state.value.copy(totalResults = 0, searchResults = emptyList(), selectedResults = emptySet(), autoCompleteTagResults = emptyList(), error = null, tagFilter = null, tagOnlySearch = false)
+        cachedIds = mutableListOf() // clear on new search
+        _state.update{it.copy(totalResults = 0, searchResults = emptyList(), selectedResults = emptySet(), autoCompleteTagResults = emptyList(), error = null, tagFilter = null, tagOnlySearch = false)}
     }
 
-    fun search(threshold: Float, useClusterSearch: Boolean){
+    fun search(threshold: Float, useClusterSearch: Boolean, startDate: Long? = null, endDate: Long? = null){
+        reset()
         val store = getStore()
         if(!store.exists) {
             _state.update{ currentState -> currentState.copy(error = getApplication<Application>().getString(R.string.search_error_not_indexed))}
             return
         }
-        when(_state.value.queryType){
-            QueryType.IMAGE -> {
-                imageSearch(store, threshold, useClusterSearch)
-            }
-            QueryType.TEXT -> {
-                textSearch(store, threshold, useClusterSearch)
+        _state.update { it.copy(loading = true) }
+
+        viewModelScope.launch(Dispatchers.Default) {
+            try {
+
+                val queryResults = when (_state.value.queryType) {
+                    QueryType.IMAGE -> {
+                        val result = imageSearch(store, threshold, useClusterSearch)
+                        _state.update{it.copy(imageEmbedderLastUsage = System.currentTimeMillis())}
+                        result
+
+                    }
+
+                    QueryType.TEXT -> {
+                        val result = textSearch(store, threshold, useClusterSearch)
+                        _state.update{it.copy(textEmbedderLastUsage = System.currentTimeMillis())}
+                        result
+                    }
+                }
+                val state = _state.value
+                val totalResults =  if(state.tagOnlySearch) countMediaMatchingTag(state.tagFilter,state.mediaType ) else queryResults.size
+                val cache = !state.tagOnlySearch
+                handleSearchResult(queryResults, store, totalResults = totalResults, cache=cache)
+            }catch (e: Exception) {
+                Log.e(TAG, "$e")
+                _state.update{it.copy(error = getApplication<Application>().getString(R.string.search_error_unknown))}
+            } finally {
+                _state.update{it.copy(loading = false)}
             }
         }
     }
 
-    private fun textSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean) {
-        cachedIds = mutableListOf() // clear on new search
-
+    private suspend fun textSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean): List<Long> {
         val query = searchFieldState.text.toString()
         if (query.isBlank()) {
             _state.update{currentState -> currentState.copy(error = getApplication<Application>().getString(R.string.search_error_empty_query))}
-            return
+            return emptyList()
         }
-        reset()
-        _state.value = _state.value.copy(loading = true)
-
-        viewModelScope.launch((Dispatchers.IO)) {
-            try {
-                val regex = Regex("""^#([a-zA-Z0-9_]+)""")
-                val match = regex.find(query)
-                val tag = match?.groupValues?.get(1)
-                tag?.let{ tag ->
-                    _state.update { currentState -> currentState.copy(tagFilter = tag) }
-                    updateTagLastUsage(tag)
-                }
-
-                val actualQueryStart = if(!tag.isNullOrBlank()) tag.length + 1 else 0
-                val actualQuery = query.substring(actualQueryStart).trim()
-                val idsMatchingTag: List<Long> = getMediaMatchingTag(tag, _state.value.mediaType,RESULTS_BATCH_SIZE, 0) // load initial
-                val tagOnlySearch = idsMatchingTag.isNotEmpty() && actualQuery.isBlank()
-
-                if(tagOnlySearch){
-                    val totalResults = countMediaMatchingTag(tag, _state.value.mediaType)
-                    _state.update { currentState -> currentState.copy(tagOnlySearch = true) }
-                    return@launch handleQueryResults(idsMatchingTag, store, totalResults)
-                }
-                if(actualQuery.isBlank()){
-                    return@launch handleQueryResults(emptyList(), store)
-                }
-
-                if(!textEmbedder.isInitialized())textEmbedder.initialize()
-                if(shouldShutdownModel(_state.value.imageEmbedderLastUsage)) imageEmbedder.closeSession() // prevent keeping both models open
-
-                val embedding = textEmbedder.embed(actualQuery)
-                val targetClusters = if (useClusterSearch) getTargetClusters(embedding, threshold, 3) else emptyList()
-                val idsMatchingCluster: Set<Long> = buildSet {
-                    for (clusterId in targetClusters) {
-                        val ids = clusterCrossRefRepository.getClusterToMediaIdsMap()[clusterId] ?: continue
-                        addAll(ids)
-                    }
-                }
-                val filterIds = if(tag != null) idsMatchingTag.toSet() else idsMatchingCluster
-                val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, filterIds)
-                cachedIds.addAll(queryResults)
-                handleQueryResults(queryResults, store)
-            } catch (e: Exception) {
-                Log.e(TAG, "$e")
-                _state.emit(_state.value.copy(error = getApplication<Application>().getString(R.string.search_error_unknown)))
-            } finally {
-                _state.emit(_state.value.copy(loading = false, textEmbedderLastUsage = System.currentTimeMillis()))
-            }
+        val (tag, actualQuery) = parseQuery(query)
+        tag?.let{ tag ->
+            _state.update { currentState -> currentState.copy(tagFilter = tag) }
+            updateTagLastUsage(tag)
         }
+        val idsMatchingTag: List<Long> = getMediaMatchingTag(tag, _state.value.mediaType,RESULTS_BATCH_SIZE, 0) // load initial
+        val tagOnlySearch = idsMatchingTag.isNotEmpty() && actualQuery.isBlank()
+
+        if(tagOnlySearch){
+            _state.update { currentState -> currentState.copy(tagOnlySearch = true) }
+            return idsMatchingTag
+        }
+        if(actualQuery.isBlank()){
+            return emptyList()
+        }
+
+        if(!textEmbedder.isInitialized())textEmbedder.initialize()
+
+        val embedding = textEmbedder.embed(actualQuery)
+        val idsMatchingTargetClusters = if (useClusterSearch) getIdsInTargetClusters(embedding, threshold, 3) else emptySet()
+        val filterIds = if(tag != null) idsMatchingTag.toSet() else idsMatchingTargetClusters
+        val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, filterIds)
+
+        // prevent keeping both models open
+        if(shouldShutdownModel(_state.value.imageEmbedderLastUsage)) imageEmbedder.closeSession()
+        return queryResults
     }
 
-    private fun imageSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean) {
-        cachedIds = mutableListOf() // clear on new search
+    private fun parseQuery(query: String): Pair<String?, String>{
+        val regex = Regex("""^#([a-zA-Z0-9_]+)""")
+        val match = regex.find(query)
+        val tag = match?.groupValues?.get(1)
+        val actualQueryStart = if(!tag.isNullOrBlank()) tag.length + 1 else 0
+        val actualQuery = query.substring(actualQueryStart).trim()
+        return Pair(tag, actualQuery)
+    }
 
-        val queryImage = _state.value.queryImage?: return
+    private suspend fun imageSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean): List<Long> {
+        val queryImage = _state.value.queryImage?: return emptyList()
 
-        reset()
-        _state.value = _state.value.copy( loading = true)
+        if(!imageEmbedder.isInitialized()) imageEmbedder.initialize()
 
-        viewModelScope.launch((Dispatchers.IO)) {
-            try {
-                if(!imageEmbedder.isInitialized()) imageEmbedder.initialize()
-                if(shouldShutdownModel(_state.value.textEmbedderLastUsage)) textEmbedder.closeSession() // prevent keeping both models open
+        val bitmap = getBitmapFromUri(getApplication(), queryImage, IMAGE_SIZE_X)
+        val embedding = imageEmbedder.embed(bitmap)
+        val idsMatchingTargetClusters = if (useClusterSearch) getIdsInTargetClusters(embedding, threshold, 3) else emptySet()
+        val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, idsMatchingTargetClusters)
 
-                val bitmap = getBitmapFromUri(getApplication(), queryImage, IMAGE_SIZE_X)
-                val embedding = imageEmbedder.embed(bitmap)
-                val mediaIdsInCluster: Set<Long> = if(useClusterSearch) buildSet {
-                    for (clusterId in getTargetClusters(embedding, threshold, 3)) {
-                        val ids = clusterCrossRefRepository.getClusterToMediaIdsMap()[clusterId] ?: continue
-                        addAll(ids)
-                    }
-                } else emptySet()
-                val resultIds = store.query(embedding, Int.MAX_VALUE, threshold, mediaIdsInCluster)
-                cachedIds.addAll(resultIds)
-                handleQueryResults(resultIds, store)
-            } catch (e: Exception) {
-                Log.e(TAG, "$e")
-                _state.emit(_state.value.copy(error = getApplication<Application>().getString(R.string.search_error_unknown)))
-            } finally {
-                _state.emit(_state.value.copy(loading = false, imageEmbedderLastUsage = System.currentTimeMillis()))
+        // prevent keeping both models open
+        if(shouldShutdownModel(_state.value.textEmbedderLastUsage)) textEmbedder.closeSession()
+        return queryResults
+    }
+
+
+    private suspend fun getIdsInTargetClusters(queryEmbedding: FloatArray, similarityThreshold: Float, topKClusters: Int = 3): Set<Long>{
+        val targetClusters = getTargetClusters(queryEmbedding, similarityThreshold, topKClusters)
+        val idsMatchingCluster: Set<Long> = buildSet {
+            for (clusterId in targetClusters) {
+                val ids = clusterCrossRefRepository.getClusterToMediaIdsMap()[clusterId] ?: continue
+                addAll(ids)
             }
         }
+        return idsMatchingCluster
     }
 
     private suspend fun getTargetClusters(queryEmbedding: FloatArray, threshold: Float, topK: Int = 1): List<Long>{
@@ -290,7 +291,8 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         return resultIds
     }
 
-    private suspend fun handleQueryResults(queryResults: List<Long>, store: FileEmbeddingStore, totalResults: Int? = null) {
+    private suspend fun handleSearchResult(queryResults: List<Long>, store: FileEmbeddingStore, totalResults: Int? = null, cache: Boolean = true) {
+        if(cache) cachedIds.addAll(queryResults)
         val totalCount = totalResults?: queryResults.size
         val initialBatch = queryResults.take(RESULTS_BATCH_SIZE) // initial results the rest loaded dynamically
         val (validIds, idsToPurge) = filterAccessibleMediaStoreIds(getApplication(), initialBatch, _state.value.mediaType)
