@@ -19,32 +19,30 @@ fun DatePickerModal(
         initialSelectedDateMillis = calendar.timeInMillis
     )
 
+    var hasUserSelected by remember { mutableStateOf(false) }
+
+    LaunchedEffect(datePickerState.selectedDateMillis) {
+        val selectedMillis = datePickerState.selectedDateMillis
+        if (hasUserSelected && selectedMillis != null) {
+            val cal = Calendar.getInstance().apply {
+                timeInMillis = selectedMillis
+            }
+            onDateSelected(
+                cal.get(Calendar.YEAR),
+                cal.get(Calendar.MONTH),
+                cal.get(Calendar.DAY_OF_MONTH)
+            )
+            onDismiss()
+        }
+        hasUserSelected = true
+    }
+
     Dialog(onDismissRequest = onDismiss) {
         Surface {
             DatePicker(
                 state = datePickerState,
                 showModeToggle = true
             )
-
-            val selectedMillis = datePickerState.selectedDateMillis
-
-            Button(
-                onClick = {
-                    if (selectedMillis != null) {
-                        val cal = Calendar.getInstance().apply {
-                            timeInMillis = selectedMillis
-                        }
-                        onDateSelected(
-                            cal.get(Calendar.YEAR),
-                            cal.get(Calendar.MONTH),
-                            cal.get(Calendar.DAY_OF_MONTH)
-                        )
-                    }
-                    onDismiss()
-                }
-            ) {
-                Text("Select")
-            }
         }
     }
 }
