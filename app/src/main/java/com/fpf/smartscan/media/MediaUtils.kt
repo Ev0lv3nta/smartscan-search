@@ -42,7 +42,12 @@ fun openVideoInGallery(context: Context, uri: Uri) {
 }
 
 
-fun queryImageIds(context: Context, dirUris: List<Uri>): List<Long> {
+fun queryImageIds(
+    context: Context,
+    dirUris: List<Uri>,
+    startDate: Long? = null,
+    endDate: Long? = null
+): List<Long> {
     val imageIds = mutableListOf<Long>()
     val projection = arrayOf(MediaStore.Images.Media._ID)
     val sortOrder = "${MediaStore.Images.Media.DATE_MODIFIED} DESC"
@@ -54,23 +59,20 @@ fun queryImageIds(context: Context, dirUris: List<Uri>): List<Long> {
     if (dirUris.isNotEmpty()) {
         for (uri in dirUris) {
             try {
-                // Handle tree/document URIs like "primary:Pictures/MyFolder"
                 if (DocumentsContract.isTreeUri(uri) || uri.authority == "com.android.externalstorage.documents") {
                     val docId = DocumentsContract.getTreeDocumentId(uri)
                     val afterColon = docId.substringAfter(':', "")
                     if (afterColon.isNotEmpty()) {
-                        val rel = afterColon.trim('/') + "/" // RELATIVE_PATH usually ends with '/'
+                        val rel = afterColon.trim('/') + "/"
                         selectionParts.add("${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?")
                         selectionArgs.add("$rel%")
                         continue
                     }
                 }
 
-                // Handle file:// uris
                 if (uri.scheme == "file") {
                     val file = File(uri.path ?: continue)
                     val absPath = file.absolutePath.trimEnd('/') + "/"
-                    // RELATIVE_PATH if possible (strip envRoot)
                     if (absPath.startsWith(envRoot)) {
                         val rel = absPath.removePrefix(envRoot).trimStart('/').trimEnd('/') + "/"
                         selectionParts.add("${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?")
@@ -79,7 +81,6 @@ fun queryImageIds(context: Context, dirUris: List<Uri>): List<Long> {
                     continue
                 }
 
-                // Fallback attempt: use last path segment as folder name
                 val seg = uri.path?.trim('/') ?: uri.lastPathSegment ?: continue
                 if (seg.isNotEmpty()) {
                     val folderLike = if (seg.endsWith("/")) seg else "$seg/"
@@ -87,9 +88,18 @@ fun queryImageIds(context: Context, dirUris: List<Uri>): List<Long> {
                     selectionArgs.add("%$folderLike%")
                 }
             } catch (_: Exception) {
-                // ignore malformed uri and continue
             }
         }
+    }
+
+    // Date filters (DATE_ADDED is in seconds)
+    if (startDate != null) {
+        selectionParts.add("${MediaStore.Images.Media.DATE_ADDED} >= ?")
+        selectionArgs.add(startDate.toString())
+    }
+    if (endDate != null) {
+        selectionParts.add("${MediaStore.Images.Media.DATE_ADDED} <= ?")
+        selectionArgs.add(endDate.toString())
     }
 
     val selection: String?
@@ -98,7 +108,7 @@ fun queryImageIds(context: Context, dirUris: List<Uri>): List<Long> {
         selection = null
         args = null
     } else {
-        selection = selectionParts.joinToString(" OR ", prefix = "(", postfix = ")")
+        selection = selectionParts.joinToString(" AND ", prefix = "(", postfix = ")")
         args = selectionArgs.toTypedArray()
     }
 
@@ -117,7 +127,12 @@ fun queryImageIds(context: Context, dirUris: List<Uri>): List<Long> {
     return imageIds
 }
 
-fun queryVideoIds(context: Context, dirUris: List<Uri>): List<Long> {
+fun queryVideoIds(
+    context: Context,
+    dirUris: List<Uri>,
+    startDate: Long? = null,
+    endDate: Long? = null
+): List<Long> {
     val videoIds = mutableListOf<Long>()
     val projection = arrayOf(MediaStore.Video.Media._ID)
     val sortOrder = "${MediaStore.Video.Media.DATE_MODIFIED} DESC"
@@ -129,7 +144,6 @@ fun queryVideoIds(context: Context, dirUris: List<Uri>): List<Long> {
     if (dirUris.isNotEmpty()) {
         for (uri in dirUris) {
             try {
-                // Handle tree/document URIs like "primary:Movies/MyFolder"
                 if (DocumentsContract.isTreeUri(uri) || uri.authority == "com.android.externalstorage.documents") {
                     val docId = DocumentsContract.getTreeDocumentId(uri)
                     val afterColon = docId.substringAfter(':', "")
@@ -141,7 +155,6 @@ fun queryVideoIds(context: Context, dirUris: List<Uri>): List<Long> {
                     }
                 }
 
-                // Handle file:// URIs
                 if (uri.scheme == "file") {
                     val file = File(uri.path ?: continue)
                     val absPath = file.absolutePath.trimEnd('/') + "/"
@@ -153,7 +166,6 @@ fun queryVideoIds(context: Context, dirUris: List<Uri>): List<Long> {
                     continue
                 }
 
-                // Fallback: use last path segment
                 val seg = uri.path?.trim('/') ?: uri.lastPathSegment ?: continue
                 if (seg.isNotEmpty()) {
                     val folderLike = if (seg.endsWith("/")) seg else "$seg/"
@@ -161,9 +173,18 @@ fun queryVideoIds(context: Context, dirUris: List<Uri>): List<Long> {
                     selectionArgs.add("%$folderLike%")
                 }
             } catch (_: Exception) {
-                // ignore malformed uri and continue
             }
         }
+    }
+
+    if (startDate != null) {
+        selectionParts.add("${MediaStore.Video.Media.DATE_ADDED} >= ?")
+        selectionArgs.add(startDate.toString())
+    }
+
+    if (endDate != null) {
+        selectionParts.add("${MediaStore.Video.Media.DATE_ADDED} <= ?")
+        selectionArgs.add(endDate.toString())
     }
 
     val selection: String?
@@ -172,7 +193,7 @@ fun queryVideoIds(context: Context, dirUris: List<Uri>): List<Long> {
         selection = null
         args = null
     } else {
-        selection = selectionParts.joinToString(" OR ", prefix = "(", postfix = ")")
+        selection = selectionParts.joinToString(" AND ", prefix = "(", postfix = ")")
         args = selectionArgs.toTypedArray()
     }
 
@@ -188,6 +209,7 @@ fun queryVideoIds(context: Context, dirUris: List<Uri>): List<Long> {
             videoIds.add(cursor.getLong(idColumn))
         }
     }
+
     return videoIds
 }
 

@@ -19,11 +19,19 @@ import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 import kotlin.collections.any
 
 fun toDateString(timestamp: Long): String {
     val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
     return sdf.format(Date(timestamp))
+}
+
+fun toEpochSeconds(dateString: String): Long {
+    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    sdf.timeZone = TimeZone.getTimeZone("UTC")
+    val date: Date = sdf.parse(dateString)!!
+    return date.time / 1000
 }
 
 fun getTimeInMinutesAndSeconds(milliseconds: Long): Pair<Long, Long> {
