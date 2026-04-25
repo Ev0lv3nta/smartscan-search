@@ -44,7 +44,7 @@ fun openVideoInGallery(context: Context, uri: Uri) {
 
 fun queryImageIds(
     context: Context,
-    dirUris: List<Uri>,
+    dirUris: List<Uri> = emptyList(),
     startDate: Long? = null,
     endDate: Long? = null
 ): List<Long> {
@@ -129,7 +129,7 @@ fun queryImageIds(
 
 fun queryVideoIds(
     context: Context,
-    dirUris: List<Uri>,
+    dirUris: List<Uri> = emptyList(),
     startDate: Long? = null,
     endDate: Long? = null
 ): List<Long> {
