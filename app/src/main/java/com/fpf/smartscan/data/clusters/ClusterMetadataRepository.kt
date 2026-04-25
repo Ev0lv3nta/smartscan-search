@@ -19,6 +19,7 @@ class ClusterMetadataRepository(private val dao: ClusterMetadataDao) {
      suspend fun getMetadatas(ids: List<Long>): List<MediaClusterMetadata> = dao.get(ids)
 
      suspend fun getIdFromLabel(label: String): Long? = dao.getIdFromLabel(label)
+    suspend fun getCount(minSize: Int = 1): Int = dao.count(minSize)
 
      suspend fun insertMetadatas(metadatas: List<MediaClusterMetadata>) = dao.insert(metadatas)
 
