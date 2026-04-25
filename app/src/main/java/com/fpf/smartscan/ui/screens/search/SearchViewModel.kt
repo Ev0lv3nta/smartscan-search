@@ -8,6 +8,7 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.launch
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
 import coil3.compose.AsyncImagePainter
 import com.fpf.smartscan.media.getImageUriFromId
@@ -30,6 +31,8 @@ import com.fpf.smartscan.media.getVideoUriFromId
 import com.fpf.smartscan.media.onMediaLoadingError
 import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
+import com.fpf.smartscan.media.queryImageIds
+import com.fpf.smartscan.media.queryVideoIds
 import com.fpf.smartscan.media.removeStaleMedia
 import com.fpf.smartscan.search.ImageIndexListener
 import com.fpf.smartscan.search.IndexingStatus
@@ -205,9 +208,13 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                     }
                 }
                 val state = _state.value
-                val totalResults =  if(state.tagOnlySearch) countMediaMatchingTag(state.tagFilter,state.mediaType ) else queryResults.size
+                val idsInDateRange = (if(state.mediaType == MediaType.VIDEO) queryVideoIds(application, startDate = startDate, endDate = endDate)  else queryImageIds(application, startDate = startDate, endDate = endDate)).toSet()
+
+//                Log.d(TAG, "IDs in range: ${idsInDateRange.size} | Start: $startDate | End: $endDate")
+                val finalResults = if(idsInDateRange.isNotEmpty()) queryResults.filter {it in idsInDateRange } else emptyList()
+                val totalResults =  if(state.tagOnlySearch) countMediaMatchingTag(state.tagFilter,state.mediaType ) else finalResults.size
                 val cache = !state.tagOnlySearch
-                handleSearchResult(queryResults, store, totalResults = totalResults, cache=cache)
+                handleSearchResult(finalResults, store, totalResults = totalResults, cache=cache)
             }catch (e: Exception) {
                 Log.e(TAG, "$e")
                 _state.update{it.copy(error = getApplication<Application>().getString(R.string.search_error_unknown))}

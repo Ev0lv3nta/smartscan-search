@@ -265,7 +265,7 @@ fun SearchScreen(
                             searchFieldState = searchViewModel.searchFieldState,
                             enabled = hasStoragePermission && !state.loading,
                             onSearch = {
-                                searchViewModel.search(appSettings.similarityThreshold, appSettings.enableClusterSearch)
+                                searchViewModel.search(appSettings.similarityThreshold, appSettings.enableClusterSearch, startDate = startDate, endDate=endDate)
                                 isSelecting = false
                             },
                             onImageSelected = {
@@ -375,7 +375,7 @@ fun SearchScreen(
                         searchViewModel.updateQueryType(QueryType.IMAGE)
                         isSelecting = false
                         searchViewModel.clearSelectedResults()
-                        searchViewModel.search(appSettings.imageSimilarityThreshold, appSettings.enableClusterSearch)
+                        searchViewModel.search(appSettings.imageSimilarityThreshold, appSettings.enableClusterSearch, startDate = startDate, endDate=endDate)
                     }
                 },
                 onShare = {
