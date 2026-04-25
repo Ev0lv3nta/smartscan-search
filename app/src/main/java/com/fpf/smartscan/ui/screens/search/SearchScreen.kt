@@ -12,8 +12,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ImageSearch
 import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -22,7 +20,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.Icon
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -30,7 +27,6 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.zIndex
 import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.mediaTypeOptions
@@ -400,32 +396,4 @@ fun SearchScreen(
     }
 }
 
-@Composable
-fun SearchPlaceholderDisplay(isVisible: Boolean) {
-    if(!isVisible) return
-
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Icon(
-                imageVector = Icons.Filled.ImageSearch,
-                contentDescription = "Search icon",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(96.dp)
-            )
-            Text(
-                textAlign = TextAlign.Center,
-                text = "Find what you're looking for",
-                style = MaterialTheme.typography.displayMedium,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
-        }
-    }
-}
 
