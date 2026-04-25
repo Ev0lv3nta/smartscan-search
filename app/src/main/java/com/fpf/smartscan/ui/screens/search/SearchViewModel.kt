@@ -16,6 +16,7 @@ import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.data.MediaDatabase
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
+import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
 import com.fpf.smartscan.data.tags.TagRepository
@@ -56,6 +57,7 @@ import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.math.log2
 
 class SearchViewModel( application: Application) : AndroidViewModel(application) {
     companion object {
@@ -86,6 +88,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     private val tagsRepository by lazy { TagRepository(db.tagDao())}
     private val tagsCrossRefRepository by lazy { TagCrossRefRepository( db.tagCrossRefDao())}
     private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
+    private val clusterMetadataRepository by lazy { ClusterMetadataRepository(db.clusterMetadataDao()) }
 
     val allTags: StateFlow<List<Tag>> = tagsRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
@@ -239,7 +242,9 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         if(!textEmbedder.isInitialized())textEmbedder.initialize()
 
         val embedding = textEmbedder.embed(actualQuery)
-        val idsMatchingTargetClusters = if (useClusterSearch) getIdsInTargetClusters(embedding, threshold, 3) else emptySet()
+        val totalClusters = clusterMetadataRepository.getCount(2)
+        val topK = computeDynamicTopK(totalClusters)
+        val idsMatchingTargetClusters = if (useClusterSearch) getIdsInTargetClusters(embedding, threshold, topK) else emptySet()
         val filterIds = if(tag != null) idsMatchingTag.toSet() else idsMatchingTargetClusters
         val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, filterIds)
 
@@ -256,6 +261,8 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         val actualQuery = query.substring(actualQueryStart).trim()
         return Pair(tag, actualQuery)
     }
+
+    private fun computeDynamicTopK(totalItems: Int, min: Int = 3) = (log2(totalItems.toDouble())).toInt().coerceAtLeast(min)
 
     private suspend fun imageSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean): List<Long> {
         val queryImage = _state.value.queryImage?: return emptyList()
@@ -323,7 +330,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
             }
 
             is SearchQuery.TextQuery -> {
-               setMediaType(intentSearchQuery.mediaType)
+                setMediaType(intentSearchQuery.mediaType)
                 searchFieldState.edit { replace(0, searchFieldState.text.length, intentSearchQuery.text) }
                 search( similarityThreshold, useClusterSearch)
                 hasHandledExternalSearch = true
