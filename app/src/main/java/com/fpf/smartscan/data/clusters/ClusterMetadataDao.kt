@@ -46,4 +46,10 @@ interface ClusterMetadataDao {
     suspend fun delete(ids: List<Long>)
 
     @Query("SELECT COUNT(*) FROM cluster_metadata WHERE prototypeSize >= :minSize")
-    suspend fun count(minSize: Int = 1): Int}
+    suspend fun count(minSize: Int = 1): Int
+
+    @Query("SELECT COUNT(*) FROM cluster_metadata WHERE prototypeSize = 1")
+    suspend fun countSingletons(): Int
+
+}
+
