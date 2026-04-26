@@ -23,20 +23,28 @@ import coil3.memory.MemoryCache
 import coil3.request.crossfade
 import coil3.video.VideoFrameDecoder
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
+import com.fpf.smartscan.constants.PrefsKeys
+import com.fpf.smartscan.constants.PrefsNames
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscan.ui.theme.ThemeManager
+import com.fpf.smartscan.workers.SyncEmbeddingStoreWorker
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.io.File
 
 class MainActivity : ComponentActivity() {
-    private val sharedPrefs by lazy { application.getSharedPreferences("AsyncStorage", MODE_PRIVATE) }
+    private val sharedPrefs by lazy { application.getSharedPreferences(PrefsNames.APP_PREFS, MODE_PRIVATE) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         cleanUp()
+
+        val hasSyncedDates = sharedPrefs.getBoolean(PrefsKeys.KEY_SYNC_COMPLETE, false)
+        if(!hasSyncedDates){
+            SyncEmbeddingStoreWorker.scheduleWorker(application)
+        }
         val appSettings = loadSettings(sharedPrefs)
         ThemeManager.updateColorScheme(appSettings.color)
         ThemeManager.updateThemeMode(appSettings.theme)
