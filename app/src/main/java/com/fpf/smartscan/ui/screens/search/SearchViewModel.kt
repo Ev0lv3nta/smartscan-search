@@ -113,6 +113,8 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     private var cachedIds= mutableListOf<Long>()
 
     private var totalClusters: Int? = null
+    private var totalSingletonClusters: Int? = null
+
 
 
     init {
@@ -251,9 +253,11 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         if(!textEmbedder.isInitialized())textEmbedder.initialize()
 
         val embedding = textEmbedder.embed(actualQuery)
-        totalClusters =  totalClusters?: clusterMetadataRepository.getCount(2)
-        val topK = computeDynamicTopK(totalClusters!!)
-        val idsMatchingTargetClusters = if (useClusterSearch) getIdsInTargetClusters(embedding, threshold, topK) else emptySet()
+        totalClusters =  totalClusters?: clusterMetadataRepository.count()
+        totalSingletonClusters =  totalSingletonClusters?: clusterMetadataRepository.countSingletons()
+        val topK = computeDynamicTopK(totalClusters!!, totalSingletonClusters!!)
+        val targetClusters = if (useClusterSearch) getTargetClusters(embedding, threshold, topK) else emptyList()
+        val idsMatchingTargetClusters = getIdsInTargetClusters(targetClusters)
         val filterIds = if(tag != null) idsMatchingTag.toSet() else idsMatchingTargetClusters
         val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, filterIds)
 
@@ -271,8 +275,12 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         return Pair(tag, actualQuery)
     }
 
-    private fun computeDynamicTopK(totalItems: Int, min: Int = 3) = (log2(totalItems.toDouble())).toInt().coerceAtLeast(min)
-
+    // increases search breadth when cluster fragmentation is high
+    private fun computeDynamicTopK(totalItems: Int, singletonCount: Int, min: Int = 3): Int {
+        val base = log2(totalItems.toDouble())
+        val singletonRatio = singletonCount.toDouble() / totalItems
+        return (base * (1.0 + singletonRatio)).toInt().coerceAtLeast(min)
+    }
     private suspend fun imageSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean): List<Long> {
         val queryImage = _state.value.queryImage?: return emptyList()
 
@@ -280,9 +288,11 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
         val bitmap = getBitmapFromUri(getApplication(), queryImage, IMAGE_SIZE_X)
         val embedding = imageEmbedder.embed(bitmap)
-        totalClusters =  totalClusters?: clusterMetadataRepository.getCount(2)
-        val topK = computeDynamicTopK(totalClusters!!)
-        val idsMatchingTargetClusters = if (useClusterSearch) getIdsInTargetClusters(embedding, threshold, topK) else emptySet()
+        totalClusters =  totalClusters?: clusterMetadataRepository.count(2)
+        totalSingletonClusters =  totalSingletonClusters?: clusterMetadataRepository.countSingletons()
+        val topK = computeDynamicTopK(totalClusters!!, totalSingletonClusters!!)
+        val targetClusters = if (useClusterSearch) getTargetClusters(embedding, threshold, topK) else emptyList()
+        val idsMatchingTargetClusters = getIdsInTargetClusters(targetClusters)
         val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, idsMatchingTargetClusters)
 
         // prevent keeping both models open
@@ -291,8 +301,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     }
 
 
-    private suspend fun getIdsInTargetClusters(queryEmbedding: FloatArray, similarityThreshold: Float, topKClusters: Int = 3): Set<Long>{
-        val targetClusters = getTargetClusters(queryEmbedding, similarityThreshold, topKClusters)
+    private suspend fun getIdsInTargetClusters(targetClusters: List<Long>): Set<Long>{
         val idsMatchingCluster: Set<Long> = buildSet {
             for (clusterId in targetClusters) {
                 val ids = clusterCrossRefRepository.getClusterToMediaIdsMap()[clusterId] ?: continue
