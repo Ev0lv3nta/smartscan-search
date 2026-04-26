@@ -8,7 +8,6 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.launch
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
 import coil3.compose.AsyncImagePainter
 import com.fpf.smartscan.media.getImageUriFromId
@@ -31,8 +30,6 @@ import com.fpf.smartscan.media.getVideoUriFromId
 import com.fpf.smartscan.media.onMediaLoadingError
 import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
-import com.fpf.smartscan.media.queryImageIds
-import com.fpf.smartscan.media.queryVideoIds
 import com.fpf.smartscan.media.removeStaleMedia
 import com.fpf.smartscan.search.ImageIndexListener
 import com.fpf.smartscan.search.IndexingStatus
@@ -204,28 +201,23 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
         viewModelScope.launch(Dispatchers.Default) {
             try {
-
+                val state = _state.value
                 val (queryResults, totalResults) = when (_state.value.queryType) {
                     QueryType.IMAGE -> {
-                        val result = imageSearch(store, threshold, useClusterSearch)
+                        val result = imageSearch(store, threshold, useClusterSearch, startDate = state.startDateFilter, endDate = state.endDateFilter)
                         _state.update{it.copy(imageEmbedderLastUsage = System.currentTimeMillis())}
                         result
 
                     }
 
                     QueryType.TEXT -> {
-                        val result = textSearch(store, threshold, useClusterSearch)
+                        val result = textSearch(store, threshold, useClusterSearch, startDate = state.startDateFilter, endDate = state.endDateFilter)
                         _state.update{it.copy(textEmbedderLastUsage = System.currentTimeMillis())}
                         result
                     }
                 }
-                val state = _state.value
-                val idsInDateRange = (if(state.mediaType == MediaType.VIDEO) queryVideoIds(application, startDate = state.startDateFilter, endDate = state.endDateFilter)  else queryImageIds(application, startDate = state.startDateFilter, endDate = state.endDateFilter)).toSet()
-
-//                Log.d(TAG, "IDs in range: ${idsInDateRange.size} | Start: $startDate | End: $endDate")
-                val finalResults = if(idsInDateRange.isNotEmpty()) queryResults.filter {it in idsInDateRange } else emptyList()
                 val cache = !state.tagOnlySearch
-                handleSearchResult(finalResults, store, totalResults = totalResults, cache=cache)
+                handleSearchResult(queryResults, store, totalResults = totalResults, cache=cache)
             }catch (e: Exception) {
                 Log.e(TAG, "$e")
                 _state.update{it.copy(error = getApplication<Application>().getString(R.string.search_error_unknown))}
@@ -235,7 +227,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         }
     }
 
-    private suspend fun textSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean): Pair<List<Long>, Int> {
+    private suspend fun textSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean, startDate: Long? = null, endDate: Long? = null): Pair<List<Long>, Int> {
         val query = searchFieldState.text.toString()
         if (query.isBlank()) {
             _state.update{currentState -> currentState.copy(error = getApplication<Application>().getString(R.string.search_error_empty_query))}
@@ -267,7 +259,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         val targetClusters = if (useClusterSearch) getTargetClusters(embedding, threshold, topK) else emptyList()
         val idsMatchingTargetClusters = getIdsInTargetClusters(targetClusters)
         val filterIds = if(tag != null) idsMatchingTag.toSet() else idsMatchingTargetClusters
-        val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, filterIds)
+        val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, filterIds,  startDate = startDate, endDate = endDate)
 
         // prevent keeping both models open
         if(shouldShutdownModel(_state.value.imageEmbedderLastUsage)) imageEmbedder.closeSession()
@@ -289,7 +281,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         val singletonRatio = singletonCount.toDouble() / totalItems
         return (base * (1.0 + singletonRatio)).toInt().coerceAtLeast(min)
     }
-    private suspend fun imageSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean): Pair<List<Long>, Int> {
+    private suspend fun imageSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean, startDate: Long? = null, endDate: Long? = null): Pair<List<Long>, Int> {
         val queryImage = _state.value.queryImage?: return  Pair(emptyList(), 0)
 
         if(!imageEmbedder.isInitialized()) imageEmbedder.initialize()
@@ -301,7 +293,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         val topK = computeDynamicTopK(totalClusters!!, totalSingletonClusters!!)
         val targetClusters = if (useClusterSearch) getTargetClusters(embedding, threshold, topK) else emptyList()
         val idsMatchingTargetClusters = getIdsInTargetClusters(targetClusters)
-        val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, idsMatchingTargetClusters)
+        val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, idsMatchingTargetClusters, startDate = startDate, endDate = endDate)
 
         // prevent keeping both models open
         if(shouldShutdownModel(_state.value.textEmbedderLastUsage)) textEmbedder.closeSession()
