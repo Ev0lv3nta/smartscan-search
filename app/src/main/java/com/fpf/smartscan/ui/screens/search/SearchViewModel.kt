@@ -112,6 +112,8 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
     private var cachedIds= mutableListOf<Long>()
 
+    private var totalClusters: Int? = null
+
 
     init {
         loadImageIndex()
@@ -249,8 +251,8 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         if(!textEmbedder.isInitialized())textEmbedder.initialize()
 
         val embedding = textEmbedder.embed(actualQuery)
-        val totalClusters = clusterMetadataRepository.getCount(2)
-        val topK = computeDynamicTopK(totalClusters)
+        totalClusters =  totalClusters?: clusterMetadataRepository.getCount(2)
+        val topK = computeDynamicTopK(totalClusters!!)
         val idsMatchingTargetClusters = if (useClusterSearch) getIdsInTargetClusters(embedding, threshold, topK) else emptySet()
         val filterIds = if(tag != null) idsMatchingTag.toSet() else idsMatchingTargetClusters
         val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, filterIds)
@@ -278,7 +280,9 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
         val bitmap = getBitmapFromUri(getApplication(), queryImage, IMAGE_SIZE_X)
         val embedding = imageEmbedder.embed(bitmap)
-        val idsMatchingTargetClusters = if (useClusterSearch) getIdsInTargetClusters(embedding, threshold, 3) else emptySet()
+        totalClusters =  totalClusters?: clusterMetadataRepository.getCount(2)
+        val topK = computeDynamicTopK(totalClusters!!)
+        val idsMatchingTargetClusters = if (useClusterSearch) getIdsInTargetClusters(embedding, threshold, topK) else emptySet()
         val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, idsMatchingTargetClusters)
 
         // prevent keeping both models open
