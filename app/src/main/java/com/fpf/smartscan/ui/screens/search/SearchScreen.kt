@@ -346,6 +346,14 @@ fun SearchScreen(
                                 )
                             }
                         }
+                        if(state.startDateFilter != null || state.endDateFilter != null){
+                            TextButton(
+                                onClick = { searchViewModel.clearDateFilters() },
+                                modifier = Modifier.align(Alignment.End)
+                            ) {
+                                Text("Clear filters")
+                            }
+                        }
                     }
                 }
                 AutoCompleter(
