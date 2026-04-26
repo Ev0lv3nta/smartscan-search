@@ -8,11 +8,17 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -258,50 +264,87 @@ fun SearchScreen(
                             val text = if (state.selectedResults.isNotEmpty()) "${state.selectedResults.size} Selected" else "Select items"
                             Text(text, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp), color = MaterialTheme.colorScheme.primary)
                         }
-                        SearchBar(
-                            searchFieldState = searchViewModel.searchFieldState,
-                            enabled = hasStoragePermission && !state.loading,
-                            onSearch = {
-                                searchViewModel.search(appSettings.similarityThreshold, appSettings.enableClusterSearch)
-                                isSelecting = false
-                            },
-                            onImageSelected = {
-                                searchViewModel.updateSearchImageUri(it)
-                                searchViewModel.updateQueryType(QueryType.IMAGE)
-                                searchViewModel.search(appSettings.imageSimilarityThreshold, appSettings.enableClusterSearch)
-                                isSelecting = false
-                            },
-                            onImagePasted = {
-                                searchViewModel.updateSearchImageUri(it)
-                                searchViewModel.updateQueryType(QueryType.IMAGE)
-                                searchViewModel.search(appSettings.imageSimilarityThreshold, appSettings.enableClusterSearch)
-                                isSelecting = false
-                            },
-                            onClearResults = {
-                                isSelecting = false
-                                searchViewModel.reset()
-                                             },
-                            placeholders = searchBarPlaceholders,
-                            trailingIcon = {
-                                SelectorIconItem(
-                                    enabled = (videoIndexStatus != IndexingStatus.ACTIVE && imageIndexStatus != IndexingStatus.ACTIVE), // prevent switching modes when indexing in progress
-                                    label = "Media type",
-                                    options = mediaTypeOptions.values.toList(),
-                                    selectedOption = mediaTypeOptions[state.mediaType]!!,
-                                    onOptionSelected = { selected ->
-                                        val newMode = mediaTypeOptions.entries
-                                            .find { it.value == selected }
-                                            ?.key ?: MediaType.IMAGE
-                                        searchViewModel.setMediaType(newMode)
-                                    }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            SearchBar(
+                                modifier = Modifier.weight(1f),
+                                searchFieldState = searchViewModel.searchFieldState,
+                                enabled = hasStoragePermission && !state.loading,
+                                onSearch = {
+                                    searchViewModel.search(
+                                        appSettings.similarityThreshold,
+                                        appSettings.enableClusterSearch
+                                    )
+                                    isSelecting = false
+                                },
+                                onImageSelected = {
+                                    searchViewModel.updateSearchImageUri(it)
+                                    searchViewModel.updateQueryType(QueryType.IMAGE)
+                                    searchViewModel.search(
+                                        appSettings.imageSimilarityThreshold,
+                                        appSettings.enableClusterSearch
+                                    )
+                                    isSelecting = false
+                                },
+                                onImagePasted = {
+                                    searchViewModel.updateSearchImageUri(it)
+                                    searchViewModel.updateQueryType(QueryType.IMAGE)
+                                    searchViewModel.search(
+                                        appSettings.imageSimilarityThreshold,
+                                        appSettings.enableClusterSearch
+                                    )
+                                    isSelecting = false
+                                },
+                                onClearResults = {
+                                    isSelecting = false
+                                    searchViewModel.reset()
+                                },
+                                placeholders = searchBarPlaceholders,
+                                trailingIcon = {
+                                    SelectorIconItem(
+                                        enabled = (videoIndexStatus != IndexingStatus.ACTIVE && imageIndexStatus != IndexingStatus.ACTIVE), // prevent switching modes when indexing in progress
+                                        label = "Media type",
+                                        options = mediaTypeOptions.values.toList(),
+                                        selectedOption = mediaTypeOptions[state.mediaType]!!,
+                                        onOptionSelected = { selected ->
+                                            val newMode = mediaTypeOptions.entries
+                                                .find { it.value == selected }
+                                                ?.key ?: MediaType.IMAGE
+                                            searchViewModel.setMediaType(newMode)
+                                        }
+                                    )
+                                }
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .heightIn(min = 56.dp)
+                                    .widthIn(min=42.dp)
+                                    .background(
+                                        color = MaterialTheme.colorScheme.surfaceContainer,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .clickable(
+                                        indication = null,
+                                        interactionSource = remember { MutableInteractionSource() }
+                                    ) {
+                                        showFilters = true
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.FilterList,
+                                    contentDescription = "Filters",
+                                    tint = if (state.startDateFilter != null || state.endDateFilter != null)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.onSurface
                                 )
                             }
-                        )
-                        TextButton(
-                            onClick = { showFilters = true },
-                            modifier = Modifier.align(Alignment.Start)
-                        ) {
-                            Text(if(showFilters) "Hide filters" else "Show filters")
                         }
                     }
                 }
