@@ -41,10 +41,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         cleanUp()
 
-        val hasSyncedDates = sharedPrefs.getBoolean(PrefsKeys.KEY_SYNC_COMPLETE, false)
-        if(!hasSyncedDates){
-            SyncEmbeddingStoreWorker.scheduleWorker(application)
-        }
+        // TODO: BUG - using worker leads to edge case race condition when indexing
+//        val hasSyncedDates = sharedPrefs.getBoolean(PrefsKeys.KEY_SYNC_COMPLETE, false)
+//        if(!hasSyncedDates){
+//            SyncEmbeddingStoreWorker.scheduleWorker(application)
+//        }
         val appSettings = loadSettings(sharedPrefs)
         ThemeManager.updateColorScheme(appSettings.color)
         ThemeManager.updateThemeMode(appSettings.theme)
