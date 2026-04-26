@@ -182,10 +182,18 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
     fun reset(){
         cachedIds = mutableListOf() // clear on new search
-        _state.update{it.copy(totalResults = 0, searchResults = emptyList(), selectedResults = emptySet(), autoCompleteTagResults = emptyList(), error = null, tagFilter = null, tagOnlySearch = false)}
+        _state.update{ it.copy(
+            totalResults = 0,
+            searchResults = emptyList(),
+            selectedResults = emptySet(),
+            autoCompleteTagResults = emptyList(),
+            error = null,
+            tagFilter = null,
+            tagOnlySearch = false
+        ) }
     }
 
-    fun search(threshold: Float, useClusterSearch: Boolean, startDate: Long? = null, endDate: Long? = null){
+    fun search(threshold: Float, useClusterSearch: Boolean){
         reset()
         val store = getStore()
         if(!store.exists) {
@@ -197,7 +205,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         viewModelScope.launch(Dispatchers.Default) {
             try {
 
-                val queryResults = when (_state.value.queryType) {
+                val (queryResults, totalResults) = when (_state.value.queryType) {
                     QueryType.IMAGE -> {
                         val result = imageSearch(store, threshold, useClusterSearch)
                         _state.update{it.copy(imageEmbedderLastUsage = System.currentTimeMillis())}
@@ -212,11 +220,10 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
                     }
                 }
                 val state = _state.value
-                val idsInDateRange = (if(state.mediaType == MediaType.VIDEO) queryVideoIds(application, startDate = startDate, endDate = endDate)  else queryImageIds(application, startDate = startDate, endDate = endDate)).toSet()
+                val idsInDateRange = (if(state.mediaType == MediaType.VIDEO) queryVideoIds(application, startDate = state.startDateFilter, endDate = state.endDateFilter)  else queryImageIds(application, startDate = state.startDateFilter, endDate = state.endDateFilter)).toSet()
 
 //                Log.d(TAG, "IDs in range: ${idsInDateRange.size} | Start: $startDate | End: $endDate")
                 val finalResults = if(idsInDateRange.isNotEmpty()) queryResults.filter {it in idsInDateRange } else emptyList()
-                val totalResults =  if(state.tagOnlySearch) countMediaMatchingTag(state.tagFilter,state.mediaType ) else finalResults.size
                 val cache = !state.tagOnlySearch
                 handleSearchResult(finalResults, store, totalResults = totalResults, cache=cache)
             }catch (e: Exception) {
@@ -228,11 +235,11 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         }
     }
 
-    private suspend fun textSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean): List<Long> {
+    private suspend fun textSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean): Pair<List<Long>, Int> {
         val query = searchFieldState.text.toString()
         if (query.isBlank()) {
             _state.update{currentState -> currentState.copy(error = getApplication<Application>().getString(R.string.search_error_empty_query))}
-            return emptyList()
+            return Pair(emptyList(), 0)
         }
         val (tag, actualQuery) = parseQuery(query)
         tag?.let{ tag ->
@@ -244,10 +251,11 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
         if(tagOnlySearch){
             _state.update { currentState -> currentState.copy(tagOnlySearch = true) }
-            return idsMatchingTag
+            val totalResults =  countMediaMatchingTag(tag, state.value.mediaType)
+            return Pair(idsMatchingTag, totalResults)
         }
         if(actualQuery.isBlank()){
-            return emptyList()
+            return Pair(emptyList(), 0)
         }
 
         if(!textEmbedder.isInitialized())textEmbedder.initialize()
@@ -263,7 +271,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
         // prevent keeping both models open
         if(shouldShutdownModel(_state.value.imageEmbedderLastUsage)) imageEmbedder.closeSession()
-        return queryResults
+        return Pair(queryResults, queryResults.size)
     }
 
     private fun parseQuery(query: String): Pair<String?, String>{
@@ -281,8 +289,8 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
         val singletonRatio = singletonCount.toDouble() / totalItems
         return (base * (1.0 + singletonRatio)).toInt().coerceAtLeast(min)
     }
-    private suspend fun imageSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean): List<Long> {
-        val queryImage = _state.value.queryImage?: return emptyList()
+    private suspend fun imageSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean): Pair<List<Long>, Int> {
+        val queryImage = _state.value.queryImage?: return  Pair(emptyList(), 0)
 
         if(!imageEmbedder.isInitialized()) imageEmbedder.initialize()
 
@@ -297,7 +305,7 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
         // prevent keeping both models open
         if(shouldShutdownModel(_state.value.textEmbedderLastUsage)) textEmbedder.closeSession()
-        return queryResults
+        return Pair(queryResults, queryResults.size)
     }
 
 
@@ -448,6 +456,20 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
 
     fun updateSearchImageUri(uri: Uri?){
         _state.value = _state.value.copy(queryImage =uri)
+    }
+
+    fun setStartDateFilter(date: Long?){
+        _state.update {it.copy(startDateFilter = date)}
+
+    }
+
+    fun setEndDateFilter(date: Long?){
+        _state.update {it.copy(endDateFilter = date)}
+
+    }
+
+    fun clearDateFilters(){
+        _state.update {it.copy(endDateFilter = null, startDateFilter = null)}
     }
 
     private fun shouldShutdownModel(lastUsage: Long?) = lastUsage != null && System.currentTimeMillis() - lastUsage >= MODEL_SHUTDOWN_DURATION_THRESHOLD

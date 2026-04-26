@@ -21,5 +21,7 @@ data class SearchState(
     val textEmbedderLastUsage: Long? = null,
     val autoCompleteTagResults: List<String> = emptyList(),
     val tagFilter: String? = null,
+    val startDateFilter: Long? = null,
+    val endDateFilter: Long? = null,
     val tagOnlySearch: Boolean = false,
 )

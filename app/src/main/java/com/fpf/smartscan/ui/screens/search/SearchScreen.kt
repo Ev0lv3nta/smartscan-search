@@ -1,7 +1,6 @@
 package com.fpf.smartscan.ui.screens.search
 
 import android.content.ClipData
-import android.widget.DatePicker
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -105,8 +104,6 @@ fun SearchScreen(
     var showFilters by remember { mutableStateOf(false) }
     var showStartDatePicker by remember { mutableStateOf(false) }
     var showEndDatePicker by remember { mutableStateOf(false) }
-    var startDate by remember { mutableStateOf<Long?>(null) }
-    var endDate by remember { mutableStateOf<Long?>(null) }
 
     RequestPermissions { _, storageGranted ->
         hasStoragePermission = storageGranted
@@ -265,7 +262,7 @@ fun SearchScreen(
                             searchFieldState = searchViewModel.searchFieldState,
                             enabled = hasStoragePermission && !state.loading,
                             onSearch = {
-                                searchViewModel.search(appSettings.similarityThreshold, appSettings.enableClusterSearch, startDate = startDate, endDate=endDate)
+                                searchViewModel.search(appSettings.similarityThreshold, appSettings.enableClusterSearch)
                                 isSelecting = false
                             },
                             onImageSelected = {
@@ -375,7 +372,7 @@ fun SearchScreen(
                         searchViewModel.updateQueryType(QueryType.IMAGE)
                         isSelecting = false
                         searchViewModel.clearSelectedResults()
-                        searchViewModel.search(appSettings.imageSimilarityThreshold, appSettings.enableClusterSearch, startDate = startDate, endDate=endDate)
+                        searchViewModel.search(appSettings.imageSimilarityThreshold, appSettings.enableClusterSearch)
                     }
                 },
                 onShare = {
@@ -418,7 +415,8 @@ fun SearchScreen(
             show = showStartDatePicker,
             onDismiss = { showStartDatePicker = false },
             onDateSelected = { y, m, d ->
-                startDate = toEpochSeconds(y, m, d)
+                val startDate = toEpochSeconds(y, m, d)
+                searchViewModel.setStartDateFilter(startDate)
                 showStartDatePicker = false
             }
         )
@@ -427,7 +425,8 @@ fun SearchScreen(
             show = showEndDatePicker,
             onDismiss = { showEndDatePicker = false },
             onDateSelected = { y, m, d ->
-                endDate = toEpochSeconds(y, m, d)
+                val endDate = toEpochSeconds(y, m, d)
+                searchViewModel.setEndDateFilter(endDate)
                 showEndDatePicker = false
             }
         )
@@ -447,7 +446,7 @@ fun SearchScreen(
                 ) {
                     Text("Start date")
                     TextButton(onClick = { showStartDatePicker = true }) {
-                        Text(startDate?.let { formatDate(it) } ?: "Any time")
+                        Text(state.startDateFilter?.let { formatDate(it) } ?: "Any time")
                     }
                 }
 
@@ -457,7 +456,7 @@ fun SearchScreen(
                 ) {
                     Text("End date")
                     TextButton(onClick = { showEndDatePicker = true }) {
-                        Text(endDate?.let { formatDate(it) } ?: "Any time")
+                        Text(state.endDateFilter?.let { formatDate(it) } ?: "Any time")
                     }
                 }
             }
@@ -470,8 +469,7 @@ fun SearchScreen(
             ) {
                 OutlinedButton (
                     onClick = {
-                        startDate = null
-                        endDate = null
+                        searchViewModel.clearDateFilters()
                     }
                 ) {
                     Text("Clear")
