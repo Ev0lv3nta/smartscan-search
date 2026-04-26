@@ -42,12 +42,7 @@ fun openVideoInGallery(context: Context, uri: Uri) {
 }
 
 
-fun queryImageIds(
-    context: Context,
-    dirUris: List<Uri> = emptyList(),
-    startDate: Long? = null,
-    endDate: Long? = null
-): List<Long> {
+fun queryImageIds(context: Context, dirUris: List<Uri> = emptyList(), startDate: Long? = null, endDate: Long? = null): List<Long> {
     val imageIds = mutableListOf<Long>()
     val projection = arrayOf(MediaStore.Images.Media._ID)
     val sortOrder = "${MediaStore.Images.Media.DATE_MODIFIED} DESC"
@@ -127,12 +122,7 @@ fun queryImageIds(
     return imageIds
 }
 
-fun queryVideoIds(
-    context: Context,
-    dirUris: List<Uri> = emptyList(),
-    startDate: Long? = null,
-    endDate: Long? = null
-): List<Long> {
+fun queryVideoIds(context: Context, dirUris: List<Uri> = emptyList(), startDate: Long? = null, endDate: Long? = null): List<Long> {
     val videoIds = mutableListOf<Long>()
     val projection = arrayOf(MediaStore.Video.Media._ID)
     val sortOrder = "${MediaStore.Video.Media.DATE_MODIFIED} DESC"
@@ -213,6 +203,79 @@ fun queryVideoIds(
     return videoIds
 }
 
+
+fun getImageToDateMap(context: Context, ids: List<Long>): Map<Long, Long> {
+    val result = mutableMapOf<Long, Long>()
+    val uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+    val projection = arrayOf(
+        MediaStore.Images.Media._ID,
+        MediaStore.Images.Media.DATE_ADDED
+    )
+
+    val chunkSize = 500
+
+    ids.chunked(chunkSize).forEach { chunk ->
+
+        val selection = "${MediaStore.Images.Media._ID} IN (${
+            chunk.joinToString(",")
+        })"
+
+        context.applicationContext.contentResolver.query(
+            uri,
+            projection,
+            selection,
+            null,
+            null
+        )?.use { cursor ->
+
+            val idIdx = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
+            val dateIdx = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED)
+
+            while (cursor.moveToNext()) {
+                result[cursor.getLong(idIdx)] = cursor.getLong(dateIdx)
+            }
+        }
+    }
+
+    return result
+}
+
+
+fun getVideoToDateMap(context: Context, ids: List<Long>): Map<Long, Long> {
+    val result = mutableMapOf<Long, Long>()
+    val uri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+    val projection = arrayOf(
+        MediaStore.Video.Media._ID,
+        MediaStore.Video.Media.DATE_ADDED
+    )
+
+    val chunkSize = 500
+
+    ids.chunked(chunkSize).forEach { chunk ->
+
+        val selection = "${MediaStore.Video.Media._ID} IN (${
+            chunk.joinToString(",")
+        })"
+
+        context.applicationContext.contentResolver.query(
+            uri,
+            projection,
+            selection,
+            null,
+            null
+        )?.use { cursor ->
+
+            val idIdx = cursor.getColumnIndexOrThrow(MediaStore.Video.Media._ID)
+            val dateIdx = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATE_ADDED)
+
+            while (cursor.moveToNext()) {
+                result[cursor.getLong(idIdx)] = cursor.getLong(dateIdx)
+            }
+        }
+    }
+
+    return result
+}
 fun shareMedia(context: Context, uri: Uri){
     val mime = context.contentResolver.getType(uri)
     val shareIntent: Intent = Intent().apply {
