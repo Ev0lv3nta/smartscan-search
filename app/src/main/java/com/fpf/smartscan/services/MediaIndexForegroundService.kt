@@ -9,11 +9,11 @@ import android.net.Uri
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.fpf.smartscan.R
 import com.fpf.smartscan.MainActivity
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
+import com.fpf.smartscan.constants.PrefsNames
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.MediaDatabase
@@ -48,12 +48,11 @@ class MediaIndexForegroundService : Service() {
         const val TYPE_BOTH = "both"
         private const val NOTIFICATION_ID = 200
         private const val TAG = "MediaIndexService"
-        private const val PREFS_NAME = "AsyncStorage" // For backward-compatibility changing will break!!!
     }
 
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(serviceJob + Dispatchers.Default)
-    private val sharedPrefs by lazy { application.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)    }
+    private val sharedPrefs by lazy { application.getSharedPreferences(PrefsNames.APP_PREFS, MODE_PRIVATE)    }
     private val imageEmbedder by lazy { ClipImageEmbedder(application, ModelAssetSource.Resource(R.raw.clip_image_encoder_quant))}
 
     private val db by lazy {MediaDatabase.getDatabase(application)}
@@ -122,7 +121,6 @@ class MediaIndexForegroundService : Service() {
             } catch (e: Exception) {
                 Log.e(TAG, "Indexing failed:", e)
             } finally {
-                sharedPrefs.edit { putString("lastIndexed", System.currentTimeMillis().toString()) } //putString used for backward compat
                 imageEmbedder.closeSession()
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
