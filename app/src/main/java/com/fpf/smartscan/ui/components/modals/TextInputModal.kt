@@ -1,4 +1,4 @@
-package com.fpf.smartscan.ui.components
+package com.fpf.smartscan.ui.components.modals
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.AlertDialog

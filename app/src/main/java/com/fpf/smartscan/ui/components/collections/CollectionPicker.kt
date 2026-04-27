@@ -29,7 +29,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.fpf.smartscan.media.MediaCollection
-import com.fpf.smartscan.ui.components.TextInputModal
+import com.fpf.smartscan.ui.components.modals.TextInputModal
 
 @Composable
 fun CollectionPicker(

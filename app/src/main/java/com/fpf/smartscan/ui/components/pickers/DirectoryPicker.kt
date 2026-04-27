@@ -1,4 +1,4 @@
-package com.fpf.smartscan.ui.components
+package com.fpf.smartscan.ui.components.pickers
 
 import android.content.Intent
 import android.net.Uri

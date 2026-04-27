@@ -51,16 +51,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fpf.smartscan.constants.Routes
-import com.fpf.smartscan.settings.AppSettings
-import com.fpf.smartscan.ui.components.SelectorModal
+import com.fpf.smartscan.ui.components.modals.SelectorModal
 import com.fpf.smartscan.ui.components.SlideRevealBox
-import com.fpf.smartscan.ui.components.TextInputModal
+import com.fpf.smartscan.ui.components.modals.TextInputModal
 import com.fpf.smartscan.ui.components.collections.CollectionPicker
 import com.fpf.smartscan.ui.components.collections.CollectionsActionBar
 import com.fpf.smartscan.ui.components.collections.MediaCollectionsList
 import com.fpf.smartscan.ui.screens.collections.CollectionsViewModel.Companion.TOP_N
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.StateFlow
 import com.fpf.smartscan.R
 import androidx.compose.ui.res.stringResource
 

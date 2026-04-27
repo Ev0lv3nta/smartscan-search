@@ -1,4 +1,4 @@
-package com.fpf.smartscan.ui.components.inputs
+package com.fpf.smartscan.ui.components.pickers
 
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
