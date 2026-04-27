@@ -5,16 +5,29 @@ import android.content.Context
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.application
+import androidx.lifecycle.viewModelScope
+import com.fpf.smartscan.constants.PrefsKeys
+import com.fpf.smartscan.constants.PrefsNames
+import com.fpf.smartscan.data.EmbedStoreSyncHelper
+import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
-class MainViewModel( application: Application) : AndroidViewModel(application) {
+class MainViewModel(
+    application: Application,
+    private val imageStore: FileEmbeddingStore,
+    private val videoStore: FileEmbeddingStore
+) : AndroidViewModel(application) {
 
     companion object {
-        private const val PREFS_NAME = "AsyncStorage"
-        private const val UPDATES_KEY = "UPDATES_KEY"
     }
-    private val sharedPrefs = application.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val sharedPrefs = application.getSharedPreferences(PrefsNames.APP_PREFS, Context.MODE_PRIVATE)
+    private val hasSyncedDates by lazy { sharedPrefs.getBoolean(PrefsKeys.SYNC_COMPLETE, false)}
+
+    private val _appReady = MutableStateFlow(false)
+    val appReady: StateFlow<Boolean> = _appReady
 
     val versionName: String? = try {
         val packageInfo = application.packageManager.getPackageInfo(application.packageName, 0)
@@ -27,11 +40,11 @@ class MainViewModel( application: Application) : AndroidViewModel(application) {
     val  isUpdatePopUpVisible: StateFlow<Boolean> = _isUpdatePopUpVisible
 
     val hasShownUpdatePopUp: Boolean
-        get() = sharedPrefs.getString(UPDATES_KEY, null) == versionName
+        get() = sharedPrefs.getString(PrefsKeys.UPDATES, null) == versionName
 
     fun closeUpdatePopUp(){
         _isUpdatePopUpVisible.value = false
-        sharedPrefs.edit { putString(UPDATES_KEY, versionName.toString()) }
+        sharedPrefs.edit { putString(PrefsKeys.UPDATES, versionName.toString()) }
     }
 
     fun getUpdates(): List<String>{
@@ -46,4 +59,14 @@ class MainViewModel( application: Application) : AndroidViewModel(application) {
             application.getString(R.string.update_donate_kofi)
         )
     }
+
+    fun prepareApp(onAppReady: () -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            if (!hasSyncedDates) {
+                EmbedStoreSyncHelper.syncStores(getApplication(), imageStore, videoStore)
+            }
+            onAppReady()
+        }
+    }
+
 }
