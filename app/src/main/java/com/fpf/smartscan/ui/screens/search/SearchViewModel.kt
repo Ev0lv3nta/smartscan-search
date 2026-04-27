@@ -580,15 +580,12 @@ class SearchViewModel(
 
     private suspend fun getMediaMatchingTag(tagName: String?, mediaType: MediaType, limit: Int, offset: Int): List<Long>{
         tagName?: return emptyList()
-        return when (mediaType){
-            MediaType.IMAGE -> {
-                val tag = tagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
-                tag?.let { mediaMetadataRepository.getByTag(it.id, limit, offset).map{it.id}  }?: emptyList()
-            }
-            MediaType.VIDEO -> {
-                val tag = tagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
-                tag?.let { mediaMetadataRepository.getByTag(it.id, limit, offset).map{it.id} } ?: emptyList()
-            }
+        val state = _state.value
+        val tag = tagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
+        return if(state.endDateFilter != null || state.startDateFilter != null){
+            tag?.let { tag-> mediaMetadataRepository.getByTagTypeAndDateRange(tag.id, mediaType,state.startDateFilter, state.endDateFilter, limit, offset).map{it.id}  }?: emptyList()
+        }else{
+            tag?.let { tag-> mediaMetadataRepository.getByTagAndType(tag.id, mediaType,limit, offset).map{it.id}  }?: emptyList()
         }
     }
 
