@@ -468,7 +468,9 @@ fun SearchScreen(
                 val startDate = toEpochSeconds(y, m, d)
                 searchViewModel.setStartDateFilter(startDate)
                 showStartDatePicker = false
-            }
+            },
+            initialDateMillis = state.startDateFilter?.times(1000)
+
         )
 
         DatePickerModal(
@@ -478,7 +480,8 @@ fun SearchScreen(
                 val endDate = toEpochSeconds(y, m, d)
                 searchViewModel.setEndDateFilter(endDate)
                 showEndDatePicker = false
-            }
+            },
+            initialDateMillis = state.endDateFilter?.times(1000)
         )
         BottomSheet(
             show = showFilters,

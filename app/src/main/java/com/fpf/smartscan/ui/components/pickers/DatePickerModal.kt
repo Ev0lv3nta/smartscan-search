@@ -9,14 +9,17 @@ import java.util.Calendar
 fun DatePickerModal(
     show: Boolean,
     onDismiss: () -> Unit,
-    onDateSelected: (year: Int, month: Int, day: Int) -> Unit
+    onDateSelected: (year: Int, month: Int, day: Int) -> Unit,
+    initialDateMillis: Long? = null
+
 ) {
     if (!show) return
 
     val calendar = Calendar.getInstance()
+    val initialSelectedDateMillis = initialDateMillis ?: calendar.timeInMillis
 
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = calendar.timeInMillis
+        initialSelectedDateMillis = initialSelectedDateMillis
     )
 
     var hasUserSelected by remember { mutableStateOf(false) }
