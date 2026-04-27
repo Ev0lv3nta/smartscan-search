@@ -5,5 +5,6 @@ object PrefsNames {
 }
 
 object PrefsKeys {
-    const val KEY_SYNC_COMPLETE = "sync_complete"
+    const val UPDATES = "UPDATES_KEY"
+    const val SYNC_COMPLETE = "SYNC_COMPLETE_KEY"
 }
