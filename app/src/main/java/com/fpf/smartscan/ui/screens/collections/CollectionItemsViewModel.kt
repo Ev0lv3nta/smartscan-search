@@ -51,7 +51,11 @@ import java.io.File
 import kotlin.collections.plus
 
 
-class CollectionItemsViewModel( application: Application) : AndroidViewModel(application) {
+class CollectionItemsViewModel(
+    application: Application,
+    private val imageStore: FileEmbeddingStore,
+    private val videoStore: FileEmbeddingStore,
+) : AndroidViewModel(application) {
     companion object {
         private const val TAG = "CollectionItemsViewModel"
     }
@@ -62,9 +66,6 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
     private val tagsRepository by lazy { TagRepository(db.tagDao())}
     private val tagsCrossRefRepository by lazy { TagCrossRefRepository( db.tagCrossRefDao())}
     private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
-
-    val imageStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE), 512)
-    val videoStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.VIDEO), 512 )
 
     private val _state = MutableStateFlow(CollectionItemsState())
     val state: StateFlow<CollectionItemsState> = _state

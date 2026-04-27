@@ -47,6 +47,7 @@ import com.fpf.smartscan.ui.components.collections.CollectionPicker
 import com.fpf.smartscan.ui.components.media.MediaViewer
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.StateFlow
+import org.koin.compose.viewmodel.koinViewModel
 
 
 @OptIn(FlowPreview::class)
@@ -55,7 +56,7 @@ fun CollectionItemsScreen(
     collectionName: String?,
     appSettings: StateFlow<AppSettings>,
     clusterId: Long = -1L, // null not allowed for longs in nav
-    viewModel: CollectionItemsViewModel = viewModel(),
+    viewModel: CollectionItemsViewModel = koinViewModel(),
     ) {
 
     val context = LocalContext.current
