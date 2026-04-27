@@ -84,9 +84,13 @@ dependencies {
 
     implementation(platform(libs.koin.bom))
 
+    // Koin DI
     implementation(libs.koin.core)
     implementation(libs.koin.android)
     implementation(libs.koin.compose.viewmodel)
+
+    // SplashScreen
+    implementation(libs.androidx.core.splashscreen)
 
 
     //local sdk

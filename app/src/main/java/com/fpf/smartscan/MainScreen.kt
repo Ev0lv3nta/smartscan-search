@@ -1,5 +1,7 @@
 package com.fpf.smartscan
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.ui.Modifier
@@ -9,8 +11,10 @@ import androidx.navigation.navArgument
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.compose.NavHost
@@ -34,15 +38,17 @@ import com.fpf.smartscan.ui.screens.search.SearchScreen
 import com.fpf.smartscan.ui.screens.settings.SettingsDetailScreen
 import com.fpf.smartscan.ui.screens.settings.SettingsScreen
 import com.fpf.smartscan.ui.screens.settings.SettingsViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(intentSearchQuery: SearchQuery?) {
+fun MainScreen(intentSearchQuery: SearchQuery?, onAppReady: () -> Unit) {
     val context = LocalContext.current
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val mainViewModel: MainViewModel = viewModel()
+    val mainViewModel: MainViewModel = koinViewModel()
+
     val settingsViewModel: SettingsViewModel = viewModel()
     val isUpdatePopUpVisible by mainViewModel.isUpdatePopUpVisible.collectAsState()
 
@@ -56,7 +62,7 @@ fun MainScreen(intentSearchQuery: SearchQuery?) {
         currentRoute == Routes.SETTINGS -> stringResource(R.string.title_settings)
         currentRoute == Routes.DONATE -> stringResource(R.string.title_donate)
         currentRoute == Routes.HELP -> stringResource(R.string.title_help)
-        currentRoute?.startsWith(Routes.COLLECTION_ITEMS) == true -> collectionName?: ""
+        currentRoute?.startsWith(Routes.COLLECTION_ITEMS) == true -> collectionName ?: ""
         currentRoute?.startsWith(Routes.SETTINGS.split("/")[0]) == true -> when (settingsType) {
             SettingTypes.THRESHOLD -> stringResource(R.string.setting_similarity_threshold)
             SettingTypes.MODELS -> stringResource(R.string.setting_models)
@@ -66,121 +72,130 @@ fun MainScreen(intentSearchQuery: SearchQuery?) {
             SettingTypes.BACKUP_RESTORE -> stringResource(R.string.setting_backup_restore)
             else -> ""
         }
+
         else -> ""
     }
 
     val showBackButton = currentRoute?.startsWith(Routes.SETTINGS_DETAIL.split("/")[0]) == true
             || currentRoute?.startsWith(Routes.COLLECTION_ITEMS.split("/")[0]) == true
-            || currentRoute in listOf( Routes.DONATE, Routes.HELP)
+            || currentRoute in listOf(Routes.DONATE, Routes.HELP)
 
     val showSearchActions = currentRoute == Routes.SEARCH
 
-    if(isUpdatePopUpVisible) {
-        UpdatePopUp(
-            isVisible = true,
-            updates = mainViewModel.getUpdates(),
-            onClose = { mainViewModel.closeUpdatePopUp() }
-        )
-    }else{
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text(text = headerTitle) },
-                    navigationIcon = {
-                        if (showBackButton) {
-                            IconButton(onClick = { navController.popBackStack() }) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back"
-                                )
+    LaunchedEffect(Unit) {
+        mainViewModel.prepareApp(){onAppReady() }
+    }
+
+        if (isUpdatePopUpVisible) {
+            UpdatePopUp(
+                isVisible = true,
+                updates = mainViewModel.getUpdates(),
+                onClose = { mainViewModel.closeUpdatePopUp() }
+            )
+        } else {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = { Text(text = headerTitle) },
+                        navigationIcon = {
+                            if (showBackButton) {
+                                IconButton(onClick = { navController.popBackStack() }) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "Back"
+                                    )
+                                }
                             }
+                        },
+                        actions = {
+                            if (!showSearchActions) return@TopAppBar
+                            OverflowMenu(
+                                onRefreshImageIndex = {
+                                    val storageAccess = getStorageAccess(context)
+                                    if (storageAccess != StorageAccess.Denied) {
+                                        refreshIndex(
+                                            context.applicationContext,
+                                            MediaIndexForegroundService.TYPE_IMAGE
+                                        )
+                                    }
+                                },
+                                onRefreshVideoIndex = {
+                                    val storageAccess = getStorageAccess(context)
+                                    if (storageAccess != StorageAccess.Denied) {
+                                        refreshIndex(
+                                            context.applicationContext,
+                                            MediaIndexForegroundService.TYPE_VIDEO
+                                        )
+                                    }
+                                },
+                            )
                         }
-                    },
-                    actions = {
-                        if (!showSearchActions) return@TopAppBar
-                        OverflowMenu(
-                            onRefreshImageIndex = {
-                                val storageAccess = getStorageAccess(context)
-                                if (storageAccess != StorageAccess.Denied) {
-                                    refreshIndex(context.applicationContext, MediaIndexForegroundService.TYPE_IMAGE
-                                    )
-                                }
-                                                  },
-                            onRefreshVideoIndex = {
-                                val storageAccess = getStorageAccess(context)
-                                if (storageAccess != StorageAccess.Denied) {
-                                    refreshIndex(context.applicationContext, MediaIndexForegroundService.TYPE_VIDEO
-                                    )
-                                }
-                            },
+                    )
+                },
+                bottomBar = { BottomNavigationBar(navController) }
+            ) { paddingValues ->
+                NavHost(
+                    navController = navController,
+                    startDestination = Routes.SEARCH,
+                    modifier = Modifier.padding(paddingValues)
+                ) {
+                    composable(Routes.SEARCH) {
+                        SearchScreen(
+                            appSettings = settingsViewModel.appSettings,
+                            intentSearchQuery = intentSearchQuery
                         )
                     }
-                )
-            },
-            bottomBar = { BottomNavigationBar(navController) }
-        ) { paddingValues ->
-            NavHost(
-                navController = navController,
-                startDestination = Routes.SEARCH,
-                modifier = Modifier.padding(paddingValues)
-            ) {
-                composable(Routes.SEARCH) {
-                    SearchScreen(
-                        appSettings = settingsViewModel.appSettings,
-                        intentSearchQuery = intentSearchQuery
-                    )
-                }
-                composable(Routes.COLLECTIONS) {
-                    CollectionsScreen(
-                        onNavigate = { route: String ->
-                            navController.navigate(route)
-                        }
-                    )
-                }
-                composable(
-                    route = Routes.COLLECTION_ITEMS,
-                    arguments = listOf(
-                        navArgument("collectionName") { type = NavType.StringType },
-                        navArgument("clusterId") {
-                            type = NavType.LongType
-                            defaultValue = -1L
-                        }
-                    )
-                ) { backStackEntry ->
-                    val collectionName = backStackEntry.arguments?.getString("collectionName")
-                    val clusterId = backStackEntry.arguments?.getLong("clusterId")?: -1L
-                    CollectionItemsScreen(
-                        clusterId= clusterId,
-                        collectionName = collectionName,
-                        appSettings = settingsViewModel.appSettings,
-                    )
-                }
-                composable(Routes.SETTINGS) {
-                    SettingsScreen(
-                        viewModel = settingsViewModel,
-                        onNavigate = { route: String ->
-                            navController.navigate(route)
-                        }
-                    )
-                }
-                composable(
-                    route = Routes.SETTINGS_DETAIL,
-                    arguments = listOf(navArgument("type") { type = NavType.StringType })
-                ) { backStackEntry ->
-                    val type = backStackEntry.arguments?.getString("type") ?: ""
-                    SettingsDetailScreen(
-                        type = type,
-                        viewModel = settingsViewModel,
-                    )
-                }
-                composable(Routes.DONATE) {
-                    DonateScreen()
-                }
+                    composable(Routes.COLLECTIONS) {
+                        CollectionsScreen(
+                            onNavigate = { route: String ->
+                                navController.navigate(route)
+                            }
+                        )
+                    }
+                    composable(
+                        route = Routes.COLLECTION_ITEMS,
+                        arguments = listOf(
+                            navArgument("collectionName") { type = NavType.StringType },
+                            navArgument("clusterId") {
+                                type = NavType.LongType
+                                defaultValue = -1L
+                            }
+                        )
+                    ) { backStackEntry ->
+                        val collectionName = backStackEntry.arguments?.getString("collectionName")
+                        val clusterId = backStackEntry.arguments?.getLong("clusterId") ?: -1L
+                        CollectionItemsScreen(
+                            clusterId = clusterId,
+                            collectionName = collectionName,
+                            appSettings = settingsViewModel.appSettings,
+                        )
+                    }
+                    composable(Routes.SETTINGS) {
+                        SettingsScreen(
+                            viewModel = settingsViewModel,
+                            onNavigate = { route: String ->
+                                navController.navigate(route)
+                            }
+                        )
+                    }
+                    composable(
+                        route = Routes.SETTINGS_DETAIL,
+                        arguments = listOf(navArgument("type") { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val type = backStackEntry.arguments?.getString("type") ?: ""
+                        SettingsDetailScreen(
+                            type = type,
+                            viewModel = settingsViewModel,
+                        )
+                    }
+                    composable(Routes.DONATE) {
+                        DonateScreen()
+                    }
 
-                composable(Routes.HELP) {
-                    HelpScreen()
+                    composable(Routes.HELP) {
+                        HelpScreen()
+                    }
                 }
             }
         }
     }
-}
