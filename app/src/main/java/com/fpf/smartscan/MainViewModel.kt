@@ -8,7 +8,9 @@ import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
 import com.fpf.smartscan.constants.PrefsKeys
 import com.fpf.smartscan.constants.PrefsNames
+import com.fpf.smartscan.data.DbManager
 import com.fpf.smartscan.data.EmbedStoreSyncHelper
+import com.fpf.smartscan.data.MediaDatabase
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,6 +66,19 @@ class MainViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             if (!hasSyncedDates) {
                 EmbedStoreSyncHelper.syncStores(getApplication(), imageStore, videoStore)
+            }
+            // Check if restore from backup is needed
+            val cachedDb = DbManager.checkCachedDb(application)
+            if(cachedDb != null){
+                DbManager.restoreDbFromCache(application, cachedDb)
+            }
+
+            // Check if transfer from old DBs is needed
+            val oldImageCachedDb = DbManager.checkOldCachedImageDb(application)
+            val oldVideoCachedDb = DbManager.checkOldCachedVideoDb(application)
+            if(oldImageCachedDb != null && oldVideoCachedDb != null){
+                val newDb = MediaDatabase.getDatabase(application)
+                DbManager.transferIfNeeded(application, oldImageCachedDb, oldVideoCachedDb, newDb)
             }
             onAppReady()
         }

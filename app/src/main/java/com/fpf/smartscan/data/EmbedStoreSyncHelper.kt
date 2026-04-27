@@ -28,7 +28,7 @@ object EmbedStoreSyncHelper {
     ) {
         val sharedPrefs = context.applicationContext.getSharedPreferences(PrefsNames.APP_PREFS, MODE_PRIVATE)
 
-        syncStoreDates(
+        val syncedImages = syncStoreDates(
             context=context,
             store = imageStore,
             tempFileName = "${EmbeddingStoresFiles.IMAGE}.tmp",
@@ -36,20 +36,25 @@ object EmbedStoreSyncHelper {
             idToDate = { ids -> getImageToDateMap(context.applicationContext, ids) }
         )
 
-        syncStoreDates(
+        val syncedVideos = syncStoreDates(
             context=context,
             store = videoStore,
             tempFileName = "${EmbeddingStoresFiles.VIDEO}.tmp",
             finalFileName = EmbeddingStoresFiles.VIDEO,
             idToDate = { ids -> getVideoToDateMap(context.applicationContext, ids) }
         )
-        sharedPrefs.edit {
-            putBoolean(PrefsKeys.SYNC_COMPLETE, true)
+
+        if(syncedVideos || syncedImages){
+            sharedPrefs.edit {
+                putBoolean(PrefsKeys.SYNC_COMPLETE, true)
+            }
+            Log.d(TAG, "Sync complete successfully")
         }
-        Log.d(TAG, "Sync complete successfully")
+
         // force trigger refresh on index
-        ImageIndexListener.onComplete(context.applicationContext, Metrics.Success())
-        VideoIndexListener.onComplete(context.applicationContext, Metrics.Success())
+        if(syncedImages) ImageIndexListener.onComplete(context.applicationContext, Metrics.Success())
+        if(syncedVideos) VideoIndexListener.onComplete(context.applicationContext, Metrics.Success())
+
     }
 
     private suspend fun syncStoreDates(
@@ -58,8 +63,8 @@ object EmbedStoreSyncHelper {
         tempFileName: String,
         finalFileName: String,
         idToDate: suspend (List<Long>) -> Map<Long, Long>,
-    ) {
-        if (!store.exists) return
+    ): Boolean {
+        if (!store.exists) return false
         val embeds = store.get()
         val dateMap = idToDate(embeds.map { it.id })
         val updated = embeds.mapNotNull {
@@ -74,6 +79,7 @@ object EmbedStoreSyncHelper {
         val finalFile = File(context.applicationContext.filesDir, finalFileName)
         if (finalFile.exists()) finalFile.delete()
         tempFile.renameTo(finalFile)
+        return true
     }
 
 }

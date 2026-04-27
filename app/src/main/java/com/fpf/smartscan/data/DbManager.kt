@@ -2,6 +2,9 @@ package com.fpf.smartscan.data
 
 import android.app.Application
 import android.util.Log
+import com.fpf.smartscan.data.MediaDatabase.Companion.DB_NAME
+import com.fpf.smartscan.data.MediaDatabase.Companion.OLD_DB_IMAGE_NAME
+import com.fpf.smartscan.data.MediaDatabase.Companion.OLD_DB_VIDEO_NAME
 import com.fpf.smartscan.data.old.images.ImageTagCrossRefRepository
 import com.fpf.smartscan.data.old.images.ImageTagDatabase
 import com.fpf.smartscan.data.old.images.ImageTagRepository
@@ -15,12 +18,58 @@ import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.media.MediaType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.File
 
 
-object DBTransferHelper {
-    const val TAG = "DBTransferHelper"
+object DbManager {
+    const val TAG = "DbManager"
 
-    suspend fun transfer(application: Application, newDb: MediaDatabase) = withContext(Dispatchers.IO) {
+    fun checkCachedDb(application: Application): File?{
+        val cachedDB = File(application.filesDir, DB_NAME)
+        return if(cachedDB.exists()) cachedDB else null
+    }
+
+    fun checkOldCachedImageDb(application: Application): File?{
+        val cachedDB = File(application.filesDir, OLD_DB_IMAGE_NAME)
+        return if(cachedDB.exists()) cachedDB else null
+    }
+
+    fun checkOldCachedVideoDb(application: Application): File?{
+        val cachedDB = File(application.filesDir, OLD_DB_VIDEO_NAME)
+        return if(cachedDB.exists()) cachedDB else null
+    }
+
+    fun restoreDbFromCache(application: Application, cachedDbFile: File){
+        if(!cachedDbFile.exists()) return
+        val dbPath = application.getDatabasePath(DB_NAME)
+        Log.d(TAG, "Database cache found, restoring...")
+        cachedDbFile.copyTo(dbPath, overwrite = true)
+        cachedDbFile.delete()
+    }
+
+    suspend fun transferIfNeeded(application: Application, oldImageTagDbCachedFile: File, oldVideoTagDbCachedFile: File, newDb: MediaDatabase){
+        val oldImageTagDbPath = application.getDatabasePath(OLD_DB_IMAGE_NAME)
+        val oldVideoTagDbPath = application.getDatabasePath(OLD_DB_VIDEO_NAME)
+        val isTransferNeeded = oldImageTagDbCachedFile.exists() && oldVideoTagDbCachedFile.exists()
+        if (!isTransferNeeded) return
+
+
+        Log.d(MediaDatabase.Companion.TAG, "Old DB detected, transferring...")
+
+        oldImageTagDbCachedFile.copyTo(oldImageTagDbPath, overwrite = true)
+        oldVideoTagDbCachedFile.copyTo(oldVideoTagDbPath, overwrite = true)
+
+        transfer(
+            application = application,
+            newDb = newDb
+        )
+        oldImageTagDbCachedFile.delete()
+        oldVideoTagDbCachedFile.delete()
+        oldImageTagDbPath.delete()
+        oldVideoTagDbPath.delete()
+    }
+
+    private suspend fun transfer(application: Application, newDb: MediaDatabase) = withContext(Dispatchers.IO) {
         val newTagsRepository = TagRepository(newDb.tagDao())
         val newTagsCrossRefRepository = TagCrossRefRepository( newDb.tagCrossRefDao())
 
