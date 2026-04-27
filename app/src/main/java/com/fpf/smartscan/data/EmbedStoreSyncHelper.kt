@@ -46,7 +46,7 @@ object EmbedStoreSyncHelper {
 
         if(syncedVideos || syncedImages){
             sharedPrefs.edit {
-                putBoolean(PrefsKeys.SYNC_COMPLETE, true)
+                putBoolean(PrefsKeys.EMBED_STORE_DATE_SYNC_COMPLETE, true)
             }
             Log.d(TAG, "Sync complete successfully")
         }

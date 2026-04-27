@@ -42,9 +42,20 @@ fun openVideoInGallery(context: Context, uri: Uri) {
 }
 
 
-fun queryImageIds(context: Context, dirUris: List<Uri> = emptyList(), startDate: Long? = null, endDate: Long? = null): List<Long> {
-    val imageIds = mutableListOf<Long>()
-    val projection = arrayOf(MediaStore.Images.Media._ID)
+fun queryImageIdDateMap(
+    context: Context,
+    dirUris: List<Uri> = emptyList(),
+    startDate: Long? = null,
+    endDate: Long? = null
+): Map<Long, Long> {
+
+    val result = mutableMapOf<Long, Long>()
+
+    val projection = arrayOf(
+        MediaStore.Images.Media._ID,
+        MediaStore.Images.Media.DATE_ADDED
+    )
+
     val sortOrder = "${MediaStore.Images.Media.DATE_MODIFIED} DESC"
 
     val selectionParts = mutableListOf<String>()
@@ -54,7 +65,9 @@ fun queryImageIds(context: Context, dirUris: List<Uri> = emptyList(), startDate:
     if (dirUris.isNotEmpty()) {
         for (uri in dirUris) {
             try {
-                if (DocumentsContract.isTreeUri(uri) || uri.authority == "com.android.externalstorage.documents") {
+                if (DocumentsContract.isTreeUri(uri) ||
+                    uri.authority == "com.android.externalstorage.documents"
+                ) {
                     val docId = DocumentsContract.getTreeDocumentId(uri)
                     val afterColon = docId.substringAfter(':', "")
                     if (afterColon.isNotEmpty()) {
@@ -69,7 +82,9 @@ fun queryImageIds(context: Context, dirUris: List<Uri> = emptyList(), startDate:
                     val file = File(uri.path ?: continue)
                     val absPath = file.absolutePath.trimEnd('/') + "/"
                     if (absPath.startsWith(envRoot)) {
-                        val rel = absPath.removePrefix(envRoot).trimStart('/').trimEnd('/') + "/"
+                        val rel = absPath.removePrefix(envRoot)
+                            .trimStart('/')
+                            .trimEnd('/') + "/"
                         selectionParts.add("${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?")
                         selectionArgs.add("$rel%")
                     }
@@ -87,7 +102,6 @@ fun queryImageIds(context: Context, dirUris: List<Uri> = emptyList(), startDate:
         }
     }
 
-    // Date filters (DATE_ADDED is in seconds)
     if (startDate != null) {
         selectionParts.add("${MediaStore.Images.Media.DATE_ADDED} >= ?")
         selectionArgs.add(startDate.toString())
@@ -97,15 +111,13 @@ fun queryImageIds(context: Context, dirUris: List<Uri> = emptyList(), startDate:
         selectionArgs.add(endDate.toString())
     }
 
-    val selection: String?
-    val args: Array<String>?
-    if (selectionParts.isEmpty()) {
-        selection = null
-        args = null
-    } else {
-        selection = selectionParts.joinToString(" AND ", prefix = "(", postfix = ")")
-        args = selectionArgs.toTypedArray()
-    }
+    val selection =
+        if (selectionParts.isEmpty()) null
+        else selectionParts.joinToString(" AND ", "(", ")")
+
+    val args =
+        if (selectionArgs.isEmpty()) null
+        else selectionArgs.toTypedArray()
 
     context.applicationContext.contentResolver.query(
         MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
@@ -114,17 +126,40 @@ fun queryImageIds(context: Context, dirUris: List<Uri> = emptyList(), startDate:
         args,
         sortOrder
     )?.use { cursor ->
-        val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
+
+        val idIdx = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
+        val dateIdx = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED)
+
         while (cursor.moveToNext()) {
-            imageIds.add(cursor.getLong(idColumn))
+            result[cursor.getLong(idIdx)] = cursor.getLong(dateIdx)
         }
     }
-    return imageIds
+
+    return result
 }
 
-fun queryVideoIds(context: Context, dirUris: List<Uri> = emptyList(), startDate: Long? = null, endDate: Long? = null): List<Long> {
-    val videoIds = mutableListOf<Long>()
-    val projection = arrayOf(MediaStore.Video.Media._ID)
+fun queryImageIds(
+    context: Context,
+    dirUris: List<Uri> = emptyList(),
+    startDate: Long? = null,
+    endDate: Long? = null
+): List<Long> =
+    queryImageIdDateMap(context, dirUris, startDate, endDate).keys.toList()
+
+fun queryVideoIdDateMap(
+    context: Context,
+    dirUris: List<Uri> = emptyList(),
+    startDate: Long? = null,
+    endDate: Long? = null
+): Map<Long, Long> {
+
+    val result = mutableMapOf<Long, Long>()
+
+    val projection = arrayOf(
+        MediaStore.Video.Media._ID,
+        MediaStore.Video.Media.DATE_ADDED
+    )
+
     val sortOrder = "${MediaStore.Video.Media.DATE_MODIFIED} DESC"
 
     val selectionParts = mutableListOf<String>()
@@ -134,7 +169,9 @@ fun queryVideoIds(context: Context, dirUris: List<Uri> = emptyList(), startDate:
     if (dirUris.isNotEmpty()) {
         for (uri in dirUris) {
             try {
-                if (DocumentsContract.isTreeUri(uri) || uri.authority == "com.android.externalstorage.documents") {
+                if (DocumentsContract.isTreeUri(uri) ||
+                    uri.authority == "com.android.externalstorage.documents"
+                ) {
                     val docId = DocumentsContract.getTreeDocumentId(uri)
                     val afterColon = docId.substringAfter(':', "")
                     if (afterColon.isNotEmpty()) {
@@ -149,7 +186,9 @@ fun queryVideoIds(context: Context, dirUris: List<Uri> = emptyList(), startDate:
                     val file = File(uri.path ?: continue)
                     val absPath = file.absolutePath.trimEnd('/') + "/"
                     if (absPath.startsWith(envRoot)) {
-                        val rel = absPath.removePrefix(envRoot).trimStart('/').trimEnd('/') + "/"
+                        val rel = absPath.removePrefix(envRoot)
+                            .trimStart('/')
+                            .trimEnd('/') + "/"
                         selectionParts.add("${MediaStore.Video.Media.RELATIVE_PATH} LIKE ?")
                         selectionArgs.add("$rel%")
                     }
@@ -177,15 +216,13 @@ fun queryVideoIds(context: Context, dirUris: List<Uri> = emptyList(), startDate:
         selectionArgs.add(endDate.toString())
     }
 
-    val selection: String?
-    val args: Array<String>?
-    if (selectionParts.isEmpty()) {
-        selection = null
-        args = null
-    } else {
-        selection = selectionParts.joinToString(" AND ", prefix = "(", postfix = ")")
-        args = selectionArgs.toTypedArray()
-    }
+    val selection =
+        if (selectionParts.isEmpty()) null
+        else selectionParts.joinToString(" AND ", "(", ")")
+
+    val args =
+        if (selectionArgs.isEmpty()) null
+        else selectionArgs.toTypedArray()
 
     context.applicationContext.contentResolver.query(
         MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
@@ -194,14 +231,25 @@ fun queryVideoIds(context: Context, dirUris: List<Uri> = emptyList(), startDate:
         args,
         sortOrder
     )?.use { cursor ->
-        val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Video.Media._ID)
+
+        val idIdx = cursor.getColumnIndexOrThrow(MediaStore.Video.Media._ID)
+        val dateIdx = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATE_ADDED)
+
         while (cursor.moveToNext()) {
-            videoIds.add(cursor.getLong(idColumn))
+            result[cursor.getLong(idIdx)] = cursor.getLong(dateIdx)
         }
     }
 
-    return videoIds
+    return result
 }
+
+fun queryVideoIds(
+    context: Context,
+    dirUris: List<Uri> = emptyList(),
+    startDate: Long? = null,
+    endDate: Long? = null
+): List<Long> =
+    queryVideoIdDateMap(context, dirUris, startDate, endDate).keys.toList()
 
 
 fun getImageToDateMap(context: Context, ids: List<Long>): Map<Long, Long> {
@@ -240,7 +288,6 @@ fun getImageToDateMap(context: Context, ids: List<Long>): Map<Long, Long> {
     return result
 }
 
-
 fun getVideoToDateMap(context: Context, ids: List<Long>): Map<Long, Long> {
     val result = mutableMapOf<Long, Long>()
     val uri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
@@ -276,6 +323,7 @@ fun getVideoToDateMap(context: Context, ids: List<Long>): Map<Long, Long> {
 
     return result
 }
+
 fun shareMedia(context: Context, uri: Uri){
     val mime = context.contentResolver.getType(uri)
     val shareIntent: Intent = Intent().apply {

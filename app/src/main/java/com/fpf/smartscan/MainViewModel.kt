@@ -26,7 +26,9 @@ class MainViewModel(
     companion object {
     }
     private val sharedPrefs = application.getSharedPreferences(PrefsNames.APP_PREFS, Context.MODE_PRIVATE)
-    private val hasSyncedDates by lazy { sharedPrefs.getBoolean(PrefsKeys.SYNC_COMPLETE, false)}
+    private val hasSyncedDates by lazy { sharedPrefs.getBoolean(PrefsKeys.EMBED_STORE_DATE_SYNC_COMPLETE, false)}
+    private val hasSyncedMediaMetadata by lazy { sharedPrefs.getBoolean(PrefsKeys.MEDIA_METADATA_SYNC_COMPLETE, false)}
+
 
     private val _appReady = MutableStateFlow(false)
     val appReady: StateFlow<Boolean> = _appReady
@@ -73,12 +75,18 @@ class MainViewModel(
                 DbManager.restoreDbFromCache(application, cachedDb)
             }
 
-            // Check if transfer from old DBs is needed
+            // Transfer old DBs if needed
             val oldImageCachedDb = DbManager.checkOldCachedImageDb(application)
             val oldVideoCachedDb = DbManager.checkOldCachedVideoDb(application)
             if(oldImageCachedDb != null && oldVideoCachedDb != null){
                 val newDb = MediaDatabase.getDatabase(application)
                 DbManager.transferIfNeeded(application, oldImageCachedDb, oldVideoCachedDb, newDb)
+            }
+
+            // Sync media metadata if needed
+            if(!hasSyncedMediaMetadata && (imageStore.exists || videoStore.exists)){
+                val newDb = MediaDatabase.getDatabase(application)
+                DbManager.syncMediaMetadata(application, newDb)
             }
             onAppReady()
         }

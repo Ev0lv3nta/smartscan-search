@@ -1,10 +1,16 @@
 package com.fpf.smartscan.data
 
 import android.app.Application
+import android.content.Context.MODE_PRIVATE
 import android.util.Log
+import androidx.core.content.edit
+import com.fpf.smartscan.constants.PrefsKeys
+import com.fpf.smartscan.constants.PrefsNames
 import com.fpf.smartscan.data.MediaDatabase.Companion.DB_NAME
 import com.fpf.smartscan.data.MediaDatabase.Companion.OLD_DB_IMAGE_NAME
 import com.fpf.smartscan.data.MediaDatabase.Companion.OLD_DB_VIDEO_NAME
+import com.fpf.smartscan.data.metadata.MediaMetadata
+import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.data.old.images.ImageTagCrossRefRepository
 import com.fpf.smartscan.data.old.images.ImageTagDatabase
 import com.fpf.smartscan.data.old.images.ImageTagRepository
@@ -16,6 +22,8 @@ import com.fpf.smartscan.data.old.videos.VideoTagRepository
 import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.media.MediaType
+import com.fpf.smartscan.media.queryImageIdDateMap
+import com.fpf.smartscan.media.queryVideoIdDateMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -67,6 +75,30 @@ object DbManager {
         oldVideoTagDbCachedFile.delete()
         oldImageTagDbPath.delete()
         oldVideoTagDbPath.delete()
+    }
+
+    suspend fun syncMediaMetadata(application: Application, db: MediaDatabase){
+        val sharedPrefs = application.getSharedPreferences(PrefsNames.APP_PREFS, MODE_PRIVATE)
+        val metadataRepo = MediaMetadataRepository(db.metadataDao())
+        val imageToDateMap = queryImageIdDateMap(application)
+        val imageMetadataList = imageToDateMap.entries.map{
+            MediaMetadata(id=it.key, dateAdded = it.value, type = MediaType.IMAGE)
+        }
+        metadataRepo.upsert(imageMetadataList)
+        Log.d(TAG, "Image metadata sync complete. ${imageMetadataList.size} synced.")
+
+
+        val videToDateMap = queryVideoIdDateMap(application)
+        val videoMetadataList = videToDateMap.entries.map{
+            MediaMetadata(id=it.key, dateAdded = it.value, type = MediaType.VIDEO)
+        }
+        metadataRepo.upsert(videoMetadataList)
+        Log.d(TAG, "Video metadata sync complete. ${videoMetadataList.size} synced.")
+
+
+        sharedPrefs.edit {
+            putBoolean(PrefsKeys.MEDIA_METADATA_SYNC_COMPLETE, true)
+        }
     }
 
     private suspend fun transfer(application: Application, newDb: MediaDatabase) = withContext(Dispatchers.IO) {

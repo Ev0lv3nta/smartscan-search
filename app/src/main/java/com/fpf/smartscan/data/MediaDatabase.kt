@@ -8,6 +8,9 @@ import com.fpf.smartscan.data.clusters.ClusterCrossRef
 import com.fpf.smartscan.data.clusters.ClusterCrossRefDao
 import com.fpf.smartscan.data.clusters.MediaClusterMetadata
 import com.fpf.smartscan.data.clusters.ClusterMetadataDao
+import com.fpf.smartscan.data.metadata.MediaMetadata
+import com.fpf.smartscan.data.metadata.MediaMetadataDao
+import com.fpf.smartscan.data.migrations.MIGRATION_1_2
 import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.data.tags.TagCrossRefDao
@@ -16,18 +19,21 @@ import com.fpf.smartscan.data.tags.TagDao
 
 @Database(
     entities = [
+        MediaMetadata::class,
         MediaClusterMetadata::class,
         ClusterCrossRef::class,
         Tag::class,
         TagCrossRef::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class MediaDatabase : RoomDatabase() {
 
     abstract fun clusterCrossRefDao(): ClusterCrossRefDao
     abstract fun clusterMetadataDao(): ClusterMetadataDao
+
+    abstract fun metadataDao(): MediaMetadataDao
 
     abstract fun tagCrossRefDao(): TagCrossRefDao
     abstract fun tagDao(): TagDao
@@ -56,6 +62,7 @@ abstract class MediaDatabase : RoomDatabase() {
                     MediaDatabase::class.java,
                     DB_NAME
                 ).setJournalMode(JournalMode.TRUNCATE)
+                    .addMigrations(MIGRATION_1_2)
                     .build()
 
                 INSTANCE = instance
