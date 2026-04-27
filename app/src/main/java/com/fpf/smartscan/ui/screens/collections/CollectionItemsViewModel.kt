@@ -19,6 +19,7 @@ import com.fpf.smartscan.data.tags.TagPagingSource
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.clusters.ClusterPagingSource
+import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.data.tags.TagWithCount
@@ -67,6 +68,9 @@ class CollectionItemsViewModel(
     private val tagsCrossRefRepository by lazy { TagCrossRefRepository( db.tagCrossRefDao())}
     private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
 
+    private val mediaMetadataRepository by lazy { MediaMetadataRepository( db.metadataDao())}
+
+
     private val _state = MutableStateFlow(CollectionItemsState())
     val state: StateFlow<CollectionItemsState> = _state
 
@@ -92,7 +96,7 @@ class CollectionItemsViewModel(
                         TagPagingSource(
                             mediaType = mediaType,
                             tagId = tagId,
-                            tagsCrossRefRepository = tagsCrossRefRepository,
+                            mediaMetadataRepository = mediaMetadataRepository,
                             mediaIdToUri = ::mediaIdToUri
                         )
                     }
@@ -120,7 +124,7 @@ class CollectionItemsViewModel(
                         ClusterPagingSource(
                             mediaType = mediaType,
                             clusterId = clusterId,
-                            clusterCrossRefRepository = clusterCrossRefRepository,
+                            mediaMetadataRepository = mediaMetadataRepository,
                             mediaIdToUri = ::mediaIdToUri
                         )
                     }

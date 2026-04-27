@@ -3,13 +3,14 @@ package com.fpf.smartscan.data.tags
 import android.net.Uri
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.media.MediaType
 
 class TagPagingSource(
     private val mediaType: MediaType? = null,
     private val tagId: Long,
-    private val tagsCrossRefRepository: TagCrossRefRepository,
+    private val mediaMetadataRepository: MediaMetadataRepository,
     private val mediaIdToUri: (Long, MediaType) -> Uri
 ) : PagingSource<Int, MediaItem>() {
 
@@ -20,18 +21,18 @@ class TagPagingSource(
 
         // over-fetch by 1 item to detect end of data without using count()
         return try {
-            val crossRefs = if(mediaType != null){
-                tagsCrossRefRepository.getByTagAndType(tagId = tagId, mediaType, limit = pageSize + 1, offset = offset)
+            val mediaMetadataList = if(mediaType != null){
+                mediaMetadataRepository.getByTagAndType(tagId = tagId, mediaType, limit = pageSize + 1, offset = offset)
             }else{
-                tagsCrossRefRepository.getByTag(tagId = tagId, limit = pageSize + 1, offset = offset)
+                mediaMetadataRepository.getByTag(tagId = tagId, limit = pageSize + 1, offset = offset)
             }
-            val hasMore = crossRefs.size > pageSize
-            val pageItems = if (hasMore) crossRefs.dropLast(1) else crossRefs
+            val hasMore = mediaMetadataList.size > pageSize
+            val pageItems = if (hasMore) mediaMetadataList.dropLast(1) else mediaMetadataList
 
             val mediaItems = pageItems.map {
                 MediaItem(
-                    id=it.mediaId,
-                    uri=mediaIdToUri(it.mediaId, it.type),
+                    id=it.id,
+                    uri=mediaIdToUri(it.id, it.type),
                     type = it.type
                 )
             }
