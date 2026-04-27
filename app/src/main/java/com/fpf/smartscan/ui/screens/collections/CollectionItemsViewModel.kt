@@ -240,8 +240,8 @@ class CollectionItemsViewModel(
 
     private suspend fun getCollections(tags: List<TagWithCount>): List<MediaCollection> {
         return tags.mapNotNull {
-            val crossRef = tagsCrossRefRepository.getByTag(it.id, limit = 1, offset = 0).firstOrNull()
-            val uri = crossRef?.let { crossRef -> mediaIdToUri(crossRef.mediaId, crossRef.type) }
+            val crossRef = mediaMetadataRepository.getByTag(it.id, limit = 1, offset = 0).firstOrNull()
+            val uri = crossRef?.let { crossRef -> mediaIdToUri(crossRef.id, crossRef.type) }
             uri?.let { uri ->
                 MediaCollection(
                     id = it.id,

@@ -38,6 +38,17 @@ interface MediaMetadataDao {
     ): List<MediaMetadata>
 
     @Query("""
+    SELECT m.*
+    FROM media_metadata m
+    INNER JOIN tag_crossref c ON c.mediaId = m.id
+    WHERE c.tagId = :tagId
+    ORDER BY m.dateAdded DESC, m.id DESC
+""")
+    suspend fun getByTag(
+        tagId: Long
+    ): List<MediaMetadata>
+
+    @Query("""
         SELECT m.*
         FROM media_metadata m
         INNER JOIN tag_crossref c ON c.mediaId = m.id
@@ -146,6 +157,17 @@ interface MediaMetadataDao {
         clusterId: Long,
         limit: Int,
         offset: Int
+    ): List<MediaMetadata>
+
+    @Query("""
+    SELECT m.*
+    FROM media_metadata m
+    INNER JOIN media_cluster_crossref c ON c.mediaId = m.id
+    WHERE c.clusterId = :clusterId
+    ORDER BY m.dateAdded DESC, m.id DESC
+""")
+    suspend fun getByCluster(
+        clusterId: Long
     ): List<MediaMetadata>
 
     @Query("""

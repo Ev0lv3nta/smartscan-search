@@ -13,6 +13,7 @@ import com.fpf.smartscan.data.tags.TagWithCount
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataWithCount
+import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.media.MediaType
@@ -44,6 +45,8 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
     private val tagsCrossRefRepository by lazy { TagCrossRefRepository( db.tagCrossRefDao())}
     private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
     private val clusterMetadataRepository by lazy { ClusterMetadataRepository(db.clusterMetadataDao()) }
+    private val mediaMetadataRepository by lazy { MediaMetadataRepository( db.metadataDao())}
+
 
     private val _state = MutableStateFlow(CollectionsState())
     val state: StateFlow<CollectionsState> = _state
@@ -105,9 +108,9 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
         viewModelScope.launch (Dispatchers.IO) {
             val primaryTag = tagsRepository.getTagsByName(listOf(primaryCollectionName)).firstOrNull()
             val tagsToMerge = tagsRepository.getTagsByName(otherCollections.map{it.name})
-            val mediaToUpdate = tagsToMerge.flatMap { tagsCrossRefRepository.getByTag(it.id) }
+            val mediaToUpdate = tagsToMerge.flatMap { mediaMetadataRepository.getByTag(it.id) }
             if(primaryTag != null && mediaToUpdate.isNotEmpty()){
-                val updated = mediaToUpdate.map{it.copy(tagId = primaryTag.id)}
+                val updated = mediaToUpdate.map{ TagCrossRef(mediaId = it.id, type = it.type, tagId = primaryTag.id)}
                 tagsCrossRefRepository.upsertTagCrossRefs(updated)
                 tagsRepository.deleteTags(tagsToMerge)
             }
@@ -129,8 +132,8 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
 
     fun copyFromClusterToTagCollection(clusterCollection: MediaCollection, tagCollection: MediaCollection){
         viewModelScope.launch (Dispatchers.IO) {
-            val clusterCrossRefs = clusterCrossRefRepository.getByClusterId(clusterCollection.id)
-            tagsCrossRefRepository.upsertTagCrossRefs(clusterCrossRefs.map{ TagCrossRef(it.mediaId, tagCollection.id, it.type)})
+            val clusterCrossRefs = mediaMetadataRepository.getByCluster(clusterCollection.id)
+            tagsCrossRefRepository.upsertTagCrossRefs(clusterCrossRefs.map{ TagCrossRef(it.id, tagCollection.id, it.type)})
             _state.update { it.copy( selectedCollections = emptySet()) }
         }
     }
@@ -140,8 +143,8 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
             try {
                 val insertedIds = tagsRepository.insertTags(listOf(Tag(name = newCollectionName)))
                 if(insertedIds.isEmpty()) return@launch
-                val clusterCrossRefs = clusterCrossRefRepository.getByClusterId(clusterCollection.id)
-                tagsCrossRefRepository.upsertTagCrossRefs(clusterCrossRefs.map{ TagCrossRef(it.mediaId, insertedIds.first(), it.type)})
+                val clusterCrossRefs = mediaMetadataRepository.getByCluster(clusterCollection.id)
+                tagsCrossRefRepository.upsertTagCrossRefs(clusterCrossRefs.map{ TagCrossRef(it.id, insertedIds.first(), it.type)})
                 _state.update { it.copy( selectedCollections = emptySet()) }
             }catch (_: SQLiteConstraintException){
              _state.update { it.copy(error="Collection already exists") }
@@ -183,8 +186,8 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
 
     private suspend fun tagsToCollections(tags: List<TagWithCount>): List<MediaCollection> {
         return tags.mapNotNull {
-            val crossRef = tagsCrossRefRepository.getByTag(it.id, limit = 1, offset = 0).firstOrNull()
-            val uri = crossRef?.let { crossRef -> getUriFromMediaId(crossRef.mediaId, crossRef.type) }
+            val mediaMeta = mediaMetadataRepository.getByTag(it.id, limit = 1, offset = 0).firstOrNull()
+            val uri = mediaMeta?.let { mediaMeta -> getUriFromMediaId(mediaMeta.id, mediaMeta.type) }
             uri?.let { uri ->
                 MediaCollection(
                     id = it.id,
@@ -198,8 +201,8 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
 
     private suspend fun clustersToCollections(clusters: List<ClusterMetadataWithCount>): List<MediaCollection> {
         return clusters.mapNotNull {
-            val id = clusterCrossRefRepository.getByClusterId(it.clusterId, limit = 1, offset = 0).firstOrNull()
-            val uri = id?.let { id -> getUriFromMediaId(id.mediaId, it.type) }
+            val id = mediaMetadataRepository.getByCluster(it.clusterId, limit = 1, offset = 0).firstOrNull()
+            val uri = id?.let { id -> getUriFromMediaId(id.id, it.type) }
             uri?.let { uri ->
                 MediaCollection(
                     id = it.clusterId,

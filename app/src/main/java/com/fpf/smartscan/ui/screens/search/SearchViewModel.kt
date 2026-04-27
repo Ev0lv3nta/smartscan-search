@@ -16,6 +16,7 @@ import com.fpf.smartscan.R
 import com.fpf.smartscan.data.MediaDatabase
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
+import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
 import com.fpf.smartscan.data.tags.TagRepository
@@ -85,6 +86,7 @@ class SearchViewModel(
     private val tagsCrossRefRepository by lazy { TagCrossRefRepository( db.tagCrossRefDao())}
     private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
     private val clusterMetadataRepository by lazy { ClusterMetadataRepository(db.clusterMetadataDao()) }
+    private val mediaMetadataRepository by lazy { MediaMetadataRepository(db.metadataDao()) }
 
     val allTags: StateFlow<List<Tag>> = tagsRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
@@ -581,11 +583,11 @@ class SearchViewModel(
         return when (mediaType){
             MediaType.IMAGE -> {
                 val tag = tagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
-                tag?.let { tagsCrossRefRepository.getByTag(it.id, limit, offset).map{it.mediaId}  }?: emptyList()
+                tag?.let { mediaMetadataRepository.getByTag(it.id, limit, offset).map{it.id}  }?: emptyList()
             }
             MediaType.VIDEO -> {
                 val tag = tagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
-                tag?.let { tagsCrossRefRepository.getByTag(it.id, limit, offset).map{it.mediaId} } ?: emptyList()
+                tag?.let { mediaMetadataRepository.getByTag(it.id, limit, offset).map{it.id} } ?: emptyList()
             }
         }
     }
@@ -596,11 +598,11 @@ class SearchViewModel(
         return when (mediaType) {
             MediaType.IMAGE -> {
                 val tag = tagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
-                tag?.let{tagsCrossRefRepository.count(it.id)}?: 0
+                tag?.let{mediaMetadataRepository.countByTag(it.id)}?: 0
             }
             MediaType.VIDEO -> {
                 val tag = tagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
-                tag?.let{tagsCrossRefRepository.count(it.id)}?: 0
+                tag?.let{mediaMetadataRepository.countByTag(it.id)}?: 0
             }
         }
     }
