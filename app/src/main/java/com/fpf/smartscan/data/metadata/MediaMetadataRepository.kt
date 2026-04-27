@@ -24,8 +24,8 @@ class MediaMetadataRepository(
 
     suspend fun getByTagAndDateRange(
         tagId: Long,
-        startDate: Long,
-        endDate: Long,
+        startDate: Long?,
+        endDate: Long?,
         limit: Int,
         offset: Int
     ): List<MediaMetadata> = dao.getByTagAndDateRange(tagId, startDate, endDate, limit, offset)
@@ -33,8 +33,8 @@ class MediaMetadataRepository(
     suspend fun getByTagTypeAndDateRange(
         tagId: Long,
         type: MediaType,
-        startDate: Long,
-        endDate: Long,
+        startDate: Long?,
+        endDate: Long?,
         limit: Int,
         offset: Int
     ): List<MediaMetadata> = dao.getByTagTypeAndDateRange(tagId, type, startDate, endDate, limit, offset)
@@ -46,15 +46,15 @@ class MediaMetadataRepository(
 
     suspend fun countByTagAndDateRange(
         tagId: Long,
-        startDate: Long,
-        endDate: Long
+        startDate: Long?,
+        endDate: Long?,
     ): Int = dao.countByTagAndDateRange(tagId, startDate, endDate)
 
     suspend fun countByTagTypeAndDateRange(
         tagId: Long,
         type: MediaType,
-        startDate: Long,
-        endDate: Long
+        startDate: Long?,
+        endDate: Long?,
     ): Int = dao.countByTagTypeAndDateRange(tagId, type, startDate, endDate)
 
     suspend fun getByCluster(clusterId: Long, limit: Int, offset: Int): List<MediaMetadata> = dao.getByCluster(clusterId, limit, offset)
@@ -69,8 +69,8 @@ class MediaMetadataRepository(
 
     suspend fun getByClusterAndDateRange(
         clusterId: Long,
-        startDate: Long,
-        endDate: Long,
+        startDate: Long?,
+        endDate: Long?,
         limit: Int,
         offset: Int
     ): List<MediaMetadata> = dao.getByClusterAndDateRange(clusterId, startDate, endDate, limit, offset)
@@ -78,8 +78,8 @@ class MediaMetadataRepository(
     suspend fun getByClusterTypeAndDateRange(
         clusterId: Long,
         type: MediaType,
-        startDate: Long,
-        endDate: Long,
+        startDate: Long?,
+        endDate: Long?,
         limit: Int,
         offset: Int
     ): List<MediaMetadata> = dao.getByClusterTypeAndDateRange(clusterId, type, startDate, endDate, limit, offset)
@@ -98,8 +98,8 @@ class MediaMetadataRepository(
     suspend fun countByClusterTypeAndDateRange(
         clusterId: Long,
         type: MediaType,
-        startDate: Long,
-        endDate: Long
+        startDate: Long?,
+        endDate: Long?,
     ): Int = dao.countByClusterTypeAndDateRange(clusterId, type, startDate, endDate)
 
     suspend fun clear() = dao.clear()
