@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.collections.forEach
 import kotlin.collections.plus
 
 
@@ -130,21 +131,24 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
         }
     }
 
-    fun copyFromClusterToTagCollection(clusterCollection: MediaCollection, tagCollection: MediaCollection){
+    private suspend fun copyCollection(clusterId: Long, tagId: Long){
+        val clusterCrossRefs = mediaMetadataRepository.getByCluster(clusterId)
+        tagsCrossRefRepository.upsertTagCrossRefs(clusterCrossRefs.map{ TagCrossRef(it.id, tagId, it.type)})
+    }
+
+    fun copyFromClusterToTagCollection(clusterCollections: Set<MediaCollection>, tagCollection: MediaCollection){
         viewModelScope.launch (Dispatchers.IO) {
-            val clusterCrossRefs = mediaMetadataRepository.getByCluster(clusterCollection.id)
-            tagsCrossRefRepository.upsertTagCrossRefs(clusterCrossRefs.map{ TagCrossRef(it.id, tagCollection.id, it.type)})
+           clusterCollections.forEach { copyCollection(it.id, tagCollection.id) }
             _state.update { it.copy( selectedCollections = emptySet()) }
         }
     }
 
-    fun createNewCollectionAndCopy(clusterCollection: MediaCollection, newCollectionName: String){
+    fun createNewCollectionAndCopy(clusterCollections: Set<MediaCollection>, newCollectionName: String){
         viewModelScope.launch (Dispatchers.IO) {
             try {
                 val insertedIds = tagsRepository.insertTags(listOf(Tag(name = newCollectionName)))
-                if(insertedIds.isEmpty()) return@launch
-                val clusterCrossRefs = mediaMetadataRepository.getByCluster(clusterCollection.id)
-                tagsCrossRefRepository.upsertTagCrossRefs(clusterCrossRefs.map{ TagCrossRef(it.id, insertedIds.first(), it.type)})
+                val tagId = insertedIds.firstOrNull()?: return@launch
+                clusterCollections.forEach { copyCollection(it.id, tagId) }
                 _state.update { it.copy( selectedCollections = emptySet()) }
             }catch (_: SQLiteConstraintException){
              _state.update { it.copy(error="Collection already exists") }
