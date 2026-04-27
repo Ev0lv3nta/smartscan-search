@@ -17,6 +17,8 @@ import com.fpf.smartscan.constants.PrefsNames
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.MediaDatabase
+import com.fpf.smartscan.di.IMAGE_STORE
+import com.fpf.smartscan.di.VIDEO_STORE
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.search.ImageIndexListener
 import com.fpf.smartscan.search.VideoIndexListener
@@ -36,6 +38,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import org.koin.android.ext.android.inject
 import java.io.File
 import kotlin.collections.filterNot
 import kotlin.collections.map
@@ -58,6 +61,9 @@ class MediaIndexForegroundService : Service() {
     private val db by lazy {MediaDatabase.getDatabase(application)}
     private val clusterMetadataRepository by lazy { ClusterMetadataRepository(db.clusterMetadataDao()) }
     private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
+
+    private val imageStore: FileEmbeddingStore by inject(IMAGE_STORE)
+    private val videoStore: FileEmbeddingStore by inject(VIDEO_STORE)
 
 
     override fun onCreate() {
@@ -104,14 +110,12 @@ class MediaIndexForegroundService : Service() {
                 imageEmbedder.initialize()
 
                 if (mediaType == TYPE_IMAGE || mediaType == TYPE_BOTH) {
-                    val imageStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE), imageEmbedder.embeddingDim)
                     val imageClusterStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE_CLUSTER), imageEmbedder.embeddingDim)
                     indexImages(imageStore, appSettings.searchableImageDirectories.map{it.toUri()})
                     clusterMedia(clusterCrossRefRepository, imageClusterStore, imageStore, clusterMetadataRepository, MediaType.IMAGE)
                 }
 
                 if (mediaType == TYPE_VIDEO || mediaType == TYPE_BOTH) {
-                    val videoStore = FileEmbeddingStore(File(application.filesDir,  EmbeddingStoresFiles.VIDEO), imageEmbedder.embeddingDim )
                     val videoClusterStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.VIDEO_CLUSTER), imageEmbedder.embeddingDim)
                     indexVideos(videoStore, appSettings.searchableVideoDirectories.map { it.toUri() })
                     clusterMedia(clusterCrossRefRepository, videoClusterStore, videoStore, clusterMetadataRepository, MediaType.VIDEO)
