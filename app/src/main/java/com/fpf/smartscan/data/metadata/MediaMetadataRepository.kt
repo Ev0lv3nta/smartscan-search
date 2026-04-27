@@ -15,12 +15,8 @@ class MediaMetadataRepository(
 
     suspend fun getByTag(tagId: Long, limit: Int, offset: Int): List<MediaMetadata> = dao.getByTag(tagId, limit, offset)
 
-    suspend fun getByTagAndType(
-        tagId: Long,
-        type: MediaType,
-        limit: Int,
-        offset: Int
-    ): List<MediaMetadata> = dao.getByTagAndType(tagId, type, limit, offset)
+    suspend fun getByTagAndType(tagId: Long, type: MediaType, limit: Int, offset: Int): List<MediaMetadata> = dao.getByTagAndType(tagId, type, limit, offset)
+    suspend fun getByTagAndType(tagId: Long, type: MediaType): List<MediaMetadata> = dao.getByTagAndType(tagId, type)
 
     suspend fun getByTagAndDateRange(
         tagId: Long,
@@ -38,6 +34,14 @@ class MediaMetadataRepository(
         limit: Int,
         offset: Int
     ): List<MediaMetadata> = dao.getByTagTypeAndDateRange(tagId, type, startDate, endDate, limit, offset)
+
+    suspend fun getByTagTypeAndDateRange(
+        tagId: Long,
+        type: MediaType,
+        startDate: Long?,
+        endDate: Long?,
+    ): List<MediaMetadata> = dao.getByTagTypeAndDateRange(tagId, type, startDate, endDate)
+
 
     suspend fun countByTag(tagId: Long): Int = dao.countByTag(tagId)
 

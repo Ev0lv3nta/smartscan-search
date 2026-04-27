@@ -31,11 +31,7 @@ interface MediaMetadataDao {
         ORDER BY m.dateAdded DESC, m.id DESC
         LIMIT :limit OFFSET :offset
     """)
-    suspend fun getByTag(
-        tagId: Long,
-        limit: Int,
-        offset: Int
-    ): List<MediaMetadata>
+    suspend fun getByTag(tagId: Long, limit: Int, offset: Int): List<MediaMetadata>
 
     @Query("""
     SELECT m.*
@@ -44,9 +40,7 @@ interface MediaMetadataDao {
     WHERE c.tagId = :tagId
     ORDER BY m.dateAdded DESC, m.id DESC
 """)
-    suspend fun getByTag(
-        tagId: Long
-    ): List<MediaMetadata>
+    suspend fun getByTag(tagId: Long): List<MediaMetadata>
 
     @Query("""
         SELECT m.*
@@ -57,12 +51,18 @@ interface MediaMetadataDao {
         ORDER BY m.dateAdded DESC, m.id DESC
         LIMIT :limit OFFSET :offset
     """)
-    suspend fun getByTagAndType(
-        tagId: Long,
-        type: MediaType,
-        limit: Int,
-        offset: Int
-    ): List<MediaMetadata>
+    suspend fun getByTagAndType(tagId: Long, type: MediaType, limit: Int, offset: Int): List<MediaMetadata>
+
+
+    @Query("""
+        SELECT m.*
+        FROM media_metadata m
+        INNER JOIN tag_crossref c ON c.mediaId = m.id
+        WHERE c.tagId = :tagId
+          AND m.type = :type
+        ORDER BY m.dateAdded DESC, m.id DESC
+    """)
+    suspend fun getByTagAndType(tagId: Long, type: MediaType, ): List<MediaMetadata>
 
     @Query("""
     SELECT m.*
@@ -100,6 +100,23 @@ interface MediaMetadataDao {
         endDate: Long?,
         limit: Int,
         offset: Int
+    ): List<MediaMetadata>
+
+    @Query("""
+    SELECT m.*
+    FROM media_metadata m
+    INNER JOIN tag_crossref c ON c.mediaId = m.id
+    WHERE c.tagId = :tagId
+      AND m.type = :type
+      AND (:startDate IS NULL OR m.dateAdded >= :startDate)
+      AND (:endDate IS NULL OR m.dateAdded <= :endDate)
+    ORDER BY m.dateAdded DESC, m.id DESC
+""")
+    suspend fun getByTagTypeAndDateRange(
+        tagId: Long,
+        type: MediaType,
+        startDate: Long?,
+        endDate: Long?,
     ): List<MediaMetadata>
 
     @Query("""
