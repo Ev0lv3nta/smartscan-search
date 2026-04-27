@@ -59,7 +59,11 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.log2
 
-class SearchViewModel( application: Application) : AndroidViewModel(application) {
+class SearchViewModel(
+    application: Application,
+    private val imageStore: FileEmbeddingStore,
+    private val videoStore: FileEmbeddingStore
+) : AndroidViewModel(application) {
     companion object {
         private const val TAG = "SearchViewModel"
         const val RESULTS_BATCH_SIZE = 36
@@ -74,10 +78,6 @@ class SearchViewModel( application: Application) : AndroidViewModel(application)
     private val textEmbedder  = ClipTextEmbedder(application, ModelAssetSource.Resource(R.raw.clip_text_encoder_quant), vocabSource = ModelAssetSource.Resource(R.raw.vocab), mergesSource = ModelAssetSource.Resource(R.raw.merges))
 
     private val imageEmbedder = ClipImageEmbedder(application, ModelAssetSource.Resource(R.raw.clip_image_encoder_quant))
-
-
-    val imageStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE), imageEmbedder.embeddingDim)
-    val videoStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.VIDEO), imageEmbedder.embeddingDim )
 
     val imageClusterStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE_CLUSTER), imageEmbedder.embeddingDim)
 

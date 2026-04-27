@@ -62,13 +62,14 @@ import com.fpf.smartscan.utils.formatDate
 import com.fpf.smartscan.utils.toEpochSeconds
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.StateFlow
+import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.max
 
 
 @OptIn(FlowPreview::class)
 @Composable
 fun SearchScreen(
-    searchViewModel: SearchViewModel = viewModel(),
+    searchViewModel: SearchViewModel = koinViewModel(),
     appSettings:  StateFlow<AppSettings>,
     intentSearchQuery: SearchQuery? = null
 ) {

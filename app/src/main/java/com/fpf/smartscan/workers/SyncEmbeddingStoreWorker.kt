@@ -58,7 +58,7 @@ class SyncEmbeddingStoreWorker(context: Context, workerParams: WorkerParameters)
                 idToDate = { ids -> getVideoToDateMap(applicationContext, ids) }
             )
             sharedPrefs.edit {
-                putBoolean(PrefsKeys.KEY_SYNC_COMPLETE, true)
+                putBoolean(PrefsKeys.SYNC_COMPLETE, true)
             }
             Log.d(TAG, "Sync complete successfully")
             // force trigger refresh on index
