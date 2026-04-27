@@ -331,7 +331,7 @@ fun CollectionsScreen(
                     isCopyingCollection = true
                     isSelecting = false
                 },
-                copyEnabled = state.viewAutoCollections && state.selectedCollections.size == 1
+                copyEnabled = state.viewAutoCollections
             )
         }
         AnimatedVisibility(
@@ -352,10 +352,10 @@ fun CollectionsScreen(
                     viewModel.clearSelectedCollections()
                           },
                 onSelectCollection = {
-                    viewModel.copyFromClusterToTagCollection(state.selectedCollections.first(), it)
+                    viewModel.copyFromClusterToTagCollection(state.selectedCollections, it)
                     isCopyingCollection = false
                 },
-                onCreateNewCollection = {viewModel.createNewCollectionAndCopy(state.selectedCollections.first(),it)}
+                onCreateNewCollection = {viewModel.createNewCollectionAndCopy(state.selectedCollections,it)}
             )
         }
     }
