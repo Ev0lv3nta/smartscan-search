@@ -12,6 +12,7 @@ import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.data.MediaDatabase
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
+import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -65,6 +66,7 @@ class IndexWorker(context: Context, workerParams: WorkerParameters) :
     private val db = MediaDatabase.getDatabase(applicationContext as Application)
     private val clusterMetadataRepository by lazy { ClusterMetadataRepository(db.clusterMetadataDao()) }
     private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
+    private val metadataRepo by lazy { MediaMetadataRepository(db.metadataDao()) }
 
     private val imageStore by lazy { FileEmbeddingStore(File(applicationContext.filesDir, EmbeddingStoresFiles.IMAGE), imageEmbedder.embeddingDim)}
     private val imageClusterStore by lazy { FileEmbeddingStore(File(applicationContext.filesDir, EmbeddingStoresFiles.IMAGE_CLUSTER), imageEmbedder.embeddingDim)}
@@ -81,13 +83,13 @@ class IndexWorker(context: Context, workerParams: WorkerParameters) :
             // Prevents doing full indexes. That responsibility should be left to the foreground service
             if(imageStore.exists){
                 indexImages(imageStore, appSettings.searchableImageDirectories.map{it.toUri()})
-                clusterMedia(clusterCrossRefRepository, imageClusterStore, imageStore, clusterMetadataRepository, MediaType.IMAGE)
+                clusterMedia(clusterCrossRefRepository, imageClusterStore, imageStore, clusterMetadataRepository, metadataRepo, MediaType.IMAGE)
             }
 
             // Prevents doing full indexes. That responsibility should be left to the foreground service
             if(videoStore.exists){
                 indexVideos(videoStore, appSettings.searchableVideoDirectories.map { it.toUri() })
-                clusterMedia(clusterCrossRefRepository, videoClusterStore, videoStore, clusterMetadataRepository, MediaType.VIDEO)
+                clusterMedia(clusterCrossRefRepository, videoClusterStore, videoStore, clusterMetadataRepository, metadataRepo, MediaType.VIDEO)
             }
 
             return@withContext Result.success()

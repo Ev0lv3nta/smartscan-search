@@ -7,7 +7,7 @@ class MediaMetadataRepository(
 ) {
     suspend fun upsert(items: List<MediaMetadata>) = dao.upsert(items)
     suspend fun upsert(item: MediaMetadata) = dao.upsert(item)
-
+    suspend fun getAllIds(): List<Long> = dao.getAllIds()
     suspend fun getByIds(mediaIds: List<Long>): List<MediaMetadata> = dao.getByIds(mediaIds)
     suspend fun getByType(type: MediaType): List<MediaMetadata> = dao.getByType(type)
 

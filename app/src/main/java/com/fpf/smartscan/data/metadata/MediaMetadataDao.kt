@@ -15,6 +15,8 @@ interface MediaMetadataDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(item: MediaMetadata)
 
+    @Query("SELECT id FROM media_metadata")
+    suspend fun getAllIds(): List<Long>
     @Query("SELECT * FROM media_metadata WHERE id IN (:mediaIds)")
     suspend fun getByIds(mediaIds: List<Long>): List<MediaMetadata>
 

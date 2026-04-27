@@ -17,6 +17,7 @@ import com.fpf.smartscan.constants.PrefsNames
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.MediaDatabase
+import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.di.IMAGE_STORE
 import com.fpf.smartscan.di.VIDEO_STORE
 import com.fpf.smartscan.media.MediaType
@@ -61,6 +62,8 @@ class MediaIndexForegroundService : Service() {
     private val db by lazy {MediaDatabase.getDatabase(application)}
     private val clusterMetadataRepository by lazy { ClusterMetadataRepository(db.clusterMetadataDao()) }
     private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
+    private val metadataRepo by lazy { MediaMetadataRepository(db.metadataDao()) }
+
 
     private val imageStore: FileEmbeddingStore by inject(IMAGE_STORE)
     private val videoStore: FileEmbeddingStore by inject(VIDEO_STORE)
@@ -112,13 +115,13 @@ class MediaIndexForegroundService : Service() {
                 if (mediaType == TYPE_IMAGE || mediaType == TYPE_BOTH) {
                     val imageClusterStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE_CLUSTER), imageEmbedder.embeddingDim)
                     indexImages(imageStore, appSettings.searchableImageDirectories.map{it.toUri()})
-                    clusterMedia(clusterCrossRefRepository, imageClusterStore, imageStore, clusterMetadataRepository, MediaType.IMAGE)
+                    clusterMedia(clusterCrossRefRepository, imageClusterStore, imageStore, clusterMetadataRepository, metadataRepo, MediaType.IMAGE)
                 }
 
                 if (mediaType == TYPE_VIDEO || mediaType == TYPE_BOTH) {
                     val videoClusterStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.VIDEO_CLUSTER), imageEmbedder.embeddingDim)
                     indexVideos(videoStore, appSettings.searchableVideoDirectories.map { it.toUri() })
-                    clusterMedia(clusterCrossRefRepository, videoClusterStore, videoStore, clusterMetadataRepository, MediaType.VIDEO)
+                    clusterMedia(clusterCrossRefRepository, videoClusterStore, videoStore, clusterMetadataRepository, metadataRepo, MediaType.VIDEO)
                 }
             } catch (e: CancellationException) {
                 // cancelled

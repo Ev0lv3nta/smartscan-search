@@ -1,12 +1,12 @@
 package com.fpf.smartscan.data.migrations
 
-
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 val MIGRATION_1_2 = object : Migration(1, 2) {
     override fun migrate(db: SupportSQLiteDatabase) {
 
+        // 1. Create media_metadata
         db.execSQL("""
             CREATE TABLE IF NOT EXISTS media_metadata (
                 id INTEGER NOT NULL PRIMARY KEY,
@@ -18,5 +18,53 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
         db.execSQL("CREATE INDEX IF NOT EXISTS index_media_metadata_dateAdded ON media_metadata(dateAdded)")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_media_metadata_type ON media_metadata(type)")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_media_metadata_type_dateAdded ON media_metadata(type, dateAdded)")
+
+        // 2. Recreate tag_crossref with FK -> media_metadata
+        db.execSQL("""
+            CREATE TABLE tag_crossref_new (
+                mediaId INTEGER NOT NULL,
+                tagId INTEGER NOT NULL,
+                type TEXT NOT NULL,
+                PRIMARY KEY(mediaId, tagId),
+                FOREIGN KEY(tagId) REFERENCES media_tag(id) ON DELETE CASCADE,
+                FOREIGN KEY(mediaId) REFERENCES media_metadata(id) ON DELETE CASCADE
+            )
+        """)
+
+        db.execSQL("""
+            INSERT INTO tag_crossref_new (mediaId, tagId, type)
+            SELECT mediaId, tagId, type FROM tag_crossref
+        """)
+
+        db.execSQL("DROP TABLE tag_crossref")
+        db.execSQL("ALTER TABLE tag_crossref_new RENAME TO tag_crossref")
+
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_tag_crossref_tagId ON tag_crossref(tagId)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_tag_crossref_mediaId ON tag_crossref(mediaId)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_tag_crossref_type ON tag_crossref(type)")
+
+        // 3. Recreate media_cluster_crossref with FK -> media_metadata
+        db.execSQL("""
+            CREATE TABLE media_cluster_crossref_new (
+                clusterId INTEGER NOT NULL,
+                mediaId INTEGER NOT NULL,
+                type TEXT NOT NULL,
+                PRIMARY KEY(clusterId, mediaId),
+                FOREIGN KEY(clusterId) REFERENCES cluster_metadata(clusterId) ON DELETE CASCADE,
+                FOREIGN KEY(mediaId) REFERENCES media_metadata(id) ON DELETE CASCADE
+            )
+        """)
+
+        db.execSQL("""
+            INSERT INTO media_cluster_crossref_new (clusterId, mediaId, type)
+            SELECT clusterId, mediaId, type FROM media_cluster_crossref
+        """)
+
+        db.execSQL("DROP TABLE media_cluster_crossref")
+        db.execSQL("ALTER TABLE media_cluster_crossref_new RENAME TO media_cluster_crossref")
+
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_media_cluster_crossref_clusterId ON media_cluster_crossref(clusterId)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_media_cluster_crossref_mediaId ON media_cluster_crossref(mediaId)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_media_cluster_crossref_type ON media_cluster_crossref(type)")
     }
 }

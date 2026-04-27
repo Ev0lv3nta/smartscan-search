@@ -69,25 +69,24 @@ class MainViewModel(
             if (!hasSyncedDates) {
                 EmbedStoreSyncHelper.syncStores(getApplication(), imageStore, videoStore)
             }
-            // Check if restore from backup is needed
+
             val cachedDb = DbManager.checkCachedDb(application)
-            if(cachedDb != null){
+            if (cachedDb != null) {
                 DbManager.restoreDbFromCache(application, cachedDb)
             }
 
-            // Transfer old DBs if needed
+            val newDb = MediaDatabase.getDatabase(application)
+
+            if (!hasSyncedMediaMetadata && (imageStore.exists || videoStore.exists)) {
+                DbManager.syncMediaMetadata(application, newDb)
+            }
+
             val oldImageCachedDb = DbManager.checkOldCachedImageDb(application)
             val oldVideoCachedDb = DbManager.checkOldCachedVideoDb(application)
-            if(oldImageCachedDb != null && oldVideoCachedDb != null){
-                val newDb = MediaDatabase.getDatabase(application)
+            if (oldImageCachedDb != null && oldVideoCachedDb != null) {
                 DbManager.transferIfNeeded(application, oldImageCachedDb, oldVideoCachedDb, newDb)
             }
 
-            // Sync media metadata if needed
-            if(!hasSyncedMediaMetadata && (imageStore.exists || videoStore.exists)){
-                val newDb = MediaDatabase.getDatabase(application)
-                DbManager.syncMediaMetadata(application, newDb)
-            }
             onAppReady()
         }
     }

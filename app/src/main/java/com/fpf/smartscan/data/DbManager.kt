@@ -104,6 +104,7 @@ object DbManager {
     private suspend fun transfer(application: Application, newDb: MediaDatabase) = withContext(Dispatchers.IO) {
         val newTagsRepository = TagRepository(newDb.tagDao())
         val newTagsCrossRefRepository = TagCrossRefRepository( newDb.tagCrossRefDao())
+        val metadataRepo = MediaMetadataRepository(newDb.metadataDao())
 
         // Images
         val oldImageDb = ImageTagDatabase.getDatabase(application)
@@ -118,9 +119,17 @@ object DbManager {
             .filter { it.first != -1L }
             .associate { it.second to it.first }
 
-        val updatedImageCrossRefs = imageCrossRefs.mapNotNull{
-            val tagId = nameToImageTagId[it.tag]?: return@mapNotNull  null
-            TagCrossRef(mediaId=it.imageId, tagId = tagId, type = MediaType.IMAGE)}
+        val validImageIds = metadataRepo.getByType(MediaType.IMAGE).map{it.id}.toSet()
+        val updatedImageCrossRefs = imageCrossRefs.mapNotNull {
+            val tagId = nameToImageTagId[it.tag] ?: return@mapNotNull null
+            if (it.imageId !in validImageIds) return@mapNotNull null
+
+            TagCrossRef(
+                mediaId = it.imageId,
+                tagId = tagId,
+                type = MediaType.IMAGE
+            )
+        }
 
         newTagsCrossRefRepository.upsertTagCrossRefs(updatedImageCrossRefs)
         oldImageDb.close()
@@ -141,9 +150,17 @@ object DbManager {
             .filter { it.first != -1L }
             .associate { it.second to it.first }
 
-        val updatedVideoCrossRefs = videoCrossRefs.mapNotNull{
-            val tagId = nameToVideoTagId[it.tag]?: return@mapNotNull  null
-            TagCrossRef(mediaId=it.videoId, tagId = tagId, type = MediaType.VIDEO)}
+        val validVideoIds = metadataRepo.getByType(MediaType.VIDEO).map{it.id}.toSet()
+        val updatedVideoCrossRefs = videoCrossRefs.mapNotNull {
+            val tagId = nameToVideoTagId[it.tag] ?: return@mapNotNull null
+            if (it.videoId !in validVideoIds) return@mapNotNull null
+
+            TagCrossRef(
+                mediaId = it.videoId,
+                tagId = tagId,
+                type = MediaType.VIDEO
+            )
+        }
 
         newTagsCrossRefRepository.upsertTagCrossRefs(updatedVideoCrossRefs)
         oldVideoDb.close()
