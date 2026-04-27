@@ -592,15 +592,13 @@ class SearchViewModel(
 
     private suspend fun countMediaMatchingTag(tagName: String?, mediaType: MediaType): Int{
         tagName?: return 0
-        return when (mediaType) {
-            MediaType.IMAGE -> {
-                val tag = tagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
-                tag?.let{mediaMetadataRepository.countByTag(it.id)}?: 0
-            }
-            MediaType.VIDEO -> {
-                val tag = tagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
-                tag?.let{mediaMetadataRepository.countByTag(it.id)}?: 0
-            }
+        val state = _state.value
+        val tag = tagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
+
+        return if(state.endDateFilter != null || state.startDateFilter != null){
+            tag?.let{mediaMetadataRepository.countByTagTypeAndDateRange(it.id, mediaType, state.startDateFilter, state.endDateFilter)}?: 0
+            }else{
+            tag?.let{mediaMetadataRepository.countByTag(it.id)}?: 0
         }
     }
     private suspend fun updateTagLastUsage(tag: String){
