@@ -13,7 +13,6 @@ import coil3.compose.AsyncImagePainter
 import com.fpf.smartscan.media.getImageUriFromId
 import kotlinx.coroutines.Dispatchers
 import com.fpf.smartscan.R
-import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.data.MediaDatabase
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
@@ -54,7 +53,6 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
-import java.io.File
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.log2
@@ -62,7 +60,9 @@ import kotlin.math.log2
 class SearchViewModel(
     application: Application,
     private val imageStore: FileEmbeddingStore,
-    private val videoStore: FileEmbeddingStore
+    private val videoStore: FileEmbeddingStore,
+    private val imageClusterStore: FileEmbeddingStore,
+    private val videoClusterStore: FileEmbeddingStore
 ) : AndroidViewModel(application) {
     companion object {
         private const val TAG = "SearchViewModel"
@@ -78,10 +78,6 @@ class SearchViewModel(
     private val textEmbedder  = ClipTextEmbedder(application, ModelAssetSource.Resource(R.raw.clip_text_encoder_quant), vocabSource = ModelAssetSource.Resource(R.raw.vocab), mergesSource = ModelAssetSource.Resource(R.raw.merges))
 
     private val imageEmbedder = ClipImageEmbedder(application, ModelAssetSource.Resource(R.raw.clip_image_encoder_quant))
-
-    val imageClusterStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE_CLUSTER), imageEmbedder.embeddingDim)
-
-    val videoClusterStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.VIDEO_CLUSTER), imageEmbedder.embeddingDim )
 
     private val db = MediaDatabase.getDatabase(application)
 

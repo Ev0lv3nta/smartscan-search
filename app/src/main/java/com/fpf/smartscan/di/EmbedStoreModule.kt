@@ -12,6 +12,9 @@ private const val EMBEDDING_DIM = 512
 val IMAGE_STORE = named("image_store")
 val VIDEO_STORE = named("video_store")
 
+val IMAGE_CLUSTER_STORE = named("image_cluster_store")
+val VIDEO_CLUSTER_STORE = named("video_cluster_store")
+
 val embedStoreModule = module {
 
     single(IMAGE_STORE) {
@@ -26,6 +29,20 @@ val embedStoreModule = module {
         val app = get<Application>()
         FileEmbeddingStore(
             File(app.filesDir, EmbeddingStoresFiles.VIDEO),
+            EMBEDDING_DIM
+        )
+    }
+    single(IMAGE_CLUSTER_STORE) {
+        val app = get<Application>()
+        FileEmbeddingStore(
+            File(app.filesDir, EmbeddingStoresFiles.IMAGE_CLUSTER),
+            EMBEDDING_DIM
+        )
+    }
+    single(VIDEO_CLUSTER_STORE) {
+        val app = get<Application>()
+        FileEmbeddingStore(
+            File(app.filesDir, EmbeddingStoresFiles.VIDEO_CLUSTER),
             EMBEDDING_DIM
         )
     }
