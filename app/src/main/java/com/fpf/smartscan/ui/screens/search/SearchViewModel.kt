@@ -31,7 +31,6 @@ import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.media.removeStaleMedia
 import com.fpf.smartscan.search.ImageIndexListener
-import com.fpf.smartscan.search.IndexingStatus
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.services.MediaIndexForegroundService
@@ -50,7 +49,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.runBlocking
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.log2
 import kotlin.math.pow
@@ -100,22 +98,11 @@ class SearchViewModel(
 
     private var cachedIds= mutableListOf<Long>()
 
-    private var totalClusters: Int? = null
-    private var totalSingletonClusters: Int? = null
-
-
 
     init {
         loadImageIndex()
         viewModelScope.launch{
             processQuery()
-        }
-        viewModelScope.launch(Dispatchers.IO){
-            val hasIndexedAndHasNotClustered = (imageStore.exists || videoStore.exists) && (!imageClusterStore.exists && !videoClusterStore.exists)
-            val isIndexing = imageIndexStatus.value == IndexingStatus.ACTIVE || videoIndexStatus.value == IndexingStatus.ACTIVE
-            if(hasIndexedAndHasNotClustered && !isIndexing){
-                startIndexing(application, MediaIndexForegroundService.TYPE_BOTH)
-            }
         }
     }
 

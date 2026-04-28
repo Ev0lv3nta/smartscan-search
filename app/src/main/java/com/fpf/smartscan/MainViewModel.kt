@@ -11,7 +11,9 @@ import com.fpf.smartscan.constants.PrefsNames
 import com.fpf.smartscan.data.DbManager
 import com.fpf.smartscan.data.EmbedStoreSyncHelper
 import com.fpf.smartscan.data.MediaDatabase
+import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.utils.isWorkScheduled
+import com.fpf.smartscan.workers.ClusterWorker
 import com.fpf.smartscan.workers.IndexWorker
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
@@ -25,7 +27,9 @@ class MainViewModel(
     application: Application,
     private val db: MediaDatabase,
     private val imageStore: FileEmbeddingStore,
-    private val videoStore: FileEmbeddingStore
+    private val videoStore: FileEmbeddingStore,
+    private val imageClusterStore: FileEmbeddingStore,
+    private val videoClusterStore: FileEmbeddingStore,
 ) : AndroidViewModel(application) {
 
     companion object {
@@ -33,6 +37,7 @@ class MainViewModel(
     private val sharedPrefs = application.getSharedPreferences(PrefsNames.APP_PREFS, Context.MODE_PRIVATE)
     private val hasSyncedDates by lazy { sharedPrefs.getBoolean(PrefsKeys.EMBED_STORE_DATE_SYNC_COMPLETE, false)}
     private val hasSyncedMediaMetadata by lazy { sharedPrefs.getBoolean(PrefsKeys.MEDIA_METADATA_SYNC_COMPLETE, false)}
+
 
     val versionName: String? = try {
         val packageInfo = application.packageManager.getPackageInfo(application.packageName, 0)
@@ -67,29 +72,41 @@ class MainViewModel(
 
     fun prepareApp(onAppReady: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
-            if (!hasSyncedDates) {
-                EmbedStoreSyncHelper.syncStores(getApplication(), imageStore, videoStore)
-            }
-
             val cachedDb = DbManager.checkCachedDb(application)
             val isRestoreRequired = cachedDb != null
             if (isRestoreRequired) {
                 DbManager.restoreDbFromCache(application, cachedDb)
             }
 
-            val isEmbedStoreDateSyncRequired = !hasSyncedMediaMetadata && (imageStore.exists || videoStore.exists)
-            if (isEmbedStoreDateSyncRequired) {
+            if (!hasSyncedDates) {
+                EmbedStoreSyncHelper.syncStores(getApplication(), imageStore, videoStore)
+            }
+
+            val mediaSyncNeeded = !hasSyncedMediaMetadata && (imageStore.exists || videoStore.exists)
+            if (mediaSyncNeeded) {
                 DbManager.syncMediaMetadata(application, db)
             }
 
             val oldImageCachedDb = DbManager.checkOldCachedImageDb(application)
             val oldVideoCachedDb = DbManager.checkOldCachedVideoDb(application)
-            val isTransferNeeded = oldImageCachedDb != null && oldVideoCachedDb != null
-            if (isTransferNeeded) {
+            val transferNeeded = oldImageCachedDb != null && oldVideoCachedDb != null
+            if (transferNeeded) {
                 DbManager.transferOldDbToNew(application, oldImageCachedDb, oldVideoCachedDb, db)
             }
 
             if(!isWorkScheduled(context = application, workName = IndexWorker.TAG)) scheduleIndexWorker()
+
+
+            val hasIndexedImagesButNotClustered = imageStore.exists && !imageClusterStore.exists
+            val hasIndexedVideosButNotClustered =  videoStore.exists && !videoClusterStore.exists
+            if(hasIndexedVideosButNotClustered && hasIndexedImagesButNotClustered){
+                ClusterWorker.startWorker(getApplication())
+            }else{
+                when{
+                    hasIndexedVideosButNotClustered ->  ClusterWorker.startWorker(getApplication(), mediaTypes = listOf(MediaType.VIDEO))
+                    hasIndexedImagesButNotClustered ->  ClusterWorker.startWorker(getApplication(), mediaTypes = listOf(MediaType.IMAGE))
+                }
+            }
 
             onAppReady()
         }
