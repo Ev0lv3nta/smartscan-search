@@ -373,7 +373,7 @@ class SearchViewModel(
 
     private fun purgeStaleItems(store: FileEmbeddingStore, idsToPurge: List<Long>){
         viewModelScope.launch(Dispatchers.IO) {
-            removeStaleMedia(idsToPurge, store, tagCrossRefRepository, clusterCrossRefRepository)
+            removeStaleMedia(idsToPurge, store, mediaMetadataRepository)
         }
     }
 
@@ -497,8 +497,7 @@ class SearchViewModel(
             onMediaLoadingError(error,
                 imageEmbedStore = imageStore,
                 videoEmbedStore = videoStore,
-                tagCrossRefRepository = tagCrossRefRepository,
-                clusterCrossRefRepository=clusterCrossRefRepository
+                mediaMetadataRepository =mediaMetadataRepository
             )
         }
     }

@@ -221,8 +221,7 @@ class CollectionItemsViewModel(
             onMediaLoadingError(error,
                 imageEmbedStore = imageStore,
                 videoEmbedStore = videoStore,
-                tagCrossRefRepository = tagCrossRefRepository,
-                clusterCrossRefRepository=clusterCrossRefRepository
+                mediaMetadataRepository =mediaMetadataRepository
                 )
         }
     }
