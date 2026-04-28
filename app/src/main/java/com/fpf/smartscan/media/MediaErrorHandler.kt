@@ -12,7 +12,7 @@ import java.io.FileNotFoundException
 import java.lang.SecurityException
 
 const val TAG = "MediaError"
-suspend fun onMediaLoadingError( error: AsyncImagePainter.State.Error, imageEmbedStore: FileEmbeddingStore, videoEmbedStore: FileEmbeddingStore, tagsCrossRefRepository: TagCrossRefRepository, clusterCrossRefRepository: ClusterCrossRefRepository) {
+suspend fun onMediaLoadingError( error: AsyncImagePainter.State.Error, imageEmbedStore: FileEmbeddingStore, videoEmbedStore: FileEmbeddingStore, tagCrossRefRepository: TagCrossRefRepository, clusterCrossRefRepository: ClusterCrossRefRepository) {
     when (val throwable = error.result.throwable) {
         is SecurityException,
         is FileNotFoundException -> {
@@ -20,10 +20,10 @@ suspend fun onMediaLoadingError( error: AsyncImagePainter.State.Error, imageEmbe
             val id = ContentUris.parseId(uri as Uri)
             val idsToRemove = listOf(id)
             if(uri.toString().startsWith(MediaStore.Images.Media.EXTERNAL_CONTENT_URI.toString())){
-               removeStaleMedia(idsToRemove, imageEmbedStore, tagsCrossRefRepository, clusterCrossRefRepository)
+               removeStaleMedia(idsToRemove, imageEmbedStore, tagCrossRefRepository, clusterCrossRefRepository)
                 Log.e("MediaError", "Inaccessible Image URI deleted: $uri ", throwable)
             }else if(uri.toString().startsWith(MediaStore.Video.Media.EXTERNAL_CONTENT_URI.toString())){
-                removeStaleMedia(idsToRemove, videoEmbedStore, tagsCrossRefRepository, clusterCrossRefRepository)
+                removeStaleMedia(idsToRemove, videoEmbedStore, tagCrossRefRepository, clusterCrossRefRepository)
                 Log.e(TAG, "Inaccessible Video URI deleted: $uri ", throwable)
             }
         }
