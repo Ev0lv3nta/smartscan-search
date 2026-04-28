@@ -53,6 +53,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.log2
+import kotlin.math.pow
 
 class SearchViewModel(
     application: Application,
@@ -240,10 +241,7 @@ class SearchViewModel(
         if(!textEmbedder.isInitialized())textEmbedder.initialize()
 
         val embedding = textEmbedder.embed(actualQuery)
-        totalClusters =  totalClusters?: clusterMetadataRepository.count()
-        totalSingletonClusters =  totalSingletonClusters?: clusterMetadataRepository.countSingletons()
-        val topK = computeDynamicTopK(totalClusters!!, totalSingletonClusters!!)
-        val targetClusters = if (useClusterSearch) getTargetClusters(embedding, threshold, topK) else emptyList()
+        val targetClusters = if (useClusterSearch) getTargetClusters(embedding, threshold) else emptyList()
         val idsMatchingTargetClusters = getIdsInTargetClusters(targetClusters)
         val filterIds = if(tag != null) idsMatchingTag.toSet() else idsMatchingTargetClusters
         val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, filterIds,  startDate = startDate, endDate = endDate)
@@ -268,6 +266,14 @@ class SearchViewModel(
         val singletonRatio = singletonCount.toDouble() / totalItems
         return (base * (1.0 + singletonRatio)).toInt().coerceAtLeast(min)
     }
+
+    private fun computeSingletonTopK(baseTopK: Int, singletonCount: Int, totalClusters: Int, sharpness: Double = 3.0): Int {
+        if (totalClusters == 0) return baseTopK
+        val t = (singletonCount.toDouble() / totalClusters).coerceIn(0.0, 1.0)
+        val expansion = 1.0 - (1.0 - t).pow(sharpness)
+        val computedTopK = baseTopK + (singletonCount - baseTopK).coerceAtLeast(0) * expansion
+        return computedTopK.toInt().coerceAtLeast(baseTopK)
+    }
     private suspend fun imageSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean, startDate: Long? = null, endDate: Long? = null): List<Long> {
         val queryImage = _state.value.queryImage?: return  emptyList()
 
@@ -275,10 +281,7 @@ class SearchViewModel(
 
         val bitmap = getBitmapFromUri(getApplication(), queryImage, IMAGE_SIZE_X)
         val embedding = imageEmbedder.embed(bitmap)
-        totalClusters =  totalClusters?: clusterMetadataRepository.count()
-        totalSingletonClusters =  totalSingletonClusters?: clusterMetadataRepository.countSingletons()
-        val topK = computeDynamicTopK(totalClusters!!, totalSingletonClusters!!)
-        val targetClusters = if (useClusterSearch) getTargetClusters(embedding, threshold, topK) else emptyList()
+        val targetClusters = if (useClusterSearch) getTargetClusters(embedding, threshold) else emptyList()
         val idsMatchingTargetClusters = getIdsInTargetClusters(targetClusters)
         val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, idsMatchingTargetClusters, startDate = startDate, endDate = endDate)
 
@@ -298,12 +301,24 @@ class SearchViewModel(
         return idsMatchingCluster
     }
 
-    private suspend fun getTargetClusters(queryEmbedding: FloatArray, threshold: Float, topK: Int = 1): List<Long>{
+
+    // Singletons are handled separately from the main clusters to prevent singletons dominating topK
+    private suspend fun getTargetClusters(queryEmbedding: FloatArray, threshold: Float): List<Long>{
+        val (singletonClusters, mainClusters) =  clusterCrossRefRepository.getClusterCounts().entries.partition { it.value == 1 }
+        val singletonCount = singletonClusters.size
+        val totalClusters =  mainClusters.size + singletonCount
+
+        val baseTopK = computeDynamicTopK(totalClusters, singletonCount)
+        val singletonTopK = computeSingletonTopK(baseTopK,totalClusters, singletonCount)
+
         val store = getClusterStore()
         if(!store.exists) return emptyList()
-        val resultIds = store.query(queryEmbedding, topK, threshold)
-        return resultIds
+
+        val mainResultIds = store.query(queryEmbedding, baseTopK, threshold, ids = mainClusters.map{it.key}.toSet())
+        val singletonResultIds = store.query(queryEmbedding, singletonTopK, threshold, ids = singletonClusters.map{it.key}.toSet())
+        return mainResultIds + singletonResultIds
     }
+
 
     private suspend fun handleSearchResult(queryResults: List<Long>, store: FileEmbeddingStore) {
         cachedIds.addAll(queryResults)
