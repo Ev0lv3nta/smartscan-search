@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 
 class ClusterCrossRefRepository(private val dao: ClusterCrossRefDao) {
     private var clusterToMediaIdsMap: MutableMap<Long, MutableSet<Long>> = mutableMapOf()
+    private var clusterCounts: MutableMap<Long, Int> = mutableMapOf()
     private var assignments: MutableMap<Long, Long> = mutableMapOf()
 
 
@@ -21,11 +22,27 @@ class ClusterCrossRefRepository(private val dao: ClusterCrossRefDao) {
     suspend fun getAssignments(): Map<Long, Long> {
         if (assignments.isNotEmpty()) return assignments
 
-        for(ref in dao.getAll()){
-            assignments[ref.mediaId] = ref.clusterId
+        val map = getClusterToMediaIdsMap()
+
+        for ((clusterId, mediaIds) in map) {
+            for (mediaId in mediaIds) {
+                assignments[mediaId] = clusterId
+            }
         }
         return assignments
     }
+
+    suspend fun getClusterCounts(): Map<Long, Int> {
+        if (clusterCounts.isNotEmpty()) return clusterCounts
+
+        val map = getClusterToMediaIdsMap()
+
+        for ((clusterId, mediaIds) in map) {
+            clusterCounts[clusterId] = mediaIds.size
+        }
+        return clusterCounts
+    }
+
     suspend fun upsertClusterCrossRefs(crossRefs: List<ClusterCrossRef>) = dao.upsert(crossRefs)
 
     suspend fun deleteByClusterIds(ids: List<Long>) = dao.deleteByClusterIds(ids)
