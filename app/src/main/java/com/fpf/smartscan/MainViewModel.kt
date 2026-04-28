@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit
 
 class MainViewModel(
     application: Application,
+    private val db: MediaDatabase,
     private val imageStore: FileEmbeddingStore,
     private val videoStore: FileEmbeddingStore
 ) : AndroidViewModel(application) {
@@ -76,18 +77,16 @@ class MainViewModel(
                 DbManager.restoreDbFromCache(application, cachedDb)
             }
 
-            val newDb = MediaDatabase.getDatabase(application)
-
             val isEmbedStoreDateSyncRequired = !hasSyncedMediaMetadata && (imageStore.exists || videoStore.exists)
             if (isEmbedStoreDateSyncRequired) {
-                DbManager.syncMediaMetadata(application, newDb)
+                DbManager.syncMediaMetadata(application, db)
             }
 
             val oldImageCachedDb = DbManager.checkOldCachedImageDb(application)
             val oldVideoCachedDb = DbManager.checkOldCachedVideoDb(application)
             val isTransferNeeded = oldImageCachedDb != null && oldVideoCachedDb != null
             if (isTransferNeeded) {
-                DbManager.transferOldDbToNew(application, oldImageCachedDb, oldVideoCachedDb, newDb)
+                DbManager.transferOldDbToNew(application, oldImageCachedDb, oldVideoCachedDb, db)
             }
 
             if(!isWorkScheduled(context = application, workName = IndexWorker.TAG)) scheduleIndexWorker()

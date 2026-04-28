@@ -12,6 +12,7 @@ val viewModelModule = module {
     viewModel {
         MainViewModel(
             application = get(),
+            db = get(),
             imageStore = get(IMAGE_STORE),
             videoStore = get(VIDEO_STORE)
         )
