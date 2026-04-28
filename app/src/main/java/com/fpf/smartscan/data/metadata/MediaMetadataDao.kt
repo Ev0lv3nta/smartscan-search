@@ -74,13 +74,7 @@ interface MediaMetadataDao {
     ORDER BY m.dateAdded DESC, m.id DESC
     LIMIT :limit OFFSET :offset
 """)
-    suspend fun getByTagAndDateRange(
-        tagId: Long,
-        startDate: Long?,
-        endDate: Long?,
-        limit: Int,
-        offset: Int
-    ): List<MediaMetadata>
+    suspend fun getByTagAndDateRange(tagId: Long, startDate: Long?, endDate: Long?, limit: Int, offset: Int): List<MediaMetadata>
 
     @Query("""
     SELECT m.*
@@ -93,14 +87,7 @@ interface MediaMetadataDao {
     ORDER BY m.dateAdded DESC, m.id DESC
     LIMIT :limit OFFSET :offset
 """)
-    suspend fun getByTagTypeAndDateRange(
-        tagId: Long,
-        type: MediaType,
-        startDate: Long?,
-        endDate: Long?,
-        limit: Int,
-        offset: Int
-    ): List<MediaMetadata>
+    suspend fun getByTagTypeAndDateRange(tagId: Long, type: MediaType, startDate: Long?, endDate: Long?, limit: Int, offset: Int): List<MediaMetadata>
 
     @Query("""
     SELECT m.*
@@ -112,12 +99,7 @@ interface MediaMetadataDao {
       AND (:endDate IS NULL OR m.dateAdded <= :endDate)
     ORDER BY m.dateAdded DESC, m.id DESC
 """)
-    suspend fun getByTagTypeAndDateRange(
-        tagId: Long,
-        type: MediaType,
-        startDate: Long?,
-        endDate: Long?,
-    ): List<MediaMetadata>
+    suspend fun getByTagTypeAndDateRange(tagId: Long, type: MediaType, startDate: Long?, endDate: Long?): List<MediaMetadata>
 
     @Query("""
         SELECT COUNT(*)
@@ -145,11 +127,7 @@ interface MediaMetadataDao {
       AND (:endDate IS NULL OR m.dateAdded <= :endDate)
 """)
 
-    suspend fun countByTagAndDateRange(
-        tagId: Long,
-        startDate: Long?,
-        endDate: Long?
-    ): Int
+    suspend fun countByTagAndDateRange(tagId: Long, startDate: Long?, endDate: Long?): Int
 
     @Query("""
     SELECT COUNT(*)
@@ -160,12 +138,7 @@ interface MediaMetadataDao {
       AND (:startDate IS NULL OR m.dateAdded >= :startDate)
       AND (:endDate IS NULL OR m.dateAdded <= :endDate)
 """)
-    suspend fun countByTagTypeAndDateRange(
-        tagId: Long,
-        type: MediaType,
-        startDate: Long?,
-        endDate: Long?
-    ): Int
+    suspend fun countByTagTypeAndDateRange(tagId: Long, type: MediaType, startDate: Long?, endDate: Long?): Int
 
     @Query("""
         SELECT m.*
@@ -175,11 +148,7 @@ interface MediaMetadataDao {
         ORDER BY m.dateAdded DESC, m.id DESC
         LIMIT :limit OFFSET :offset
     """)
-    suspend fun getByCluster(
-        clusterId: Long,
-        limit: Int,
-        offset: Int
-    ): List<MediaMetadata>
+    suspend fun getByCluster(clusterId: Long, limit: Int, offset: Int): List<MediaMetadata>
 
     @Query("""
     SELECT m.*
@@ -188,9 +157,7 @@ interface MediaMetadataDao {
     WHERE c.clusterId = :clusterId
     ORDER BY m.dateAdded DESC, m.id DESC
 """)
-    suspend fun getByCluster(
-        clusterId: Long
-    ): List<MediaMetadata>
+    suspend fun getByCluster(clusterId: Long): List<MediaMetadata>
 
     @Query("""
         SELECT m.*
@@ -201,12 +168,7 @@ interface MediaMetadataDao {
         ORDER BY m.dateAdded DESC, m.id DESC
         LIMIT :limit OFFSET :offset
     """)
-    suspend fun getByClusterAndType(
-        clusterId: Long,
-        type: MediaType,
-        limit: Int,
-        offset: Int
-    ): List<MediaMetadata>
+    suspend fun getByClusterAndType(clusterId: Long, type: MediaType, limit: Int, offset: Int): List<MediaMetadata>
 
     @Query("""
     SELECT m.*
@@ -218,13 +180,7 @@ interface MediaMetadataDao {
     ORDER BY m.dateAdded DESC, m.id DESC
     LIMIT :limit OFFSET :offset
 """)
-    suspend fun getByClusterAndDateRange(
-        clusterId: Long,
-        startDate: Long?,
-        endDate: Long?,
-        limit: Int,
-        offset: Int
-    ): List<MediaMetadata>
+    suspend fun getByClusterAndDateRange(clusterId: Long, startDate: Long?, endDate: Long?, limit: Int, offset: Int): List<MediaMetadata>
 
     @Query("""
     SELECT m.*
@@ -237,14 +193,7 @@ interface MediaMetadataDao {
     ORDER BY m.dateAdded DESC, m.id DESC
     LIMIT :limit OFFSET :offset
 """)
-    suspend fun getByClusterTypeAndDateRange(
-        clusterId: Long,
-        type: MediaType,
-        startDate: Long?,
-        endDate: Long?,
-        limit: Int,
-        offset: Int
-    ): List<MediaMetadata>
+    suspend fun getByClusterTypeAndDateRange(clusterId: Long, type: MediaType, startDate: Long?, endDate: Long?, limit: Int, offset: Int): List<MediaMetadata>
 
     @Query("""
         SELECT COUNT(*)
@@ -271,11 +220,7 @@ interface MediaMetadataDao {
       AND (:startDate IS NULL OR m.dateAdded >= :startDate)
       AND (:endDate IS NULL OR m.dateAdded <= :endDate)
 """)
-    suspend fun countByClusterAndDateRange(
-        clusterId: Long,
-        startDate: Long?,
-        endDate: Long?
-    ): Int
+    suspend fun countByClusterAndDateRange(clusterId: Long, startDate: Long?, endDate: Long?): Int
 
 
     @Query("""
@@ -287,12 +232,33 @@ interface MediaMetadataDao {
       AND (:startDate IS NULL OR m.dateAdded >= :startDate)
       AND (:endDate IS NULL OR m.dateAdded <= :endDate)
 """)
-    suspend fun countByClusterTypeAndDateRange(
-        clusterId: Long,
-        type: MediaType,
-        startDate: Long?,
-        endDate: Long?
-    ): Int
+    suspend fun countByClusterTypeAndDateRange(clusterId: Long, type: MediaType, startDate: Long?, endDate: Long?): Int
+
+    @Query("""
+    DELETE FROM media_metadata
+    WHERE id IN (
+        SELECT mediaId
+        FROM tag_crossref
+        WHERE tagId = :tagId
+    )
+""")
+    suspend fun deleteByTag(tagId: Long)
+
+    @Query("""
+    DELETE FROM media_metadata
+    WHERE id IN (
+        SELECT mediaId
+        FROM media_cluster_crossref
+        WHERE clusterId = :clusterId
+    )
+""")
+    suspend fun deleteByCluster(clusterId: Long)
+
+    @Query("""
+    DELETE FROM media_metadata
+    WHERE id IN (:mediaIds)
+""")
+    suspend fun deleteByIds(mediaIds: List<Long>)
 
     @Query("DELETE FROM media_metadata")
     suspend fun clear()
