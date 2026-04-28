@@ -484,27 +484,13 @@ class SearchViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val selectedMediaIds = _state.value.selectedResults.map { it.id }
-
-                when (val mediaType = _state.value.mediaType) {
-                    MediaType.IMAGE -> {
-                        val existing = tagsRepository.getTagsByName(listOf(tag)).firstOrNull()
-                        var id = existing?.id
-                        if(id == null){
-                            id = tagsRepository.insertTags(listOf(Tag(name=tag.trim()))).first()
-                        }
-                        val tagEntries = selectedMediaIds.map { TagCrossRef(mediaId = it, tagId = id) }
-                        tagsCrossRefRepository.upsertTagCrossRefs(tagEntries)
-                    }
-                    MediaType.VIDEO -> {
-                        val existing = tagsRepository.getTagsByName(listOf(tag)).firstOrNull()
-                        var id = existing?.id
-                        if(id == null){
-                            id = tagsRepository.insertTags(listOf(Tag(name=tag.trim()))).first()
-                        }
-                        val tagEntries = selectedMediaIds.map { TagCrossRef(mediaId = it, tagId = id) }
-                        tagsCrossRefRepository.upsertTagCrossRefs(tagEntries)
-                    }
+                val existing = tagsRepository.getTagsByName(listOf(tag)).firstOrNull()
+                var id = existing?.id
+                if(id == null){
+                    id = tagsRepository.insertTags(listOf(Tag(name=tag.trim()))).first()
                 }
+                val tagEntries = selectedMediaIds.map { TagCrossRef(mediaId = it, tagId = id) }
+                tagsCrossRefRepository.upsertTagCrossRefs(tagEntries)
             }finally {
                 clearSelectedResults()
             }
@@ -580,29 +566,6 @@ class SearchViewModel(
             tag?.let { tag-> mediaMetadataRepository.getByTagTypeAndDateRange(tag.id, mediaType,state.startDateFilter, state.endDateFilter).map{it.id}  }?: emptyList()
         }else{
             tag?.let { tag-> mediaMetadataRepository.getByTagAndType(tag.id, mediaType).map{it.id}  }?: emptyList()
-        }
-    }
-    private suspend fun getMediaMatchingTag(tagName: String?, mediaType: MediaType, limit: Int, offset: Int): List<Long>{
-        tagName?: return emptyList()
-        val state = _state.value
-        val tag = tagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
-        return if(state.endDateFilter != null || state.startDateFilter != null){
-            tag?.let { tag-> mediaMetadataRepository.getByTagTypeAndDateRange(tag.id, mediaType,state.startDateFilter, state.endDateFilter, limit, offset).map{it.id}  }?: emptyList()
-        }else{
-            tag?.let { tag-> mediaMetadataRepository.getByTagAndType(tag.id, mediaType,limit, offset).map{it.id}  }?: emptyList()
-        }
-    }
-
-
-    private suspend fun countMediaMatchingTag(tagName: String?, mediaType: MediaType): Int{
-        tagName?: return 0
-        val state = _state.value
-        val tag = tagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
-
-        return if(state.endDateFilter != null || state.startDateFilter != null){
-            tag?.let{mediaMetadataRepository.countByTagTypeAndDateRange(it.id, mediaType, state.startDateFilter, state.endDateFilter)}?: 0
-            }else{
-            tag?.let{mediaMetadataRepository.countByTag(it.id)}?: 0
         }
     }
     private suspend fun updateTagLastUsage(tag: String){

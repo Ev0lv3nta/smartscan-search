@@ -40,26 +40,12 @@ suspend fun clusterMedia(
 
     val result = clusterer.cluster(itemEmbeds)
 
-    updateClusters(
-        result,
-        clusterMetadataRepository,
-        existingClusters,
-        clusterStore,
-        mediaType
-    )
-
-    updateAssignments(
-        result,
-        crossRefRepository,
-        validIds,
-        mediaType
-    )
+    // Must update clusters first
+    updateClusters(result, clusterMetadataRepository, existingClusters, clusterStore, mediaType)
+    updateAssignments(result, crossRefRepository, validIds)
 }
 
-private suspend fun getExistingClusters(
-    store: FileEmbeddingStore,
-    clusterMetadataRepository: ClusterMetadataRepository
-): Map<Long, Cluster> {
+private suspend fun getExistingClusters(store: FileEmbeddingStore, clusterMetadataRepository: ClusterMetadataRepository): Map<Long, Cluster> {
     return if (store.exists) {
         val metadataMap = clusterMetadataRepository.getAllMetadataAsMap()
 
@@ -71,13 +57,7 @@ private suspend fun getExistingClusters(
     } else emptyMap()
 }
 
-private suspend fun updateClusters(
-    clusterResult: ClusterResult,
-    clusterMetadataRepository: ClusterMetadataRepository,
-    existingClustersMap: Map<Long, Cluster>,
-    store: FileEmbeddingStore,
-    mediaType: MediaType
-) {
+private suspend fun updateClusters(clusterResult: ClusterResult, clusterMetadataRepository: ClusterMetadataRepository, existingClustersMap: Map<Long, Cluster>, store: FileEmbeddingStore, mediaType: MediaType) {
     val (existingClusters, newClusters) =
         clusterResult.clusters.values.partition { it.prototypeId in existingClustersMap }
 
@@ -126,14 +106,8 @@ private suspend fun updateClusters(
     store.update(existingEmbeds)
 }
 
-private suspend fun updateAssignments(
-    clusterResult: ClusterResult,
-    crossRefRepository: ClusterCrossRefRepository,
-    validIds: Set<Long>,
-    mediaType: MediaType
-) {
-    val crossRefs = clusterResult.assignments
-        .mapNotNull {
+private suspend fun updateAssignments(clusterResult: ClusterResult, crossRefRepository: ClusterCrossRefRepository, validIds: Set<Long>, ) {
+    val crossRefs = clusterResult.assignments.mapNotNull {
             if (it.key !in validIds) return@mapNotNull null
 
             ClusterCrossRef(
