@@ -200,7 +200,7 @@ class SearchViewModel(
         viewModelScope.launch(Dispatchers.Default) {
             try {
                 val state = _state.value
-                val (queryResults, totalResults) = when (_state.value.queryType) {
+                val queryResults = when (_state.value.queryType) {
                     QueryType.IMAGE -> {
                         val result = imageSearch(store, threshold, useClusterSearch, startDate = state.startDateFilter, endDate = state.endDateFilter)
                         _state.update{it.copy(imageEmbedderLastUsage = System.currentTimeMillis())}
@@ -214,8 +214,7 @@ class SearchViewModel(
                         result
                     }
                 }
-                val cache = !state.tagOnlySearch
-                handleSearchResult(queryResults, store, totalResults = totalResults, cache=cache)
+                handleSearchResult(queryResults, store)
             }catch (e: Exception) {
                 Log.e(TAG, "$e")
                 _state.update{it.copy(error = getApplication<Application>().getString(R.string.search_error_unknown))}
@@ -225,27 +224,26 @@ class SearchViewModel(
         }
     }
 
-    private suspend fun textSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean, startDate: Long? = null, endDate: Long? = null): Pair<List<Long>, Int> {
+    private suspend fun textSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean, startDate: Long? = null, endDate: Long? = null): List<Long> {
         val query = searchFieldState.text.toString()
         if (query.isBlank()) {
             _state.update{currentState -> currentState.copy(error = getApplication<Application>().getString(R.string.search_error_empty_query))}
-            return Pair(emptyList(), 0)
+            return emptyList()
         }
         val (tag, actualQuery) = parseQuery(query)
         tag?.let{ tag ->
             _state.update { currentState -> currentState.copy(tagFilter = tag) }
             updateTagLastUsage(tag)
         }
-        val idsMatchingTag: List<Long> = getMediaMatchingTag(tag, _state.value.mediaType,RESULTS_BATCH_SIZE, 0) // load initial
+        val idsMatchingTag: List<Long> = getMediaMatchingTag(tag, _state.value.mediaType)
         val tagOnlySearch = idsMatchingTag.isNotEmpty() && actualQuery.isBlank()
 
         if(tagOnlySearch){
             _state.update { currentState -> currentState.copy(tagOnlySearch = true) }
-            val totalResults =  countMediaMatchingTag(tag, state.value.mediaType)
-            return Pair(idsMatchingTag, totalResults)
+            return idsMatchingTag
         }
         if(actualQuery.isBlank()){
-            return Pair(emptyList(), 0)
+            return emptyList()
         }
 
         if(!textEmbedder.isInitialized())textEmbedder.initialize()
@@ -261,7 +259,7 @@ class SearchViewModel(
 
         // prevent keeping both models open
         if(shouldShutdownModel(_state.value.imageEmbedderLastUsage)) imageEmbedder.closeSession()
-        return Pair(queryResults, queryResults.size)
+        return queryResults
     }
 
     private fun parseQuery(query: String): Pair<String?, String>{
@@ -279,14 +277,14 @@ class SearchViewModel(
         val singletonRatio = singletonCount.toDouble() / totalItems
         return (base * (1.0 + singletonRatio)).toInt().coerceAtLeast(min)
     }
-    private suspend fun imageSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean, startDate: Long? = null, endDate: Long? = null): Pair<List<Long>, Int> {
-        val queryImage = _state.value.queryImage?: return  Pair(emptyList(), 0)
+    private suspend fun imageSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean, startDate: Long? = null, endDate: Long? = null): List<Long> {
+        val queryImage = _state.value.queryImage?: return  emptyList()
 
         if(!imageEmbedder.isInitialized()) imageEmbedder.initialize()
 
         val bitmap = getBitmapFromUri(getApplication(), queryImage, IMAGE_SIZE_X)
         val embedding = imageEmbedder.embed(bitmap)
-        totalClusters =  totalClusters?: clusterMetadataRepository.count(2)
+        totalClusters =  totalClusters?: clusterMetadataRepository.count()
         totalSingletonClusters =  totalSingletonClusters?: clusterMetadataRepository.countSingletons()
         val topK = computeDynamicTopK(totalClusters!!, totalSingletonClusters!!)
         val targetClusters = if (useClusterSearch) getTargetClusters(embedding, threshold, topK) else emptyList()
@@ -295,7 +293,7 @@ class SearchViewModel(
 
         // prevent keeping both models open
         if(shouldShutdownModel(_state.value.textEmbedderLastUsage)) textEmbedder.closeSession()
-        return Pair(queryResults, queryResults.size)
+        return queryResults
     }
 
 
@@ -316,9 +314,9 @@ class SearchViewModel(
         return resultIds
     }
 
-    private suspend fun handleSearchResult(queryResults: List<Long>, store: FileEmbeddingStore, totalResults: Int? = null, cache: Boolean = true) {
-        if(cache) cachedIds.addAll(queryResults)
-        val totalCount = totalResults?: queryResults.size
+    private suspend fun handleSearchResult(queryResults: List<Long>, store: FileEmbeddingStore) {
+        cachedIds.addAll(queryResults)
+        val totalCount = queryResults.size
         val initialBatch = queryResults.take(RESULTS_BATCH_SIZE) // initial results the rest loaded dynamically
         val (validIds, idsToPurge) = filterAccessibleMediaStoreIds(getApplication(), initialBatch, _state.value.mediaType)
         val filteredSearchResults = validIds.map { toMediaItem(it, _state.value.mediaType) }
@@ -388,15 +386,10 @@ class SearchViewModel(
         }
     }
 
-    private suspend fun getPaginatedResult(currentItemsCount: Int): List<Long>{
-        return if(_state.value.tagOnlySearch && _state.value.tagFilter != null){
-            val offset = (currentItemsCount).coerceAtMost(_state.value.totalResults)
-            getMediaMatchingTag(_state.value.tagFilter, _state.value.mediaType, RESULTS_BATCH_SIZE, offset = offset)
-        }else{
-            val end = (currentItemsCount + RESULTS_BATCH_SIZE).coerceAtMost(cachedIds.size)
-            if (currentItemsCount >= end) return emptyList()
-            cachedIds.subList(currentItemsCount, end)
-        }
+    private fun getPaginatedResult(currentItemsCount: Int): List<Long>{
+        val end = (currentItemsCount + RESULTS_BATCH_SIZE).coerceAtMost(cachedIds.size)
+        if (currentItemsCount >= end) return emptyList()
+        return cachedIds.subList(currentItemsCount, end)
     }
 
     fun toggleViewResult(context: Context, item: MediaItem?, autoOpenInGallery: Boolean? = null, isSelecting: Boolean = false){
@@ -578,6 +571,17 @@ class SearchViewModel(
     private fun getStore() = if(_state.value.mediaType == MediaType.VIDEO) videoStore else imageStore
     private fun getClusterStore() = if(_state.value.mediaType == MediaType.VIDEO) videoClusterStore else imageClusterStore
 
+
+    private suspend fun getMediaMatchingTag(tagName: String?, mediaType: MediaType): List<Long>{
+        tagName?: return emptyList()
+        val state = _state.value
+        val tag = tagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
+        return if(state.endDateFilter != null || state.startDateFilter != null){
+            tag?.let { tag-> mediaMetadataRepository.getByTagTypeAndDateRange(tag.id, mediaType,state.startDateFilter, state.endDateFilter).map{it.id}  }?: emptyList()
+        }else{
+            tag?.let { tag-> mediaMetadataRepository.getByTagAndType(tag.id, mediaType).map{it.id}  }?: emptyList()
+        }
+    }
     private suspend fun getMediaMatchingTag(tagName: String?, mediaType: MediaType, limit: Int, offset: Int): List<Long>{
         tagName?: return emptyList()
         val state = _state.value
