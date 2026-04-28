@@ -5,28 +5,26 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
-import android.net.Uri
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.net.toUri
 import com.fpf.smartscan.R
 import com.fpf.smartscan.MainActivity
-import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.constants.PrefsNames
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
-import com.fpf.smartscan.data.MediaDatabase
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
+import com.fpf.smartscan.di.IMAGE_CLUSTER_STORE
 import com.fpf.smartscan.di.IMAGE_STORE
+import com.fpf.smartscan.di.VIDEO_CLUSTER_STORE
 import com.fpf.smartscan.di.VIDEO_STORE
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.search.ImageIndexListener
 import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.settings.loadSettings
-import com.fpf.smartscan.media.queryImageIds
-import com.fpf.smartscan.media.queryVideoIds
 import com.fpf.smartscan.search.clusterMedia
+import com.fpf.smartscan.search.indexMedia
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer
@@ -41,8 +39,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 import org.koin.core.component.KoinComponent
-import java.io.File
-import kotlin.collections.filterNot
 import kotlin.collections.map
 
 class MediaIndexForegroundService : Service(), KoinComponent {
@@ -66,6 +62,9 @@ class MediaIndexForegroundService : Service(), KoinComponent {
 
     private val imageStore: FileEmbeddingStore by inject(IMAGE_STORE)
     private val videoStore: FileEmbeddingStore by inject(VIDEO_STORE)
+
+    private val imageClusterStore: FileEmbeddingStore by inject(IMAGE_CLUSTER_STORE)
+    private val videoClusterStore: FileEmbeddingStore by inject(VIDEO_CLUSTER_STORE)
 
 
     override fun onCreate() {
@@ -112,14 +111,14 @@ class MediaIndexForegroundService : Service(), KoinComponent {
                 imageEmbedder.initialize()
 
                 if (mediaType == TYPE_IMAGE || mediaType == TYPE_BOTH) {
-                    val imageClusterStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE_CLUSTER), imageEmbedder.embeddingDim)
-                    indexImages(imageStore, appSettings.searchableImageDirectories.map{it.toUri()})
+                    val imageIndexer = ImageIndexer(imageEmbedder, context=application, listener = ImageIndexListener, store = imageStore)
+                    indexMedia(application, imageIndexer, metadataRepo, MediaType.IMAGE,appSettings.searchableImageDirectories.map{it.toUri()})
                     clusterMedia(clusterCrossRefRepository, imageClusterStore, imageStore, clusterMetadataRepository, metadataRepo, MediaType.IMAGE)
                 }
 
                 if (mediaType == TYPE_VIDEO || mediaType == TYPE_BOTH) {
-                    val videoClusterStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.VIDEO_CLUSTER), imageEmbedder.embeddingDim)
-                    indexVideos(videoStore, appSettings.searchableVideoDirectories.map { it.toUri() })
+                    val videoIndexer = VideoIndexer(imageEmbedder, context=application, listener = VideoIndexListener, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
+                    indexMedia(application, videoIndexer, metadataRepo, MediaType.VIDEO,appSettings.searchableImageDirectories.map{it.toUri()})
                     clusterMedia(clusterCrossRefRepository, videoClusterStore, videoStore, clusterMetadataRepository, metadataRepo, MediaType.VIDEO)
                 }
             } catch (e: CancellationException) {
@@ -142,20 +141,4 @@ class MediaIndexForegroundService : Service(), KoinComponent {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-
-    private suspend fun indexImages(imageStore: FileEmbeddingStore, allowedDirs: List<Uri> = emptyList()){
-        val imageIndexer = ImageIndexer(imageEmbedder, context=application, listener = ImageIndexListener, store = imageStore)
-        val ids = queryImageIds(application, allowedDirs)
-        val existingIds = if(imageStore.exists) imageStore.get().map{it.id}.toSet() else emptySet()
-        val filteredIds = ids.filterNot { existingIds.contains(it) }
-        imageIndexer.run(filteredIds)
-    }
-
-    private suspend fun indexVideos(videoStore: FileEmbeddingStore, allowedDirs: List<Uri> = emptyList()){
-        val videoIndexer = VideoIndexer(imageEmbedder, context=application, listener = VideoIndexListener, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
-        val ids = queryVideoIds(application, allowedDirs)
-        val existingIds = if(videoStore.exists) videoStore.get().map{it.id}.toSet() else emptySet()
-        val filteredIds = ids.filterNot { existingIds.contains(it) }
-        videoIndexer.run(filteredIds)
-    }
 }

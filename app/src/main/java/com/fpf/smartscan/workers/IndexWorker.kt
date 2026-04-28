@@ -3,7 +3,6 @@ package com.fpf.smartscan.workers
 import android.app.Application
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
-import android.net.Uri
 import android.util.Log
 import androidx.core.net.toUri
 import androidx.work.*
@@ -19,9 +18,8 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.TimeUnit
 import com.fpf.smartscan.media.MediaType
-import com.fpf.smartscan.media.queryImageIds
-import com.fpf.smartscan.media.queryVideoIds
 import com.fpf.smartscan.search.clusterMedia
+import com.fpf.smartscan.search.indexMedia
 import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer
@@ -81,14 +79,17 @@ class IndexWorker(context: Context, workerParams: WorkerParameters) :
             imageEmbedder.initialize()
 
             // Prevents doing full indexes. That responsibility should be left to the foreground service
+            // No listener used (may change to avoid silent errors)
             if(imageStore.exists){
-                indexImages(imageStore, appSettings.searchableImageDirectories.map{it.toUri()})
+                val imageIndexer = ImageIndexer(imageEmbedder, context=applicationContext, listener = null, store = imageStore)
+                indexMedia(applicationContext, imageIndexer, metadataRepo, MediaType.IMAGE,appSettings.searchableImageDirectories.map{it.toUri()})
                 clusterMedia(clusterCrossRefRepository, imageClusterStore, imageStore, clusterMetadataRepository, metadataRepo, MediaType.IMAGE)
             }
 
             // Prevents doing full indexes. That responsibility should be left to the foreground service
             if(videoStore.exists){
-                indexVideos(videoStore, appSettings.searchableVideoDirectories.map { it.toUri() })
+                val videoIndexer = VideoIndexer(imageEmbedder, context=applicationContext, listener = null, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
+                indexMedia(applicationContext, videoIndexer, metadataRepo, MediaType.VIDEO,appSettings.searchableImageDirectories.map{it.toUri()})
                 clusterMedia(clusterCrossRefRepository, videoClusterStore, videoStore, clusterMetadataRepository, metadataRepo, MediaType.VIDEO)
             }
 
@@ -97,21 +98,5 @@ class IndexWorker(context: Context, workerParams: WorkerParameters) :
             Log.e(TAG, "Background indexing errors: ${e.message}", e)
             return@withContext Result.failure()
         }
-    }
-
-    private suspend fun indexImages(imageStore: FileEmbeddingStore, allowedDirs: List<Uri> = emptyList()){
-        val imageIndexer = ImageIndexer(imageEmbedder, context=applicationContext, listener = null, store = imageStore)
-        val ids = queryImageIds(applicationContext, allowedDirs)
-        val existingIds = if(imageStore.exists) imageStore.get().map{it.id}.toSet() else emptySet()
-        val filteredIds = ids.filterNot { existingIds.contains(it) }
-        imageIndexer.run(filteredIds)
-    }
-
-    private suspend fun indexVideos(videoStore: FileEmbeddingStore, allowedDirs: List<Uri> = emptyList()){
-        val videoIndexer = VideoIndexer(imageEmbedder, context=applicationContext, listener = null, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
-        val ids = queryVideoIds(applicationContext, allowedDirs)
-        val existingIds = if(videoStore.exists) videoStore.get().map{it.id}.toSet() else emptySet()
-        val filteredIds = ids.filterNot { existingIds.contains(it) }
-        videoIndexer.run(filteredIds)
     }
 }
