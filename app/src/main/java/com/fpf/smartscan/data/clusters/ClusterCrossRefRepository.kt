@@ -7,7 +7,6 @@ class ClusterCrossRefRepository(private val dao: ClusterCrossRefDao) {
     private var clusterCounts: MutableMap<Long, Int> = mutableMapOf()
     private var assignments: MutableMap<Long, Long> = mutableMapOf()
 
-
     suspend fun getAllCrossRefs(): List<ClusterCrossRef> = dao.getAll()
     fun getClustersWithCount(): Flow<List<ClusterMetadataWithCount>> = dao.getClustersWithCount()
     suspend fun getClusterToMediaIdsMap(): Map<Long, MutableSet<Long>> {
