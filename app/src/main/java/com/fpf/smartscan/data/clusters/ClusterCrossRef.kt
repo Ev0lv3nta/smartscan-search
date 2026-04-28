@@ -25,11 +25,10 @@ import com.fpf.smartscan.media.MediaType
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("mediaId"), Index("type")]
+    indices = [Index("mediaId")]
 )
 @TypeConverters(MediaTypeConverter::class)
 data class ClusterCrossRef(
     val clusterId: Long,
     val mediaId: Long,
-    val type: MediaType
 )

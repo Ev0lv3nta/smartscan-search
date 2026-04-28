@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Context
 import android.database.sqlite.SQLiteConstraintException
 import android.net.Uri
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
@@ -12,12 +11,10 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import coil3.compose.AsyncImagePainter
-import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.data.MediaDatabase
 import com.fpf.smartscan.data.tags.TagPagingSource
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
-import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.clusters.ClusterPagingSource
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.data.tags.Tag
@@ -48,7 +45,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import java.io.File
 import kotlin.collections.plus
 
 
@@ -160,7 +156,7 @@ class CollectionItemsViewModel(
 
         viewModelScope.launch (Dispatchers.IO){
             val newTag = tagsRepository.getTagsByName(listOf(newCollection.name)).firstOrNull()?: return@launch
-            val updatedCrossRef = items.map{ TagCrossRef(mediaId = it.id, tagId=newTag.id, type=it.type)}
+            val updatedCrossRef = items.map{ TagCrossRef(mediaId = it.id, tagId=newTag.id)}
             tagsCrossRefRepository.upsertTagCrossRefs(updatedCrossRef)
 
             val oldTag = tagsRepository.getTagsByName(listOf(oldCollectionName)).firstOrNull()?: return@launch
@@ -177,7 +173,7 @@ class CollectionItemsViewModel(
         viewModelScope.launch (Dispatchers.IO) {
             try {
                 val newTagId = tagsRepository.insertTags(listOf(Tag(name = newCollectionName))).firstOrNull()?: return@launch
-                val updatedCrossRef = items.map{ TagCrossRef(mediaId = it.id, tagId=newTagId, type=it.type)}
+                val updatedCrossRef = items.map{ TagCrossRef(mediaId = it.id, tagId=newTagId)}
                 tagsCrossRefRepository.upsertTagCrossRefs(updatedCrossRef)
 
                 val oldTag = tagsRepository.getTagsByName(listOf(oldCollectionName)).firstOrNull()?: return@launch

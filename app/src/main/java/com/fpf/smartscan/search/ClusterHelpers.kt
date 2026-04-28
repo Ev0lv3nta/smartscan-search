@@ -139,7 +139,6 @@ private suspend fun updateAssignments(
             ClusterCrossRef(
                 clusterId = it.value,
                 mediaId = it.key,
-                type = mediaType
             )
         }
 

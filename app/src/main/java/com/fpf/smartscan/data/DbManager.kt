@@ -127,7 +127,6 @@ object DbManager {
             TagCrossRef(
                 mediaId = it.imageId,
                 tagId = tagId,
-                type = MediaType.IMAGE
             )
         }
 
@@ -158,7 +157,6 @@ object DbManager {
             TagCrossRef(
                 mediaId = it.videoId,
                 tagId = tagId,
-                type = MediaType.VIDEO
             )
         }
 

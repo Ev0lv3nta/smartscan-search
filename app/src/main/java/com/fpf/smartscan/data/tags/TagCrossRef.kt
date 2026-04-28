@@ -25,11 +25,10 @@ import com.fpf.smartscan.media.MediaType
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("tagId"), Index("type")]
+    indices = [Index("tagId")]
 )
 @TypeConverters(MediaTypeConverter::class)
 data class TagCrossRef(
     val mediaId: Long,
     val tagId: Long,
-    val type: MediaType
 )

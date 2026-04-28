@@ -492,7 +492,7 @@ class SearchViewModel(
                         if(id == null){
                             id = tagsRepository.insertTags(listOf(Tag(name=tag.trim()))).first()
                         }
-                        val tagEntries = selectedMediaIds.map { TagCrossRef(mediaId = it, tagId = id, type = mediaType) }
+                        val tagEntries = selectedMediaIds.map { TagCrossRef(mediaId = it, tagId = id) }
                         tagsCrossRefRepository.upsertTagCrossRefs(tagEntries)
                     }
                     MediaType.VIDEO -> {
@@ -501,7 +501,7 @@ class SearchViewModel(
                         if(id == null){
                             id = tagsRepository.insertTags(listOf(Tag(name=tag.trim()))).first()
                         }
-                        val tagEntries = selectedMediaIds.map { TagCrossRef(mediaId = it, tagId = id, type = mediaType) }
+                        val tagEntries = selectedMediaIds.map { TagCrossRef(mediaId = it, tagId = id) }
                         tagsCrossRefRepository.upsertTagCrossRefs(tagEntries)
                     }
                 }

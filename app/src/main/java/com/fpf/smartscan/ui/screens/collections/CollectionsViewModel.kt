@@ -111,7 +111,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
             val tagsToMerge = tagsRepository.getTagsByName(otherCollections.map{it.name})
             val mediaToUpdate = tagsToMerge.flatMap { mediaMetadataRepository.getByTag(it.id) }
             if(primaryTag != null && mediaToUpdate.isNotEmpty()){
-                val updated = mediaToUpdate.map{ TagCrossRef(mediaId = it.id, type = it.type, tagId = primaryTag.id)}
+                val updated = mediaToUpdate.map{ TagCrossRef(mediaId = it.id, tagId = primaryTag.id)}
                 tagsCrossRefRepository.upsertTagCrossRefs(updated)
                 tagsRepository.deleteTags(tagsToMerge)
             }
@@ -133,7 +133,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
 
     private suspend fun copyCollection(clusterId: Long, tagId: Long){
         val clusterCrossRefs = mediaMetadataRepository.getByCluster(clusterId)
-        tagsCrossRefRepository.upsertTagCrossRefs(clusterCrossRefs.map{ TagCrossRef(it.id, tagId, it.type)})
+        tagsCrossRefRepository.upsertTagCrossRefs(clusterCrossRefs.map{ TagCrossRef(it.id, tagId)})
     }
 
     fun copyFromClusterToTagCollection(clusterCollections: Set<MediaCollection>, tagCollection: MediaCollection){
