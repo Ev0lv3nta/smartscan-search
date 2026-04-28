@@ -249,12 +249,4 @@ class CollectionItemsViewModel(
         }
     }
 
-    override fun onCleared() {
-        // required now that remove() method only removes from in-memory cache not disk
-        runBlocking {
-            imageStore.save()
-            videoStore.save()
-        }
-        super.onCleared()
-    }
 }

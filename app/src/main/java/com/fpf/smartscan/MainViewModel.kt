@@ -18,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.util.concurrent.TimeUnit
 
 class MainViewModel(
@@ -31,10 +32,6 @@ class MainViewModel(
     private val sharedPrefs = application.getSharedPreferences(PrefsNames.APP_PREFS, Context.MODE_PRIVATE)
     private val hasSyncedDates by lazy { sharedPrefs.getBoolean(PrefsKeys.EMBED_STORE_DATE_SYNC_COMPLETE, false)}
     private val hasSyncedMediaMetadata by lazy { sharedPrefs.getBoolean(PrefsKeys.MEDIA_METADATA_SYNC_COMPLETE, false)}
-
-
-    private val _appReady = MutableStateFlow(false)
-    val appReady: StateFlow<Boolean> = _appReady
 
     val versionName: String? = try {
         val packageInfo = application.packageManager.getPackageInfo(application.packageName, 0)
@@ -74,20 +71,23 @@ class MainViewModel(
             }
 
             val cachedDb = DbManager.checkCachedDb(application)
-            if (cachedDb != null) {
+            val isRestoreRequired = cachedDb != null
+            if (isRestoreRequired) {
                 DbManager.restoreDbFromCache(application, cachedDb)
             }
 
             val newDb = MediaDatabase.getDatabase(application)
 
-            if (!hasSyncedMediaMetadata && (imageStore.exists || videoStore.exists)) {
+            val isEmbedStoreDateSyncRequired = !hasSyncedMediaMetadata && (imageStore.exists || videoStore.exists)
+            if (isEmbedStoreDateSyncRequired) {
                 DbManager.syncMediaMetadata(application, newDb)
             }
 
             val oldImageCachedDb = DbManager.checkOldCachedImageDb(application)
             val oldVideoCachedDb = DbManager.checkOldCachedVideoDb(application)
-            if (oldImageCachedDb != null && oldVideoCachedDb != null) {
-                DbManager.transferIfNeeded(application, oldImageCachedDb, oldVideoCachedDb, newDb)
+            val isTransferNeeded = oldImageCachedDb != null && oldVideoCachedDb != null
+            if (isTransferNeeded) {
+                DbManager.transferOldDbToNew(application, oldImageCachedDb, oldVideoCachedDb, newDb)
             }
 
             if(!isWorkScheduled(context = application, workName = IndexWorker.TAG)) scheduleIndexWorker()
@@ -100,6 +100,14 @@ class MainViewModel(
         if (!imageStore.exists && !videoStore.exists) return
         // Delay is required to prevent race condition issues on first index
         IndexWorker.scheduleWorker(getApplication(), Pair(1L, TimeUnit.DAYS), Pair(1L, TimeUnit.DAYS))
+    }
+
+    override fun onCleared() {
+        runBlocking {
+            imageStore.save()
+            videoStore.save()
+        }
+        super.onCleared()
     }
 
 }

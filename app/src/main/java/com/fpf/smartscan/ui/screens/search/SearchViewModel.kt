@@ -575,11 +575,6 @@ class SearchViewModel(
     override fun onCleared() {
         textEmbedder.closeSession()
         imageEmbedder.closeSession()
-        // required now that remove() method only removes from in-memory cache not disk
-        runBlocking {
-            imageStore.save()
-            videoStore.save()
-        }
         super.onCleared()
     }
 }
