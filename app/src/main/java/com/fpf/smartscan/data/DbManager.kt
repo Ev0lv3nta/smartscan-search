@@ -55,14 +55,14 @@ object DbManager {
         cachedDbFile.delete()
     }
 
-    suspend fun transferIfNeeded(application: Application, oldImageTagDbCachedFile: File, oldVideoTagDbCachedFile: File, newDb: MediaDatabase){
-        val oldImageTagDbPath = application.getDatabasePath(OLD_DB_IMAGE_NAME)
-        val oldVideoTagDbPath = application.getDatabasePath(OLD_DB_VIDEO_NAME)
+    suspend fun transferOldDbToNew(application: Application, oldImageTagDbCachedFile: File, oldVideoTagDbCachedFile: File, newDb: MediaDatabase){
         val isTransferNeeded = oldImageTagDbCachedFile.exists() && oldVideoTagDbCachedFile.exists()
         if (!isTransferNeeded) return
 
+        val oldImageTagDbPath = application.getDatabasePath(OLD_DB_IMAGE_NAME)
+        val oldVideoTagDbPath = application.getDatabasePath(OLD_DB_VIDEO_NAME)
 
-        Log.d(MediaDatabase.Companion.TAG, "Old DB detected, transferring...")
+        Log.d(MediaDatabase.TAG, "Old DB detected, transferring...")
 
         oldImageTagDbCachedFile.copyTo(oldImageTagDbPath, overwrite = true)
         oldVideoTagDbCachedFile.copyTo(oldVideoTagDbPath, overwrite = true)
