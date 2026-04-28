@@ -2,10 +2,12 @@ package com.fpf.smartscan.ui.screens.settings
 
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.fpf.smartscan.MainActivity
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.data.MediaDatabase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +35,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
 import java.io.File
+import kotlin.system.exitProcess
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val sharedPrefs = application.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
@@ -189,8 +192,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     error("Invalid backup file")
                 }
                 _event.emit("Restore successful")
-                ImageIndexListener.onComplete(getApplication(), Metrics.Success()) // call onComplete to trigger refresh in search screen
-                VideoIndexListener.onComplete(getApplication(), Metrics.Success())
+                restartApp()
             }catch (e: Exception){
                 Log.e(TAG, "Error restoring: ${e.message}")
                 if (e.message == "Invalid backup file") _event.emit(e.message!!) else _event.emit("Restore failed")
@@ -199,6 +201,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 _isRestoreLoading.emit(false)
             }
         }
+    }
+
+    private fun restartApp(){
+        val intent = Intent(getApplication(), MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        }
+
+        getApplication<Application>().startActivity(intent)
+        exitProcess(0)
     }
 
     private suspend fun isValidBackupFile(extractedFiles: List<File>): Boolean{
