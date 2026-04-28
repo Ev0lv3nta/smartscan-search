@@ -84,7 +84,7 @@ class MainViewModel(
 
             val mediaSyncNeeded = !hasSyncedMediaMetadata && (imageStore.exists || videoStore.exists)
             if (mediaSyncNeeded) {
-                DbManager.syncMediaMetadata(application, db)
+                DbManager.syncMediaMetadataFromEmbedStores(application, db, imageStore=imageStore, videoStore=videoStore)
             }
 
             val oldImageCachedDb = DbManager.checkOldCachedImageDb(application)

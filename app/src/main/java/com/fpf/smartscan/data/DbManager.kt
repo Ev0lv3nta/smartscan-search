@@ -24,6 +24,7 @@ import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.queryImageIdDateMap
 import com.fpf.smartscan.media.queryVideoIdDateMap
+import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -77,23 +78,39 @@ object DbManager {
         oldVideoTagDbPath.delete()
     }
 
-    suspend fun syncMediaMetadata(application: Application, db: MediaDatabase){
+    suspend fun syncMediaMetadataFromEmbedStores(
+        application: Application,
+        db: MediaDatabase,
+        imageStore: FileEmbeddingStore,
+        videoStore: FileEmbeddingStore
+    ){
         val sharedPrefs = application.getSharedPreferences(PrefsNames.APP_PREFS, MODE_PRIVATE)
         val metadataRepo = MediaMetadataRepository(db.metadataDao())
-        val imageToDateMap = queryImageIdDateMap(application)
-        val imageMetadataList = imageToDateMap.entries.map{
-            MediaMetadata(id=it.key, dateAdded = it.value, type = MediaType.IMAGE)
-        }
-        metadataRepo.upsert(imageMetadataList)
-        Log.d(TAG, "Image metadata sync complete. ${imageMetadataList.size} synced.")
+        val storedImageIds = (if(imageStore.exists) imageStore.get() else emptyList()).map { it.id }.toSet()
 
-
-        val videToDateMap = queryVideoIdDateMap(application)
-        val videoMetadataList = videToDateMap.entries.map{
-            MediaMetadata(id=it.key, dateAdded = it.value, type = MediaType.VIDEO)
+        if(storedImageIds.isNotEmpty()) {
+            val imageToDateMap = queryImageIdDateMap(application)
+            val imageMetadataList = imageToDateMap.entries.mapNotNull{
+                // Ensure embed store and media table are in sync
+                // Filtered out items will be naturally added to index based on schedule
+                if (it.key !in storedImageIds) return@mapNotNull null
+                MediaMetadata(id=it.key, dateAdded = it.value, type = MediaType.IMAGE)
+            }
+            metadataRepo.upsert(imageMetadataList)
+            Log.d(TAG, "Image metadata sync complete. ${imageMetadataList.size} synced.")
         }
-        metadataRepo.upsert(videoMetadataList)
-        Log.d(TAG, "Video metadata sync complete. ${videoMetadataList.size} synced.")
+
+        val storedVideoIds =( if(videoStore.exists) videoStore.get() else emptyList()).map{it.id}.toSet()
+        if(storedVideoIds.isNotEmpty()){
+            val videoToDateMap = queryVideoIdDateMap(application)
+            val videoMetadataList = videoToDateMap.mapNotNull{
+                if (it.key !in storedVideoIds) return@mapNotNull null
+                MediaMetadata(id=it.key, dateAdded = it.value, type = MediaType.VIDEO)
+            }
+            metadataRepo.upsert(videoMetadataList)
+            Log.d(TAG, "Video metadata sync complete. ${videoMetadataList.size} synced.")
+
+        }
 
 
         sharedPrefs.edit {
