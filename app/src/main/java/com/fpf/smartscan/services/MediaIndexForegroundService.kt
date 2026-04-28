@@ -40,11 +40,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
+import org.koin.core.component.KoinComponent
 import java.io.File
 import kotlin.collections.filterNot
 import kotlin.collections.map
 
-class MediaIndexForegroundService : Service() {
+class MediaIndexForegroundService : Service(), KoinComponent {
     companion object {
         const val EXTRA_MEDIA_TYPE = "extra_media_type"
         const val TYPE_IMAGE = "image"
@@ -59,11 +60,9 @@ class MediaIndexForegroundService : Service() {
     private val sharedPrefs by lazy { application.getSharedPreferences(PrefsNames.APP_PREFS, MODE_PRIVATE)    }
     private val imageEmbedder by lazy { ClipImageEmbedder(application, ModelAssetSource.Resource(R.raw.clip_image_encoder_quant))}
 
-    private val db by lazy {MediaDatabase.getDatabase(application)}
-    private val clusterMetadataRepository by lazy { ClusterMetadataRepository(db.clusterMetadataDao()) }
-    private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
-    private val metadataRepo by lazy { MediaMetadataRepository(db.metadataDao()) }
-
+    private val metadataRepo: MediaMetadataRepository by inject()
+    private val clusterMetadataRepository: ClusterMetadataRepository by inject()
+    private val clusterCrossRefRepository: ClusterCrossRefRepository by inject()
 
     private val imageStore: FileEmbeddingStore by inject(IMAGE_STORE)
     private val videoStore: FileEmbeddingStore by inject(VIDEO_STORE)
