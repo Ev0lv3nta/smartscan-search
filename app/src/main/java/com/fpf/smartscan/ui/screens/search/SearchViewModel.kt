@@ -36,8 +36,6 @@ import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.services.MediaIndexForegroundService
 import com.fpf.smartscan.services.startIndexing
-import com.fpf.smartscan.utils.isWorkScheduled
-import com.fpf.smartscan.workers.IndexWorker
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.media.getBitmapFromUri
 import com.fpf.smartscansdk.ml.models.ModelAssetSource
@@ -53,7 +51,6 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.log2
 
@@ -113,7 +110,6 @@ class SearchViewModel(
             processQuery()
         }
         viewModelScope.launch(Dispatchers.IO){
-            if(!isWorkScheduled(context = application, workName = IndexWorker.TAG)) scheduleIndexWorker()
             val hasIndexedAndHasNotClustered = (imageStore.exists || videoStore.exists) && (!imageClusterStore.exists && !videoClusterStore.exists)
             val isIndexing = imageIndexStatus.value == IndexingStatus.ACTIVE || videoIndexStatus.value == IndexingStatus.ACTIVE
             if(hasIndexedAndHasNotClustered && !isIndexing){
@@ -542,13 +538,6 @@ class SearchViewModel(
     fun onSelectAutoCompleteResult(tag: String){
         searchFieldState.edit { replace(0, searchFieldState.text.length, "#$tag ") }
     }
-
-    private fun scheduleIndexWorker(){
-        if (!imageStore.exists && !videoStore.exists) return
-        // Delay is required to prevent race condition issues on first index
-        IndexWorker.scheduleWorker(getApplication(), Pair(1L, TimeUnit.DAYS), Pair(1L, TimeUnit.DAYS))
-    }
-
     private fun getStore() = if(_state.value.mediaType == MediaType.VIDEO) videoStore else imageStore
     private fun getClusterStore() = if(_state.value.mediaType == MediaType.VIDEO) videoClusterStore else imageClusterStore
 

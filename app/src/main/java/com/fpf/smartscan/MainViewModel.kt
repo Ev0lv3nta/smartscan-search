@@ -11,11 +11,14 @@ import com.fpf.smartscan.constants.PrefsNames
 import com.fpf.smartscan.data.DbManager
 import com.fpf.smartscan.data.EmbedStoreSyncHelper
 import com.fpf.smartscan.data.MediaDatabase
+import com.fpf.smartscan.utils.isWorkScheduled
+import com.fpf.smartscan.workers.IndexWorker
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 
 class MainViewModel(
     application: Application,
@@ -87,8 +90,16 @@ class MainViewModel(
                 DbManager.transferIfNeeded(application, oldImageCachedDb, oldVideoCachedDb, newDb)
             }
 
+            if(!isWorkScheduled(context = application, workName = IndexWorker.TAG)) scheduleIndexWorker()
+
             onAppReady()
         }
+    }
+
+    private fun scheduleIndexWorker(){
+        if (!imageStore.exists && !videoStore.exists) return
+        // Delay is required to prevent race condition issues on first index
+        IndexWorker.scheduleWorker(getApplication(), Pair(1L, TimeUnit.DAYS), Pair(1L, TimeUnit.DAYS))
     }
 
 }
