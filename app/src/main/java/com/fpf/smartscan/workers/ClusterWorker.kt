@@ -1,26 +1,26 @@
 package com.fpf.smartscan.workers
 
-import android.app.Application
 import android.content.Context
 import android.util.Log
 import androidx.work.*
-import com.fpf.smartscan.R
-import com.fpf.smartscan.constants.EmbeddingStoresFiles
-import com.fpf.smartscan.data.MediaDatabase
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
+import com.fpf.smartscan.di.IMAGE_CLUSTER_STORE
+import com.fpf.smartscan.di.IMAGE_STORE
+import com.fpf.smartscan.di.VIDEO_CLUSTER_STORE
+import com.fpf.smartscan.di.VIDEO_STORE
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.search.clusterMedia
-import com.fpf.smartscansdk.ml.models.ModelAssetSource
-import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+import kotlin.getValue
 
 class ClusterWorker(context: Context, workerParams: WorkerParameters) :
-    CoroutineWorker(context, workerParams) {
+    CoroutineWorker(context, workerParams), KoinComponent {
 
     companion object {
         const val TAG = "ClusterWorker"
@@ -45,18 +45,16 @@ class ClusterWorker(context: Context, workerParams: WorkerParameters) :
         }
     }
 
-    private val imageEmbedder by lazy { ClipImageEmbedder(applicationContext, ModelAssetSource.Resource(R.raw.clip_image_encoder_quant))}
+    private val metadataRepo: MediaMetadataRepository by inject()
+    private val clusterMetadataRepository: ClusterMetadataRepository by inject()
+    private val clusterCrossRefRepository: ClusterCrossRefRepository by inject()
 
-    private val db = MediaDatabase.getDatabase(applicationContext as Application)
-    private val clusterMetadataRepository by lazy { ClusterMetadataRepository(db.clusterMetadataDao()) }
-    private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
-    private val metadataRepo by lazy { MediaMetadataRepository(db.metadataDao()) }
+    private val imageStore: FileEmbeddingStore by inject(IMAGE_STORE)
+    private val videoStore: FileEmbeddingStore by inject(VIDEO_STORE)
 
-    private val imageStore by lazy { FileEmbeddingStore(File(applicationContext.filesDir, EmbeddingStoresFiles.IMAGE), imageEmbedder.embeddingDim)}
-    private val imageClusterStore by lazy { FileEmbeddingStore(File(applicationContext.filesDir, EmbeddingStoresFiles.IMAGE_CLUSTER), imageEmbedder.embeddingDim)}
-    private val videoStore by lazy { FileEmbeddingStore(File(applicationContext.filesDir, EmbeddingStoresFiles.VIDEO), imageEmbedder.embeddingDim)}
+    private val imageClusterStore: FileEmbeddingStore by inject(IMAGE_CLUSTER_STORE)
+    private val videoClusterStore: FileEmbeddingStore by inject(VIDEO_CLUSTER_STORE)
 
-    private val videoClusterStore by lazy { FileEmbeddingStore(File(applicationContext.filesDir, EmbeddingStoresFiles.VIDEO_CLUSTER), imageEmbedder.embeddingDim)}
 
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
@@ -69,7 +67,6 @@ class ClusterWorker(context: Context, workerParams: WorkerParameters) :
                         if(imageStore.exists){
                             clusterMedia(clusterCrossRefRepository, imageClusterStore, imageStore, clusterMetadataRepository, metadataRepo, MediaType.IMAGE)
                             Log.d(TAG, "Clustered images successfully")
-
                         }
                     }
                     MediaType.VIDEO -> {
