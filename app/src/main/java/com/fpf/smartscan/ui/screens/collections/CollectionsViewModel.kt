@@ -8,7 +8,6 @@ import androidx.lifecycle.viewModelScope
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
 import com.fpf.smartscan.data.tags.TagRepository
 import com.fpf.smartscan.media.MediaCollection
-import com.fpf.smartscan.data.MediaDatabase
 import com.fpf.smartscan.data.tags.TagWithCount
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
@@ -34,20 +33,18 @@ import kotlin.collections.forEach
 import kotlin.collections.plus
 
 
-class CollectionsViewModel( application: Application) : AndroidViewModel(application) {
+class CollectionsViewModel( 
+    application: Application,
+    private val tagRepository: TagRepository,
+    private val tagCrossRefRepository: TagCrossRefRepository,
+    private val clusterMetadataRepository: ClusterMetadataRepository,
+    private val clusterCrossRefRepository: ClusterCrossRefRepository,
+    private val mediaMetadataRepository: MediaMetadataRepository
+) : AndroidViewModel(application) {
     companion object {
         private const val TAG = "CollectionsViewModel"
         const val TOP_N = 6
     }
-
-    private val db by lazy {  MediaDatabase.getDatabase(application)}
-
-    private val tagsRepository by lazy { TagRepository(db.tagDao())}
-    private val tagsCrossRefRepository by lazy { TagCrossRefRepository( db.tagCrossRefDao())}
-    private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
-    private val clusterMetadataRepository by lazy { ClusterMetadataRepository(db.clusterMetadataDao()) }
-    private val mediaMetadataRepository by lazy { MediaMetadataRepository( db.metadataDao())}
-
 
     private val _state = MutableStateFlow(CollectionsState())
     val state: StateFlow<CollectionsState> = _state
@@ -70,7 +67,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
         )
 
     val tagCollections: StateFlow<List<MediaCollection>> = combine(
-        tagsCrossRefRepository.getTagsWithCounts(),
+        tagCrossRefRepository.getTagsWithCounts(),
         _state.map {  it.showAllCollections to  it.viewAutoCollections }.distinctUntilChanged()
     ) { tagsWithCount, ( showAllCollections, viewAutoCollections) ->
         if(!viewAutoCollections){
@@ -88,8 +85,8 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
     fun renameTagCollection(collection: MediaCollection, newName: String){
         viewModelScope.launch(Dispatchers.IO) {
             try{
-                val tag = tagsRepository.getTagsByName(listOf(collection.name)).firstOrNull()
-                tag?.let { tagsRepository.updateTags(listOf((it).copy(name = newName))) }
+                val tag = tagRepository.getTagsByName(listOf(collection.name)).firstOrNull()
+                tag?.let { tagRepository.updateTags(listOf((it).copy(name = newName))) }
                 _state.update { it.copy(selectedCollections = emptySet()) }
             } catch (_: SQLiteConstraintException){
                 _state.update { it.copy(error="Collection already exists") }
@@ -100,20 +97,20 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
 
     fun deleteTagCollections(collections: Set<MediaCollection>){
         viewModelScope.launch(Dispatchers.IO) {
-            tagsRepository.deleteTagsByName(collections.map{it.name})
+            tagRepository.deleteTagsByName(collections.map{it.name})
             _state.update { it.copy(selectedCollections = emptySet()) }
         }
     }
 
     fun mergeCollections(primaryCollectionName: String, otherCollections: List<MediaCollection>){
         viewModelScope.launch (Dispatchers.IO) {
-            val primaryTag = tagsRepository.getTagsByName(listOf(primaryCollectionName)).firstOrNull()
-            val tagsToMerge = tagsRepository.getTagsByName(otherCollections.map{it.name})
+            val primaryTag = tagRepository.getTagsByName(listOf(primaryCollectionName)).firstOrNull()
+            val tagsToMerge = tagRepository.getTagsByName(otherCollections.map{it.name})
             val mediaToUpdate = tagsToMerge.flatMap { mediaMetadataRepository.getByTag(it.id) }
             if(primaryTag != null && mediaToUpdate.isNotEmpty()){
                 val updated = mediaToUpdate.map{ TagCrossRef(mediaId = it.id, tagId = primaryTag.id)}
-                tagsCrossRefRepository.upsertTagCrossRefs(updated)
-                tagsRepository.deleteTags(tagsToMerge)
+                tagCrossRefRepository.upsertTagCrossRefs(updated)
+                tagRepository.deleteTags(tagsToMerge)
             }
             _state.update { it.copy( selectedCollections = emptySet()) }
         }
@@ -133,7 +130,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
 
     private suspend fun copyCollection(clusterId: Long, tagId: Long){
         val clusterCrossRefs = mediaMetadataRepository.getByCluster(clusterId)
-        tagsCrossRefRepository.upsertTagCrossRefs(clusterCrossRefs.map{ TagCrossRef(it.id, tagId)})
+        tagCrossRefRepository.upsertTagCrossRefs(clusterCrossRefs.map{ TagCrossRef(it.id, tagId)})
     }
 
     fun copyFromClusterToTagCollection(clusterCollections: Set<MediaCollection>, tagCollection: MediaCollection){
@@ -146,7 +143,7 @@ class CollectionsViewModel( application: Application) : AndroidViewModel(applica
     fun createNewCollectionAndCopy(clusterCollections: Set<MediaCollection>, newCollectionName: String){
         viewModelScope.launch (Dispatchers.IO) {
             try {
-                val insertedIds = tagsRepository.insertTags(listOf(Tag(name = newCollectionName)))
+                val insertedIds = tagRepository.insertTags(listOf(Tag(name = newCollectionName)))
                 val tagId = insertedIds.firstOrNull()?: return@launch
                 clusterCollections.forEach { copyCollection(it.id, tagId) }
                 _state.update { it.copy( selectedCollections = emptySet()) }

@@ -12,6 +12,7 @@ import coil3.memory.MemoryCache
 import coil3.request.crossfade
 import coil3.video.VideoFrameDecoder
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
+import com.fpf.smartscan.di.dbModule
 import com.fpf.smartscan.di.embedStoreModule
 import com.fpf.smartscan.di.viewModelModule
 import org.koin.android.ext.koin.androidContext
@@ -28,7 +29,7 @@ class App : Application() {
 
         startKoin {
             androidContext(this@App)
-            modules(embedStoreModule, viewModelModule)
+            modules(embedStoreModule, dbModule, viewModelModule)
         }
 
         SingletonImageLoader.setSafe {

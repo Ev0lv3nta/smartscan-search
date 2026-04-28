@@ -61,12 +61,13 @@ import com.fpf.smartscan.ui.screens.collections.CollectionsViewModel.Companion.T
 import kotlinx.coroutines.FlowPreview
 import com.fpf.smartscan.R
 import androidx.compose.ui.res.stringResource
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(FlowPreview::class)
 @Composable
 fun CollectionsScreen(
     onNavigate: (String) -> Unit,
-    viewModel: CollectionsViewModel = viewModel(),
+    viewModel: CollectionsViewModel = koinViewModel(),
     ) {
     val state by viewModel.state.collectAsState()
     val clusterCollections by viewModel.clusterCollections.collectAsState()

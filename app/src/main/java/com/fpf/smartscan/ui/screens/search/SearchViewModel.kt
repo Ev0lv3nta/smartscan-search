@@ -13,7 +13,6 @@ import coil3.compose.AsyncImagePainter
 import com.fpf.smartscan.media.getImageUriFromId
 import kotlinx.coroutines.Dispatchers
 import com.fpf.smartscan.R
-import com.fpf.smartscan.data.MediaDatabase
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
@@ -63,7 +62,12 @@ class SearchViewModel(
     private val imageStore: FileEmbeddingStore,
     private val videoStore: FileEmbeddingStore,
     private val imageClusterStore: FileEmbeddingStore,
-    private val videoClusterStore: FileEmbeddingStore
+    private val videoClusterStore: FileEmbeddingStore,
+    private val tagRepository: TagRepository,
+    private val tagCrossRefRepository: TagCrossRefRepository,
+    private val clusterCrossRefRepository: ClusterCrossRefRepository,
+    private val clusterMetadataRepository: ClusterMetadataRepository,
+    private val mediaMetadataRepository: MediaMetadataRepository
 ) : AndroidViewModel(application) {
     companion object {
         private const val TAG = "SearchViewModel"
@@ -79,16 +83,7 @@ class SearchViewModel(
     private val textEmbedder  = ClipTextEmbedder(application, ModelAssetSource.Resource(R.raw.clip_text_encoder_quant), vocabSource = ModelAssetSource.Resource(R.raw.vocab), mergesSource = ModelAssetSource.Resource(R.raw.merges))
 
     private val imageEmbedder = ClipImageEmbedder(application, ModelAssetSource.Resource(R.raw.clip_image_encoder_quant))
-
-    private val db = MediaDatabase.getDatabase(application)
-
-    private val tagsRepository by lazy { TagRepository(db.tagDao())}
-    private val tagsCrossRefRepository by lazy { TagCrossRefRepository( db.tagCrossRefDao())}
-    private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
-    private val clusterMetadataRepository by lazy { ClusterMetadataRepository(db.clusterMetadataDao()) }
-    private val mediaMetadataRepository by lazy { MediaMetadataRepository(db.metadataDao()) }
-
-    val allTags: StateFlow<List<Tag>> = tagsRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val allTags: StateFlow<List<Tag>> = tagRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     private val _state = MutableStateFlow(SearchState())
     val state: StateFlow<SearchState> = _state
@@ -382,7 +377,7 @@ class SearchViewModel(
 
     private fun purgeStaleItems(store: FileEmbeddingStore, idsToPurge: List<Long>){
         viewModelScope.launch(Dispatchers.IO) {
-            removeStaleMedia(idsToPurge, store, tagsCrossRefRepository, clusterCrossRefRepository)
+            removeStaleMedia(idsToPurge, store, tagCrossRefRepository, clusterCrossRefRepository)
         }
     }
 
@@ -484,13 +479,13 @@ class SearchViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val selectedMediaIds = _state.value.selectedResults.map { it.id }
-                val existing = tagsRepository.getTagsByName(listOf(tag)).firstOrNull()
+                val existing = tagRepository.getTagsByName(listOf(tag)).firstOrNull()
                 var id = existing?.id
                 if(id == null){
-                    id = tagsRepository.insertTags(listOf(Tag(name=tag.trim()))).first()
+                    id = tagRepository.insertTags(listOf(Tag(name=tag.trim()))).first()
                 }
                 val tagEntries = selectedMediaIds.map { TagCrossRef(mediaId = it, tagId = id) }
-                tagsCrossRefRepository.upsertTagCrossRefs(tagEntries)
+                tagCrossRefRepository.upsertTagCrossRefs(tagEntries)
             }finally {
                 clearSelectedResults()
             }
@@ -506,7 +501,7 @@ class SearchViewModel(
             onMediaLoadingError(error,
                 imageEmbedStore = imageStore,
                 videoEmbedStore = videoStore,
-                tagsCrossRefRepository = tagsCrossRefRepository,
+                tagCrossRefRepository = tagCrossRefRepository,
                 clusterCrossRefRepository=clusterCrossRefRepository
             )
         }
@@ -561,7 +556,7 @@ class SearchViewModel(
     private suspend fun getMediaMatchingTag(tagName: String?, mediaType: MediaType): List<Long>{
         tagName?: return emptyList()
         val state = _state.value
-        val tag = tagsRepository.getTagsByName(listOf(tagName)).firstOrNull()
+        val tag = tagRepository.getTagsByName(listOf(tagName)).firstOrNull()
         return if(state.endDateFilter != null || state.startDateFilter != null){
             tag?.let { tag-> mediaMetadataRepository.getByTagTypeAndDateRange(tag.id, mediaType,state.startDateFilter, state.endDateFilter).map{it.id}  }?: emptyList()
         }else{
@@ -570,7 +565,7 @@ class SearchViewModel(
     }
     private suspend fun updateTagLastUsage(tag: String){
         val tag = allTags.value.find { it.name == tag }?: return
-        tagsRepository.updateTags(listOf(Tag(tag.id, tag.name, System.currentTimeMillis())))
+        tagRepository.updateTags(listOf(Tag(tag.id, tag.name, System.currentTimeMillis())))
     }
 
     private fun mediaIdToUri(id: Long, mediaType: MediaType): Uri {

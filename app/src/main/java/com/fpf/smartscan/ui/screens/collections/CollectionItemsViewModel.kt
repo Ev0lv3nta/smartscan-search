@@ -12,7 +12,6 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import coil3.compose.AsyncImagePainter
 import com.fpf.smartscan.media.MediaCollection
-import com.fpf.smartscan.data.MediaDatabase
 import com.fpf.smartscan.data.tags.TagPagingSource
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterPagingSource
@@ -52,20 +51,14 @@ class CollectionItemsViewModel(
     application: Application,
     private val imageStore: FileEmbeddingStore,
     private val videoStore: FileEmbeddingStore,
+    private val tagRepository: TagRepository,
+    private val tagCrossRefRepository: TagCrossRefRepository,
+    private val clusterCrossRefRepository: ClusterCrossRefRepository,
+    private val mediaMetadataRepository: MediaMetadataRepository
 ) : AndroidViewModel(application) {
     companion object {
         private const val TAG = "CollectionItemsViewModel"
     }
-
-
-    private val db = MediaDatabase.getDatabase(application)
-
-    private val tagsRepository by lazy { TagRepository(db.tagDao())}
-    private val tagsCrossRefRepository by lazy { TagCrossRefRepository( db.tagCrossRefDao())}
-    private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
-
-    private val mediaMetadataRepository by lazy { MediaMetadataRepository( db.metadataDao())}
-
 
     private val _state = MutableStateFlow(CollectionItemsState())
     val state: StateFlow<CollectionItemsState> = _state
@@ -76,7 +69,7 @@ class CollectionItemsViewModel(
         .distinctUntilChanged()
         .flatMapLatest { (mediaType, collectionName) ->
 
-            val tagId = collectionName?.let{tagsRepository.getTagsByName(listOf(it)).firstOrNull()?.id}
+            val tagId = collectionName?.let{tagRepository.getTagsByName(listOf(it)).firstOrNull()?.id}
 
             if (tagId == null) {
                 flowOf(PagingData.empty())
@@ -130,7 +123,7 @@ class CollectionItemsViewModel(
         .cachedIn(viewModelScope)
 
     val mediaCollections: StateFlow<List<MediaCollection>> = combine(
-        tagsCrossRefRepository.getTagsWithCounts(),
+        tagCrossRefRepository.getTagsWithCounts(),
         _state.map { it.mediaType }
     ) { tagCounts, mediaType -> getCollections(tagCounts)
     }.flowOn(Dispatchers.IO).stateIn(
@@ -144,8 +137,8 @@ class CollectionItemsViewModel(
         val collectionName = _state.value.collectionName?: return
 
         viewModelScope.launch (Dispatchers.IO){
-            val tag = tagsRepository.getTagsByName(listOf(collectionName)).firstOrNull()?: return@launch
-            tagsCrossRefRepository.deleteMediaMatchTag( mediaIds, tag.id)
+            val tag = tagRepository.getTagsByName(listOf(collectionName)).firstOrNull()?: return@launch
+            tagCrossRefRepository.deleteMediaMatchTag( mediaIds, tag.id)
             onComplete()
             _state.update { it.copy(selectedMediaItems = emptySet()) }
         }
@@ -155,12 +148,12 @@ class CollectionItemsViewModel(
         val oldCollectionName = _state.value.collectionName?: return
 
         viewModelScope.launch (Dispatchers.IO){
-            val newTag = tagsRepository.getTagsByName(listOf(newCollection.name)).firstOrNull()?: return@launch
+            val newTag = tagRepository.getTagsByName(listOf(newCollection.name)).firstOrNull()?: return@launch
             val updatedCrossRef = items.map{ TagCrossRef(mediaId = it.id, tagId=newTag.id)}
-            tagsCrossRefRepository.upsertTagCrossRefs(updatedCrossRef)
+            tagCrossRefRepository.upsertTagCrossRefs(updatedCrossRef)
 
-            val oldTag = tagsRepository.getTagsByName(listOf(oldCollectionName)).firstOrNull()?: return@launch
-            tagsCrossRefRepository.deleteMediaMatchTag(  items.map{it.id}, oldTag.id)
+            val oldTag = tagRepository.getTagsByName(listOf(oldCollectionName)).firstOrNull()?: return@launch
+            tagCrossRefRepository.deleteMediaMatchTag(  items.map{it.id}, oldTag.id)
             onComplete()
             _state.update { it.copy(selectedMediaItems = emptySet()) }
         }
@@ -172,12 +165,12 @@ class CollectionItemsViewModel(
 
         viewModelScope.launch (Dispatchers.IO) {
             try {
-                val newTagId = tagsRepository.insertTags(listOf(Tag(name = newCollectionName))).firstOrNull()?: return@launch
+                val newTagId = tagRepository.insertTags(listOf(Tag(name = newCollectionName))).firstOrNull()?: return@launch
                 val updatedCrossRef = items.map{ TagCrossRef(mediaId = it.id, tagId=newTagId)}
-                tagsCrossRefRepository.upsertTagCrossRefs(updatedCrossRef)
+                tagCrossRefRepository.upsertTagCrossRefs(updatedCrossRef)
 
-                val oldTag = tagsRepository.getTagsByName(listOf(oldCollectionName)).firstOrNull()?: return@launch
-                tagsCrossRefRepository.deleteMediaMatchTag(  items.map{it.id}, oldTag.id)
+                val oldTag = tagRepository.getTagsByName(listOf(oldCollectionName)).firstOrNull()?: return@launch
+                tagCrossRefRepository.deleteMediaMatchTag(  items.map{it.id}, oldTag.id)
                 onComplete()
                 _state.update { it.copy(selectedMediaItems = emptySet()) }
             }catch (_: SQLiteConstraintException){
@@ -228,7 +221,7 @@ class CollectionItemsViewModel(
             onMediaLoadingError(error,
                 imageEmbedStore = imageStore,
                 videoEmbedStore = videoStore,
-                tagsCrossRefRepository = tagsCrossRefRepository,
+                tagCrossRefRepository = tagCrossRefRepository,
                 clusterCrossRefRepository=clusterCrossRefRepository
                 )
         }
