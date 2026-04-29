@@ -2,20 +2,19 @@ package com.fpf.smartscan.ui.screens.settings
 
 import android.app.Application
 import android.content.Context
-import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.fpf.smartscan.MainActivity
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
+import com.fpf.smartscan.constants.PrefsNames
 import com.fpf.smartscan.data.MediaDatabase
+import com.fpf.smartscan.events.AppEvent
+import com.fpf.smartscan.events.AppEventType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import com.fpf.smartscan.settings.AppSettings
-import com.fpf.smartscan.search.ImageIndexListener
-import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.utils.copyFromUri
 import com.fpf.smartscan.utils.copyToUri
 import com.fpf.smartscan.utils.hashFile
@@ -26,25 +25,24 @@ import com.fpf.smartscan.utils.zipFiles
 import com.fpf.smartscan.ui.theme.ColorSchemeType
 import com.fpf.smartscan.ui.theme.ThemeManager
 import com.fpf.smartscan.ui.theme.ThemeMode
+import com.fpf.smartscansdk.core.SmartScanException
 import com.fpf.smartscansdk.ml.models.ModelInfo
 import com.fpf.smartscansdk.ml.models.ModelManager
 import com.fpf.smartscansdk.ml.models.ModelName
-import com.fpf.smartscansdk.core.processors.Metrics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
 import java.io.File
-import kotlin.system.exitProcess
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
-    private val sharedPrefs = application.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+    private val sharedPrefs = application.getSharedPreferences(PrefsNames.APP_PREFS, Context.MODE_PRIVATE)
     private val _appSettings = MutableStateFlow(AppSettings())
     val appSettings: StateFlow<AppSettings> = _appSettings
 
     private val _importedModels = MutableStateFlow(ModelManager.listModels(application))
     val importedModels: StateFlow<List<ModelName>> = _importedModels
-    private val _event = MutableSharedFlow<String>()
+    private val _event = MutableSharedFlow<AppEvent>()
     val event = _event.asSharedFlow()
 
     private val _isBackupLoading = MutableStateFlow(false)
@@ -56,7 +54,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
 
     companion object {
-        private const val PREF_NAME = "AsyncStorage" // used for backward compatibility with old Storage wrapper which has now been removed (I was original as TypeScript guy)
         private const val TAG = "SettingsViewModel"
         const val BACKUP_FILENAME = "smartscan_backup.zip"
         private const val HASH_FILENAME = "hash.txt"
@@ -83,13 +80,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             try {
                 ModelManager.importModel(getApplication(), modelInfo, uri)
                 _importedModels.value = ModelManager.listModels(getApplication())
-                _event.emit("Model imported successfully")
-            } catch (e: Exception) {
-                val defaultErrorMessage = "Model import failed"
-                val invalidFileError = "Invalid model file"
-                Log.e(TAG, "$defaultErrorMessage: ${e.message}")
-                val errorMessage = if(e.message == invalidFileError) invalidFileError else defaultErrorMessage
-                _event.emit(errorMessage)
+                _event.emit(AppEvent(AppEventType.MODEL_IMPORT_SUCCESS, "Model imported successfully"))
+            }catch (e: SmartScanException.InvalidModelFile){
+                Log.e(TAG, "${e.message}")
+                _event.emit(AppEvent(AppEventType.MODEL_IMPORT_FAILED, e.message?: "Model import failed"))
+            }
+            catch (e: Exception) {
+                Log.e(TAG, "${e.message}")
+                _event.emit(AppEvent(AppEventType.MODEL_IMPORT_FAILED,"Model import failed"))
             }
         }
     }
@@ -162,10 +160,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
                 zipFiles(indexZipFile, filesToZip)
                 copyToUri(getApplication(), uri, indexZipFile)
-                _event.emit("Backup successful")
+                _event.emit(AppEvent(AppEventType.BACKUP_SUCCESS, "Backup successful"))
             }catch (e: Exception){
                 Log.e(TAG, "Error backing up: ${e.message}")
-                if(e.message == "Missing index file(s)") _event.emit(e.message!!) else _event.emit("Backup failed")
+                val appEventMessage = if(e.message == "Missing index file(s)")  "Missing index file(s)" else "Backup failed"
+                _event.emit(AppEvent(AppEventType.BACKUP_FAILED, appEventMessage))
             }finally {
                 indexZipFile.delete()
                 hashFile.delete()
@@ -191,25 +190,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     extractedFiles.forEach { it.delete() }
                     error("Invalid backup file")
                 }
-                _event.emit("Restore successful")
-                restartApp()
+                _event.emit(AppEvent(AppEventType.RESTORE_SUCCESS, "Restore successful"))
             }catch (e: Exception){
                 Log.e(TAG, "Error restoring: ${e.message}")
-                if (e.message == "Invalid backup file") _event.emit(e.message!!) else _event.emit("Restore failed")
+                _event.emit(AppEvent(AppEventType.RESTORE_FAILED, "Invalid backup file"))
             }finally {
                 indexZipFile.delete()
                 _isRestoreLoading.emit(false)
             }
         }
-    }
-
-    private fun restartApp(){
-        val intent = Intent(getApplication(), MainActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-        }
-
-        getApplication<Application>().startActivity(intent)
-        exitProcess(0)
     }
 
     private suspend fun isValidBackupFile(extractedFiles: List<File>): Boolean{

@@ -17,12 +17,22 @@ import com.fpf.smartscan.di.embedStoreModule
 import com.fpf.smartscan.di.viewModelModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
+import org.koin.core.context.stopKoin
 import java.io.File
 
 class App : Application() {
 
     companion object {
         private const val TAG = "App"
+
+        fun resetKoin(app: Application){
+            stopKoin()
+
+            startKoin {
+                androidContext(app)
+                modules(embedStoreModule, dbModule, viewModelModule)
+            }
+        }
     }
     override fun onCreate() {
         super.onCreate()

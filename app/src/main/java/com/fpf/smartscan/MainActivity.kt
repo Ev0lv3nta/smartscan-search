@@ -66,7 +66,11 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             AppTheme {
-                MainScreen(intentSearchQuery, onAppReady = {keepSplash = false})
+                MainScreen(
+                    intentSearchQuery=intentSearchQuery,
+                    onAppReady = {keepSplash = false},
+                    onRestartApp = {restartApp()}
+                )
             }
         }
     }
@@ -80,5 +84,15 @@ class MainActivity : ComponentActivity() {
             statusBarStyle = if (isDarkTheme) SystemBarStyle.dark(Color.Transparent.toArgb()) else SystemBarStyle.light(Color.Transparent.toArgb(), Color.Black.toArgb()),
             navigationBarStyle = if (isDarkTheme) SystemBarStyle.dark(Color.Transparent.toArgb()) else SystemBarStyle.light(Color.Transparent.toArgb(), Color.Black.toArgb())
         )
+    }
+
+    fun restartApp() {
+        App.resetKoin(this.application)
+
+        val intent = Intent(this, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        }
+
+        startActivity(intent)
     }
 }

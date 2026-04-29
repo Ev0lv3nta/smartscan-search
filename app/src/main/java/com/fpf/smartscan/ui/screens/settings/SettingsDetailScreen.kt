@@ -23,6 +23,7 @@ import com.fpf.smartscan.ui.components.pickers.DirectoryPicker
 import com.fpf.smartscan.R
 import com.fpf.smartscan.ui.components.CustomSlider
 import com.fpf.smartscan.constants.SettingTypes
+import com.fpf.smartscan.events.AppEventType
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.ui.components.BackupAndRestore
 import com.fpf.smartscan.ui.components.models.ModelsList
@@ -38,8 +39,9 @@ fun SettingsDetailScreen(
     type: String,
     viewModel: SettingsViewModel,
     onTopBarChange: (TopBarState) -> Unit,
-    onBack: () -> Unit
-    ) {
+    onBack: () -> Unit,
+    onRestartApp: () -> Unit
+) {
     val appSettings by viewModel.appSettings.collectAsState()
     val importedModelNames by viewModel.importedModels.collectAsState()
     val isBackupLoading by viewModel.isBackupLoading.collectAsState()
@@ -48,8 +50,12 @@ fun SettingsDetailScreen(
     val availableModels = ModelRegistry.filter {item -> item.key in listOf(ModelName.ALL_MINILM_L6_V2, ModelName.DINOV2_SMALL)}
 
     LaunchedEffect(Unit) {
-        viewModel.event.collect { msg ->
-            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+        viewModel.event.collect { event ->
+            Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+            when(event.type){
+                AppEventType.RESTORE_SUCCESS -> onRestartApp()
+                else -> {}
+            }
         }
     }
 

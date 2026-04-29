@@ -32,7 +32,11 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(intentSearchQuery: SearchQuery?, onAppReady: () -> Unit) {
+fun MainScreen(
+    intentSearchQuery: SearchQuery?,
+    onAppReady: () -> Unit,
+    onRestartApp: () -> Unit
+) {
     val topBarState = remember { mutableStateOf(TopBarState()) }
     val navController = rememberNavController()
     val mainViewModel: MainViewModel = koinViewModel()
@@ -124,7 +128,8 @@ fun MainScreen(intentSearchQuery: SearchQuery?, onAppReady: () -> Unit) {
                             onTopBarChange = { topBarState.value = it },
                             type = type,
                             viewModel = settingsViewModel,
-                            onBack = {navController.popBackStack()}
+                            onBack = {navController.popBackStack()},
+                            onRestartApp = onRestartApp
                         )
                     }
                     composable(Routes.DONATE) {
