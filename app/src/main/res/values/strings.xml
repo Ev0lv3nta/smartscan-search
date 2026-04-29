@@ -122,13 +122,9 @@
     <string name="help_reverse_image_search">Reverse image search is generally more accurate than text queries, especially when searching videos.</string>
 
     <!--Updates-->
-    <string name="update_cluster_search">Added cluster-based search, improving search speed and relevance</string>
-    <string name="update_collections">Added Tag Collections and Auto Collections</string>
-    <string name="update_merge_collections">Added ability to merge Tag Collections </string>
-    <string name="update_copy_to_tag_collections">Added bulk copy from Auto Collections to Tag Collections</string>
-    <string name="update_swipe_gestures_media_viewer">Added swipe gestures to MediaViewer for browsing media items</string>
-    <string name="update_results_per_row_setting">Added setting to control number of results shown per row</string>
-    <string name="update_similarity_threshold_setting">Added setting to control similarity threshold for image queries</string>
-    <string name="update_donate_kofi">Added support for donations via ko-fi</string>
-
+    <string name="update_copy_multiple_collections_to_tag">Added ability to copy items from multiple collections to a tag collection</string>
+    <string name="update_date_filters_search">Added date filters for search</string>
+    <string name="update_rebuild_index">Added ability to rebuild index from scratch to recover from corrupted index files</string>
+    <string name="update_cluster_search_improvements">Improved cluster search relevance and consistency</string>
+    <string name="update_tag_query_search_fix">Fixed an issue where tag with query search could miss results</string>
 </resources>

@@ -57,16 +57,13 @@ class MainViewModel(
         sharedPrefs.edit { putString(PrefsKeys.UPDATES, versionName.toString()) }
     }
 
-    fun getUpdates(): List<String>{
+    fun getUpdates(): List<String> {
         return listOf(
-            application.getString(R.string.update_cluster_search),
-            application.getString(R.string.update_collections),
-            application.getString(R.string.update_merge_collections),
-            application.getString(R.string.update_copy_to_tag_collections),
-            application.getString(R.string.update_swipe_gestures_media_viewer),
-            application.getString(R.string.update_results_per_row_setting),
-            application.getString(R.string.update_similarity_threshold_setting),
-            application.getString(R.string.update_donate_kofi)
+            application.getString(R.string.update_copy_multiple_collections_to_tag),
+            application.getString(R.string.update_date_filters_search),
+            application.getString(R.string.update_rebuild_index),
+            application.getString(R.string.update_cluster_search_improvements),
+            application.getString(R.string.update_tag_query_search_fix),
         )
     }
 
