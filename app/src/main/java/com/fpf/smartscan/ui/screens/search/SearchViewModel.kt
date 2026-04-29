@@ -10,11 +10,9 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import coil3.compose.AsyncImagePainter
-import com.fpf.smartscan.media.getImageUriFromId
 import kotlinx.coroutines.Dispatchers
 import com.fpf.smartscan.R
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
-import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
@@ -25,11 +23,11 @@ import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.filterAccessibleMediaStoreIds
 import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.utils.canOpenUri
-import com.fpf.smartscan.media.getVideoUriFromId
 import com.fpf.smartscan.media.onMediaLoadingError
 import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.media.removeStaleMedia
+import com.fpf.smartscan.media.toMediaItem
 import com.fpf.smartscan.search.ImageIndexListener
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.search.VideoIndexListener
@@ -554,21 +552,6 @@ class SearchViewModel(
     private suspend fun updateTagLastUsage(tag: String){
         val tag = allTags.value.find { it.name == tag }?: return
         tagRepository.updateTags(listOf(Tag(tag.id, tag.name, System.currentTimeMillis())))
-    }
-
-    private fun mediaIdToUri(id: Long, mediaType: MediaType): Uri {
-        return when (mediaType) {
-            MediaType.IMAGE -> getImageUriFromId(id)
-            MediaType.VIDEO -> getVideoUriFromId(id)
-        }
-    }
-
-    private fun toMediaItem(id: Long, type: MediaType): MediaItem{
-        return MediaItem(
-            id = id,
-            uri = mediaIdToUri(id, type),
-            type = type
-        )
     }
 
     override fun onCleared() {

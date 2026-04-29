@@ -2,7 +2,6 @@ package com.fpf.smartscan.ui.screens.collections
 
 import android.app.Application
 import android.database.sqlite.SQLiteConstraintException
-import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
@@ -15,9 +14,7 @@ import com.fpf.smartscan.data.clusters.ClusterMetadataWithCount
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscan.data.tags.TagCrossRef
-import com.fpf.smartscan.media.MediaType
-import com.fpf.smartscan.media.getImageUriFromId
-import com.fpf.smartscan.media.getVideoUriFromId
+import com.fpf.smartscan.media.mediaIdToUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -188,7 +185,7 @@ class CollectionsViewModel(
     private suspend fun tagsToCollections(tags: List<TagWithCount>): List<MediaCollection> {
         return tags.mapNotNull {
             val mediaMeta = mediaMetadataRepository.getByTag(it.id, limit = 1, offset = 0).firstOrNull()
-            val uri = mediaMeta?.let { mediaMeta -> getUriFromMediaId(mediaMeta.id, mediaMeta.type) }
+            val uri = mediaMeta?.let { mediaMeta -> mediaIdToUri(mediaMeta.id, mediaMeta.type) }
             uri?.let { uri ->
                 MediaCollection(
                     id = it.id,
@@ -203,7 +200,7 @@ class CollectionsViewModel(
     private suspend fun clustersToCollections(clusters: List<ClusterMetadataWithCount>): List<MediaCollection> {
         return clusters.mapNotNull {
             val id = mediaMetadataRepository.getByCluster(it.clusterId, limit = 1, offset = 0).firstOrNull()
-            val uri = id?.let { id -> getUriFromMediaId(id.id, it.type) }
+            val uri = id?.let { id -> mediaIdToUri(id.id, it.type) }
             uri?.let { uri ->
                 MediaCollection(
                     id = it.clusterId,
@@ -213,13 +210,6 @@ class CollectionsViewModel(
                     isAutoCollection = true
                 )
             }
-        }
-    }
-
-    private fun getUriFromMediaId(id: Long, mediaType: MediaType): Uri {
-        return when (mediaType) {
-            MediaType.IMAGE -> getImageUriFromId(id)
-            MediaType.VIDEO -> getVideoUriFromId(id)
         }
     }
 }

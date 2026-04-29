@@ -3,7 +3,6 @@ package com.fpf.smartscan.ui.screens.collections
 import android.app.Application
 import android.content.Context
 import android.database.sqlite.SQLiteConstraintException
-import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
@@ -13,7 +12,6 @@ import androidx.paging.cachedIn
 import coil3.compose.AsyncImagePainter
 import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.data.tags.TagPagingSource
-import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterPagingSource
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.data.tags.Tag
@@ -23,8 +21,7 @@ import com.fpf.smartscan.data.tags.TagCrossRefRepository
 import com.fpf.smartscan.data.tags.TagRepository
 import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.media.MediaType
-import com.fpf.smartscan.media.getImageUriFromId
-import com.fpf.smartscan.media.getVideoUriFromId
+import com.fpf.smartscan.media.mediaIdToUri
 import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.media.onMediaLoadingError
@@ -43,7 +40,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlin.collections.plus
 
 
@@ -53,7 +49,6 @@ class CollectionItemsViewModel(
     private val videoStore: FileEmbeddingStore,
     private val tagRepository: TagRepository,
     private val tagCrossRefRepository: TagCrossRefRepository,
-    private val clusterCrossRefRepository: ClusterCrossRefRepository,
     private val mediaMetadataRepository: MediaMetadataRepository
 ) : AndroidViewModel(application) {
     companion object {
@@ -228,8 +223,8 @@ class CollectionItemsViewModel(
 
     private suspend fun getCollections(tags: List<TagWithCount>): List<MediaCollection> {
         return tags.mapNotNull {
-            val crossRef = mediaMetadataRepository.getByTag(it.id, limit = 1, offset = 0).firstOrNull()
-            val uri = crossRef?.let { crossRef -> mediaIdToUri(crossRef.id, crossRef.type) }
+            val metadata = mediaMetadataRepository.getByTag(it.id, limit = 1, offset = 0).firstOrNull()
+            val uri = metadata?.let { metadata -> mediaIdToUri(metadata.id, metadata.type) }
             uri?.let { uri ->
                 MediaCollection(
                     id = it.id,
@@ -238,13 +233,6 @@ class CollectionItemsViewModel(
                     size = it.count
                 )
             }
-        }
-    }
-
-    private fun mediaIdToUri(id: Long, mediaType: MediaType): Uri {
-        return when (mediaType) {
-            MediaType.IMAGE -> getImageUriFromId(id)
-            MediaType.VIDEO -> getVideoUriFromId(id)
         }
     }
 

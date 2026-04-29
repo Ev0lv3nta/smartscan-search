@@ -385,3 +385,18 @@ fun filterAccessibleMediaStoreIds(
     val (valid, invalid) = ids.partition { it in existingIds }
     return valid to invalid
 }
+
+fun mediaIdToUri(id: Long, mediaType: MediaType): Uri {
+    return when (mediaType) {
+        MediaType.IMAGE -> getImageUriFromId(id)
+        MediaType.VIDEO -> getVideoUriFromId(id)
+    }
+}
+
+fun toMediaItem(id: Long, type: MediaType): MediaItem{
+    return MediaItem(
+        id = id,
+        uri = mediaIdToUri(id, type),
+        type = type
+    )
+}
