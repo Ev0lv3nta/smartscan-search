@@ -84,6 +84,7 @@ fun SearchScreen(
     val videoIndexProgress by searchViewModel.videoIndexProgress.collectAsState(initial = 0f)
     val imageIndexStatus by searchViewModel.imageIndexStatus.collectAsState()
     val videoIndexStatus by searchViewModel.videoIndexStatus.collectAsState()
+    val isIndexing = imageIndexStatus == IndexingStatus.ACTIVE || videoIndexStatus == IndexingStatus.ACTIVE
     val alertTitle by searchViewModel.alertTitle.collectAsState()
     val alertDescription by searchViewModel.alertDescription.collectAsState()
     var showScanImagesDialog by remember { mutableStateOf(false) }
@@ -361,7 +362,7 @@ fun SearchScreen(
                             SearchBar(
                                 modifier = Modifier.weight(1f),
                                 searchFieldState = searchViewModel.searchFieldState,
-                                enabled = hasStoragePermission && !state.loading,
+                                enabled = hasStoragePermission && !state.loading && !isIndexing ,
                                 onSearch = {
                                     searchViewModel.search(
                                         appSettings.similarityThreshold,
