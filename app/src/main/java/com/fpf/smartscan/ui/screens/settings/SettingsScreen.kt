@@ -8,6 +8,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -25,6 +27,7 @@ import com.fpf.smartscan.constants.Routes
 import com.fpf.smartscan.constants.SettingTypes
 import com.fpf.smartscan.constants.colorSchemeDisplayNames
 import com.fpf.smartscan.constants.themeModeDisplayNames
+import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.ui.components.SwitchItem
 import com.fpf.smartscan.ui.theme.ColorSchemeType
 import com.fpf.smartscan.ui.theme.ThemeMode
@@ -32,8 +35,9 @@ import com.fpf.smartscan.ui.theme.ThemeMode
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel(),
-    onNavigate: (String) -> Unit
-) {
+    onNavigate: (String) -> Unit,
+    topBarState: MutableState<TopBarState>,
+    ) {
     val appSettings by viewModel.appSettings.collectAsState()
     val scrollState = rememberScrollState()
     val context = LocalContext.current
@@ -45,6 +49,15 @@ fun SettingsScreen(
     } catch (e: Exception) {
         null
     }
+
+    val screenTitle = stringResource(R.string.title_settings)
+
+    LaunchedEffect(Unit) {
+        topBarState.value = TopBarState(
+            title = screenTitle,
+        )
+    }
+
 
 
     Box(modifier = Modifier.fillMaxSize()) {

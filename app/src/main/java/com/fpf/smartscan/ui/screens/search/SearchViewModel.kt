@@ -31,7 +31,10 @@ import com.fpf.smartscan.media.toMediaItem
 import com.fpf.smartscan.search.ImageIndexListener
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.search.VideoIndexListener
+import com.fpf.smartscan.services.rebuildIndex
 import com.fpf.smartscan.services.startIndexing
+import com.fpf.smartscan.ui.permissions.StorageAccess
+import com.fpf.smartscan.ui.permissions.getStorageAccess
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.media.getBitmapFromUri
 import com.fpf.smartscansdk.ml.models.ModelAssetSource
@@ -400,6 +403,22 @@ class SearchViewModel(
             _state.value = _state.value.copy(resultToView = item)
         }
     }
+
+
+    fun refreshMediaIndex(mediaType: MediaType){
+        val storageAccess = getStorageAccess(getApplication())
+        if (storageAccess != StorageAccess.Denied) {
+            com.fpf.smartscan.services.refreshIndex(getApplication(), listOf(mediaType))
+        }
+    }
+
+    fun rebuildMediaIndex(mediaType: MediaType){
+        val storageAccess = getStorageAccess(getApplication())
+        if (storageAccess != StorageAccess.Denied) {
+            rebuildIndex(getApplication(), listOf(mediaType))
+        }
+    }
+
 
     fun showIndexAlert(){
         val hasShown = if (_state.value.mediaType == MediaType.IMAGE) _hasShownImageIndexAlert else _hasShownVideoIndexAlert

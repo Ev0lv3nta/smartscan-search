@@ -5,9 +5,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -18,6 +23,7 @@ import com.fpf.smartscan.ui.components.pickers.DirectoryPicker
 import com.fpf.smartscan.R
 import com.fpf.smartscan.ui.components.CustomSlider
 import com.fpf.smartscan.constants.SettingTypes
+import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.ui.components.BackupAndRestore
 import com.fpf.smartscan.ui.components.models.ModelsList
 import com.fpf.smartscan.ui.screens.settings.SettingsViewModel.Companion.BACKUP_FILENAME
@@ -31,7 +37,9 @@ import com.fpf.smartscansdk.ml.models.ModelRegistry
 fun SettingsDetailScreen(
     type: String,
     viewModel: SettingsViewModel,
-) {
+    topBarState: MutableState<TopBarState>,
+    onBack: () -> Unit
+    ) {
     val appSettings by viewModel.appSettings.collectAsState()
     val importedModelNames by viewModel.importedModels.collectAsState()
     val isBackupLoading by viewModel.isBackupLoading.collectAsState()
@@ -44,6 +52,31 @@ fun SettingsDetailScreen(
             Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
         }
     }
+
+    val screenTitle = when (type) {
+        SettingTypes.THRESHOLD -> stringResource(R.string.setting_similarity_threshold)
+        SettingTypes.MODELS -> stringResource(R.string.setting_models)
+        SettingTypes.MANAGE_MODELS -> stringResource(R.string.setting_manage_models)
+        SettingTypes.SEARCHABLE_IMG_DIRS -> stringResource(R.string.setting_searchable_image_folders)
+        SettingTypes.SEARCHABLE_VID_DIRS -> stringResource(R.string.setting_searchable_video_folders)
+        SettingTypes.BACKUP_RESTORE -> stringResource(R.string.setting_backup_restore)
+        else -> ""
+    }
+
+    LaunchedEffect(Unit) {
+        topBarState.value = TopBarState(
+            title = screenTitle,
+            navigationIcon = {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = null
+                    )
+                }
+            }
+        )
+    }
+
 
     Box(
         modifier = Modifier.padding(16.dp).fillMaxSize()

@@ -12,10 +12,6 @@ import com.fpf.smartscan.data.DbManager
 import com.fpf.smartscan.data.EmbedStoreSyncHelper
 import com.fpf.smartscan.data.MediaDatabase
 import com.fpf.smartscan.media.MediaType
-import com.fpf.smartscan.services.rebuildIndex
-import com.fpf.smartscan.services.refreshIndex
-import com.fpf.smartscan.ui.permissions.StorageAccess
-import com.fpf.smartscan.ui.permissions.getStorageAccess
 import com.fpf.smartscan.utils.isWorkScheduled
 import com.fpf.smartscan.workers.ClusterWorker
 import com.fpf.smartscan.workers.IndexWorker
@@ -113,20 +109,6 @@ class MainViewModel(
             }
 
             onAppReady()
-        }
-    }
-
-    fun refreshMediaIndex(mediaType: MediaType){
-        val storageAccess = getStorageAccess(getApplication())
-        if (storageAccess != StorageAccess.Denied) {
-            refreshIndex(getApplication(), listOf(mediaType))
-        }
-    }
-
-    fun rebuildMediaIndex(mediaType: MediaType){
-        val storageAccess = getStorageAccess(getApplication())
-        if (storageAccess != StorageAccess.Denied) {
-            rebuildIndex(getApplication(), listOf(mediaType))
         }
     }
 

@@ -37,11 +37,13 @@ import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.mediaTypeOptions
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.shareMediaMulti
+import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.search.IndexingStatus
 import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.settings.AppSettings
 import com.fpf.smartscan.ui.components.LoadingIndicator
+import com.fpf.smartscan.ui.components.OverflowMenu
 import com.fpf.smartscan.ui.components.media.MediaViewer
 import com.fpf.smartscan.ui.components.ProgressBar
 import com.fpf.smartscan.ui.components.SelectorIconItem
@@ -69,11 +71,14 @@ import kotlin.math.max
 fun SearchScreen(
     searchViewModel: SearchViewModel = koinViewModel(),
     appSettings:  StateFlow<AppSettings>,
+    topBarState: MutableState<TopBarState>,
     intentSearchQuery: SearchQuery? = null
 ) {
     val appSettings by appSettings.collectAsState()
     val context = LocalContext.current
     val clipboard = LocalClipboard.current
+
+    val screenTitle = stringResource(R.string.title_search)
 
     // Index state
     val imageIndexProgress by searchViewModel.imageIndexProgress.collectAsState(initial = 0f)
@@ -82,6 +87,9 @@ fun SearchScreen(
     val videoIndexStatus by searchViewModel.videoIndexStatus.collectAsState()
     val alertTitle by searchViewModel.alertTitle.collectAsState()
     val alertDescription by searchViewModel.alertDescription.collectAsState()
+    var showImageDialog by remember { mutableStateOf(false) }
+    var showVideoDialog by remember { mutableStateOf(false) }
+
 
     // Search state
     val state by searchViewModel.state.collectAsState()
@@ -142,6 +150,22 @@ fun SearchScreen(
         searchViewModel.externalSearch(intentSearchQuery, appSettings.similarityThreshold, appSettings.imageSimilarityThreshold, appSettings.enableClusterSearch)
     }
 
+    LaunchedEffect(Unit) {
+        topBarState.value = TopBarState(
+            title = screenTitle,
+            actions = {
+                OverflowMenu(
+                    onScanImages = {
+                        showImageDialog = true
+                    },
+                    onScanVideos = {
+                        showVideoDialog = true
+                    }
+                )
+            }
+        )
+    }
+
     DisposableEffect(Unit) {
         onDispose {
             searchViewModel.toggleViewResult(context, null)
@@ -167,6 +191,63 @@ fun SearchScreen(
                     searchViewModel.onIndex()
                 }) {
                     Text("Confirm")
+                }
+            }
+        )
+    }
+
+    if (showImageDialog || showVideoDialog) {
+        val media = if (showImageDialog) "images" else "videos"
+
+        AlertDialog(
+            onDismissRequest = {
+                if (showImageDialog) showImageDialog = false else showVideoDialog = false
+            },
+            title = {
+                Text(stringResource(R.string.alert_scan_index_title, media))
+            },
+            text = {
+                Column {
+                    Text(stringResource(R.string.alert_scan_index_description))
+
+                    Spacer(modifier = androidx.compose.ui.Modifier.height(12.dp))
+
+                    TextButton(
+                        onClick = {
+                            if (showImageDialog) {
+                                showImageDialog = false
+                                searchViewModel.refreshMediaIndex(MediaType.IMAGE)
+                            } else {
+                                showVideoDialog = false
+                                searchViewModel.refreshMediaIndex(MediaType.VIDEO)
+                            }
+                        }
+                    ) {
+                        Text("Refresh")
+                    }
+
+                    TextButton(
+                        onClick = {
+                            if (showImageDialog) {
+                                showImageDialog = false
+                                searchViewModel.rebuildMediaIndex(MediaType.IMAGE)
+                            } else {
+                                showVideoDialog = false
+                                searchViewModel.rebuildMediaIndex(MediaType.VIDEO)
+                            }
+                        }
+                    ) {
+                        Text("Rebuild")
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (showImageDialog) showImageDialog = false else showVideoDialog = false
+                    }
+                ) {
+                    Text("Cancel")
                 }
             }
         )

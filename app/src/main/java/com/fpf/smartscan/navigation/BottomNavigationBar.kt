@@ -1,4 +1,4 @@
-package com.fpf.smartscan
+package com.fpf.smartscan.navigation
 
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.Routes
 
 @Composable

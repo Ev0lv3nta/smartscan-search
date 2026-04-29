@@ -35,6 +35,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -49,7 +50,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fpf.smartscan.constants.Routes
 import com.fpf.smartscan.ui.components.modals.SelectorModal
 import com.fpf.smartscan.ui.components.SlideRevealBox
@@ -61,14 +61,18 @@ import com.fpf.smartscan.ui.screens.collections.CollectionsViewModel.Companion.T
 import kotlinx.coroutines.FlowPreview
 import com.fpf.smartscan.R
 import androidx.compose.ui.res.stringResource
+import com.fpf.smartscan.navigation.TopBarState
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(FlowPreview::class)
 @Composable
 fun CollectionsScreen(
     onNavigate: (String) -> Unit,
+    topBarState: MutableState<TopBarState>,
     viewModel: CollectionsViewModel = koinViewModel(),
     ) {
+    val screenTitle = stringResource(R.string.title_collections)
+
     val state by viewModel.state.collectAsState()
     val clusterCollections by viewModel.clusterCollections.collectAsState()
     val tagCollections by viewModel.tagCollections.collectAsState()
@@ -104,6 +108,12 @@ fun CollectionsScreen(
             Toast.makeText(context, state.error, Toast.LENGTH_SHORT).show()
             viewModel.resetErrorState()
         }
+    }
+
+    LaunchedEffect(Unit) {
+        topBarState.value = TopBarState(
+            title = screenTitle,
+        )
     }
 
     BackHandler(enabled = isSelecting) {
