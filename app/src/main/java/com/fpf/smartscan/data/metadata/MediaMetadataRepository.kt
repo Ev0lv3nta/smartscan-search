@@ -5,9 +5,13 @@ import com.fpf.smartscan.media.MediaType
 class MediaMetadataRepository(
     private val dao: MediaMetadataDao
 ) {
-    suspend fun upsert(items: List<MediaMetadata>) = dao.upsert(items)
+    suspend fun insert(items: List<MediaMetadata>) = dao.insert(items)
 
-    suspend fun upsert(item: MediaMetadata) = dao.upsert(item)
+    suspend fun insert(item: MediaMetadata) = dao.insert(item)
+
+    suspend fun update(items: List<MediaMetadata>) = dao.update(items)
+
+    suspend fun update(item: MediaMetadata) = dao.update(item)
 
     suspend fun getAllIds(): List<Long> = dao.getAllIds()
 

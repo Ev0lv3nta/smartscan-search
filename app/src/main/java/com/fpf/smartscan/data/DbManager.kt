@@ -96,7 +96,7 @@ object DbManager {
                 if (it.key !in storedImageIds) return@mapNotNull null
                 MediaMetadata(id=it.key, dateAdded = it.value, type = MediaType.IMAGE)
             }
-            metadataRepo.upsert(imageMetadataList)
+            metadataRepo.insert(imageMetadataList)
             Log.d(TAG, "Image metadata sync complete. ${imageMetadataList.size} synced.")
         }
 
@@ -107,7 +107,7 @@ object DbManager {
                 if (it.key !in storedVideoIds) return@mapNotNull null
                 MediaMetadata(id=it.key, dateAdded = it.value, type = MediaType.VIDEO)
             }
-            metadataRepo.upsert(videoMetadataList)
+            metadataRepo.insert(videoMetadataList)
             Log.d(TAG, "Video metadata sync complete. ${videoMetadataList.size} synced.")
 
         }

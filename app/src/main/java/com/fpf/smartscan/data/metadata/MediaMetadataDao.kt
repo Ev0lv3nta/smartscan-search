@@ -4,16 +4,23 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.fpf.smartscan.media.MediaType
 
 @Dao
 interface MediaMetadataDao {
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(items: List<MediaMetadata>)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(items: List<MediaMetadata>)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(item: MediaMetadata)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(item: MediaMetadata)
+
+    @Update
+    suspend fun update(items: List<MediaMetadata>)
+
+    @Update
+    suspend fun update(item: MediaMetadata)
 
     @Query("SELECT id FROM media_metadata")
     suspend fun getAllIds(): List<Long>
