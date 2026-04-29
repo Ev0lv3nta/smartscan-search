@@ -5,6 +5,7 @@ import android.content.Intent
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.utils.isServiceRunning
+import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import java.io.File
 
 fun startIndexing(context: Context, mediaTypes: List<MediaType>) {
@@ -24,14 +25,16 @@ fun refreshIndex(context: Context, mediaTypes: List<MediaType>) {
     startIndexing(context.applicationContext, mediaTypes)
 }
 
-fun rebuildIndex(context: Context, mediaTypes: List<MediaType>) {
-    mediaTypes.forEach { type ->
-        when(type){
+fun rebuildIndex(context: Context, mediaEmbeddingStores: List<Pair<MediaType, FileEmbeddingStore>>) {
+    mediaEmbeddingStores.forEach { typeToStore ->
+        when(typeToStore.first){
             MediaType.IMAGE -> {
+                typeToStore.second.clear()
                 File(context.filesDir, EmbeddingStoresFiles.IMAGE).delete()
                 File(context.filesDir, EmbeddingStoresFiles.IMAGE_CLUSTER).delete()
             }
             MediaType.VIDEO -> {
+                typeToStore.second.clear()
                 File(context.filesDir, EmbeddingStoresFiles.VIDEO).delete()
                 File(context.filesDir, EmbeddingStoresFiles.VIDEO_CLUSTER).delete()
             }
@@ -41,5 +44,5 @@ fun rebuildIndex(context: Context, mediaTypes: List<MediaType>) {
     if(running){
         context.applicationContext.stopService(Intent(context.applicationContext, MediaIndexForegroundService::class.java))
     }
-    startIndexing(context.applicationContext, mediaTypes)
+    startIndexing(context.applicationContext, mediaEmbeddingStores.map{it.first})
 }

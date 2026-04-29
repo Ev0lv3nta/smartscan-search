@@ -32,6 +32,7 @@ import com.fpf.smartscan.search.ImageIndexListener
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.services.rebuildIndex
+import com.fpf.smartscan.services.refreshIndex
 import com.fpf.smartscan.services.startIndexing
 import com.fpf.smartscan.ui.permissions.StorageAccess
 import com.fpf.smartscan.ui.permissions.getStorageAccess
@@ -133,10 +134,6 @@ class SearchViewModel(
     }
 
     fun reloadIndex(mode : MediaType){
-        // clear cache first!
-        val store = getStore()
-        store.clear()
-
         if(mode == MediaType.IMAGE && !_hasRefreshedImageIndex.value){
             loadImageIndex()
             setIsRescanning(false)
@@ -417,14 +414,16 @@ class SearchViewModel(
     fun refreshMediaIndex(mediaType: MediaType){
         val storageAccess = getStorageAccess(getApplication())
         if (storageAccess != StorageAccess.Denied) {
-            com.fpf.smartscan.services.refreshIndex(getApplication(), listOf(mediaType))
+            refreshIndex(getApplication(), listOf(mediaType))
         }
     }
 
     fun rebuildMediaIndex(mediaType: MediaType){
         val storageAccess = getStorageAccess(getApplication())
         if (storageAccess != StorageAccess.Denied) {
-            rebuildIndex(getApplication(), listOf(mediaType))
+            setIsRescanning(true)
+            val store = getStore()
+            rebuildIndex(getApplication(), listOf(mediaType to store))
         }
     }
 
