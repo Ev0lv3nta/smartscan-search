@@ -117,7 +117,6 @@ class SearchViewModel(
         viewModelScope.launch(Dispatchers.IO){
             try {
                 _state.emit(_state.value.copy(error = null, loading = true))
-                store.clear()
                 val embeddings = store.get()
                 val hasIndexed = embeddings.isNotEmpty()
                 when(_state.value.mediaType){
@@ -134,6 +133,10 @@ class SearchViewModel(
     }
 
     fun reloadIndex(mode : MediaType){
+        // clear cache first!
+        val store = getStore()
+        store.clear()
+
         if(mode == MediaType.IMAGE && !_hasRefreshedImageIndex.value){
             loadImageIndex()
             setIsRescanning(false)
