@@ -33,7 +33,6 @@ import com.fpf.smartscan.media.removeStaleMedia
 import com.fpf.smartscan.search.ImageIndexListener
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.search.VideoIndexListener
-import com.fpf.smartscan.services.MediaIndexForegroundService
 import com.fpf.smartscan.services.startIndexing
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.media.getBitmapFromUri
@@ -62,7 +61,6 @@ class SearchViewModel(
     private val tagRepository: TagRepository,
     private val tagCrossRefRepository: TagCrossRefRepository,
     private val clusterCrossRefRepository: ClusterCrossRefRepository,
-    private val clusterMetadataRepository: ClusterMetadataRepository,
     private val mediaMetadataRepository: MediaMetadataRepository
 ) : AndroidViewModel(application) {
     companion object {
