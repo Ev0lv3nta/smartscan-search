@@ -1,7 +1,6 @@
 package com.fpf.smartscan.ui.components
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -17,7 +16,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
@@ -25,9 +23,9 @@ import com.fpf.smartscan.R
 
 @Composable
 fun OverflowMenu(
-    onRefreshImageIndex: () -> Unit,
-    onRefreshVideoIndex: () -> Unit
-){
+    onScanImages: () -> Unit,
+    onScanVideos: () -> Unit,
+    ){
     var expanded by remember { mutableStateOf(false) }
     Box() {
         IconButton(onClick = { expanded = true }) {
@@ -42,21 +40,22 @@ fun OverflowMenu(
             onDismissRequest = { expanded = false },
             offset = DpOffset(x = 0.dp, y = (-40).dp),
             shape= RoundedCornerShape(16.dp),
-            border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.2f)),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
             DropdownMenuItem(
-                text = { Text(stringResource(R.string.setting_refresh_image_index)) },
+                text = { Text(stringResource(R.string.setting_scan_images)) },
                 onClick = {
                     expanded = false
-                    onRefreshImageIndex()
+                    onScanImages()
                 }
             )
+
             DropdownMenuItem(
-                text = { Text(stringResource(R.string.setting_refresh_video_index)) },
+                text = { Text(stringResource(R.string.setting_scan_videos)) },
                 onClick = {
                     expanded = false
-                    onRefreshVideoIndex()
+                    onScanVideos()
                 }
             )
         }

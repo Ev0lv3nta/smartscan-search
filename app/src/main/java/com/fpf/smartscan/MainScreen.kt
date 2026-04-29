@@ -1,6 +1,9 @@
 package com.fpf.smartscan
 
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.ui.Modifier
@@ -13,8 +16,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -23,11 +30,8 @@ import com.fpf.smartscan.constants.Routes
 import com.fpf.smartscan.constants.SettingTypes
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.search.SearchQuery
-import com.fpf.smartscan.services.refreshIndex
 import com.fpf.smartscan.ui.components.OverflowMenu
 import com.fpf.smartscan.ui.components.UpdatePopUp
-import com.fpf.smartscan.ui.permissions.StorageAccess
-import com.fpf.smartscan.ui.permissions.getStorageAccess
 import com.fpf.smartscan.ui.screens.collections.CollectionItemsScreen
 import com.fpf.smartscan.ui.screens.collections.CollectionsScreen
 import com.fpf.smartscan.ui.screens.donate.DonateScreen
@@ -80,8 +84,69 @@ fun MainScreen(intentSearchQuery: SearchQuery?, onAppReady: () -> Unit) {
 
     val showSearchActions = currentRoute == Routes.SEARCH
 
+    var showImageDialog by remember { mutableStateOf(false) }
+    var showVideoDialog by remember { mutableStateOf(false) }
+
+
     LaunchedEffect(Unit) {
         mainViewModel.prepareApp(){onAppReady() }
+    }
+
+    if (showImageDialog || showVideoDialog) {
+        val media = if (showImageDialog) "images" else "videos"
+
+        AlertDialog(
+            onDismissRequest = {
+                if (showImageDialog) showImageDialog = false else showVideoDialog = false
+            },
+            title = {
+                Text(stringResource(R.string.alert_scan_index_title, media))
+            },
+            text = {
+                Column {
+                    Text(stringResource(R.string.alert_scan_index_description))
+
+                    Spacer(modifier = androidx.compose.ui.Modifier.height(12.dp))
+
+                    TextButton(
+                        onClick = {
+                            if (showImageDialog) {
+                                showImageDialog = false
+                                mainViewModel.refreshMediaIndex(MediaType.IMAGE)
+                            } else {
+                                showVideoDialog = false
+                                mainViewModel.refreshMediaIndex(MediaType.VIDEO)
+                            }
+                        }
+                    ) {
+                        Text("Refresh")
+                    }
+
+                    TextButton(
+                        onClick = {
+                            if (showImageDialog) {
+                                showImageDialog = false
+                                mainViewModel.rebuildMediaIndex(MediaType.IMAGE)
+                            } else {
+                                showVideoDialog = false
+                                mainViewModel.rebuildMediaIndex(MediaType.VIDEO)
+                            }
+                        }
+                    ) {
+                        Text("Rebuild")
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (showImageDialog) showImageDialog = false else showVideoDialog = false
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
         if (isUpdatePopUpVisible) {
@@ -108,17 +173,11 @@ fun MainScreen(intentSearchQuery: SearchQuery?, onAppReady: () -> Unit) {
                         actions = {
                             if (!showSearchActions) return@TopAppBar
                             OverflowMenu(
-                                onRefreshImageIndex = {
-                                    val storageAccess = getStorageAccess(context)
-                                    if (storageAccess != StorageAccess.Denied) {
-                                        refreshIndex(context.applicationContext, listOf(MediaType.IMAGE))
-                                    }
+                                onScanImages = {
+                                    showImageDialog=true
                                 },
-                                onRefreshVideoIndex = {
-                                    val storageAccess = getStorageAccess(context)
-                                    if (storageAccess != StorageAccess.Denied) {
-                                        refreshIndex(context.applicationContext, listOf(MediaType.VIDEO))
-                                    }
+                                onScanVideos = {
+                                    showVideoDialog=true
                                 },
                             )
                         }
