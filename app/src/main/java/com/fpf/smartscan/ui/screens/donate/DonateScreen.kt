@@ -30,7 +30,7 @@ import com.fpf.smartscan.navigation.TopBarState
 
 @Composable
 fun DonateScreen(
-    topBarState: MutableState<TopBarState>,
+    onTopBarChange: (TopBarState) -> Unit,
     onBack: () -> Unit
     ) {
     val clipboard = LocalClipboard.current
@@ -46,16 +46,18 @@ fun DonateScreen(
 
 
     LaunchedEffect(Unit) {
-        topBarState.value = TopBarState(
-            title = screenTitle,
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = null
-                    )
+        onTopBarChange(
+            TopBarState(
+                title = screenTitle,
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null
+                        )
+                    }
                 }
-            }
+            )
         )
     }
 

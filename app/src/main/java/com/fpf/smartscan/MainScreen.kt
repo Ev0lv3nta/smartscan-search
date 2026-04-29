@@ -74,13 +74,13 @@ fun MainScreen(intentSearchQuery: SearchQuery?, onAppReady: () -> Unit) {
                     composable(Routes.SEARCH) {
                         SearchScreen(
                             appSettings = settingsViewModel.appSettings,
-                            topBarState = topBarState,
+                            onTopBarChange = { topBarState.value = it },
                             intentSearchQuery = intentSearchQuery
                         )
                     }
                     composable(Routes.COLLECTIONS) {
                         CollectionsScreen(
-                            topBarState = topBarState,
+                            onTopBarChange = { topBarState.value = it },
                             onNavigate = { route: String ->
                                 navController.navigate(route)
                             }
@@ -99,7 +99,7 @@ fun MainScreen(intentSearchQuery: SearchQuery?, onAppReady: () -> Unit) {
                         val collectionName = backStackEntry.arguments?.getString("collectionName")
                         val clusterId = backStackEntry.arguments?.getLong("clusterId") ?: -1L
                         CollectionItemsScreen(
-                            topBarState = topBarState,
+                            onTopBarChange = { topBarState.value = it },
                             clusterId = clusterId,
                             collectionName = collectionName,
                             appSettings = settingsViewModel.appSettings,
@@ -108,7 +108,7 @@ fun MainScreen(intentSearchQuery: SearchQuery?, onAppReady: () -> Unit) {
                     }
                     composable(Routes.SETTINGS) {
                         SettingsScreen(
-                            topBarState = topBarState,
+                            onTopBarChange = { topBarState.value = it },
                             viewModel = settingsViewModel,
                             onNavigate = { route: String ->
                                 navController.navigate(route)
@@ -121,7 +121,7 @@ fun MainScreen(intentSearchQuery: SearchQuery?, onAppReady: () -> Unit) {
                     ) { backStackEntry ->
                         val type = backStackEntry.arguments?.getString("type") ?: ""
                         SettingsDetailScreen(
-                            topBarState = topBarState,
+                            onTopBarChange = { topBarState.value = it },
                             type = type,
                             viewModel = settingsViewModel,
                             onBack = {navController.popBackStack()}
@@ -129,14 +129,14 @@ fun MainScreen(intentSearchQuery: SearchQuery?, onAppReady: () -> Unit) {
                     }
                     composable(Routes.DONATE) {
                         DonateScreen(
-                            topBarState = topBarState,
+                            onTopBarChange = { topBarState.value = it },
                             onBack = {navController.popBackStack()}
                             )
                     }
 
                     composable(Routes.HELP) {
                         HelpScreen(
-                            topBarState = topBarState,
+                            onTopBarChange = { topBarState.value = it },
                             onBack = {navController.popBackStack()}
                         )
                     }

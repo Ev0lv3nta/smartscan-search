@@ -68,10 +68,9 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun CollectionsScreen(
     onNavigate: (String) -> Unit,
-    topBarState: MutableState<TopBarState>,
+    onTopBarChange: (TopBarState) -> Unit,
     viewModel: CollectionsViewModel = koinViewModel(),
     ) {
-    val screenTitle = stringResource(R.string.title_collections)
 
     val state by viewModel.state.collectAsState()
     val clusterCollections by viewModel.clusterCollections.collectAsState()
@@ -110,10 +109,10 @@ fun CollectionsScreen(
         }
     }
 
+    val screenTitle = stringResource(R.string.title_collections)
+
     LaunchedEffect(Unit) {
-        topBarState.value = TopBarState(
-            title = screenTitle,
-        )
+       onTopBarChange( TopBarState(title = screenTitle))
     }
 
     BackHandler(enabled = isSelecting) {

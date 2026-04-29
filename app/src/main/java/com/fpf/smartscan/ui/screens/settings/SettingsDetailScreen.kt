@@ -37,7 +37,7 @@ import com.fpf.smartscansdk.ml.models.ModelRegistry
 fun SettingsDetailScreen(
     type: String,
     viewModel: SettingsViewModel,
-    topBarState: MutableState<TopBarState>,
+    onTopBarChange: (TopBarState) -> Unit,
     onBack: () -> Unit
     ) {
     val appSettings by viewModel.appSettings.collectAsState()
@@ -64,16 +64,18 @@ fun SettingsDetailScreen(
     }
 
     LaunchedEffect(Unit) {
-        topBarState.value = TopBarState(
-            title = screenTitle,
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = null
-                    )
+        onTopBarChange(
+            TopBarState(
+                title = screenTitle,
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null
+                        )
+                    }
                 }
-            }
+            )
         )
     }
 

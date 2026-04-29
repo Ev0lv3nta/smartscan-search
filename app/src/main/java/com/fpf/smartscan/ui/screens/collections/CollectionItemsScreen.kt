@@ -61,7 +61,7 @@ fun CollectionItemsScreen(
     collectionName: String?,
     appSettings: StateFlow<AppSettings>,
     clusterId: Long = -1L, // null not allowed for longs in nav
-    topBarState: MutableState<TopBarState>,
+    onTopBarChange: (TopBarState) -> Unit,
     onBack: () -> Unit,
     viewModel: CollectionItemsViewModel = koinViewModel(),
     ) {
@@ -98,24 +98,20 @@ fun CollectionItemsScreen(
     }
 
     val screenTitle = collectionName?: "?"
-    LaunchedEffect(Unit) {
-        topBarState.value = TopBarState(
-            title = collectionName?: "?",
-        )
-    }
-
 
     LaunchedEffect(Unit) {
-        topBarState.value = TopBarState(
-            title = screenTitle,
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = null
-                    )
+        onTopBarChange(
+            TopBarState(
+                title = screenTitle,
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null
+                        )
+                    }
                 }
-            }
+            )
         )
     }
 

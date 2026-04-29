@@ -71,14 +71,13 @@ import kotlin.math.max
 fun SearchScreen(
     searchViewModel: SearchViewModel = koinViewModel(),
     appSettings:  StateFlow<AppSettings>,
-    topBarState: MutableState<TopBarState>,
+    onTopBarChange: (TopBarState) -> Unit,
     intentSearchQuery: SearchQuery? = null
 ) {
     val appSettings by appSettings.collectAsState()
     val context = LocalContext.current
     val clipboard = LocalClipboard.current
 
-    val screenTitle = stringResource(R.string.title_search)
 
     // Index state
     val imageIndexProgress by searchViewModel.imageIndexProgress.collectAsState(initial = 0f)
@@ -122,6 +121,8 @@ fun SearchScreen(
         hasStoragePermission = storageGranted
     }
 
+    val screenTitle = stringResource(R.string.title_search)
+
     LaunchedEffect(state.hasIndexedImages, state.hasIndexedVideos, state.isRescanning, state.mediaType, hasStoragePermission) {
         val isFirstImageScanNeeded = hasStoragePermission && state.hasIndexedImages == false && (state.mediaType == MediaType.IMAGE)
         val isFirstVideoScanNeeded = hasStoragePermission && state.hasIndexedVideos == false && (state.mediaType == MediaType.VIDEO)
@@ -154,18 +155,20 @@ fun SearchScreen(
     }
 
     LaunchedEffect(Unit) {
-        topBarState.value = TopBarState(
-            title = screenTitle,
-            actions = {
-                OverflowMenu(
-                    onScanImages = {
-                        showScanImagesDialog = true
-                    },
-                    onScanVideos = {
-                        showScanVideosDialog = true
-                    }
-                )
-            }
+        onTopBarChange(
+            TopBarState(
+                title = screenTitle,
+                actions = {
+                    OverflowMenu(
+                        onScanImages = {
+                            showScanImagesDialog = true
+                        },
+                        onScanVideos = {
+                            showScanVideosDialog = true
+                        }
+                    )
+                }
+            )
         )
     }
 

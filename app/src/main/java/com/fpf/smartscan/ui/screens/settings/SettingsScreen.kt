@@ -36,7 +36,7 @@ import com.fpf.smartscan.ui.theme.ThemeMode
 fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel(),
     onNavigate: (String) -> Unit,
-    topBarState: MutableState<TopBarState>,
+    onTopBarChange: (TopBarState) -> Unit,
     ) {
     val appSettings by viewModel.appSettings.collectAsState()
     val scrollState = rememberScrollState()
@@ -53,8 +53,8 @@ fun SettingsScreen(
     val screenTitle = stringResource(R.string.title_settings)
 
     LaunchedEffect(Unit) {
-        topBarState.value = TopBarState(
-            title = screenTitle,
+        onTopBarChange(
+            TopBarState(title = screenTitle)
         )
     }
 

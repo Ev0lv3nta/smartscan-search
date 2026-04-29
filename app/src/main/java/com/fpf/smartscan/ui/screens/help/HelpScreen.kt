@@ -20,7 +20,7 @@ import com.fpf.smartscan.navigation.TopBarState
 
 @Composable
 fun HelpScreen(
-    topBarState: MutableState<TopBarState>,
+    onTopBarChange: (TopBarState) -> Unit,
     onBack: () -> Unit
 ) {
     val scrollState = rememberScrollState()
@@ -28,16 +28,18 @@ fun HelpScreen(
     val screenTitle = stringResource(R.string.title_help)
 
     LaunchedEffect(Unit) {
-        topBarState.value = TopBarState(
-            title = screenTitle,
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = null
-                    )
+        onTopBarChange(
+            TopBarState(
+                title = screenTitle,
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null
+                        )
+                    }
                 }
-            }
+            )
         )
     }
 
