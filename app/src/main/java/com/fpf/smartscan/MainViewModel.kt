@@ -12,8 +12,8 @@ import com.fpf.smartscan.data.DbManager
 import com.fpf.smartscan.data.EmbedStoreSyncHelper
 import com.fpf.smartscan.data.MediaDatabase
 import com.fpf.smartscan.media.MediaType
+import com.fpf.smartscan.services.refreshIndex
 import com.fpf.smartscan.utils.isWorkScheduled
-import com.fpf.smartscan.workers.ClusterWorker
 import com.fpf.smartscan.workers.IndexWorker
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
@@ -97,11 +97,11 @@ class MainViewModel(
             val hasIndexedImagesButNotClustered = imageStore.exists && !imageClusterStore.exists
             val hasIndexedVideosButNotClustered =  videoStore.exists && !videoClusterStore.exists
             if(hasIndexedVideosButNotClustered && hasIndexedImagesButNotClustered){
-                ClusterWorker.startWorker(getApplication())
+                refreshIndex(getApplication(), MediaType.entries)
             }else{
                 when{
-                    hasIndexedVideosButNotClustered ->  ClusterWorker.startWorker(getApplication(), mediaTypes = listOf(MediaType.VIDEO))
-                    hasIndexedImagesButNotClustered ->  ClusterWorker.startWorker(getApplication(), mediaTypes = listOf(MediaType.IMAGE))
+                    hasIndexedVideosButNotClustered -> refreshIndex(getApplication(), mediaTypes = listOf(MediaType.VIDEO))
+                    hasIndexedImagesButNotClustered ->  refreshIndex(getApplication(), mediaTypes = listOf(MediaType.IMAGE))
                 }
             }
 
