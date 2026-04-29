@@ -117,8 +117,8 @@ class SearchViewModel(
         viewModelScope.launch(Dispatchers.IO){
             try {
                 _state.emit(_state.value.copy(error = null, loading = true))
-
-                val embeddings = if(store.exists) store.get() else emptyList()
+                store.clear()
+                val embeddings = store.get()
                 val hasIndexed = embeddings.isNotEmpty()
                 when(_state.value.mediaType){
                     MediaType.VIDEO -> _state.emit(_state.value.copy(hasIndexedVideos = hasIndexed))
