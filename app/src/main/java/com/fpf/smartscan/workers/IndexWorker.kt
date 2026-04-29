@@ -84,14 +84,14 @@ class IndexWorker(context: Context, workerParams: WorkerParameters) :
             // No listener used (may change to avoid silent errors)
             if(imageStore.exists){
                 val imageIndexer = ImageIndexer(imageEmbedder, context=applicationContext, listener = null, store = imageStore)
-                indexMedia(applicationContext, imageIndexer, metadataRepo, MediaType.IMAGE,appSettings.searchableImageDirectories.map{it.toUri()})
+                indexMedia(applicationContext, MediaType.IMAGE, imageStore, imageIndexer, metadataRepo,appSettings.searchableImageDirectories.map{it.toUri()})
                 clusterMedia(clusterCrossRefRepository, imageClusterStore, imageStore, clusterMetadataRepository, metadataRepo, MediaType.IMAGE)
             }
 
             // Prevents doing full indexes. That responsibility should be left to the foreground service
             if(videoStore.exists){
                 val videoIndexer = VideoIndexer(imageEmbedder, context=applicationContext, listener = null, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
-                indexMedia(applicationContext, videoIndexer, metadataRepo, MediaType.VIDEO,appSettings.searchableImageDirectories.map{it.toUri()})
+                indexMedia(applicationContext, MediaType.VIDEO, videoStore,videoIndexer, metadataRepo,appSettings.searchableImageDirectories.map{it.toUri()})
                 clusterMedia(clusterCrossRefRepository, videoClusterStore, videoStore, clusterMetadataRepository, metadataRepo, MediaType.VIDEO)
             }
 

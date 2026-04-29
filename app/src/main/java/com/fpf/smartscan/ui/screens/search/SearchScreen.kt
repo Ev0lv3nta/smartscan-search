@@ -87,8 +87,8 @@ fun SearchScreen(
     val videoIndexStatus by searchViewModel.videoIndexStatus.collectAsState()
     val alertTitle by searchViewModel.alertTitle.collectAsState()
     val alertDescription by searchViewModel.alertDescription.collectAsState()
-    var showImageDialog by remember { mutableStateOf(false) }
-    var showVideoDialog by remember { mutableStateOf(false) }
+    var showScanImagesDialog by remember { mutableStateOf(false) }
+    var showScanVideosDialog by remember { mutableStateOf(false) }
 
 
     // Search state
@@ -122,23 +122,26 @@ fun SearchScreen(
         hasStoragePermission = storageGranted
     }
 
-    LaunchedEffect(state.hasIndexedImages, state.hasIndexedVideos, hasStoragePermission, state.mediaType) {
-        if(hasStoragePermission && state.hasIndexedImages == false && (state.mediaType == MediaType.IMAGE)){
+    LaunchedEffect(state.hasIndexedImages, state.hasIndexedVideos, state.isRescanning, state.mediaType, hasStoragePermission) {
+        val isFirstImageScanNeeded = hasStoragePermission && state.hasIndexedImages == false && (state.mediaType == MediaType.IMAGE)
+        val isFirstVideoScanNeeded = hasStoragePermission && state.hasIndexedVideos == false && (state.mediaType == MediaType.VIDEO)
+
+        if(isFirstImageScanNeeded && !state.isRescanning){
             searchViewModel.showIndexAlert()
-        }else if(hasStoragePermission && state.hasIndexedVideos == false && (state.mediaType == MediaType.VIDEO)){
+        }else if(isFirstVideoScanNeeded && !state.isRescanning){
             searchViewModel.showIndexAlert()
         }
     }
 
     LaunchedEffect(imageIndexStatus) {
         if (imageIndexStatus == IndexingStatus.COMPLETE) {
-            searchViewModel.refreshIndex(MediaType.IMAGE)
+            searchViewModel.reloadIndex(MediaType.IMAGE)
         }
     }
 
     LaunchedEffect(videoIndexStatus) {
         if (videoIndexStatus == IndexingStatus.COMPLETE) {
-            searchViewModel.refreshIndex(MediaType.VIDEO)
+            searchViewModel.reloadIndex(MediaType.VIDEO)
         }
     }
 
@@ -156,10 +159,10 @@ fun SearchScreen(
             actions = {
                 OverflowMenu(
                     onScanImages = {
-                        showImageDialog = true
+                        showScanImagesDialog = true
                     },
                     onScanVideos = {
-                        showVideoDialog = true
+                        showScanVideosDialog = true
                     }
                 )
             }
@@ -172,6 +175,8 @@ fun SearchScreen(
             searchViewModel.clearSelectedResults()
         }
     }
+
+
 
     if ( !alertTitle.isNullOrBlank() && !alertDescription.isNullOrBlank()) {
         AlertDialog(
@@ -196,12 +201,12 @@ fun SearchScreen(
         )
     }
 
-    if (showImageDialog || showVideoDialog) {
-        val media = if (showImageDialog) "images" else "videos"
+    if (showScanImagesDialog || showScanVideosDialog) {
+        val media = if (showScanImagesDialog) "images" else "videos"
 
         AlertDialog(
             onDismissRequest = {
-                if (showImageDialog) showImageDialog = false else showVideoDialog = false
+                if (showScanImagesDialog) showScanImagesDialog = false else showScanVideosDialog = false
             },
             title = {
                 Text(stringResource(R.string.alert_scan_index_title, media))
@@ -210,15 +215,15 @@ fun SearchScreen(
                 Column {
                     Text(stringResource(R.string.alert_scan_index_description))
 
-                    Spacer(modifier = androidx.compose.ui.Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     TextButton(
                         onClick = {
-                            if (showImageDialog) {
-                                showImageDialog = false
+                            if (showScanImagesDialog) {
+                                showScanImagesDialog = false
                                 searchViewModel.refreshMediaIndex(MediaType.IMAGE)
                             } else {
-                                showVideoDialog = false
+                                showScanVideosDialog = false
                                 searchViewModel.refreshMediaIndex(MediaType.VIDEO)
                             }
                         }
@@ -228,11 +233,13 @@ fun SearchScreen(
 
                     TextButton(
                         onClick = {
-                            if (showImageDialog) {
-                                showImageDialog = false
+                            if (showScanImagesDialog) {
+                                showScanImagesDialog = false
+                                searchViewModel.setIsRescanning(true)
                                 searchViewModel.rebuildMediaIndex(MediaType.IMAGE)
                             } else {
-                                showVideoDialog = false
+                                showScanVideosDialog = false
+                                searchViewModel.setIsRescanning(true)
                                 searchViewModel.rebuildMediaIndex(MediaType.VIDEO)
                             }
                         }
@@ -244,7 +251,7 @@ fun SearchScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        if (showImageDialog) showImageDialog = false else showVideoDialog = false
+                        if (showScanImagesDialog) showScanImagesDialog = false else showScanVideosDialog = false
                     }
                 ) {
                     Text("Cancel")

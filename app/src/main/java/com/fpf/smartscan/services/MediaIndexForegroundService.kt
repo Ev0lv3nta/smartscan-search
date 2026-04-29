@@ -112,12 +112,12 @@ class MediaIndexForegroundService : Service(), KoinComponent {
                     when(mediaType){
                         MediaType.IMAGE -> {
                             val imageIndexer = ImageIndexer(imageEmbedder, context=application, listener = ImageIndexListener, store = imageStore)
-                            indexMedia(application, imageIndexer, metadataRepo, MediaType.IMAGE,appSettings.searchableImageDirectories.map{it.toUri()})
+                            indexMedia(application, MediaType.IMAGE, imageStore, imageIndexer, metadataRepo,appSettings.searchableImageDirectories.map{it.toUri()})
                             clusterMedia(clusterCrossRefRepository, imageClusterStore, imageStore, clusterMetadataRepository, metadataRepo, MediaType.IMAGE)
                         }
                         MediaType.VIDEO -> {
                             val videoIndexer = VideoIndexer(imageEmbedder, context=application, listener = VideoIndexListener, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
-                            indexMedia(application, videoIndexer, metadataRepo, MediaType.VIDEO,appSettings.searchableImageDirectories.map{it.toUri()})
+                            indexMedia(application, MediaType.VIDEO, videoStore, videoIndexer, metadataRepo,appSettings.searchableImageDirectories.map{it.toUri()})
                             clusterMedia(clusterCrossRefRepository, videoClusterStore, videoStore, clusterMetadataRepository, metadataRepo, MediaType.VIDEO)
                         }
                     }

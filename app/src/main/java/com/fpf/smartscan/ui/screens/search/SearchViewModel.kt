@@ -133,18 +133,24 @@ class SearchViewModel(
         }
     }
 
-    fun refreshIndex(mode : MediaType){
+    fun reloadIndex(mode : MediaType){
         if(mode == MediaType.IMAGE && !_hasRefreshedImageIndex.value){
             loadImageIndex()
+            setIsRescanning(false)
             _hasRefreshedImageIndex.value = true
         }else if (mode == MediaType.VIDEO && !_hasRefreshedVideoIndex.value){
             loadVideoIndex()
+            setIsRescanning(false)
             _hasRefreshedVideoIndex.value = true
         }
     }
 
+    fun setIsRescanning(isRescanning: Boolean){
+        _state.update { it.copy(isRescanning = isRescanning) }
+    }
+
     fun setMediaType(type: MediaType) {
-        _state.value = _state.value.copy(mediaType = type)
+        _state.update { it.copy(mediaType = type) }
         reset()
 
         // saves memory by lazy loading video index
