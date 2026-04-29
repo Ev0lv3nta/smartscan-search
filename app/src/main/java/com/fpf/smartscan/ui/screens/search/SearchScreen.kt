@@ -238,11 +238,9 @@ fun SearchScreen(
                         onClick = {
                             if (showScanImagesDialog) {
                                 showScanImagesDialog = false
-                                searchViewModel.setIsRescanning(true)
                                 searchViewModel.rebuildMediaIndex(MediaType.IMAGE)
                             } else {
                                 showScanVideosDialog = false
-                                searchViewModel.setIsRescanning(true)
                                 searchViewModel.rebuildMediaIndex(MediaType.VIDEO)
                             }
                         }
