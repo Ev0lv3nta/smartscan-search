@@ -1,7 +1,6 @@
 package com.fpf.smartscan
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.ui.Modifier
@@ -14,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.compose.NavHost
@@ -23,8 +21,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.fpf.smartscan.constants.Routes
 import com.fpf.smartscan.constants.SettingTypes
+import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.search.SearchQuery
-import com.fpf.smartscan.services.MediaIndexForegroundService
 import com.fpf.smartscan.services.refreshIndex
 import com.fpf.smartscan.ui.components.OverflowMenu
 import com.fpf.smartscan.ui.components.UpdatePopUp
@@ -113,19 +111,13 @@ fun MainScreen(intentSearchQuery: SearchQuery?, onAppReady: () -> Unit) {
                                 onRefreshImageIndex = {
                                     val storageAccess = getStorageAccess(context)
                                     if (storageAccess != StorageAccess.Denied) {
-                                        refreshIndex(
-                                            context.applicationContext,
-                                            MediaIndexForegroundService.TYPE_IMAGE
-                                        )
+                                        refreshIndex(context.applicationContext, listOf(MediaType.IMAGE))
                                     }
                                 },
                                 onRefreshVideoIndex = {
                                     val storageAccess = getStorageAccess(context)
                                     if (storageAccess != StorageAccess.Denied) {
-                                        refreshIndex(
-                                            context.applicationContext,
-                                            MediaIndexForegroundService.TYPE_VIDEO
-                                        )
+                                        refreshIndex(context.applicationContext, listOf(MediaType.VIDEO))
                                     }
                                 },
                             )

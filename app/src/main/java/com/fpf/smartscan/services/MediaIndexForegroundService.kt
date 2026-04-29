@@ -43,10 +43,7 @@ import kotlin.collections.map
 
 class MediaIndexForegroundService : Service(), KoinComponent {
     companion object {
-        const val EXTRA_MEDIA_TYPE = "extra_media_type"
-        const val TYPE_IMAGE = "image"
-        const val TYPE_VIDEO = "video"
-        const val TYPE_BOTH = "both"
+        const val EXTRA_MEDIA_TYPES = "extra_media_types"
         private const val NOTIFICATION_ID = 200
         private const val TAG = "MediaIndexService"
     }
@@ -102,24 +99,28 @@ class MediaIndexForegroundService : Service(), KoinComponent {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val mediaType = intent?.getStringExtra(EXTRA_MEDIA_TYPE) ?: TYPE_BOTH
+        val mediaTypes = intent?.getStringArrayListExtra(EXTRA_MEDIA_TYPES)
+                ?.map(MediaType::valueOf)
+                ?: MediaType.entries
 
         serviceScope.launch {
             try {
                 val appSettings = loadSettings(sharedPrefs)
-
                 imageEmbedder.initialize()
 
-                if (mediaType == TYPE_IMAGE || mediaType == TYPE_BOTH) {
-                    val imageIndexer = ImageIndexer(imageEmbedder, context=application, listener = ImageIndexListener, store = imageStore)
-                    indexMedia(application, imageIndexer, metadataRepo, MediaType.IMAGE,appSettings.searchableImageDirectories.map{it.toUri()})
-                    clusterMedia(clusterCrossRefRepository, imageClusterStore, imageStore, clusterMetadataRepository, metadataRepo, MediaType.IMAGE)
-                }
-
-                if (mediaType == TYPE_VIDEO || mediaType == TYPE_BOTH) {
-                    val videoIndexer = VideoIndexer(imageEmbedder, context=application, listener = VideoIndexListener, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
-                    indexMedia(application, videoIndexer, metadataRepo, MediaType.VIDEO,appSettings.searchableImageDirectories.map{it.toUri()})
-                    clusterMedia(clusterCrossRefRepository, videoClusterStore, videoStore, clusterMetadataRepository, metadataRepo, MediaType.VIDEO)
+                mediaTypes.forEach { mediaType ->
+                    when(mediaType){
+                        MediaType.IMAGE -> {
+                            val imageIndexer = ImageIndexer(imageEmbedder, context=application, listener = ImageIndexListener, store = imageStore)
+                            indexMedia(application, imageIndexer, metadataRepo, MediaType.IMAGE,appSettings.searchableImageDirectories.map{it.toUri()})
+                            clusterMedia(clusterCrossRefRepository, imageClusterStore, imageStore, clusterMetadataRepository, metadataRepo, MediaType.IMAGE)
+                        }
+                        MediaType.VIDEO -> {
+                            val videoIndexer = VideoIndexer(imageEmbedder, context=application, listener = VideoIndexListener, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
+                            indexMedia(application, videoIndexer, metadataRepo, MediaType.VIDEO,appSettings.searchableImageDirectories.map{it.toUri()})
+                            clusterMedia(clusterCrossRefRepository, videoClusterStore, videoStore, clusterMetadataRepository, metadataRepo, MediaType.VIDEO)
+                        }
+                    }
                 }
             } catch (e: CancellationException) {
                 // cancelled
@@ -140,5 +141,4 @@ class MediaIndexForegroundService : Service(), KoinComponent {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
-
 }

@@ -452,8 +452,8 @@ class SearchViewModel(
 
     fun onIndex(){
         when(_state.value.mediaType){
-            MediaType.IMAGE -> startIndexing(getApplication(), MediaIndexForegroundService.TYPE_IMAGE)
-            MediaType.VIDEO -> startIndexing(getApplication(), MediaIndexForegroundService.TYPE_VIDEO)
+            MediaType.IMAGE -> startIndexing(getApplication(), listOf(MediaType.IMAGE))
+            MediaType.VIDEO -> startIndexing(getApplication(), listOf(MediaType.VIDEO))
         }
     }
 
