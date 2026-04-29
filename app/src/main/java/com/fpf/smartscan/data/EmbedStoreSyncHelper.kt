@@ -9,10 +9,7 @@ import com.fpf.smartscan.constants.PrefsKeys
 import com.fpf.smartscan.constants.PrefsNames
 import com.fpf.smartscan.media.getImageToDateMap
 import com.fpf.smartscan.media.getVideoToDateMap
-import com.fpf.smartscan.search.ImageIndexListener
-import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
-import com.fpf.smartscansdk.core.processors.Metrics
 import java.io.File
 import kotlin.collections.map
 import kotlin.collections.mapNotNull
@@ -50,11 +47,6 @@ object EmbedStoreSyncHelper {
             }
             Log.d(TAG, "Sync complete successfully")
         }
-
-        // force trigger refresh on index
-        if(syncedImages) ImageIndexListener.onComplete(context.applicationContext, Metrics.Success())
-        if(syncedVideos) VideoIndexListener.onComplete(context.applicationContext, Metrics.Success())
-
     }
 
     private suspend fun syncStoreDates(
