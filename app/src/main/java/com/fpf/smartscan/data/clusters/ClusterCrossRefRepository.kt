@@ -47,6 +47,11 @@ class ClusterCrossRefRepository(private val dao: ClusterCrossRefDao) {
     suspend fun deleteByClusterIds(ids: List<Long>) = dao.deleteByClusterIds(ids)
     suspend fun deleteByMediaIds(ids: List<Long>) = dao.deleteByMediaIds(ids)
 
-    suspend fun clear() = dao.clear()
+    suspend fun clear() {
+        dao.clear()
+        clusterCounts.clear()
+        clusterToMediaIdsMap.clear()
+        assignments.clear()
+    }
 
 }

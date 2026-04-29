@@ -29,4 +29,6 @@ class ClusterMetadataRepository(private val dao: ClusterMetadataDao) {
     suspend fun updateMetadatas(metadatas: List<MediaClusterMetadata>) = dao.update(metadatas)
 
      suspend fun deleteMetadatas(ids: List<Long>) = dao.delete(ids)
+
+    suspend fun clear() = dao.clear()
 }

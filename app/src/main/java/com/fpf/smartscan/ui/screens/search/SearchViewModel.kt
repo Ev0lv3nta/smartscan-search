@@ -13,6 +13,7 @@ import coil3.compose.AsyncImagePainter
 import kotlinx.coroutines.Dispatchers
 import com.fpf.smartscan.R
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
+import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
@@ -63,6 +64,7 @@ class SearchViewModel(
     private val tagRepository: TagRepository,
     private val tagCrossRefRepository: TagCrossRefRepository,
     private val clusterCrossRefRepository: ClusterCrossRefRepository,
+    private val clusterMetadataRepository: ClusterMetadataRepository,
     private val mediaMetadataRepository: MediaMetadataRepository
 ) : AndroidViewModel(application) {
     companion object {
@@ -423,7 +425,9 @@ class SearchViewModel(
         if (storageAccess != StorageAccess.Denied) {
             setIsRescanning(true)
             val store = getStore()
-            rebuildIndex(getApplication(), listOf(mediaType to store))
+            viewModelScope.launch {
+                rebuildIndex(getApplication(), listOf(mediaType to store), clusterCrossRefRepository, clusterMetadataRepository)
+            }
         }
     }
 

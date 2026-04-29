@@ -30,6 +30,7 @@ val viewModelModule = module {
             tagRepository = get(),
             tagCrossRefRepository = get(),
             clusterCrossRefRepository = get(),
+            clusterMetadataRepository = get()
         )
     }
     viewModel {
