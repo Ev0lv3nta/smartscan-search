@@ -20,10 +20,10 @@ import com.fpf.smartscan.di.IMAGE_STORE
 import com.fpf.smartscan.di.VIDEO_CLUSTER_STORE
 import com.fpf.smartscan.di.VIDEO_STORE
 import com.fpf.smartscan.media.MediaType
+import com.fpf.smartscan.search.ClusterManager
 import com.fpf.smartscan.search.ImageIndexListener
 import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.settings.loadSettings
-import com.fpf.smartscan.search.clusterMedia
 import com.fpf.smartscan.search.indexMedia
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
@@ -113,12 +113,28 @@ class MediaIndexForegroundService : Service(), KoinComponent {
                         MediaType.IMAGE -> {
                             val imageIndexer = ImageIndexer(imageEmbedder, context=application, listener = ImageIndexListener, store = imageStore)
                             indexMedia(application, MediaType.IMAGE, imageStore, imageIndexer, metadataRepo,appSettings.searchableImageDirectories.map{it.toUri()})
-                            clusterMedia(clusterCrossRefRepository, imageClusterStore, imageStore, clusterMetadataRepository, metadataRepo, MediaType.IMAGE)
+
+                            val clusterManager = ClusterManager(
+                                clusterStore = imageClusterStore,
+                                clusterCrossRefRepository = clusterCrossRefRepository,
+                                clusterMetadataRepository = clusterMetadataRepository,
+                                mediaMetadataRepository = metadataRepo,
+                                mediaType = MediaType.IMAGE
+                            )
+                            clusterManager.clusterMedia(imageStore.get())
                         }
                         MediaType.VIDEO -> {
                             val videoIndexer = VideoIndexer(imageEmbedder, context=application, listener = VideoIndexListener, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
                             indexMedia(application, MediaType.VIDEO, videoStore, videoIndexer, metadataRepo,appSettings.searchableImageDirectories.map{it.toUri()})
-                            clusterMedia(clusterCrossRefRepository, videoClusterStore, videoStore, clusterMetadataRepository, metadataRepo, MediaType.VIDEO)
+
+                            val clusterManager = ClusterManager(
+                                clusterStore = videoClusterStore,
+                                clusterCrossRefRepository = clusterCrossRefRepository,
+                                clusterMetadataRepository = clusterMetadataRepository,
+                                mediaMetadataRepository = metadataRepo,
+                                mediaType = MediaType.VIDEO
+                            )
+                            clusterManager.clusterMedia(videoStore.get())
                         }
                     }
                 }

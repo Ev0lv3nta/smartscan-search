@@ -19,7 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 import com.fpf.smartscan.media.MediaType
-import com.fpf.smartscan.search.clusterMedia
+import com.fpf.smartscan.search.ClusterManager
 import com.fpf.smartscan.search.indexMedia
 import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
@@ -63,7 +63,7 @@ class IndexWorker(context: Context, workerParams: WorkerParameters) :
     private val sharedPrefs by lazy { applicationContext.getSharedPreferences(PrefsNames.APP_PREFS, MODE_PRIVATE)    }
     private val imageEmbedder by lazy { ClipImageEmbedder(applicationContext, ModelAssetSource.Resource(R.raw.clip_image_encoder_quant))}
 
-    private val metadataRepo: MediaMetadataRepository by inject()
+    private val mediaMetadataRepository: MediaMetadataRepository by inject()
     private val clusterMetadataRepository: ClusterMetadataRepository by inject()
     private val clusterCrossRefRepository: ClusterCrossRefRepository by inject()
 
@@ -84,15 +84,31 @@ class IndexWorker(context: Context, workerParams: WorkerParameters) :
             // No listener used (may change to avoid silent errors)
             if(imageStore.exists){
                 val imageIndexer = ImageIndexer(imageEmbedder, context=applicationContext, listener = null, store = imageStore)
-                indexMedia(applicationContext, MediaType.IMAGE, imageStore, imageIndexer, metadataRepo,appSettings.searchableImageDirectories.map{it.toUri()})
-                clusterMedia(clusterCrossRefRepository, imageClusterStore, imageStore, clusterMetadataRepository, metadataRepo, MediaType.IMAGE)
+                indexMedia(applicationContext, MediaType.IMAGE, imageStore, imageIndexer, mediaMetadataRepository,appSettings.searchableImageDirectories.map{it.toUri()})
+
+                val imageClusterManager = ClusterManager(
+                    clusterStore = imageClusterStore,
+                    clusterCrossRefRepository = clusterCrossRefRepository,
+                    clusterMetadataRepository = clusterMetadataRepository,
+                    mediaMetadataRepository = mediaMetadataRepository,
+                    mediaType = MediaType.IMAGE
+                )
+                imageClusterManager.clusterMedia(imageStore.get())
             }
 
             // Prevents doing full indexes. That responsibility should be left to the foreground service
             if(videoStore.exists){
                 val videoIndexer = VideoIndexer(imageEmbedder, context=applicationContext, listener = null, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
-                indexMedia(applicationContext, MediaType.VIDEO, videoStore,videoIndexer, metadataRepo,appSettings.searchableImageDirectories.map{it.toUri()})
-                clusterMedia(clusterCrossRefRepository, videoClusterStore, videoStore, clusterMetadataRepository, metadataRepo, MediaType.VIDEO)
+                indexMedia(applicationContext, MediaType.VIDEO, videoStore,videoIndexer, mediaMetadataRepository,appSettings.searchableImageDirectories.map{it.toUri()})
+
+                val videoClusterManager = ClusterManager(
+                    clusterStore = videoClusterStore,
+                    clusterCrossRefRepository = clusterCrossRefRepository,
+                    clusterMetadataRepository = clusterMetadataRepository,
+                    mediaMetadataRepository = mediaMetadataRepository,
+                    mediaType = MediaType.VIDEO
+                )
+                videoClusterManager.clusterMedia(videoStore.get())
             }
 
             return@withContext Result.success()
