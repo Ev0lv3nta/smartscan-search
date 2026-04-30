@@ -28,11 +28,11 @@ import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.media.removeStaleMedia
 import com.fpf.smartscan.media.toMediaItem
-import com.fpf.smartscan.search.ClusterManager
-import com.fpf.smartscan.search.ImageIndexListener
+import com.fpf.smartscan.cluster.ClusterManager
+import com.fpf.smartscan.index.ImageIndexListener
 import com.fpf.smartscan.search.SearchQuery
-import com.fpf.smartscan.search.TagManager
-import com.fpf.smartscan.search.VideoIndexListener
+import com.fpf.smartscan.tag.TagManager
+import com.fpf.smartscan.index.VideoIndexListener
 import com.fpf.smartscan.services.rebuildIndex
 import com.fpf.smartscan.services.refreshIndex
 import com.fpf.smartscan.services.startIndexing

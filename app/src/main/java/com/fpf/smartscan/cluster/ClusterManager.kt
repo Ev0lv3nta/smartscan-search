@@ -1,4 +1,4 @@
-package com.fpf.smartscan.search
+package com.fpf.smartscan.cluster
 
 import com.fpf.smartscan.data.clusters.ClusterCrossRef
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
@@ -11,8 +11,7 @@ import com.fpf.smartscansdk.core.cluster.ClusterResult
 import com.fpf.smartscansdk.core.cluster.IncrementalClusterer
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
-import kotlin.collections.filterNot
-import kotlin.collections.mapNotNull
+import kotlin.collections.iterator
 import kotlin.math.log2
 import kotlin.math.pow
 

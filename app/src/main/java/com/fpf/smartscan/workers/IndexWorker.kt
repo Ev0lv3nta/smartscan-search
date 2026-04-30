@@ -19,8 +19,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 import com.fpf.smartscan.media.MediaType
-import com.fpf.smartscan.search.ClusterManager
-import com.fpf.smartscan.search.indexMedia
+import com.fpf.smartscan.cluster.ClusterManager
+import com.fpf.smartscan.index.indexMedia
 import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer

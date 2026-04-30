@@ -22,7 +22,7 @@ import com.fpf.smartscan.media.mediaIdToUri
 import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.media.onMediaLoadingError
-import com.fpf.smartscan.search.TagManager
+import com.fpf.smartscan.tag.TagManager
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
