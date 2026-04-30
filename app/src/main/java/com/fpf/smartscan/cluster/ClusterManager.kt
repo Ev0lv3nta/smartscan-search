@@ -6,6 +6,7 @@ import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.clusters.MediaClusterMetadata
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.media.MediaType
+import com.fpf.smartscan.utils.reservoirSample
 import com.fpf.smartscansdk.core.cluster.Cluster
 import com.fpf.smartscansdk.core.cluster.ClusterResult
 import com.fpf.smartscansdk.core.cluster.IncrementalClusterer
@@ -22,6 +23,11 @@ class ClusterManager(
     private val mediaMetadataRepository: MediaMetadataRepository,
     private val mediaType: MediaType
 ) {
+    companion object {
+        const val LARGE_DATASET_SIZE: Int = 5000
+        const val SAMPLE_SIZE: Int = 500
+
+    }
     private var clusterToMediaIdsMap: MutableMap<Long, MutableSet<Long>> = mutableMapOf()
     private var clusterCounts: MutableMap<Long, Int> = mutableMapOf()
     private var assignments: MutableMap<Long, Long> = mutableMapOf()
@@ -35,9 +41,14 @@ class ClusterManager(
             .filterNot { it.id in existingAssignments }
             .filter { it.id in validIds }
 
+        val defaultThreshold = if(existingClusters.isEmpty()) {
+            getDefaultThresholdFromSample(filteredItems, SAMPLE_SIZE)
+        } else {
+            getAverageMeanSimilarity(existingClusters)
+        }
         val clusterer = IncrementalClusterer(
             existingClusters = existingClusters,
-            defaultThreshold = 0.5f
+            defaultThreshold = defaultThreshold
         )
 
         val result = clusterer.cluster(filteredItems)
@@ -167,16 +178,29 @@ class ClusterManager(
         return clusterCounts
     }
 
-    private suspend fun updateAssignments(clusterResult: ClusterResult, validIds: Set<Long> ) {
-        val crossRefs = clusterResult.assignments.mapNotNull {
-            if (it.key !in validIds) return@mapNotNull null
+    fun clear() {
+        clusterToMediaIdsMap.clear()
+        clusterCounts.clear()
+        assignments.clear()
+    }
 
-            ClusterCrossRef(
-                clusterId = it.value,
-                mediaId = it.key,
-            )
+    private fun getDefaultThresholdFromSample(itemEmbeds: List<StoredEmbedding>, n: Int): Float{
+        val sample = getSample(itemEmbeds, n)
+        val clusterer = IncrementalClusterer(
+            defaultThreshold = 0.6f
+        )
+        val result = clusterer.cluster(sample)
+        return getAverageMeanSimilarity(result.clusters)
+    }
+
+    private fun getAverageMeanSimilarity(clusters: Map<Long, Cluster>): Float = clusters.values.map{it.metadata.meanSimilarity}.average().toFloat()
+
+    private fun getSample(items: List<StoredEmbedding>, n: Int): List<StoredEmbedding>{
+        return if(items.size > LARGE_DATASET_SIZE ) {
+            reservoirSample(items, n)
+        } else {
+            items.shuffled().take(n)
         }
-        clusterCrossRefRepository.upsertClusterCrossRefs(crossRefs)
     }
 
     // increases search breadth when cluster fragmentation is high
@@ -194,9 +218,15 @@ class ClusterManager(
         return computedTopK.toInt().coerceAtLeast(baseTopK)
     }
 
-    fun clear() {
-        clusterToMediaIdsMap.clear()
-        clusterCounts.clear()
-        assignments.clear()
+    private suspend fun updateAssignments(clusterResult: ClusterResult, validIds: Set<Long> ) {
+        val crossRefs = clusterResult.assignments.mapNotNull {
+            if (it.key !in validIds) return@mapNotNull null
+
+            ClusterCrossRef(
+                clusterId = it.value,
+                mediaId = it.key,
+            )
+        }
+        clusterCrossRefRepository.upsertClusterCrossRefs(crossRefs)
     }
 }
