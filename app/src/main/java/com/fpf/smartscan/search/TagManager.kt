@@ -1,0 +1,113 @@
+package com.fpf.smartscan.search
+
+import com.fpf.smartscan.data.metadata.MediaMetadataRepository
+import com.fpf.smartscan.data.tags.Tag
+import com.fpf.smartscan.data.tags.TagCrossRef
+import com.fpf.smartscan.data.tags.TagCrossRefRepository
+import com.fpf.smartscan.data.tags.TagRepository
+import com.fpf.smartscan.data.tags.TagWithCount
+import com.fpf.smartscan.media.MediaCollection
+import com.fpf.smartscan.media.MediaItem
+import com.fpf.smartscan.media.MediaType
+import com.fpf.smartscan.media.mediaIdToUri
+import kotlin.collections.filter
+
+class TagManager(
+    private val tagRepository: TagRepository,
+    private val tagCrossRefRepository: TagCrossRefRepository,
+    private val mediaMetadataRepository: MediaMetadataRepository
+) {
+    suspend fun tagItems( tagName: String, items: Set<MediaItem>){
+        val existing = tagRepository.getTagsByName(listOf(tagName)).firstOrNull()
+        var id = existing?.id
+        if(id == null){
+            id = tagRepository.insertTags(listOf(Tag(name=tagName.trim()))).first()
+        }
+        val tagEntries = items.map { TagCrossRef(mediaId = it.id, tagId = id) }
+        tagCrossRefRepository.upsertTagCrossRefs(tagEntries)
+    }
+
+    fun checkAutoCompletion(query: CharSequence, substringEnd: Int, tags: List<Tag>, startWithHashtag: Boolean =  true): List<String>{
+        val text = query.toString()
+        val prefix = text.substring(0, substringEnd)
+        // Regex: find #tag at the end of prefix
+        var pattern =  """^#([a-zA-Z0-9_]*)$"""
+        pattern = if(!startWithHashtag )  pattern.replace("#", "") else pattern
+        val match = Regex(pattern).find(prefix)
+        return if (match != null) {
+            val partialTag =  match.groupValues[1]
+            tags .filter { it.name.startsWith(partialTag, ignoreCase = true) }.map { it.name }
+        } else {
+            emptyList()
+        }
+    }
+
+    suspend fun getMediaMatchingTag(tagName: String?, mediaType: MediaType, startDateFilter: Long? = null, endDateFilter: Long? = null): List<Long>{
+        tagName?: return emptyList()
+        val tag = tagRepository.getTagsByName(listOf(tagName)).firstOrNull()
+        return if(endDateFilter != null || startDateFilter != null){
+            tag?.let { tag-> mediaMetadataRepository.getByTagTypeAndDateRange(tag.id, mediaType,startDateFilter, endDateFilter).map{it.id}  }?: emptyList()
+        }else{
+            tag?.let { tag-> mediaMetadataRepository.getByTagAndType(tag.id, mediaType).map{it.id}  }?: emptyList()
+        }
+    }
+
+    suspend fun updateLastUsage(tagName: String){
+        val tag = tagRepository.getTagsByName(listOf(tagName)).firstOrNull()?: return
+        tagRepository.updateTags(listOf(Tag(tag.id, tag.name, System.currentTimeMillis())))
+    }
+
+    suspend fun renameTag(tagName: String, newName: String){
+        val tag = tagRepository.getTagsByName(listOf(tagName)).firstOrNull()
+        tag?.let { tagRepository.updateTags(listOf((it).copy(name = newName))) }
+    }
+
+    suspend fun removeItems(tagName: String, mediaIds: List<Long>) {
+        val tag = tagRepository.getTagsByName(listOf(tagName)).firstOrNull() ?: return
+        tagCrossRefRepository.deleteMediaMatchTag(mediaIds, tag.id)
+    }
+
+    suspend fun mergeTags(primaryTagName: String, otherTags: List<String>){
+        val primaryTag = tagRepository.getTagsByName(listOf(primaryTagName)).firstOrNull()
+        val tagsToMerge = tagRepository.getTagsByName(otherTags)
+        val mediaToUpdate = tagsToMerge.flatMap { mediaMetadataRepository.getByTag(it.id) }
+        if(primaryTag != null && mediaToUpdate.isNotEmpty()){
+            val updated = mediaToUpdate.map{ TagCrossRef(mediaId = it.id, tagId = primaryTag.id)}
+            tagCrossRefRepository.upsertTagCrossRefs(updated)
+            tagRepository.deleteTags(tagsToMerge)
+        }
+    }
+
+    suspend fun moveItems(items: Set<MediaItem>, currentTagName: String, destinationTagName: String){
+        val destinationTag = tagRepository.getTagsByName(listOf(destinationTagName)).firstOrNull()?: return
+        moveItems(items, currentTagName, destinationTag.id)
+    }
+
+    suspend fun createNewTagAndMoveItems(items: Set<MediaItem>, currentTagName: String, newTagName: String){
+        val newTagId = tagRepository.insertTags(listOf(Tag(name = newTagName))).firstOrNull()?: return
+        moveItems(items, currentTagName, newTagId)
+    }
+
+    private suspend fun moveItems(items: Set<MediaItem>, currentTagName: String, destinationTagId: Long){
+        val updatedCrossRef = items.map{ TagCrossRef(mediaId = it.id, tagId=destinationTagId)}
+        tagCrossRefRepository.upsertTagCrossRefs(updatedCrossRef)
+
+        val currentTag = tagRepository.getTagsByName(listOf(currentTagName)).firstOrNull()?: return
+        tagCrossRefRepository.deleteMediaMatchTag(  items.map{it.id}, currentTag.id)
+    }
+
+    suspend fun tagsToCollections(tags: List<TagWithCount>): List<MediaCollection> {
+        return tags.mapNotNull {
+            val mediaMeta = mediaMetadataRepository.getByTag(it.id, limit = 1, offset = 0).firstOrNull()
+            val uri = mediaMeta?.let { mediaMeta -> mediaIdToUri(mediaMeta.id, mediaMeta.type) }
+            uri?.let { uri ->
+                MediaCollection(
+                    id = it.id,
+                    name = it.name,
+                    thumbNail = uri,
+                    size = it.count
+                )
+            }
+        }
+    }
+}

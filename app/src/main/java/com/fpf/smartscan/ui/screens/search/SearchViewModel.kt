@@ -15,7 +15,6 @@ import com.fpf.smartscan.R
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
-import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
 import com.fpf.smartscan.data.tags.TagRepository
 import com.fpf.smartscan.data.tags.Tag
@@ -32,6 +31,7 @@ import com.fpf.smartscan.media.toMediaItem
 import com.fpf.smartscan.search.ClusterManager
 import com.fpf.smartscan.search.ImageIndexListener
 import com.fpf.smartscan.search.SearchQuery
+import com.fpf.smartscan.search.TagManager
 import com.fpf.smartscan.search.VideoIndexListener
 import com.fpf.smartscan.services.rebuildIndex
 import com.fpf.smartscan.services.refreshIndex
@@ -96,6 +96,12 @@ class SearchViewModel(
         mediaMetadataRepository = mediaMetadataRepository,
         mediaType = MediaType.VIDEO
     )
+
+    val tagManager = TagManager(
+        tagRepository=tagRepository,
+        tagCrossRefRepository=tagCrossRefRepository,
+        mediaMetadataRepository = mediaMetadataRepository,
+        )
     val allTags: StateFlow<List<Tag>> = tagRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     private val _state = MutableStateFlow(SearchState())
@@ -234,9 +240,9 @@ class SearchViewModel(
         val (tag, actualQuery) = parseQuery(query)
         tag?.let{ tag ->
             _state.update { currentState -> currentState.copy(tagFilter = tag) }
-            updateTagLastUsage(tag)
+            tagManager.updateLastUsage(tag)
         }
-        val idsMatchingTag: List<Long> = getMediaMatchingTag(tag, _state.value.mediaType)
+        val idsMatchingTag: List<Long> = tagManager.getMediaMatchingTag(tag, _state.value.mediaType)
         val tagOnlySearch = idsMatchingTag.isNotEmpty() && actualQuery.isBlank()
 
         if(tagOnlySearch){
@@ -478,14 +484,7 @@ class SearchViewModel(
     fun tagSelectedItems(tag: String){
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val selectedMediaIds = _state.value.selectedResults.map { it.id }
-                val existing = tagRepository.getTagsByName(listOf(tag)).firstOrNull()
-                var id = existing?.id
-                if(id == null){
-                    id = tagRepository.insertTags(listOf(Tag(name=tag.trim()))).first()
-                }
-                val tagEntries = selectedMediaIds.map { TagCrossRef(mediaId = it, tagId = id) }
-                tagCrossRefRepository.upsertTagCrossRefs(tagEntries)
+              tagManager.tagItems(tag, _state.value.selectedResults)
             }finally {
                 clearSelectedResults()
             }
@@ -507,25 +506,8 @@ class SearchViewModel(
     }
 
     fun handleAutoCompletionCheck(query: CharSequence, substringEnd: Int, startWithHashtag: Boolean =  true){
-        val text = query.toString()
-        val prefix = text.substring(0, substringEnd)
-
-        // Regex: find #tag at the end of prefix
-        var pattern =  """^#([a-zA-Z0-9_]*)$"""
-        pattern = if(!startWithHashtag )  pattern.replace("#", "") else pattern
-        val match = Regex(pattern).find(prefix)
-
-        if (match != null) {
-            val partialTag = match.groupValues[1]
-            // Track autocomplete only while typing the tag
-            updateAutoCompleteResults(allTags.value
-                .filter { it.name.startsWith(partialTag, ignoreCase = true) }
-                .map { it.name }
-            )
-        }
-        else {
-            updateAutoCompleteResults(emptyList())
-        }
+        val results = tagManager.checkAutoCompletion(query, substringEnd, allTags.value, startWithHashtag)
+        updateAutoCompleteResults(results)
     }
 
     @OptIn(FlowPreview::class)
@@ -543,22 +525,6 @@ class SearchViewModel(
     }
     private fun getStore() = if(_state.value.mediaType == MediaType.VIDEO) videoStore else imageStore
     private fun getClusterManager() = if(_state.value.mediaType == MediaType.VIDEO) videoClusterManager else imageClusterManager
-
-
-    private suspend fun getMediaMatchingTag(tagName: String?, mediaType: MediaType): List<Long>{
-        tagName?: return emptyList()
-        val state = _state.value
-        val tag = tagRepository.getTagsByName(listOf(tagName)).firstOrNull()
-        return if(state.endDateFilter != null || state.startDateFilter != null){
-            tag?.let { tag-> mediaMetadataRepository.getByTagTypeAndDateRange(tag.id, mediaType,state.startDateFilter, state.endDateFilter).map{it.id}  }?: emptyList()
-        }else{
-            tag?.let { tag-> mediaMetadataRepository.getByTagAndType(tag.id, mediaType).map{it.id}  }?: emptyList()
-        }
-    }
-    private suspend fun updateTagLastUsage(tag: String){
-        val tag = allTags.value.find { it.name == tag }?: return
-        tagRepository.updateTags(listOf(Tag(tag.id, tag.name, System.currentTimeMillis())))
-    }
 
     override fun onCleared() {
         textEmbedder.closeSession()
