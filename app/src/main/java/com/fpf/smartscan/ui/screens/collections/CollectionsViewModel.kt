@@ -7,7 +7,6 @@ import androidx.lifecycle.viewModelScope
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
 import com.fpf.smartscan.data.tags.TagRepository
 import com.fpf.smartscan.media.MediaCollection
-import com.fpf.smartscan.data.tags.TagWithCount
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataWithCount
@@ -15,6 +14,7 @@ import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.media.mediaIdToUri
+import com.fpf.smartscan.tag.TagManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -42,6 +42,12 @@ class CollectionsViewModel(
         private const val TAG = "CollectionsViewModel"
         const val TOP_N = 6
     }
+
+    val tagManager = TagManager(
+        tagRepository=tagRepository,
+        tagCrossRefRepository=tagCrossRefRepository,
+        mediaMetadataRepository = mediaMetadataRepository,
+    )
 
     private val _state = MutableStateFlow(CollectionsState())
     val state: StateFlow<CollectionsState> = _state
@@ -71,7 +77,7 @@ class CollectionsViewModel(
             _state.update { it.copy(totalCollections = tagsWithCount.size) }
         }
         val tags = if (showAllCollections) tagsWithCount else tagsWithCount.take(TOP_N)
-        tagsToCollections(tags)
+        tagManager.tagsToCollections(tags)
     }.flowOn(Dispatchers.IO)
         .stateIn(
             scope = viewModelScope,
@@ -82,8 +88,7 @@ class CollectionsViewModel(
     fun renameTagCollection(collection: MediaCollection, newName: String){
         viewModelScope.launch(Dispatchers.IO) {
             try{
-                val tag = tagRepository.getTagsByName(listOf(collection.name)).firstOrNull()
-                tag?.let { tagRepository.updateTags(listOf((it).copy(name = newName))) }
+                tagManager.renameTag(collection.name, newName)
                 _state.update { it.copy(selectedCollections = emptySet()) }
             } catch (_: SQLiteConstraintException){
                 _state.update { it.copy(error="Collection already exists") }
@@ -101,14 +106,7 @@ class CollectionsViewModel(
 
     fun mergeCollections(primaryCollectionName: String, otherCollections: List<MediaCollection>){
         viewModelScope.launch (Dispatchers.IO) {
-            val primaryTag = tagRepository.getTagsByName(listOf(primaryCollectionName)).firstOrNull()
-            val tagsToMerge = tagRepository.getTagsByName(otherCollections.map{it.name})
-            val mediaToUpdate = tagsToMerge.flatMap { mediaMetadataRepository.getByTag(it.id) }
-            if(primaryTag != null && mediaToUpdate.isNotEmpty()){
-                val updated = mediaToUpdate.map{ TagCrossRef(mediaId = it.id, tagId = primaryTag.id)}
-                tagCrossRefRepository.upsertTagCrossRefs(updated)
-                tagRepository.deleteTags(tagsToMerge)
-            }
+           tagManager.mergeTags(primaryCollectionName, otherCollections.map{it.name})
             _state.update { it.copy( selectedCollections = emptySet()) }
         }
     }
@@ -180,21 +178,6 @@ class CollectionsViewModel(
 
     fun toggleViewAutoCollections(){
         _state.update { it.copy(viewAutoCollections = !it.viewAutoCollections) }
-    }
-
-    private suspend fun tagsToCollections(tags: List<TagWithCount>): List<MediaCollection> {
-        return tags.mapNotNull {
-            val mediaMeta = mediaMetadataRepository.getByTag(it.id, limit = 1, offset = 0).firstOrNull()
-            val uri = mediaMeta?.let { mediaMeta -> mediaIdToUri(mediaMeta.id, mediaMeta.type) }
-            uri?.let { uri ->
-                MediaCollection(
-                    id = it.id,
-                    name = it.name,
-                    thumbNail = uri,
-                    size = it.count
-                )
-            }
-        }
     }
 
     private suspend fun clustersToCollections(clusters: List<ClusterMetadataWithCount>): List<MediaCollection> {

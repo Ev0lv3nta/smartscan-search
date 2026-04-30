@@ -15,7 +15,6 @@ import com.fpf.smartscan.R
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
-import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
 import com.fpf.smartscan.data.tags.TagRepository
 import com.fpf.smartscan.data.tags.Tag
@@ -29,9 +28,11 @@ import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.media.removeStaleMedia
 import com.fpf.smartscan.media.toMediaItem
-import com.fpf.smartscan.search.ImageIndexListener
+import com.fpf.smartscan.cluster.ClusterManager
+import com.fpf.smartscan.index.ImageIndexListener
 import com.fpf.smartscan.search.SearchQuery
-import com.fpf.smartscan.search.VideoIndexListener
+import com.fpf.smartscan.tag.TagManager
+import com.fpf.smartscan.index.VideoIndexListener
 import com.fpf.smartscan.services.rebuildIndex
 import com.fpf.smartscan.services.refreshIndex
 import com.fpf.smartscan.services.startIndexing
@@ -52,8 +53,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.math.log2
-import kotlin.math.pow
+
 
 class SearchViewModel(
     application: Application,
@@ -81,6 +81,27 @@ class SearchViewModel(
     private val textEmbedder  = ClipTextEmbedder(application, ModelAssetSource.Resource(R.raw.clip_text_encoder_quant), vocabSource = ModelAssetSource.Resource(R.raw.vocab), mergesSource = ModelAssetSource.Resource(R.raw.merges))
 
     private val imageEmbedder = ClipImageEmbedder(application, ModelAssetSource.Resource(R.raw.clip_image_encoder_quant))
+
+    val imageClusterManager = ClusterManager(
+        clusterStore = imageClusterStore,
+        clusterCrossRefRepository = clusterCrossRefRepository,
+        clusterMetadataRepository = clusterMetadataRepository,
+        mediaMetadataRepository = mediaMetadataRepository,
+        mediaType = MediaType.IMAGE
+    )
+    val videoClusterManager = ClusterManager(
+        clusterStore = videoClusterStore,
+        clusterCrossRefRepository = clusterCrossRefRepository,
+        clusterMetadataRepository = clusterMetadataRepository,
+        mediaMetadataRepository = mediaMetadataRepository,
+        mediaType = MediaType.VIDEO
+    )
+
+    val tagManager = TagManager(
+        tagRepository=tagRepository,
+        tagCrossRefRepository=tagCrossRefRepository,
+        mediaMetadataRepository = mediaMetadataRepository,
+        )
     val allTags: StateFlow<List<Tag>> = tagRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     private val _state = MutableStateFlow(SearchState())
@@ -219,9 +240,9 @@ class SearchViewModel(
         val (tag, actualQuery) = parseQuery(query)
         tag?.let{ tag ->
             _state.update { currentState -> currentState.copy(tagFilter = tag) }
-            updateTagLastUsage(tag)
+            tagManager.updateLastUsage(tag)
         }
-        val idsMatchingTag: List<Long> = getMediaMatchingTag(tag, _state.value.mediaType)
+        val idsMatchingTag: List<Long> = tagManager.getMediaMatchingTag(tag, _state.value.mediaType)
         val tagOnlySearch = idsMatchingTag.isNotEmpty() && actualQuery.isBlank()
 
         if(tagOnlySearch){
@@ -235,8 +256,9 @@ class SearchViewModel(
         if(!textEmbedder.isInitialized())textEmbedder.initialize()
 
         val embedding = textEmbedder.embed(actualQuery)
-        val targetClusters = if (useClusterSearch) getTargetClusters(embedding, threshold) else emptyList()
-        val idsMatchingTargetClusters = getIdsInTargetClusters(targetClusters)
+        val clusterManager = getClusterManager()
+        val targetClusters = if (useClusterSearch) clusterManager.getTargetClusters(embedding, threshold) else emptyList()
+        val idsMatchingTargetClusters = clusterManager.getIdsInTargetClusters(targetClusters)
         val filterIds = if(tag != null) idsMatchingTag.toSet() else idsMatchingTargetClusters
         val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, filterIds,  startDate = startDate, endDate = endDate)
 
@@ -254,20 +276,6 @@ class SearchViewModel(
         return Pair(tag, actualQuery)
     }
 
-    // increases search breadth when cluster fragmentation is high
-    private fun computeDynamicTopK(totalItems: Int, singletonCount: Int, min: Int = 3): Int {
-        val base = log2(totalItems.toDouble())
-        val singletonRatio = singletonCount.toDouble() / totalItems
-        return (base * (1.0 + singletonRatio)).toInt().coerceAtLeast(min)
-    }
-
-    private fun computeSingletonTopK(baseTopK: Int, singletonCount: Int, totalClusters: Int, sharpness: Double = 3.0): Int {
-        if (totalClusters == 0) return baseTopK
-        val t = (singletonCount.toDouble() / totalClusters).coerceIn(0.0, 1.0)
-        val expansion = 1.0 - (1.0 - t).pow(sharpness)
-        val computedTopK = baseTopK + (singletonCount - baseTopK).coerceAtLeast(0) * expansion
-        return computedTopK.toInt().coerceAtLeast(baseTopK)
-    }
     private suspend fun imageSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean, startDate: Long? = null, endDate: Long? = null): List<Long> {
         val queryImage = _state.value.queryImage?: return  emptyList()
 
@@ -275,44 +283,15 @@ class SearchViewModel(
 
         val bitmap = getBitmapFromUri(getApplication(), queryImage, IMAGE_SIZE_X)
         val embedding = imageEmbedder.embed(bitmap)
-        val targetClusters = if (useClusterSearch) getTargetClusters(embedding, threshold) else emptyList()
-        val idsMatchingTargetClusters = getIdsInTargetClusters(targetClusters)
+        val clusterManager = getClusterManager()
+        val targetClusters = if (useClusterSearch) clusterManager.getTargetClusters(embedding, threshold) else emptyList()
+        val idsMatchingTargetClusters = clusterManager.getIdsInTargetClusters(targetClusters)
         val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, idsMatchingTargetClusters, startDate = startDate, endDate = endDate)
 
         // prevent keeping both models open
         if(shouldShutdownModel(_state.value.textEmbedderLastUsage)) textEmbedder.closeSession()
         return queryResults
     }
-
-
-    private suspend fun getIdsInTargetClusters(targetClusters: List<Long>): Set<Long>{
-        val idsMatchingCluster: Set<Long> = buildSet {
-            for (clusterId in targetClusters) {
-                val ids = clusterCrossRefRepository.getClusterToMediaIdsMap()[clusterId] ?: continue
-                addAll(ids)
-            }
-        }
-        return idsMatchingCluster
-    }
-
-
-    // Singletons are handled separately from the main clusters to prevent singletons dominating topK
-    private suspend fun getTargetClusters(queryEmbedding: FloatArray, threshold: Float): List<Long>{
-        val (singletonClusters, mainClusters) =  clusterCrossRefRepository.getClusterCounts().entries.partition { it.value == 1 }
-        val singletonCount = singletonClusters.size
-        val totalClusters =  mainClusters.size + singletonCount
-
-        val baseTopK = computeDynamicTopK(totalClusters, singletonCount)
-        val singletonTopK = computeSingletonTopK(baseTopK,totalClusters, singletonCount)
-
-        val store = getClusterStore()
-        if(!store.exists) return emptyList()
-
-        val mainResultIds = store.query(queryEmbedding, baseTopK, threshold, ids = mainClusters.map{it.key}.toSet())
-        val singletonResultIds = store.query(queryEmbedding, singletonTopK, threshold, ids = singletonClusters.map{it.key}.toSet())
-        return mainResultIds + singletonResultIds
-    }
-
 
     private suspend fun handleSearchResult(queryResults: List<Long>, store: FileEmbeddingStore) {
         cachedIds.addAll(queryResults)
@@ -426,6 +405,8 @@ class SearchViewModel(
             setIsRescanning(true)
             val store = getStore()
             viewModelScope.launch {
+                imageClusterManager.clear()
+                videoClusterManager.clear()
                 rebuildIndex(getApplication(), listOf(mediaType to store), clusterCrossRefRepository, clusterMetadataRepository)
             }
         }
@@ -503,14 +484,7 @@ class SearchViewModel(
     fun tagSelectedItems(tag: String){
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val selectedMediaIds = _state.value.selectedResults.map { it.id }
-                val existing = tagRepository.getTagsByName(listOf(tag)).firstOrNull()
-                var id = existing?.id
-                if(id == null){
-                    id = tagRepository.insertTags(listOf(Tag(name=tag.trim()))).first()
-                }
-                val tagEntries = selectedMediaIds.map { TagCrossRef(mediaId = it, tagId = id) }
-                tagCrossRefRepository.upsertTagCrossRefs(tagEntries)
+              tagManager.tagItems(tag, _state.value.selectedResults)
             }finally {
                 clearSelectedResults()
             }
@@ -532,25 +506,8 @@ class SearchViewModel(
     }
 
     fun handleAutoCompletionCheck(query: CharSequence, substringEnd: Int, startWithHashtag: Boolean =  true){
-        val text = query.toString()
-        val prefix = text.substring(0, substringEnd)
-
-        // Regex: find #tag at the end of prefix
-        var pattern =  """^#([a-zA-Z0-9_]*)$"""
-        pattern = if(!startWithHashtag )  pattern.replace("#", "") else pattern
-        val match = Regex(pattern).find(prefix)
-
-        if (match != null) {
-            val partialTag = match.groupValues[1]
-            // Track autocomplete only while typing the tag
-            updateAutoCompleteResults(allTags.value
-                .filter { it.name.startsWith(partialTag, ignoreCase = true) }
-                .map { it.name }
-            )
-        }
-        else {
-            updateAutoCompleteResults(emptyList())
-        }
+        val results = tagManager.checkAutoCompletion(query, substringEnd, allTags.value, startWithHashtag)
+        updateAutoCompleteResults(results)
     }
 
     @OptIn(FlowPreview::class)
@@ -567,23 +524,7 @@ class SearchViewModel(
         searchFieldState.edit { replace(0, searchFieldState.text.length, "#$tag ") }
     }
     private fun getStore() = if(_state.value.mediaType == MediaType.VIDEO) videoStore else imageStore
-    private fun getClusterStore() = if(_state.value.mediaType == MediaType.VIDEO) videoClusterStore else imageClusterStore
-
-
-    private suspend fun getMediaMatchingTag(tagName: String?, mediaType: MediaType): List<Long>{
-        tagName?: return emptyList()
-        val state = _state.value
-        val tag = tagRepository.getTagsByName(listOf(tagName)).firstOrNull()
-        return if(state.endDateFilter != null || state.startDateFilter != null){
-            tag?.let { tag-> mediaMetadataRepository.getByTagTypeAndDateRange(tag.id, mediaType,state.startDateFilter, state.endDateFilter).map{it.id}  }?: emptyList()
-        }else{
-            tag?.let { tag-> mediaMetadataRepository.getByTagAndType(tag.id, mediaType).map{it.id}  }?: emptyList()
-        }
-    }
-    private suspend fun updateTagLastUsage(tag: String){
-        val tag = allTags.value.find { it.name == tag }?: return
-        tagRepository.updateTags(listOf(Tag(tag.id, tag.name, System.currentTimeMillis())))
-    }
+    private fun getClusterManager() = if(_state.value.mediaType == MediaType.VIDEO) videoClusterManager else imageClusterManager
 
     override fun onCleared() {
         textEmbedder.closeSession()

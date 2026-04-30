@@ -1,4 +1,4 @@
-package com.fpf.smartscan.search
+package com.fpf.smartscan.index
 
 import android.content.Context
 import android.net.Uri
