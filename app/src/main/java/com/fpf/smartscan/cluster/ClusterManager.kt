@@ -24,8 +24,10 @@ class ClusterManager(
     private val mediaType: MediaType
 ) {
     companion object {
-        const val LARGE_DATASET_SIZE: Int = 5000
-        const val SAMPLE_SIZE: Int = 500
+        private const val LARGE_DATASET_SIZE: Int = 5000
+        private const val MIN_SAMPLE_SIZE: Int = 500
+        private const val MAX_SAMPLE_SIZE: Int = 5000
+
 
     }
     private var clusterToMediaIdsMap: MutableMap<Long, MutableSet<Long>> = mutableMapOf()
@@ -42,9 +44,10 @@ class ClusterManager(
             .filter { it.id in validIds }
 
         val defaultThreshold = if(existingClusters.isEmpty()) {
-            getDefaultThresholdFromSample(filteredItems, SAMPLE_SIZE)
+            val sampleSize = (filteredItems.size * 0.01).toInt().coerceIn(MIN_SAMPLE_SIZE, MAX_SAMPLE_SIZE)
+            getDefaultThresholdFromSample(filteredItems, sampleSize)
         } else {
-            getAverageMeanSimilarity(existingClusters)
+            getDefaultThreshold(existingClusters)
         }
         val clusterer = IncrementalClusterer(
             existingClusters = existingClusters,
@@ -184,16 +187,16 @@ class ClusterManager(
         assignments.clear()
     }
 
-    private fun getDefaultThresholdFromSample(itemEmbeds: List<StoredEmbedding>, n: Int): Float{
-        val sample = getSample(itemEmbeds, n)
+    private fun getDefaultThresholdFromSample(items: List<StoredEmbedding>, n: Int): Float{
+        val sample = getSample(items, n)
         val clusterer = IncrementalClusterer(
             defaultThreshold = 0.6f
         )
         val result = clusterer.cluster(sample)
-        return getAverageMeanSimilarity(result.clusters)
+        return getDefaultThreshold(result.clusters)
     }
 
-    private fun getAverageMeanSimilarity(clusters: Map<Long, Cluster>): Float = clusters.values.map{it.metadata.meanSimilarity}.average().toFloat()
+    private fun getDefaultThreshold(clusters: Map<Long, Cluster>): Float = clusters.values.map{it.metadata.meanSimilarity - it.metadata.stdSimilarity}.average().toFloat()
 
     private fun getSample(items: List<StoredEmbedding>, n: Int): List<StoredEmbedding>{
         return if(items.size > LARGE_DATASET_SIZE ) {
