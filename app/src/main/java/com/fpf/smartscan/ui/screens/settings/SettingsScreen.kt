@@ -156,11 +156,6 @@ fun SettingsScreen(
                 )
 
                 ActionItem(
-                    text = stringResource(id = R.string.title_help),
-                    onClick = { onNavigate(Routes.HELP) }
-                )
-
-                ActionItem(
                     text = stringResource(id = R.string.title_donate),
                     onClick = { onNavigate(Routes.DONATE) }
                 )

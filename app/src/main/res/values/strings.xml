@@ -1,7 +1,7 @@
 <resources>
     <!-- About -->
     <string name="app_name">SmartScan</string>
-    <string name="copyright">© 2025 D41 Dev</string>
+    <string name="copyright">© 2026 D41 Dev</string>
     <string name="source_code_url">https://github.com/dev-diaries41/smartscan</string>
     <string name="reddit_url">https://www.reddit.com/r/SmartScan/</string>
 
@@ -10,7 +10,6 @@
     <string name="title_collections">Collections</string>
     <string name="title_settings">Settings</string>
     <string name="title_donate">Donate</string>
-    <string name="title_help">Help</string>
 
     <!-- Notifications -->
     <string name="worker_channel_id">Background Tasks</string>
@@ -106,20 +105,6 @@
     <!--Model List-->
     <string name="download_model_alert_title">Download model</string>
     <string name="download_model_alert_description">Press `OK` to download model. This will open your browser.</string>
-
-    <!--Help screen-->
-    <!--Search -->
-    <string name="help_search_title">Search</string>
-    <string name="help_media_search_intro">Search across both images and videos with the following behavior:</string>
-    <string name="help_indexing_first_time">First-time use requires indexing of media files. This may take several minutes depending on the number of images.</string>
-    <string name="help_indexing_schedule">Indexing occurs automatically on a schedule (daily or weekly) based on your settings.</string>
-    <string name="help_manual_refresh_index">You can also manually refresh the image or video index anytime from the menu.</string>
-
-    <!-- Search Tips -->
-    <string name="help_search_tips_title">Search Tips:</string>
-    <string name="help_short_specific_queries">Use short, specific queries.</string>
-    <string name="help_include_text_from_media">Include specific text from the media (e.g. subtitles, overlay text) when available.</string>
-    <string name="help_reverse_image_search">Reverse image search is generally more accurate than text queries, especially when searching videos.</string>
 
     <!--Updates-->
     <string name="update_copy_multiple_collections_to_tag">Added ability to copy multiple Auto collections to a Tag collection</string>

@@ -23,7 +23,6 @@ import com.fpf.smartscan.ui.components.UpdatePopUp
 import com.fpf.smartscan.ui.screens.collections.CollectionItemsScreen
 import com.fpf.smartscan.ui.screens.collections.CollectionsScreen
 import com.fpf.smartscan.ui.screens.donate.DonateScreen
-import com.fpf.smartscan.ui.screens.help.HelpScreen
 import com.fpf.smartscan.ui.screens.search.SearchScreen
 import com.fpf.smartscan.ui.screens.settings.SettingsDetailScreen
 import com.fpf.smartscan.ui.screens.settings.SettingsScreen
@@ -137,13 +136,6 @@ fun Main(
                             onTopBarChange = { topBarState.value = it },
                             onBack = {navController.popBackStack()}
                             )
-                    }
-
-                    composable(Routes.HELP) {
-                        HelpScreen(
-                            onTopBarChange = { topBarState.value = it },
-                            onBack = {navController.popBackStack()}
-                        )
                     }
                 }
             }
