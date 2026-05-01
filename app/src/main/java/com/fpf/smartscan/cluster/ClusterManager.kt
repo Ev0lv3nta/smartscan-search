@@ -22,7 +22,7 @@ class ClusterManager(
     private val mediaType: MediaType
 ) {
     companion object {
-        private const val LARGE_DATASET_SIZE: Int = 5000
+        private const val LARGE_DATASET_SIZE: Int = 10000
         private const val MIN_SAMPLE_SIZE: Int = 500
         private const val MAX_SAMPLE_SIZE: Int = 5000
 
