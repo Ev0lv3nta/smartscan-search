@@ -80,7 +80,7 @@ android {
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.documentfile)
-//    implementation(libs.smartscan.ml)
+    implementation(libs.smartscan.ml)
 
     implementation(platform(libs.koin.bom))
 
@@ -92,9 +92,6 @@ dependencies {
     // SplashScreen
     implementation(libs.androidx.core.splashscreen)
 
-
-    //local sdk
-    implementation("com.github.smartscanapp.smartscan-sdk:smartscan-ml:1.3.0")
     // media loading
     implementation(libs.coil.compose)
     implementation(libs.coil.video)
