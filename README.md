@@ -1,4 +1,4 @@
-# SmartScan -  Private offline AI search for your media.
+# SmartScan -  Private offline AI search for your media
 
 Search images and videos offline using text or by reverse image search and organise media with on-device AI.
 
