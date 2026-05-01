@@ -66,7 +66,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             AppTheme {
-                MainScreen(
+                Main(
                     intentSearchQuery=intentSearchQuery,
                     onAppReady = {keepSplash = false},
                     onRestartApp = {restartApp()}

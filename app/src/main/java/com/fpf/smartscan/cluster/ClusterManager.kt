@@ -6,14 +6,13 @@ import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.clusters.MediaClusterMetadata
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.media.MediaType
+import com.fpf.smartscan.utils.reservoirSample
 import com.fpf.smartscansdk.core.cluster.Cluster
 import com.fpf.smartscansdk.core.cluster.ClusterResult
 import com.fpf.smartscansdk.core.cluster.IncrementalClusterer
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
 import kotlin.collections.iterator
-import kotlin.math.log2
-import kotlin.math.pow
 
 class ClusterManager(
     private val clusterCrossRefRepository: ClusterCrossRefRepository,
@@ -22,8 +21,14 @@ class ClusterManager(
     private val mediaMetadataRepository: MediaMetadataRepository,
     private val mediaType: MediaType
 ) {
+    companion object {
+        private const val LARGE_DATASET_SIZE: Int = 5000
+        private const val MIN_SAMPLE_SIZE: Int = 500
+        private const val MAX_SAMPLE_SIZE: Int = 5000
+
+
+    }
     private var clusterToMediaIdsMap: MutableMap<Long, MutableSet<Long>> = mutableMapOf()
-    private var clusterCounts: MutableMap<Long, Int> = mutableMapOf()
     private var assignments: MutableMap<Long, Long> = mutableMapOf()
 
     suspend fun clusterMedia(itemEmbeds: List<StoredEmbedding>) {
@@ -35,9 +40,15 @@ class ClusterManager(
             .filterNot { it.id in existingAssignments }
             .filter { it.id in validIds }
 
+        val defaultThreshold = if(existingClusters.isEmpty()) {
+            val sampleSize = (filteredItems.size * 0.01).toInt().coerceIn(MIN_SAMPLE_SIZE, MAX_SAMPLE_SIZE)
+            getDefaultThresholdFromSample(filteredItems, sampleSize)
+        } else {
+            getDefaultThreshold(existingClusters)
+        }
         val clusterer = IncrementalClusterer(
             existingClusters = existingClusters,
-            defaultThreshold = 0.5f
+            defaultThreshold = defaultThreshold
         )
 
         val result = clusterer.cluster(filteredItems)
@@ -108,32 +119,6 @@ class ClusterManager(
         clusterStore.update(existingEmbeds)
     }
 
-    // Singletons are handled separately from the main clusters to prevent singletons dominating topK
-    suspend fun getTargetClusters(queryEmbedding: FloatArray, threshold: Float): List<Long>{
-        val (singletonClusters, mainClusters) =  getClusterCounts().entries.partition { it.value == 1 }
-        val singletonCount = singletonClusters.size
-        val totalClusters =  mainClusters.size + singletonCount
-
-        val baseTopK = computeDynamicTopK(totalClusters, singletonCount)
-        val singletonTopK = computeSingletonTopK(baseTopK,totalClusters, singletonCount)
-
-        if(!clusterStore.exists) return emptyList()
-
-        val mainResultIds = clusterStore.query(queryEmbedding, baseTopK, threshold, ids = mainClusters.map{it.key}.toSet())
-        val singletonResultIds = clusterStore.query(queryEmbedding, singletonTopK, threshold, ids = singletonClusters.map{it.key}.toSet())
-        return mainResultIds + singletonResultIds
-    }
-
-    suspend fun getIdsInTargetClusters(targetClusters: List<Long>): Set<Long>{
-        val idsMatchingCluster: Set<Long> = buildSet {
-            for (clusterId in targetClusters) {
-                val ids = getClusterToMediaIdsMap()[clusterId] ?: continue
-                addAll(ids)
-            }
-        }
-        return idsMatchingCluster
-    }
-
     suspend fun getClusterToMediaIdsMap(): Map<Long, MutableSet<Long>> {
         if (clusterToMediaIdsMap.isNotEmpty()) return clusterToMediaIdsMap
 
@@ -156,17 +141,29 @@ class ClusterManager(
         return assignments
     }
 
-    suspend fun getClusterCounts(): Map<Long, Int> {
-        if (clusterCounts.isNotEmpty()) return clusterCounts
-
-        val map = getClusterToMediaIdsMap()
-
-        for ((clusterId, mediaIds) in map) {
-            clusterCounts[clusterId] = mediaIds.size
-        }
-        return clusterCounts
+    fun clear() {
+        clusterToMediaIdsMap.clear()
+        assignments.clear()
     }
 
+    private fun getDefaultThresholdFromSample(items: List<StoredEmbedding>, n: Int): Float{
+        val sample = getSample(items, n)
+        val clusterer = IncrementalClusterer(
+            defaultThreshold = 0.6f
+        )
+        val result = clusterer.cluster(sample)
+        return getDefaultThreshold(result.clusters)
+    }
+
+    private fun getDefaultThreshold(clusters: Map<Long, Cluster>): Float = clusters.values.map{it.metadata.meanSimilarity - it.metadata.stdSimilarity}.average().toFloat()
+
+    private fun getSample(items: List<StoredEmbedding>, n: Int): List<StoredEmbedding>{
+        return if(items.size > LARGE_DATASET_SIZE ) {
+            reservoirSample(items, n)
+        } else {
+            items.shuffled().take(n)
+        }
+    }
     private suspend fun updateAssignments(clusterResult: ClusterResult, validIds: Set<Long> ) {
         val crossRefs = clusterResult.assignments.mapNotNull {
             if (it.key !in validIds) return@mapNotNull null
@@ -177,26 +174,5 @@ class ClusterManager(
             )
         }
         clusterCrossRefRepository.upsertClusterCrossRefs(crossRefs)
-    }
-
-    // increases search breadth when cluster fragmentation is high
-    private fun computeDynamicTopK(totalItems: Int, singletonCount: Int, min: Int = 3): Int {
-        val base = log2(totalItems.toDouble())
-        val singletonRatio = singletonCount.toDouble() / totalItems
-        return (base * (1.0 + singletonRatio)).toInt().coerceAtLeast(min)
-    }
-
-    private fun computeSingletonTopK(baseTopK: Int, singletonCount: Int, totalClusters: Int, sharpness: Double = 3.0): Int {
-        if (totalClusters == 0) return baseTopK
-        val t = (singletonCount.toDouble() / totalClusters).coerceIn(0.0, 1.0)
-        val expansion = 1.0 - (1.0 - t).pow(sharpness)
-        val computedTopK = baseTopK + (singletonCount - baseTopK).coerceAtLeast(0) * expansion
-        return computedTopK.toInt().coerceAtLeast(baseTopK)
-    }
-
-    fun clear() {
-        clusterToMediaIdsMap.clear()
-        clusterCounts.clear()
-        assignments.clear()
     }
 }

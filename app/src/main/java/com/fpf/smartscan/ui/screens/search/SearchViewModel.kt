@@ -28,7 +28,6 @@ import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.media.removeStaleMedia
 import com.fpf.smartscan.media.toMediaItem
-import com.fpf.smartscan.cluster.ClusterManager
 import com.fpf.smartscan.index.ImageIndexListener
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.tag.TagManager
@@ -59,8 +58,6 @@ class SearchViewModel(
     application: Application,
     private val imageStore: FileEmbeddingStore,
     private val videoStore: FileEmbeddingStore,
-    private val imageClusterStore: FileEmbeddingStore,
-    private val videoClusterStore: FileEmbeddingStore,
     private val tagRepository: TagRepository,
     private val tagCrossRefRepository: TagCrossRefRepository,
     private val clusterCrossRefRepository: ClusterCrossRefRepository,
@@ -81,21 +78,6 @@ class SearchViewModel(
     private val textEmbedder  = ClipTextEmbedder(application, ModelAssetSource.Resource(R.raw.clip_text_encoder_quant), vocabSource = ModelAssetSource.Resource(R.raw.vocab), mergesSource = ModelAssetSource.Resource(R.raw.merges))
 
     private val imageEmbedder = ClipImageEmbedder(application, ModelAssetSource.Resource(R.raw.clip_image_encoder_quant))
-
-    val imageClusterManager = ClusterManager(
-        clusterStore = imageClusterStore,
-        clusterCrossRefRepository = clusterCrossRefRepository,
-        clusterMetadataRepository = clusterMetadataRepository,
-        mediaMetadataRepository = mediaMetadataRepository,
-        mediaType = MediaType.IMAGE
-    )
-    val videoClusterManager = ClusterManager(
-        clusterStore = videoClusterStore,
-        clusterCrossRefRepository = clusterCrossRefRepository,
-        clusterMetadataRepository = clusterMetadataRepository,
-        mediaMetadataRepository = mediaMetadataRepository,
-        mediaType = MediaType.VIDEO
-    )
 
     val tagManager = TagManager(
         tagRepository=tagRepository,
@@ -195,7 +177,7 @@ class SearchViewModel(
         ) }
     }
 
-    fun search(threshold: Float, useClusterSearch: Boolean){
+    fun search(threshold: Float){
         reset()
         val store = getStore()
         if(!store.exists) {
@@ -209,14 +191,14 @@ class SearchViewModel(
                 val state = _state.value
                 val queryResults = when (_state.value.queryType) {
                     QueryType.IMAGE -> {
-                        val result = imageSearch(store, threshold, useClusterSearch, startDate = state.startDateFilter, endDate = state.endDateFilter)
+                        val result = imageSearch(store, threshold, startDate = state.startDateFilter, endDate = state.endDateFilter)
                         _state.update{it.copy(imageEmbedderLastUsage = System.currentTimeMillis())}
                         result
 
                     }
 
                     QueryType.TEXT -> {
-                        val result = textSearch(store, threshold, useClusterSearch, startDate = state.startDateFilter, endDate = state.endDateFilter)
+                        val result = textSearch(store, threshold, startDate = state.startDateFilter, endDate = state.endDateFilter)
                         _state.update{it.copy(textEmbedderLastUsage = System.currentTimeMillis())}
                         result
                     }
@@ -231,7 +213,7 @@ class SearchViewModel(
         }
     }
 
-    private suspend fun textSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean, startDate: Long? = null, endDate: Long? = null): List<Long> {
+    private suspend fun textSearch(store: FileEmbeddingStore, threshold: Float, startDate: Long? = null, endDate: Long? = null): List<Long> {
         val query = searchFieldState.text.toString()
         if (query.isBlank()) {
             _state.update{currentState -> currentState.copy(error = getApplication<Application>().getString(R.string.search_error_empty_query))}
@@ -256,12 +238,8 @@ class SearchViewModel(
         if(!textEmbedder.isInitialized())textEmbedder.initialize()
 
         val embedding = textEmbedder.embed(actualQuery)
-        val clusterManager = getClusterManager()
-        val targetClusters = if (useClusterSearch) clusterManager.getTargetClusters(embedding, threshold) else emptyList()
-        val idsMatchingTargetClusters = clusterManager.getIdsInTargetClusters(targetClusters)
-        val filterIds = if(tag != null) idsMatchingTag.toSet() else idsMatchingTargetClusters
+        val filterIds = idsMatchingTag.toSet()
         val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, filterIds,  startDate = startDate, endDate = endDate)
-
         // prevent keeping both models open
         if(shouldShutdownModel(_state.value.imageEmbedderLastUsage)) imageEmbedder.closeSession()
         return queryResults
@@ -276,17 +254,14 @@ class SearchViewModel(
         return Pair(tag, actualQuery)
     }
 
-    private suspend fun imageSearch(store: FileEmbeddingStore, threshold: Float, useClusterSearch: Boolean, startDate: Long? = null, endDate: Long? = null): List<Long> {
+    private suspend fun imageSearch(store: FileEmbeddingStore, threshold: Float, startDate: Long? = null, endDate: Long? = null): List<Long> {
         val queryImage = _state.value.queryImage?: return  emptyList()
 
         if(!imageEmbedder.isInitialized()) imageEmbedder.initialize()
 
         val bitmap = getBitmapFromUri(getApplication(), queryImage, IMAGE_SIZE_X)
         val embedding = imageEmbedder.embed(bitmap)
-        val clusterManager = getClusterManager()
-        val targetClusters = if (useClusterSearch) clusterManager.getTargetClusters(embedding, threshold) else emptyList()
-        val idsMatchingTargetClusters = clusterManager.getIdsInTargetClusters(targetClusters)
-        val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, idsMatchingTargetClusters, startDate = startDate, endDate = endDate)
+        val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, startDate = startDate, endDate = endDate)
 
         // prevent keeping both models open
         if(shouldShutdownModel(_state.value.textEmbedderLastUsage)) textEmbedder.closeSession()
@@ -312,7 +287,7 @@ class SearchViewModel(
         }
     }
 
-    fun externalSearch(intentSearchQuery: SearchQuery?, similarityThreshold: Float, imageSimilarityThreshold: Float, useClusterSearch: Boolean){
+    fun externalSearch(intentSearchQuery: SearchQuery?, similarityThreshold: Float, imageSimilarityThreshold: Float){
         if(intentSearchQuery == null || hasHandledExternalSearch) return
 
         when(intentSearchQuery) {
@@ -320,14 +295,14 @@ class SearchViewModel(
                 setMediaType(intentSearchQuery.mediaType)
                 updateSearchImageUri(intentSearchQuery.uri)
                 updateQueryType(QueryType.IMAGE)
-                search(imageSimilarityThreshold, useClusterSearch)
+                search(imageSimilarityThreshold)
                 hasHandledExternalSearch = true
             }
 
             is SearchQuery.TextQuery -> {
                 setMediaType(intentSearchQuery.mediaType)
                 searchFieldState.edit { replace(0, searchFieldState.text.length, intentSearchQuery.text) }
-                search( similarityThreshold, useClusterSearch)
+                search( similarityThreshold)
                 hasHandledExternalSearch = true
             }
         }
@@ -405,8 +380,6 @@ class SearchViewModel(
             setIsRescanning(true)
             val store = getStore()
             viewModelScope.launch {
-                imageClusterManager.clear()
-                videoClusterManager.clear()
                 rebuildIndex(getApplication(), listOf(mediaType to store), clusterCrossRefRepository, clusterMetadataRepository)
             }
         }
@@ -524,7 +497,6 @@ class SearchViewModel(
         searchFieldState.edit { replace(0, searchFieldState.text.length, "#$tag ") }
     }
     private fun getStore() = if(_state.value.mediaType == MediaType.VIDEO) videoStore else imageStore
-    private fun getClusterManager() = if(_state.value.mediaType == MediaType.VIDEO) videoClusterManager else imageClusterManager
 
     override fun onCleared() {
         textEmbedder.closeSession()
