@@ -1,4 +1,4 @@
-## v1.3.1 - 29/04/2026
+## v1.3.1 - 01/05/2026
 * Added ability to copy from multiple collections to a tag collection
 * Added date filters for search
 * Added media metadata table
@@ -14,6 +14,9 @@
 * Fixed strictness of cluster-search by using dynamic topKs and handling singletons separately.
 * Fixed tag + query search bug that caused missing results
 * Fixed corrupted index files caused by race conditions issues, by moving sole responsibility of embed store saving to MainViewModal and supporting rebuild if required.
+
+## Removed
+* Removed cluster-based retrieval
 
 ___
 
