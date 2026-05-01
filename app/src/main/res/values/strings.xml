@@ -110,5 +110,5 @@
     <string name="update_copy_multiple_collections_to_tag">Added ability to copy multiple Auto Collections to a Tag Collection</string>
     <string name="update_rebuild_index">Added ability to rebuild the index from scratch via the search screen menu</string>
     <string name="update_date_filters_search">Added date filters for search</string>
-    <string name="update_tag_query_search_fix">Fixed bug where tag with query search could miss results</string>
+    <string name="update_tag_query_search_fix">Fixed tag-filtered queries missing results</string>
 </resources>
