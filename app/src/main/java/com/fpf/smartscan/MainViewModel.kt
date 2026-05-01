@@ -62,7 +62,6 @@ class MainViewModel(
             application.getString(R.string.update_copy_multiple_collections_to_tag),
             application.getString(R.string.update_date_filters_search),
             application.getString(R.string.update_rebuild_index),
-            application.getString(R.string.update_cluster_search_improvements),
             application.getString(R.string.update_tag_query_search_fix),
         )
     }
