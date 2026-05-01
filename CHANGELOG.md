@@ -11,7 +11,6 @@
 * Removed type from crossrefs
 
 ## Fixed
-* Fixed strictness of cluster-search by using dynamic topKs and handling singletons separately.
 * Fixed tag + query search bug that caused missing results
 * Fixed corrupted index files caused by race conditions issues, by moving sole responsibility of embed store saving to MainViewModal and supporting rebuild if required.
 
