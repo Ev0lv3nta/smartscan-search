@@ -21,7 +21,9 @@ import java.util.concurrent.TimeUnit
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.cluster.ClusterManager
 import com.fpf.smartscan.index.indexMedia
+import com.fpf.smartscan.services.MediaIndexForegroundService
 import com.fpf.smartscan.settings.loadSettings
+import com.fpf.smartscan.utils.isServiceRunning
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer
 import com.fpf.smartscansdk.ml.models.ModelAssetSource
@@ -79,6 +81,10 @@ class IndexWorker(context: Context, workerParams: WorkerParameters) :
         try {
             val appSettings = loadSettings(sharedPrefs)
             imageEmbedder.initialize()
+            val serviceRunning = isServiceRunning(applicationContext, MediaIndexForegroundService::class.java)
+            if(serviceRunning) {
+                return@withContext Result.success()
+            }
 
             // Prevents doing full indexes. That responsibility should be left to the foreground service
             // No listener used (may change to avoid silent errors)
