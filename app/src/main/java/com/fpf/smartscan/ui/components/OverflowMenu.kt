@@ -25,6 +25,8 @@ import com.fpf.smartscan.R
 fun OverflowMenu(
     onScanImages: () -> Unit,
     onScanVideos: () -> Unit,
+    scanImagesEnabled: Boolean = true,
+    scanVideosEnabled: Boolean = true
     ){
     var expanded by remember { mutableStateOf(false) }
     Box() {
@@ -44,6 +46,7 @@ fun OverflowMenu(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
             DropdownMenuItem(
+                enabled = scanImagesEnabled,
                 text = { Text(stringResource(R.string.setting_scan_images)) },
                 onClick = {
                     expanded = false
@@ -52,6 +55,7 @@ fun OverflowMenu(
             )
 
             DropdownMenuItem(
+                enabled = scanVideosEnabled,
                 text = { Text(stringResource(R.string.setting_scan_videos)) },
                 onClick = {
                     expanded = false

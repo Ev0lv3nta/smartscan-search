@@ -155,15 +155,17 @@ fun SearchScreen(
         searchViewModel.externalSearch(intentSearchQuery, appSettings.similarityThreshold, appSettings.imageSimilarityThreshold)
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(isIndexing) {
         onTopBarChange(
             TopBarState(
                 title = screenTitle,
                 actions = {
                     OverflowMenu(
+                        scanImagesEnabled = !isIndexing,
                         onScanImages = {
                             showScanImagesDialog = true
                         },
+                        scanVideosEnabled = !isIndexing,
                         onScanVideos = {
                             showScanVideosDialog = true
                         }
