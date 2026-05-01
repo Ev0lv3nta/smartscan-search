@@ -9,7 +9,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -46,7 +45,7 @@ fun SettingsScreen(
     val versionName: String? = try {
         val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
         packageInfo.versionName
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         null
     }
 
@@ -134,12 +133,6 @@ fun SettingsScreen(
                     text=stringResource(R.string.setting_auto_open_gallery),
                     checked = appSettings.enableDirectGalleryOpen,
                     onCheckedChange = viewModel::updateEnableDirectionGalleryOpen,
-                )
-                SwitchItem(
-                    text=stringResource(R.string.setting_enable_cluster_search),
-                    description = stringResource(R.string.setting_enable_cluster_search_description),
-                    checked = appSettings.enableClusterSearch,
-                    onCheckedChange = viewModel::updateEnableClusterSearch,
                 )
                 Spacer(modifier = Modifier.height(24.dp))
 

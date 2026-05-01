@@ -13,8 +13,6 @@ import com.fpf.smartscansdk.core.cluster.IncrementalClusterer
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
 import kotlin.collections.iterator
-import kotlin.math.log2
-import kotlin.math.pow
 
 class ClusterManager(
     private val clusterCrossRefRepository: ClusterCrossRefRepository,
@@ -31,7 +29,6 @@ class ClusterManager(
 
     }
     private var clusterToMediaIdsMap: MutableMap<Long, MutableSet<Long>> = mutableMapOf()
-    private var clusterCounts: MutableMap<Long, Int> = mutableMapOf()
     private var assignments: MutableMap<Long, Long> = mutableMapOf()
 
     suspend fun clusterMedia(itemEmbeds: List<StoredEmbedding>) {
@@ -122,32 +119,6 @@ class ClusterManager(
         clusterStore.update(existingEmbeds)
     }
 
-    // Singletons are handled separately from the main clusters to prevent singletons dominating topK
-    suspend fun getTargetClusters(queryEmbedding: FloatArray, threshold: Float): List<Long>{
-        val (singletonClusters, mainClusters) =  getClusterCounts().entries.partition { it.value == 1 }
-        val singletonCount = singletonClusters.size
-        val totalClusters =  mainClusters.size + singletonCount
-
-        val baseTopK = computeDynamicTopK(totalClusters, singletonCount)
-        val singletonTopK = computeSingletonTopK(baseTopK,totalClusters, singletonCount)
-
-        if(!clusterStore.exists) return emptyList()
-
-        val mainResultIds = clusterStore.query(queryEmbedding, baseTopK, threshold, ids = mainClusters.map{it.key}.toSet())
-        val singletonResultIds = clusterStore.query(queryEmbedding, singletonTopK, threshold, ids = singletonClusters.map{it.key}.toSet())
-        return mainResultIds + singletonResultIds
-    }
-
-    suspend fun getIdsInTargetClusters(targetClusters: List<Long>): Set<Long>{
-        val idsMatchingCluster: Set<Long> = buildSet {
-            for (clusterId in targetClusters) {
-                val ids = getClusterToMediaIdsMap()[clusterId] ?: continue
-                addAll(ids)
-            }
-        }
-        return idsMatchingCluster
-    }
-
     suspend fun getClusterToMediaIdsMap(): Map<Long, MutableSet<Long>> {
         if (clusterToMediaIdsMap.isNotEmpty()) return clusterToMediaIdsMap
 
@@ -170,20 +141,8 @@ class ClusterManager(
         return assignments
     }
 
-    suspend fun getClusterCounts(): Map<Long, Int> {
-        if (clusterCounts.isNotEmpty()) return clusterCounts
-
-        val map = getClusterToMediaIdsMap()
-
-        for ((clusterId, mediaIds) in map) {
-            clusterCounts[clusterId] = mediaIds.size
-        }
-        return clusterCounts
-    }
-
     fun clear() {
         clusterToMediaIdsMap.clear()
-        clusterCounts.clear()
         assignments.clear()
     }
 
@@ -205,22 +164,6 @@ class ClusterManager(
             items.shuffled().take(n)
         }
     }
-
-    // increases search breadth when cluster fragmentation is high
-    private fun computeDynamicTopK(totalItems: Int, singletonCount: Int, min: Int = 3): Int {
-        val base = log2(totalItems.toDouble())
-        val singletonRatio = singletonCount.toDouble() / totalItems
-        return (base * (1.0 + singletonRatio)).toInt().coerceAtLeast(min)
-    }
-
-    private fun computeSingletonTopK(baseTopK: Int, singletonCount: Int, totalClusters: Int, sharpness: Double = 3.0): Int {
-        if (totalClusters == 0) return baseTopK
-        val t = (singletonCount.toDouble() / totalClusters).coerceIn(0.0, 1.0)
-        val expansion = 1.0 - (1.0 - t).pow(sharpness)
-        val computedTopK = baseTopK + (singletonCount - baseTopK).coerceAtLeast(0) * expansion
-        return computedTopK.toInt().coerceAtLeast(baseTopK)
-    }
-
     private suspend fun updateAssignments(clusterResult: ClusterResult, validIds: Set<Long> ) {
         val crossRefs = clusterResult.assignments.mapNotNull {
             if (it.key !in validIds) return@mapNotNull null
