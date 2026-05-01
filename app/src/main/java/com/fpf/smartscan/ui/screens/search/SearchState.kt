@@ -13,6 +13,7 @@ data class SearchState(
     val queryImage: Uri? = null,
     val hasIndexedImages: Boolean? = null,
     val hasIndexedVideos: Boolean? = null,
+    val isRescanning: Boolean = false,
     val loading: Boolean = false,
     val error: String? = null,
     val resultToView: MediaItem? = null,
@@ -21,5 +22,7 @@ data class SearchState(
     val textEmbedderLastUsage: Long? = null,
     val autoCompleteTagResults: List<String> = emptyList(),
     val tagFilter: String? = null,
+    val startDateFilter: Long? = null,
+    val endDateFilter: Long? = null,
     val tagOnlySearch: Boolean = false,
 )

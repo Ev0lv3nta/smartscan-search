@@ -3,8 +3,6 @@ package com.fpf.smartscan.ui.screens.collections
 import android.app.Application
 import android.content.Context
 import android.database.sqlite.SQLiteConstraintException
-import android.net.Uri
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
@@ -12,25 +10,19 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import coil3.compose.AsyncImagePainter
-import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.media.MediaCollection
-import com.fpf.smartscan.data.MediaDatabase
 import com.fpf.smartscan.data.tags.TagPagingSource
-import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
-import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.clusters.ClusterPagingSource
-import com.fpf.smartscan.data.tags.Tag
-import com.fpf.smartscan.data.tags.TagCrossRef
-import com.fpf.smartscan.data.tags.TagWithCount
+import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
 import com.fpf.smartscan.data.tags.TagRepository
 import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.media.MediaType
-import com.fpf.smartscan.media.getImageUriFromId
-import com.fpf.smartscan.media.getVideoUriFromId
+import com.fpf.smartscan.media.mediaIdToUri
 import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.media.onMediaLoadingError
+import com.fpf.smartscan.tag.TagManager
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -46,26 +38,26 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import java.io.File
 import kotlin.collections.plus
 
 
-class CollectionItemsViewModel( application: Application) : AndroidViewModel(application) {
+class CollectionItemsViewModel(
+    application: Application,
+    private val imageStore: FileEmbeddingStore,
+    private val videoStore: FileEmbeddingStore,
+    private val tagRepository: TagRepository,
+    private val tagCrossRefRepository: TagCrossRefRepository,
+    private val mediaMetadataRepository: MediaMetadataRepository
+) : AndroidViewModel(application) {
     companion object {
         private const val TAG = "CollectionItemsViewModel"
     }
 
-
-    private val db = MediaDatabase.getDatabase(application)
-
-    private val tagsRepository by lazy { TagRepository(db.tagDao())}
-    private val tagsCrossRefRepository by lazy { TagCrossRefRepository( db.tagCrossRefDao())}
-    private val clusterCrossRefRepository by lazy { ClusterCrossRefRepository(db.clusterCrossRefDao()) }
-
-    val imageStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.IMAGE), 512)
-    val videoStore = FileEmbeddingStore(File(application.filesDir, EmbeddingStoresFiles.VIDEO), 512 )
-
+    val tagManager = TagManager(
+        tagRepository=tagRepository,
+        tagCrossRefRepository=tagCrossRefRepository,
+        mediaMetadataRepository = mediaMetadataRepository,
+    )
     private val _state = MutableStateFlow(CollectionItemsState())
     val state: StateFlow<CollectionItemsState> = _state
 
@@ -75,7 +67,7 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
         .distinctUntilChanged()
         .flatMapLatest { (mediaType, collectionName) ->
 
-            val tagId = collectionName?.let{tagsRepository.getTagsByName(listOf(it)).firstOrNull()?.id}
+            val tagId = collectionName?.let{tagRepository.getTagsByName(listOf(it)).firstOrNull()?.id}
 
             if (tagId == null) {
                 flowOf(PagingData.empty())
@@ -91,7 +83,7 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
                         TagPagingSource(
                             mediaType = mediaType,
                             tagId = tagId,
-                            tagsCrossRefRepository = tagsCrossRefRepository,
+                            mediaMetadataRepository = mediaMetadataRepository,
                             mediaIdToUri = ::mediaIdToUri
                         )
                     }
@@ -119,7 +111,7 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
                         ClusterPagingSource(
                             mediaType = mediaType,
                             clusterId = clusterId,
-                            clusterCrossRefRepository = clusterCrossRefRepository,
+                            mediaMetadataRepository = mediaMetadataRepository,
                             mediaIdToUri = ::mediaIdToUri
                         )
                     }
@@ -129,9 +121,9 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
         .cachedIn(viewModelScope)
 
     val mediaCollections: StateFlow<List<MediaCollection>> = combine(
-        tagsCrossRefRepository.getTagsWithCounts(),
+        tagCrossRefRepository.getTagsWithCounts(),
         _state.map { it.mediaType }
-    ) { tagCounts, mediaType -> getCollections(tagCounts)
+    ) { tagCounts, mediaType -> tagManager.tagsToCollections(tagCounts)
     }.flowOn(Dispatchers.IO).stateIn(
         scope = viewModelScope,
         started = SharingStarted.Lazily,
@@ -143,8 +135,7 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
         val collectionName = _state.value.collectionName?: return
 
         viewModelScope.launch (Dispatchers.IO){
-            val tag = tagsRepository.getTagsByName(listOf(collectionName)).firstOrNull()?: return@launch
-            tagsCrossRefRepository.deleteMediaMatchTag( mediaIds, tag.id)
+            tagManager.removeItems(collectionName, mediaIds)
             onComplete()
             _state.update { it.copy(selectedMediaItems = emptySet()) }
         }
@@ -152,14 +143,8 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
 
     fun moveItems(items: Set<MediaItem>, newCollection: MediaCollection, onComplete: () -> Unit){
         val oldCollectionName = _state.value.collectionName?: return
-
         viewModelScope.launch (Dispatchers.IO){
-            val newTag = tagsRepository.getTagsByName(listOf(newCollection.name)).firstOrNull()?: return@launch
-            val updatedCrossRef = items.map{ TagCrossRef(mediaId = it.id, tagId=newTag.id, type=it.type)}
-            tagsCrossRefRepository.upsertTagCrossRefs(updatedCrossRef)
-
-            val oldTag = tagsRepository.getTagsByName(listOf(oldCollectionName)).firstOrNull()?: return@launch
-            tagsCrossRefRepository.deleteMediaMatchTag(  items.map{it.id}, oldTag.id)
+            tagManager.moveItems(items, oldCollectionName, newCollection.name)
             onComplete()
             _state.update { it.copy(selectedMediaItems = emptySet()) }
         }
@@ -171,12 +156,7 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
 
         viewModelScope.launch (Dispatchers.IO) {
             try {
-                val newTagId = tagsRepository.insertTags(listOf(Tag(name = newCollectionName))).firstOrNull()?: return@launch
-                val updatedCrossRef = items.map{ TagCrossRef(mediaId = it.id, tagId=newTagId, type=it.type)}
-                tagsCrossRefRepository.upsertTagCrossRefs(updatedCrossRef)
-
-                val oldTag = tagsRepository.getTagsByName(listOf(oldCollectionName)).firstOrNull()?: return@launch
-                tagsCrossRefRepository.deleteMediaMatchTag(  items.map{it.id}, oldTag.id)
+                tagManager.createNewTagAndMoveItems(items, oldCollectionName, newCollectionName)
                 onComplete()
                 _state.update { it.copy(selectedMediaItems = emptySet()) }
             }catch (_: SQLiteConstraintException){
@@ -227,40 +207,8 @@ class CollectionItemsViewModel( application: Application) : AndroidViewModel(app
             onMediaLoadingError(error,
                 imageEmbedStore = imageStore,
                 videoEmbedStore = videoStore,
-                tagsCrossRefRepository = tagsCrossRefRepository,
-                clusterCrossRefRepository=clusterCrossRefRepository
+                mediaMetadataRepository =mediaMetadataRepository
                 )
         }
-    }
-
-    private suspend fun getCollections(tags: List<TagWithCount>): List<MediaCollection> {
-        return tags.mapNotNull {
-            val crossRef = tagsCrossRefRepository.getByTag(it.id, limit = 1, offset = 0).firstOrNull()
-            val uri = crossRef?.let { crossRef -> mediaIdToUri(crossRef.mediaId, crossRef.type) }
-            uri?.let { uri ->
-                MediaCollection(
-                    id = it.id,
-                    name = it.name,
-                    thumbNail = uri,
-                    size = it.count
-                )
-            }
-        }
-    }
-
-    private fun mediaIdToUri(id: Long, mediaType: MediaType): Uri {
-        return when (mediaType) {
-            MediaType.IMAGE -> getImageUriFromId(id)
-            MediaType.VIDEO -> getVideoUriFromId(id)
-        }
-    }
-
-    override fun onCleared() {
-        // required now that remove() method only removes from in-memory cache not disk
-        runBlocking {
-            imageStore.save()
-            videoStore.save()
-        }
-        super.onCleared()
     }
 }

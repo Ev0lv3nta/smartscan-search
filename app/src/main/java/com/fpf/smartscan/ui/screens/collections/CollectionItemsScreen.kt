@@ -18,10 +18,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -36,9 +41,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.fpf.smartscan.media.shareMediaMulti
+import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.settings.AppSettings
 import com.fpf.smartscan.ui.components.SlideRevealBox
 import com.fpf.smartscan.ui.components.collections.CollectionItemsActionBar
@@ -47,6 +52,7 @@ import com.fpf.smartscan.ui.components.collections.CollectionPicker
 import com.fpf.smartscan.ui.components.media.MediaViewer
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.StateFlow
+import org.koin.compose.viewmodel.koinViewModel
 
 
 @OptIn(FlowPreview::class)
@@ -55,7 +61,9 @@ fun CollectionItemsScreen(
     collectionName: String?,
     appSettings: StateFlow<AppSettings>,
     clusterId: Long = -1L, // null not allowed for longs in nav
-    viewModel: CollectionItemsViewModel = viewModel(),
+    onTopBarChange: (TopBarState) -> Unit,
+    onBack: () -> Unit,
+    viewModel: CollectionItemsViewModel = koinViewModel(),
     ) {
 
     val context = LocalContext.current
@@ -88,6 +96,26 @@ fun CollectionItemsScreen(
             viewModel.resetErrorState()
         }
     }
+
+    val screenTitle = collectionName?: "?"
+
+    LaunchedEffect(Unit) {
+        onTopBarChange(
+            TopBarState(
+                title = screenTitle,
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null
+                        )
+                    }
+                }
+            )
+        )
+    }
+
+
 
     BackHandler(enabled = isSelecting) {
         isSelecting = false

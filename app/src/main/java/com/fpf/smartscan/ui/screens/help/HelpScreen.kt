@@ -3,17 +3,46 @@ package com.fpf.smartscan.ui.screens.help
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.fpf.smartscan.R
+import com.fpf.smartscan.navigation.TopBarState
 
 @Composable
-fun HelpScreen() {
+fun HelpScreen(
+    onTopBarChange: (TopBarState) -> Unit,
+    onBack: () -> Unit
+) {
     val scrollState = rememberScrollState()
+
+    val screenTitle = stringResource(R.string.title_help)
+
+    LaunchedEffect(Unit) {
+        onTopBarChange(
+            TopBarState(
+                title = screenTitle,
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null
+                        )
+                    }
+                }
+            )
+        )
+    }
+
     Box(
         modifier = Modifier.fillMaxSize().padding(16.dp)
     ) {

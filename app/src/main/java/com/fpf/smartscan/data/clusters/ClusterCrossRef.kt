@@ -5,6 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.TypeConverters
 import com.fpf.smartscan.data.MediaTypeConverter
+import com.fpf.smartscan.data.metadata.MediaMetadata
 import com.fpf.smartscan.media.MediaType
 
 @Entity(
@@ -15,14 +16,19 @@ import com.fpf.smartscan.media.MediaType
             entity = MediaClusterMetadata::class,
             parentColumns = ["clusterId"],
             childColumns = ["clusterId"],
-            onDelete = ForeignKey.Companion.CASCADE
+            onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = MediaMetadata::class,
+            parentColumns = ["id"],
+            childColumns = ["mediaId"],
+            onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("mediaId"), Index("type")]
+    indices = [Index("mediaId")]
 )
 @TypeConverters(MediaTypeConverter::class)
 data class ClusterCrossRef(
     val clusterId: Long,
     val mediaId: Long,
-    val type: MediaType
 )

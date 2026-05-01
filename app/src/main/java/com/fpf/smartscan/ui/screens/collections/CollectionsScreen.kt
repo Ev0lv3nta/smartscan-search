@@ -35,6 +35,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -49,27 +50,28 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fpf.smartscan.constants.Routes
-import com.fpf.smartscan.settings.AppSettings
-import com.fpf.smartscan.ui.components.SelectorModal
+import com.fpf.smartscan.ui.components.modals.SelectorModal
 import com.fpf.smartscan.ui.components.SlideRevealBox
-import com.fpf.smartscan.ui.components.TextInputModal
+import com.fpf.smartscan.ui.components.modals.TextInputModal
 import com.fpf.smartscan.ui.components.collections.CollectionPicker
 import com.fpf.smartscan.ui.components.collections.CollectionsActionBar
 import com.fpf.smartscan.ui.components.collections.MediaCollectionsList
 import com.fpf.smartscan.ui.screens.collections.CollectionsViewModel.Companion.TOP_N
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.StateFlow
 import com.fpf.smartscan.R
 import androidx.compose.ui.res.stringResource
+import com.fpf.smartscan.navigation.TopBarState
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(FlowPreview::class)
 @Composable
 fun CollectionsScreen(
     onNavigate: (String) -> Unit,
-    viewModel: CollectionsViewModel = viewModel(),
+    onTopBarChange: (TopBarState) -> Unit,
+    viewModel: CollectionsViewModel = koinViewModel(),
     ) {
+
     val state by viewModel.state.collectAsState()
     val clusterCollections by viewModel.clusterCollections.collectAsState()
     val tagCollections by viewModel.tagCollections.collectAsState()
@@ -105,6 +107,12 @@ fun CollectionsScreen(
             Toast.makeText(context, state.error, Toast.LENGTH_SHORT).show()
             viewModel.resetErrorState()
         }
+    }
+
+    val screenTitle = stringResource(R.string.title_collections)
+
+    LaunchedEffect(Unit) {
+       onTopBarChange( TopBarState(title = screenTitle))
     }
 
     BackHandler(enabled = isSelecting) {
@@ -331,7 +339,7 @@ fun CollectionsScreen(
                     isCopyingCollection = true
                     isSelecting = false
                 },
-                copyEnabled = state.viewAutoCollections && state.selectedCollections.size == 1
+                copyEnabled = state.viewAutoCollections
             )
         }
         AnimatedVisibility(
@@ -352,10 +360,10 @@ fun CollectionsScreen(
                     viewModel.clearSelectedCollections()
                           },
                 onSelectCollection = {
-                    viewModel.copyFromClusterToTagCollection(state.selectedCollections.first(), it)
+                    viewModel.copyFromClusterToTagCollection(state.selectedCollections, it)
                     isCopyingCollection = false
                 },
-                onCreateNewCollection = {viewModel.createNewCollectionAndCopy(state.selectedCollections.first(),it)}
+                onCreateNewCollection = {viewModel.createNewCollectionAndCopy(state.selectedCollections,it)}
             )
         }
     }

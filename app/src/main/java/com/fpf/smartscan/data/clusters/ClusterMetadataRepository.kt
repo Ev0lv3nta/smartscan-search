@@ -12,17 +12,23 @@ class ClusterMetadataRepository(private val dao: ClusterMetadataDao) {
 
     fun getAllLabelFlow(): Flow<List<String>> = dao.getLabels()
 
-     suspend fun getAllMetadataAsMap(): Map<Long, ClusterMetadata> = dao.getAll().associate {
+    suspend fun getAllMetadataAsMap(): Map<Long, ClusterMetadata> = dao.getAll().associate {
             it.clusterId to it.toMetadata()
         }
 
-     suspend fun getMetadatas(ids: List<Long>): List<MediaClusterMetadata> = dao.get(ids)
+    suspend fun getMetadatas(ids: List<Long>): List<MediaClusterMetadata> = dao.get(ids)
 
-     suspend fun getIdFromLabel(label: String): Long? = dao.getIdFromLabel(label)
+    suspend fun getIdFromLabel(label: String): Long? = dao.getIdFromLabel(label)
+    suspend fun count(minSize: Int = 1): Int = dao.count(minSize)
 
-     suspend fun insertMetadatas(metadatas: List<MediaClusterMetadata>) = dao.insert(metadatas)
+    suspend fun countSingletons(): Int = dao.countSingletons()
+
+
+    suspend fun insertMetadatas(metadatas: List<MediaClusterMetadata>) = dao.insert(metadatas)
 
     suspend fun updateMetadatas(metadatas: List<MediaClusterMetadata>) = dao.update(metadatas)
 
      suspend fun deleteMetadatas(ids: List<Long>) = dao.delete(ids)
+
+    suspend fun clear() = dao.clear()
 }

@@ -1,41 +1,78 @@
 package com.fpf.smartscan
 
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import com.fpf.smartscan.ui.theme.ColorSchemeType
-import com.fpf.smartscan.ui.theme.DarkColorPalette
-import com.fpf.smartscan.ui.theme.LightColorPalette
-import com.fpf.smartscan.ui.theme.ThemeManager
-import com.fpf.smartscan.ui.theme.ThemeMode
+import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.util.Log
+import coil3.ImageLoader
+import coil3.SingletonImageLoader
+import coil3.disk.DiskCache
+import coil3.disk.directory
+import coil3.memory.MemoryCache
+import coil3.request.crossfade
+import coil3.video.VideoFrameDecoder
+import com.fpf.smartscan.constants.EmbeddingStoresFiles
+import com.fpf.smartscan.di.dbModule
+import com.fpf.smartscan.di.embedStoreModule
+import com.fpf.smartscan.di.viewModelModule
+import org.koin.android.ext.koin.androidContext
+import org.koin.core.context.startKoin
+import org.koin.core.context.stopKoin
+import java.io.File
 
+class App : Application() {
 
-@Composable
-fun App(
-    content: @Composable () -> Unit
-) {
-    val themeMode by ThemeManager.themeMode.collectAsState()
-    val colorSchemeType by ThemeManager.colorScheme.collectAsState()
+    companion object {
+        private const val TAG = "App"
 
-    val darkTheme = when (themeMode) {
-        ThemeMode.LIGHT -> false
-        ThemeMode.DARK -> true
-        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        fun resetKoin(app: Application){
+            stopKoin()
+
+            startKoin {
+                androidContext(app)
+                modules(embedStoreModule, dbModule, viewModelModule)
+            }
+        }
+    }
+    override fun onCreate() {
+        super.onCreate()
+
+        startKoin {
+            androidContext(this@App)
+            modules(embedStoreModule, dbModule, viewModelModule)
+        }
+
+        SingletonImageLoader.setSafe {
+            ImageLoader.Builder(this).components {
+                add(VideoFrameDecoder.Factory())
+            }
+                .crossfade(true)
+                .memoryCache { MemoryCache.Builder().maxSizePercent(this, 0.25).build() }
+                .diskCache { DiskCache.Builder().directory(cacheDir.resolve("image_cache")).maxSizePercent(0.05).build() }
+                .build()
+        }
+
+        createNotificationChannel(
+            channelId = getString(R.string.worker_channel_id),
+            channelName = getString(R.string.worker_channel_name),
+            description = getString(R.string.worker_channel_description)
+        )
+
+        cleanUpIfRequired()
+    }
+    private fun createNotificationChannel(channelId: String, channelName: String, description: String) {
+        val notificationManager = getSystemService(NotificationManager::class.java)
+        val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_HIGH
+        ).apply { this.description = description }
+        notificationManager.createNotificationChannel(channel)
     }
 
-    val colors = when (colorSchemeType) {
-        ColorSchemeType.DEFAULT -> if (darkTheme) darkColorScheme() else lightColorScheme()
-        ColorSchemeType.SMARTSCAN -> if (darkTheme) DarkColorPalette else LightColorPalette
+    private fun cleanUpIfRequired(){
+        val tagFile = File(applicationContext.filesDir, EmbeddingStoresFiles.TAGS)
+        if(tagFile.exists()) {
+            Log.d(TAG, "Old tag embed store file removed")
+            tagFile.delete()
+        }
     }
 
-    MaterialTheme(
-        colorScheme = colors,
-        typography = MaterialTheme.typography,
-        shapes = MaterialTheme.shapes,
-        content = content
-    )
 }

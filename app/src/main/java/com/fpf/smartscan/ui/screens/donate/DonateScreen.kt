@@ -5,9 +5,12 @@ import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,9 +26,13 @@ import androidx.compose.ui.unit.dp
 import com.fpf.smartscan.R
 import kotlinx.coroutines.launch
 import androidx.core.net.toUri
+import com.fpf.smartscan.navigation.TopBarState
 
 @Composable
-fun DonateScreen() {
+fun DonateScreen(
+    onTopBarChange: (TopBarState) -> Unit,
+    onBack: () -> Unit
+    ) {
     val clipboard = LocalClipboard.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -34,6 +41,26 @@ fun DonateScreen() {
     val ethWallet = stringResource(R.string.eth_wallet)
     val ltcWallet = stringResource(R.string.ltc_wallet)
     val koFiUrl = stringResource(R.string.donate_kofi_url)
+
+    val screenTitle = stringResource(R.string.title_donate)
+
+
+    LaunchedEffect(Unit) {
+        onTopBarChange(
+            TopBarState(
+                title = screenTitle,
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null
+                        )
+                    }
+                }
+            )
+        )
+    }
+
 
     Column(
         modifier = Modifier

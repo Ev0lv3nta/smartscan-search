@@ -4,6 +4,7 @@ agp = "8.13.2"
 coilCompose = "3.3.0"
 composeBom = "2025.12.00"
 core = "1.7.0"
+coreSplashscreen = "1.2.0"
 documentfile = "1.1.0"
 junitJupiterApi = "5.10.0"
 kotlin = "2.2.21"
@@ -22,10 +23,12 @@ mockk = "1.14.5"
 navigationCompose = "2.9.3"
 roomRuntime = "2.7.2"
 runner = "1.6.1"
-smartscanMl = "2.0.0"
+smartscanMl = "2.0.1"
 ui = "1.10.0"
 workRuntimeKtx = "2.10.3"
 pagingCompose = "3.4.2"
+koin-bom = "4.1.1"
+
 
 
 [libraries]
@@ -33,6 +36,7 @@ androidx-activity-compose = { module = "androidx.activity:activity-compose", ver
 androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 androidx-core = { module = "androidx.test:core", version.ref = "core" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentfile" }
 androidx-junit-ktx = { module = "androidx.test.ext:junit-ktx", version.ref = "junitVersion" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
@@ -64,6 +68,10 @@ mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 mockk-android = { module = "io.mockk:mockk-android", version.ref = "mockk" }
 smartscan-ml = { module = "com.github.smartscanapp.smartscan-android-lib:smartscan-ml", version.ref = "smartscanMl" }
 androidx-paging-compose = { group = "androidx.paging", name = "paging-compose", version.ref = "pagingCompose" }
+koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
+koin-core = { module = "io.insert-koin:koin-core" }
+koin-android = { module = "io.insert-koin:koin-android" }
+koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
