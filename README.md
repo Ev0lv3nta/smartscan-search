@@ -64,18 +64,16 @@ All processing is handled entirely on-device, ensuring privacy, speed, and offli
 
 Go to [Releases](https://github.com/dev-diaries41/smartscan/releases/latest) and download the latest apk.
 
-Will be returning to F-droid soon.
 
+<div style="display: flex; gap: 10px;">
 
-[//]: # (<div style="display: flex; gap: 10px;">)
+  <a href="https://f-droid.org/packages/com.fpf.smartscan" style="text-decoration: none;">
 
-[//]: # (  <a href="https://f-droid.org/packages/com.fpf.smartscan" style="text-decoration: none;">)
+  <img src="https://f-droid.org/badge/get-it-on.svg" alt="F-Droid" style="max-width:100%;" width=200>
 
-[//]: # (  <img src="https://f-droid.org/badge/get-it-on.svg" alt="F-Droid" style="max-width:100%;" width=200>)
+  </a>
 
-[//]: # (  </a>)
-
-[//]: # (</div>)
+</div>
 
 ---
 
