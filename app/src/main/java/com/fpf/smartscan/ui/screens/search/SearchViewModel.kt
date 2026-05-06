@@ -32,13 +32,15 @@ import com.fpf.smartscan.index.ImageIndexListener
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.tag.TagManager
 import com.fpf.smartscan.index.VideoIndexListener
+import com.fpf.smartscan.search.dedupe
+import com.fpf.smartscan.search.getPaginatedResult
+import com.fpf.smartscan.search.parseQuery
 import com.fpf.smartscan.services.rebuildIndex
 import com.fpf.smartscan.services.refreshIndex
 import com.fpf.smartscan.services.startIndexing
 import com.fpf.smartscan.ui.permissions.StorageAccess
 import com.fpf.smartscan.ui.permissions.getStorageAccess
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
-import com.fpf.smartscansdk.core.embeddings.dot
 import com.fpf.smartscansdk.core.media.getBitmapFromUri
 import com.fpf.smartscansdk.ml.models.ModelAssetSource
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
@@ -246,38 +248,6 @@ class SearchViewModel(
         return queryResults
     }
 
-    private suspend fun dedupe(store: FileEmbeddingStore, searchResults: List<Long>, duplicateThreshold: Float): List<Long>{
-        val validEmbeds = mutableListOf<FloatArray>()
-        val validIds = mutableListOf<Long>()
-
-        val resultEmbeds = store.get(searchResults)
-
-        for (res in resultEmbeds){
-            var isDuplicate = false
-            for(emb in validEmbeds){
-                val sim = res.embedding dot emb
-                if (sim >= duplicateThreshold){
-                    isDuplicate = true
-                    break
-                }
-            }
-            if (!isDuplicate){
-                validIds.add(res.id)
-                validEmbeds.add(res.embedding)
-            }
-        }
-        return validIds
-    }
-
-    private fun parseQuery(query: String): Pair<String?, String>{
-        val regex = Regex("""^#([a-zA-Z0-9_]+)""")
-        val match = regex.find(query)
-        val tag = match?.groupValues?.get(1)
-        val actualQueryStart = if(!tag.isNullOrBlank()) tag.length + 1 else 0
-        val actualQuery = query.substring(actualQueryStart).trim()
-        return Pair(tag, actualQuery)
-    }
-
     private suspend fun imageSearch(store: FileEmbeddingStore, threshold: Float, startDate: Long? = null, endDate: Long? = null): List<Long> {
         val queryImage = _state.value.queryImage?: return  emptyList()
 
@@ -341,7 +311,7 @@ class SearchViewModel(
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val batch = getPaginatedResult(currentItemsCount)
+                val batch = getPaginatedResult(currentItemsCount, RESULTS_BATCH_SIZE, cachedIds)
                 val (filteredResults, idsToPurge) = filterAccessibleMediaStoreIds(getApplication(), batch, _state.value.mediaType)
 
                 if (filteredResults.isNotEmpty()) {
@@ -363,12 +333,6 @@ class SearchViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             removeStaleMedia(idsToPurge, store, mediaMetadataRepository)
         }
-    }
-
-    private fun getPaginatedResult(currentItemsCount: Int): List<Long>{
-        val end = (currentItemsCount + RESULTS_BATCH_SIZE).coerceAtMost(cachedIds.size)
-        if (currentItemsCount >= end) return emptyList()
-        return cachedIds.subList(currentItemsCount, end)
     }
 
     fun toggleViewResult(context: Context, item: MediaItem?, autoOpenInGallery: Boolean? = null, isSelecting: Boolean = false){
