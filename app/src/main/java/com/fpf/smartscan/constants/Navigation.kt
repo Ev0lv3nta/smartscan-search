@@ -22,4 +22,7 @@ object SettingTypes {
     const val SEARCHABLE_IMG_DIRS = "searchable_img_dirs"
     const val SEARCHABLE_VID_DIRS = "searchable_vid_dirs"
     const val BACKUP_RESTORE = "backup_restore"
+
+    const val DUPLICATES = "duplicates"
+
 }

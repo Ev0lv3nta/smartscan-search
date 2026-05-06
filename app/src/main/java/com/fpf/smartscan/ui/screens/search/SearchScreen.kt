@@ -152,7 +152,7 @@ fun SearchScreen(
     }
 
     LaunchedEffect(Unit) {
-        searchViewModel.externalSearch(intentSearchQuery, appSettings.similarityThreshold, appSettings.imageSimilarityThreshold)
+        searchViewModel.externalSearch(intentSearchQuery, appSettings.similarityThreshold, appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold)
     }
 
     LaunchedEffect(isIndexing) {
@@ -328,7 +328,7 @@ fun SearchScreen(
                             imageSize = 140.dp,
                             mediaTypeSelectorEnabled = (videoIndexStatus != IndexingStatus.ACTIVE && imageIndexStatus != IndexingStatus.ACTIVE), // prevent switching modes when indexing in progress
                             onSearch = {
-                                searchViewModel.search(appSettings.imageSimilarityThreshold)
+                                searchViewModel.search(appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold)
                                 isSelecting = false
                             },
                             onMediaTypeChange = searchViewModel::setMediaType,
@@ -366,25 +366,19 @@ fun SearchScreen(
                                 searchFieldState = searchViewModel.searchFieldState,
                                 enabled = hasStoragePermission && !state.loading && !isIndexing ,
                                 onSearch = {
-                                    searchViewModel.search(
-                                        appSettings.similarityThreshold,
-                                    )
+                                    searchViewModel.search(appSettings.similarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold)
                                     isSelecting = false
                                 },
                                 onImageSelected = {
                                     searchViewModel.updateSearchImageUri(it)
                                     searchViewModel.updateQueryType(QueryType.IMAGE)
-                                    searchViewModel.search(
-                                        appSettings.imageSimilarityThreshold,
-                                    )
+                                    searchViewModel.search(appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold)
                                     isSelecting = false
                                 },
                                 onImagePasted = {
                                     searchViewModel.updateSearchImageUri(it)
                                     searchViewModel.updateQueryType(QueryType.IMAGE)
-                                    searchViewModel.search(
-                                        appSettings.imageSimilarityThreshold,
-                                    )
+                                    searchViewModel.search(appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold)
                                     isSelecting = false
                                 },
                                 onClearResults = {
@@ -511,7 +505,7 @@ fun SearchScreen(
                         searchViewModel.updateQueryType(QueryType.IMAGE)
                         isSelecting = false
                         searchViewModel.clearSelectedResults()
-                        searchViewModel.search(appSettings.imageSimilarityThreshold)
+                        searchViewModel.search(appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold)
                     }
                 },
                 onShare = {
@@ -544,7 +538,7 @@ fun SearchScreen(
                     onUpdateSearchImage = {
                         searchViewModel.updateSearchImageUri(item.uri)
                         searchViewModel.updateQueryType(QueryType.IMAGE)
-                        searchViewModel.search(appSettings.imageSimilarityThreshold)
+                        searchViewModel.search(appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold)
                         searchViewModel.toggleViewResult(context, null)
                     }
                 )

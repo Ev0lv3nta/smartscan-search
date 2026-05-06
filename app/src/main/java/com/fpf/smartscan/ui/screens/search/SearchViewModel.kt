@@ -38,6 +38,7 @@ import com.fpf.smartscan.services.startIndexing
 import com.fpf.smartscan.ui.permissions.StorageAccess
 import com.fpf.smartscan.ui.permissions.getStorageAccess
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
+import com.fpf.smartscansdk.core.embeddings.dot
 import com.fpf.smartscansdk.core.media.getBitmapFromUri
 import com.fpf.smartscansdk.ml.models.ModelAssetSource
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
@@ -177,7 +178,7 @@ class SearchViewModel(
         ) }
     }
 
-    fun search(threshold: Float){
+    fun search(threshold: Float, dedupeEnabled: Boolean, duplicateThreshold: Float = 0.95f){
         reset()
         val store = getStore()
         if(!store.exists) {
@@ -203,7 +204,7 @@ class SearchViewModel(
                         result
                     }
                 }
-                handleSearchResult(queryResults, store)
+                handleSearchResult(queryResults, store, dedupeEnabled, duplicateThreshold)
             }catch (e: Exception) {
                 Log.e(TAG, "$e")
                 _state.update{it.copy(error = getApplication<Application>().getString(R.string.search_error_unknown))}
@@ -245,6 +246,29 @@ class SearchViewModel(
         return queryResults
     }
 
+    private suspend fun dedupe(store: FileEmbeddingStore, searchResults: List<Long>, duplicateThreshold: Float): List<Long>{
+        val validEmbeds = mutableListOf<FloatArray>()
+        val validIds = mutableListOf<Long>()
+
+        val resultEmbeds = store.get(searchResults)
+
+        for (res in resultEmbeds){
+            var isDuplicate = false
+            for(emb in validEmbeds){
+                val sim = res.embedding dot emb
+                if (sim >= duplicateThreshold){
+                    isDuplicate = true
+                    break
+                }
+            }
+            if (!isDuplicate){
+                validIds.add(res.id)
+                validEmbeds.add(res.embedding)
+            }
+        }
+        return validIds
+    }
+
     private fun parseQuery(query: String): Pair<String?, String>{
         val regex = Regex("""^#([a-zA-Z0-9_]+)""")
         val match = regex.find(query)
@@ -268,10 +292,11 @@ class SearchViewModel(
         return queryResults
     }
 
-    private suspend fun handleSearchResult(queryResults: List<Long>, store: FileEmbeddingStore) {
-        cachedIds.addAll(queryResults)
-        val totalCount = queryResults.size
-        val initialBatch = queryResults.take(RESULTS_BATCH_SIZE) // initial results the rest loaded dynamically
+    private suspend fun handleSearchResult(queryResults: List<Long>, store: FileEmbeddingStore, dedupeEnabled: Boolean = false, duplicateThreshold: Float = 0.95f) {
+        val finalResults =  if (dedupeEnabled) dedupe(store, queryResults, duplicateThreshold) else queryResults
+        cachedIds.addAll(finalResults)
+        val totalCount = finalResults.size
+        val initialBatch = finalResults.take(RESULTS_BATCH_SIZE) // initial results the rest loaded dynamically
         val (validIds, idsToPurge) = filterAccessibleMediaStoreIds(getApplication(), initialBatch, _state.value.mediaType)
         val filteredSearchResults = validIds.map { toMediaItem(it, _state.value.mediaType) }
 
@@ -287,7 +312,7 @@ class SearchViewModel(
         }
     }
 
-    fun externalSearch(intentSearchQuery: SearchQuery?, similarityThreshold: Float, imageSimilarityThreshold: Float){
+    fun externalSearch(intentSearchQuery: SearchQuery?, similarityThreshold: Float, imageSimilarityThreshold: Float, dedupeEnabled: Boolean, duplicateThreshold: Float = 0.95f){
         if(intentSearchQuery == null || hasHandledExternalSearch) return
 
         when(intentSearchQuery) {
@@ -295,14 +320,14 @@ class SearchViewModel(
                 setMediaType(intentSearchQuery.mediaType)
                 updateSearchImageUri(intentSearchQuery.uri)
                 updateQueryType(QueryType.IMAGE)
-                search(imageSimilarityThreshold)
+                search(imageSimilarityThreshold, dedupeEnabled, duplicateThreshold)
                 hasHandledExternalSearch = true
             }
 
             is SearchQuery.TextQuery -> {
                 setMediaType(intentSearchQuery.mediaType)
                 searchFieldState.edit { replace(0, searchFieldState.text.length, intentSearchQuery.text) }
-                search( similarityThreshold)
+                search( similarityThreshold, dedupeEnabled, duplicateThreshold)
                 hasHandledExternalSearch = true
             }
         }
