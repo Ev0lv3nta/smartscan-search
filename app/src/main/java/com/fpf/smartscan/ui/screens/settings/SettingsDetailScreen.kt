@@ -3,7 +3,9 @@ package com.fpf.smartscan.ui.screens.settings
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -12,7 +14,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -26,6 +27,7 @@ import com.fpf.smartscan.constants.SettingTypes
 import com.fpf.smartscan.events.AppEventType
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.ui.components.BackupAndRestore
+import com.fpf.smartscan.ui.components.SwitchItem
 import com.fpf.smartscan.ui.components.models.ModelsList
 import com.fpf.smartscan.ui.screens.settings.SettingsViewModel.Companion.BACKUP_FILENAME
 import com.fpf.smartscansdk.ml.models.ModelManager
@@ -66,6 +68,7 @@ fun SettingsDetailScreen(
         SettingTypes.SEARCHABLE_IMG_DIRS -> stringResource(R.string.setting_searchable_image_folders)
         SettingTypes.SEARCHABLE_VID_DIRS -> stringResource(R.string.setting_searchable_video_folders)
         SettingTypes.BACKUP_RESTORE -> stringResource(R.string.setting_backup_restore)
+        SettingTypes.DUPLICATES -> stringResource(R.string.setting_hide_duplicates)
         else -> ""
     }
 
@@ -145,6 +148,24 @@ fun SettingsDetailScreen(
                         backupLoading = isBackupLoading,
                         restoreLoading = isRestoreLoading
                     )
+                }
+                SettingTypes.DUPLICATES -> {
+                    SwitchItem(
+                        text=stringResource(R.string.setting_hide_duplicates),
+                        checked = appSettings.enableDedupe,
+                        onCheckedChange = viewModel::updateEnableDedupe,
+                    )
+                    Spacer(modifier=Modifier.height(8.dp))
+                    CustomSlider(
+                        label = stringResource(R.string.setting_similarity_threshold),
+                        minValue = 0.95f,
+                        maxValue = 1f,
+                        initialValue = appSettings.duplicateThreshold,
+                        onValueChange = { value ->
+                            viewModel.updateDuplicateThreshold(value)
+                        },
+                    )
+
                 }
                 else -> {}
             }

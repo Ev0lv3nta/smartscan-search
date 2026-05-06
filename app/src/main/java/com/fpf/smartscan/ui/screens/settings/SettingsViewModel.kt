@@ -219,4 +219,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _appSettings.update{currentSettings -> currentSettings.copy(resultsPerRow = n)}
         saveSettings(sharedPrefs, _appSettings.value)
     }
+
+    fun updateEnableDedupe(enable: Boolean){
+        _appSettings.update{currentSettings -> currentSettings.copy(enableDedupe = enable)}
+        saveSettings(sharedPrefs, _appSettings.value)
+    }
+
+    fun updateDuplicateThreshold(threshold: Float){
+        _appSettings.update{currentSettings -> currentSettings.copy(duplicateThreshold = threshold)}
+        saveSettings(sharedPrefs, _appSettings.value)
+    }
 }

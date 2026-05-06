@@ -109,6 +109,10 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.primary
                 )
                 ActionItem(
+                    text = stringResource(id = R.string.setting_hide_duplicates),
+                    onClick = { onNavigate(Routes.settingsDetail(SettingTypes.DUPLICATES)) }
+                )
+                ActionItem(
                     text = stringResource(id = R.string.setting_similarity_threshold),
                     onClick = { onNavigate(Routes.settingsDetail(SettingTypes.THRESHOLD)) }
                 )

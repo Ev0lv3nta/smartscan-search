@@ -32,6 +32,9 @@ import com.fpf.smartscan.index.ImageIndexListener
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.tag.TagManager
 import com.fpf.smartscan.index.VideoIndexListener
+import com.fpf.smartscan.search.dedupe
+import com.fpf.smartscan.search.getPaginatedResult
+import com.fpf.smartscan.search.parseQuery
 import com.fpf.smartscan.services.rebuildIndex
 import com.fpf.smartscan.services.refreshIndex
 import com.fpf.smartscan.services.startIndexing
@@ -177,7 +180,7 @@ class SearchViewModel(
         ) }
     }
 
-    fun search(threshold: Float){
+    fun search(threshold: Float, dedupeEnabled: Boolean, duplicateThreshold: Float = 0.95f){
         reset()
         val store = getStore()
         if(!store.exists) {
@@ -203,7 +206,7 @@ class SearchViewModel(
                         result
                     }
                 }
-                handleSearchResult(queryResults, store)
+                handleSearchResult(queryResults, store, dedupeEnabled, duplicateThreshold)
             }catch (e: Exception) {
                 Log.e(TAG, "$e")
                 _state.update{it.copy(error = getApplication<Application>().getString(R.string.search_error_unknown))}
@@ -245,15 +248,6 @@ class SearchViewModel(
         return queryResults
     }
 
-    private fun parseQuery(query: String): Pair<String?, String>{
-        val regex = Regex("""^#([a-zA-Z0-9_]+)""")
-        val match = regex.find(query)
-        val tag = match?.groupValues?.get(1)
-        val actualQueryStart = if(!tag.isNullOrBlank()) tag.length + 1 else 0
-        val actualQuery = query.substring(actualQueryStart).trim()
-        return Pair(tag, actualQuery)
-    }
-
     private suspend fun imageSearch(store: FileEmbeddingStore, threshold: Float, startDate: Long? = null, endDate: Long? = null): List<Long> {
         val queryImage = _state.value.queryImage?: return  emptyList()
 
@@ -268,10 +262,11 @@ class SearchViewModel(
         return queryResults
     }
 
-    private suspend fun handleSearchResult(queryResults: List<Long>, store: FileEmbeddingStore) {
-        cachedIds.addAll(queryResults)
-        val totalCount = queryResults.size
-        val initialBatch = queryResults.take(RESULTS_BATCH_SIZE) // initial results the rest loaded dynamically
+    private suspend fun handleSearchResult(queryResults: List<Long>, store: FileEmbeddingStore, dedupeEnabled: Boolean = false, duplicateThreshold: Float = 0.95f) {
+        val finalResults =  if (dedupeEnabled) dedupe(store, queryResults, duplicateThreshold) else queryResults
+        cachedIds.addAll(finalResults)
+        val totalCount = finalResults.size
+        val initialBatch = finalResults.take(RESULTS_BATCH_SIZE) // initial results the rest loaded dynamically
         val (validIds, idsToPurge) = filterAccessibleMediaStoreIds(getApplication(), initialBatch, _state.value.mediaType)
         val filteredSearchResults = validIds.map { toMediaItem(it, _state.value.mediaType) }
 
@@ -287,7 +282,7 @@ class SearchViewModel(
         }
     }
 
-    fun externalSearch(intentSearchQuery: SearchQuery?, similarityThreshold: Float, imageSimilarityThreshold: Float){
+    fun externalSearch(intentSearchQuery: SearchQuery?, similarityThreshold: Float, imageSimilarityThreshold: Float, dedupeEnabled: Boolean, duplicateThreshold: Float = 0.95f){
         if(intentSearchQuery == null || hasHandledExternalSearch) return
 
         when(intentSearchQuery) {
@@ -295,14 +290,14 @@ class SearchViewModel(
                 setMediaType(intentSearchQuery.mediaType)
                 updateSearchImageUri(intentSearchQuery.uri)
                 updateQueryType(QueryType.IMAGE)
-                search(imageSimilarityThreshold)
+                search(imageSimilarityThreshold, dedupeEnabled, duplicateThreshold)
                 hasHandledExternalSearch = true
             }
 
             is SearchQuery.TextQuery -> {
                 setMediaType(intentSearchQuery.mediaType)
                 searchFieldState.edit { replace(0, searchFieldState.text.length, intentSearchQuery.text) }
-                search( similarityThreshold)
+                search( similarityThreshold, dedupeEnabled, duplicateThreshold)
                 hasHandledExternalSearch = true
             }
         }
@@ -316,7 +311,7 @@ class SearchViewModel(
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val batch = getPaginatedResult(currentItemsCount)
+                val batch = getPaginatedResult(currentItemsCount, RESULTS_BATCH_SIZE, cachedIds)
                 val (filteredResults, idsToPurge) = filterAccessibleMediaStoreIds(getApplication(), batch, _state.value.mediaType)
 
                 if (filteredResults.isNotEmpty()) {
@@ -338,12 +333,6 @@ class SearchViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             removeStaleMedia(idsToPurge, store, mediaMetadataRepository)
         }
-    }
-
-    private fun getPaginatedResult(currentItemsCount: Int): List<Long>{
-        val end = (currentItemsCount + RESULTS_BATCH_SIZE).coerceAtMost(cachedIds.size)
-        if (currentItemsCount >= end) return emptyList()
-        return cachedIds.subList(currentItemsCount, end)
     }
 
     fun toggleViewResult(context: Context, item: MediaItem?, autoOpenInGallery: Boolean? = null, isSelecting: Boolean = false){
