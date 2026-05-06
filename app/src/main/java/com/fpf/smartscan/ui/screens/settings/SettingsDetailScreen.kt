@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.fpf.smartscan.ui.components.pickers.DirectoryPicker
 import com.fpf.smartscan.R
 import com.fpf.smartscan.ui.components.CustomSlider
-import com.fpf.smartscan.constants.SettingTypes
+import com.fpf.smartscan.settings.SettingTypes
 import com.fpf.smartscan.events.AppEventType
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.ui.components.BackupAndRestore

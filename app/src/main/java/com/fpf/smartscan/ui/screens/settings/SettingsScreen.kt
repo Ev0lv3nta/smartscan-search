@@ -22,8 +22,8 @@ import com.fpf.smartscan.R
 import com.fpf.smartscan.ui.components.ActionItem
 import com.fpf.smartscan.ui.components.SelectorItem
 import androidx.core.net.toUri
-import com.fpf.smartscan.constants.Routes
-import com.fpf.smartscan.constants.SettingTypes
+import com.fpf.smartscan.navigation.Routes
+import com.fpf.smartscan.settings.SettingTypes
 import com.fpf.smartscan.constants.colorSchemeDisplayNames
 import com.fpf.smartscan.constants.themeModeDisplayNames
 import com.fpf.smartscan.navigation.TopBarState
