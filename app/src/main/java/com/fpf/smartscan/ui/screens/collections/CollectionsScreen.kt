@@ -156,7 +156,10 @@ fun CollectionsScreen(
                 viewModel.mergeClusterCollections(selectedCollection.id, state.selectedCollections.filterNot { it.name == selected })
             }
                     },
-        onClose = { isMergingCollections = false }
+        onClose = {
+            isMergingCollections = false
+            viewModel.clearSelectedCollections()
+        }
     )
 
     if ( isDeletingCollection) {
