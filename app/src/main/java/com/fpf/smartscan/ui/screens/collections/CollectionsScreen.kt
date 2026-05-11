@@ -121,7 +121,7 @@ fun CollectionsScreen(
     }
 
     TextInputModal(
-        isVisible = isRenamingCollection && state.selectedCollections.size == 1,
+        isVisible = isRenamingCollection,
         title="Rename collection",
         placeholder = "Enter new collection name",
         onClose = {isRenamingCollection = false},
@@ -340,6 +340,7 @@ fun CollectionsScreen(
                     isRenamingCollection = true
                     isSelecting = false
                 },
+                renameEnabled = state.selectedCollections.size == 1,
                 onCopy  = {
                     isCopyingCollection = true
                     isSelecting = false
