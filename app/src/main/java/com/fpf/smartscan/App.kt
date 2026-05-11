@@ -69,9 +69,13 @@ class App : Application() {
 
     private fun cleanUpIfRequired(){
         val tagFile = File(applicationContext.filesDir, EmbeddingStoresFiles.TAGS)
-        if(tagFile.exists()) {
-            Log.d(TAG, "Old tag embed store file removed")
-            tagFile.delete()
+        val imageClusterFile = File(applicationContext.filesDir, EmbeddingStoresFiles.IMAGE_CLUSTER)
+        val videoClusterFile = File(applicationContext.filesDir, EmbeddingStoresFiles.VIDEO_CLUSTER)
+        val filesToRemove = listOf(tagFile, imageClusterFile, videoClusterFile)
+
+        for (file in filesToRemove.filter { it.exists() }) {
+            Log.d(TAG, "Removed old file: ${file.name}")
+            file.delete()
         }
     }
 

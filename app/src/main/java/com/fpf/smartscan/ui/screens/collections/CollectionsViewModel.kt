@@ -14,7 +14,6 @@ import com.fpf.smartscan.data.clusters.ClusterMetadataWithCount
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscan.data.tags.TagCrossRef
-import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.mediaIdToUri
 import com.fpf.smartscan.tag.TagManager
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
@@ -40,11 +39,10 @@ class CollectionsViewModel(
     private val clusterMetadataRepository: ClusterMetadataRepository,
     private val clusterCrossRefRepository: ClusterCrossRefRepository,
     private val mediaMetadataRepository: MediaMetadataRepository,
-    imageClusterStore: FileEmbeddingStore,
-    videoClusterStore: FileEmbeddingStore,
     private val imageStore: FileEmbeddingStore,
     private val videoStore: FileEmbeddingStore,
-) : AndroidViewModel(application) {
+    clusterStore: FileEmbeddingStore,
+    ) : AndroidViewModel(application) {
     companion object {
         private const val TAG = "CollectionsViewModel"
         const val TOP_N = 6
@@ -55,21 +53,11 @@ class CollectionsViewModel(
         tagCrossRefRepository=tagCrossRefRepository,
         mediaMetadataRepository = mediaMetadataRepository,
     )
-
-    val imageClusterManager = ClusterManager(
-        clusterStore = imageClusterStore,
+    val clusterManager = ClusterManager(
+        clusterStore = clusterStore,
         clusterCrossRefRepository = clusterCrossRefRepository,
         clusterMetadataRepository = clusterMetadataRepository,
         mediaMetadataRepository = mediaMetadataRepository,
-        mediaType = MediaType.IMAGE
-    )
-
-    val videoClusterManager = ClusterManager(
-        clusterStore = videoClusterStore,
-        clusterCrossRefRepository = clusterCrossRefRepository,
-        clusterMetadataRepository = clusterMetadataRepository,
-        mediaMetadataRepository = mediaMetadataRepository,
-        mediaType = MediaType.VIDEO
     )
 
     private val _state = MutableStateFlow(CollectionsState())
@@ -148,10 +136,7 @@ class CollectionsViewModel(
 
     fun mergeClusterCollections(primaryCollectionId: Long, otherCollections: List<MediaCollection>){
         viewModelScope.launch (Dispatchers.IO) {
-            val meta = clusterMetadataRepository.getMetadatas(listOf(primaryCollectionId)).firstOrNull()?: return@launch
-            val clusterManager = getClusterManager(meta.type)
-            val mediaEmbedStore = getMediaEmbedStore(meta.type)
-            clusterManager.mergeClusters(primaryCollectionId, otherCollections.map{it.id}, mediaEmbedStore)
+            clusterManager.mergeClusters(primaryCollectionId, otherCollections.map{it.id}, imageStore, videoStore)
             _state.update { it.copy( selectedCollections = emptySet()) }
         }
     }
@@ -215,8 +200,8 @@ class CollectionsViewModel(
 
     private suspend fun clustersToCollections(clusters: List<ClusterMetadataWithCount>): List<MediaCollection> {
         return clusters.mapNotNull {
-            val id = mediaMetadataRepository.getByCluster(it.clusterId, limit = 1, offset = 0).firstOrNull()
-            val uri = id?.let { id -> mediaIdToUri(id.id, it.type) }
+            val meta = mediaMetadataRepository.getByCluster(it.clusterId, limit = 1, offset = 0).firstOrNull()
+            val uri = meta?.let { meta -> mediaIdToUri(meta.id, meta.type) }
             uri?.let { uri ->
                 MediaCollection(
                     id = it.clusterId,
@@ -228,8 +213,4 @@ class CollectionsViewModel(
             }
         }
     }
-
-    private fun getMediaEmbedStore(mediaType: MediaType) = if(mediaType == MediaType.VIDEO) videoStore else imageStore
-    private fun getClusterManager(mediaType: MediaType) = if(mediaType == MediaType.VIDEO) videoClusterManager else imageClusterManager
-
 }

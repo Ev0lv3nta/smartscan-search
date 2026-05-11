@@ -28,8 +28,7 @@ class MainViewModel(
     private val db: MediaDatabase,
     private val imageStore: FileEmbeddingStore,
     private val videoStore: FileEmbeddingStore,
-    private val imageClusterStore: FileEmbeddingStore,
-    private val videoClusterStore: FileEmbeddingStore,
+    private val clusterStore: FileEmbeddingStore,
 ) : AndroidViewModel(application) {
 
     companion object {
@@ -93,8 +92,8 @@ class MainViewModel(
             if(!isWorkScheduled(context = application, workName = IndexWorker.TAG)) scheduleIndexWorker()
 
 
-            val hasIndexedImagesButNotClustered = imageStore.exists && !imageClusterStore.exists
-            val hasIndexedVideosButNotClustered =  videoStore.exists && !videoClusterStore.exists
+            val hasIndexedImagesButNotClustered = imageStore.exists && !clusterStore.exists
+            val hasIndexedVideosButNotClustered =  videoStore.exists && !clusterStore.exists
             if(hasIndexedVideosButNotClustered && hasIndexedImagesButNotClustered){
                 refreshIndex(getApplication(), MediaType.entries)
             }else{
