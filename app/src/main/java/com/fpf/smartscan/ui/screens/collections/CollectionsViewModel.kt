@@ -10,11 +10,9 @@ import com.fpf.smartscan.data.tags.TagRepository
 import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
-import com.fpf.smartscan.data.clusters.ClusterMetadataWithCount
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscan.data.tags.TagCrossRef
-import com.fpf.smartscan.media.mediaIdToUri
 import com.fpf.smartscan.tag.TagManager
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
@@ -72,7 +70,7 @@ class CollectionsViewModel(
         }
         val filteredClusters = if (showAllCollections) clusters else clusters.take(TOP_N)
 
-        clustersToCollections(filteredClusters)
+        clusterManager.toCollections(filteredClusters)
     }.flowOn(Dispatchers.IO)
         .stateIn(
             scope = viewModelScope,
@@ -196,21 +194,5 @@ class CollectionsViewModel(
 
     fun toggleViewAutoCollections(){
         _state.update { it.copy(viewAutoCollections = !it.viewAutoCollections) }
-    }
-
-    private suspend fun clustersToCollections(clusters: List<ClusterMetadataWithCount>): List<MediaCollection> {
-        return clusters.mapNotNull {
-            val meta = mediaMetadataRepository.getByCluster(it.clusterId, limit = 1, offset = 0).firstOrNull()
-            val uri = meta?.let { meta -> mediaIdToUri(meta.id, meta.type) }
-            uri?.let { uri ->
-                MediaCollection(
-                    id = it.clusterId,
-                    name = it.label?: "?",
-                    thumbNail = uri,
-                    size = it.count,
-                    isAutoCollection = true
-                )
-            }
-        }
     }
 }

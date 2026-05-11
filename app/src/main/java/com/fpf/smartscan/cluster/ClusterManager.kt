@@ -3,8 +3,11 @@ package com.fpf.smartscan.cluster
 import com.fpf.smartscan.data.clusters.ClusterCrossRef
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
+import com.fpf.smartscan.data.clusters.ClusterMetadataWithCount
 import com.fpf.smartscan.data.clusters.MediaClusterMetadata
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
+import com.fpf.smartscan.media.MediaCollection
+import com.fpf.smartscan.media.mediaIdToUri
 import com.fpf.smartscan.utils.reservoirSample
 import com.fpf.smartscansdk.core.cluster.Cluster
 import com.fpf.smartscansdk.core.cluster.ClusterResult
@@ -121,6 +124,22 @@ class ClusterManager(
     fun clear() {
         clusterToMediaIdsMap.clear()
         assignments.clear()
+    }
+
+    suspend fun toCollections(clusters: List<ClusterMetadataWithCount>): List<MediaCollection> {
+        return clusters.mapNotNull {
+            val meta = mediaMetadataRepository.getByCluster(it.clusterId, limit = 1, offset = 0).firstOrNull()
+            val uri = meta?.let { meta -> mediaIdToUri(meta.id, meta.type) }
+            uri?.let { uri ->
+                MediaCollection(
+                    id = it.clusterId,
+                    name = it.label?: "?",
+                    thumbNail = uri,
+                    size = it.count,
+                    isAutoCollection = true
+                )
+            }
+        }
     }
 
     private suspend fun updateClustersFromResult(clusterResult: ClusterResult, existingClustersMap: Map<Long, Cluster>) {
