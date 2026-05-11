@@ -25,7 +25,7 @@ interface ClusterCrossRefDao {
     @Query("""
     SELECT crossRef.*
     FROM media_cluster_crossref crossRef
-    JOIN cluster_metadata metadata ON metadata.clusterId = crossRef.clusterId
+    JOIN media_metadata metadata ON metadata.id = crossRef.mediaId
     WHERE metadata.type = :type
     """)
     suspend fun getByType(type: MediaType): List<ClusterCrossRef>
