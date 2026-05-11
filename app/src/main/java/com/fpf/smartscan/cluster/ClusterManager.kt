@@ -12,7 +12,10 @@ import com.fpf.smartscansdk.core.cluster.ClusterResult
 import com.fpf.smartscansdk.core.cluster.IncrementalClusterer
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
+import com.fpf.smartscansdk.core.embeddings.generatePrototypeEmbedding
+import com.fpf.smartscansdk.core.embeddings.getSimilarities
 import kotlin.collections.iterator
+import kotlin.math.sqrt
 
 class ClusterManager(
     private val clusterCrossRefRepository: ClusterCrossRefRepository,
@@ -25,8 +28,6 @@ class ClusterManager(
         private const val LARGE_DATASET_SIZE: Int = 10000
         private const val MIN_SAMPLE_SIZE: Int = 500
         private const val MAX_SAMPLE_SIZE: Int = 5000
-
-
     }
     private var clusterToMediaIdsMap: MutableMap<Long, MutableSet<Long>> = mutableMapOf()
     private var assignments: MutableMap<Long, Long> = mutableMapOf()
@@ -54,8 +55,8 @@ class ClusterManager(
         val result = clusterer.cluster(filteredItems)
 
         // Must update clusters first
-        updateClusters(result, existingClusters)
-        updateAssignments(result, validIds)
+        updateClustersFromResult(result, existingClusters)
+        updateAssignmentsFromResult(result, validIds)
     }
 
     suspend fun getExistingClusters(): Map<Long, Cluster> {
@@ -70,9 +71,8 @@ class ClusterManager(
         } else emptyMap()
     }
 
-    suspend fun updateClusters(clusterResult: ClusterResult, existingClustersMap: Map<Long, Cluster>) {
-        val (existingClusters, newClusters) =
-            clusterResult.clusters.values.partition { it.prototypeId in existingClustersMap }
+    private suspend fun updateClustersFromResult(clusterResult: ClusterResult, existingClustersMap: Map<Long, Cluster>) {
+        val (existingClusters, newClusters) = clusterResult.clusters.values.partition { it.prototypeId in existingClustersMap }
 
         val existingMetadata = existingClusters.map {
             MediaClusterMetadata(
@@ -117,6 +117,27 @@ class ClusterManager(
 
         clusterStore.add(newEmbeds)
         clusterStore.update(existingEmbeds)
+    }
+
+    suspend fun mergeClusters(primaryClusterId: Long, otherClusters: List<Long>, mediaEmbeddingStore: FileEmbeddingStore){
+        val primaryClusterMetadata = clusterMetadataRepository.getMetadatas(listOf(primaryClusterId)).firstOrNull()?: return
+        val mediaIdsInPrimaryCluster = mediaMetadataRepository.getByCluster(primaryClusterId).map{it.id}
+        val otherClustersCrossRefs = clusterCrossRefRepository.getByClusterIds(otherClusters)
+        val updatedClusterCrossRefs = otherClustersCrossRefs.map { it.copy(clusterId = primaryClusterId) }
+        clusterCrossRefRepository.upsertClusterCrossRefs(updatedClusterCrossRefs)
+        clusterMetadataRepository.deleteMetadatas(otherClusters)
+
+        val mediaIdsInCluster = mediaIdsInPrimaryCluster + otherClustersCrossRefs.map { it.mediaId }.toSet()
+        val embeddings = mediaEmbeddingStore.get(mediaIdsInCluster).map{it.embedding}
+        val (prototypeEmbedding, meanSim, stdSim) = computeClusterMetrics(embeddings)
+
+        // Update primary cluster
+        val oldStoredEmbed = clusterStore.get(listOf(primaryClusterId)).firstOrNull()?: error("Cluster embedding not found")
+        val updatedStoredEmbed = oldStoredEmbed.copy(embedding = prototypeEmbedding)
+        clusterStore.update(listOf(updatedStoredEmbed))
+
+        val updatedMetadata = primaryClusterMetadata.copy(meanSimilarity = meanSim, stdSimilarity = stdSim, prototypeSize = mediaIdsInCluster.size)
+        clusterMetadataRepository.updateMetadatas(listOf(updatedMetadata))
     }
 
     suspend fun getClusterToMediaIdsMap(): Map<Long, MutableSet<Long>> {
@@ -164,7 +185,7 @@ class ClusterManager(
             items.shuffled().take(n)
         }
     }
-    private suspend fun updateAssignments(clusterResult: ClusterResult, validIds: Set<Long> ) {
+    private suspend fun updateAssignmentsFromResult(clusterResult: ClusterResult, validIds: Set<Long> ) {
         val crossRefs = clusterResult.assignments.mapNotNull {
             if (it.key !in validIds) return@mapNotNull null
 
@@ -174,5 +195,13 @@ class ClusterManager(
             )
         }
         clusterCrossRefRepository.upsertClusterCrossRefs(crossRefs)
+    }
+
+    private fun computeClusterMetrics(embeddings: List<FloatArray> ): Triple<FloatArray, Float, Float>{
+        val prototypeEmbedding = generatePrototypeEmbedding(embeddings)
+        val sims = getSimilarities(prototypeEmbedding, embeddings)
+        val meanSim = sims.average().toFloat()
+        val stdSim = sqrt(sims.map { (it - meanSim) * (it - meanSim) }.average()).toFloat()
+        return Triple(prototypeEmbedding, meanSim, stdSim)
     }
 }

@@ -151,6 +151,9 @@ fun CollectionsScreen(
         onConfirm = { selected ->
             if(!state.viewAutoCollections){
                 viewModel.mergeCollections(selected, state.selectedCollections.filterNot { it.name == selected })
+            }else{
+                val selectedCollection = state.selectedCollections.first{it.name == selected}
+                viewModel.mergeClusterCollections(selectedCollection.id, state.selectedCollections.filterNot { it.name == selected })
             }
                     },
         onClose = { isMergingCollections = false }
@@ -330,7 +333,6 @@ fun CollectionsScreen(
                     isMergingCollections = true
                     isSelecting = false
                 },
-                mergeEnabled = !state.viewAutoCollections,
                 onRename = {
                     isRenamingCollection = true
                     isSelecting = false

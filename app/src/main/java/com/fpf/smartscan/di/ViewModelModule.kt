@@ -49,7 +49,11 @@ val viewModelModule = module {
             tagRepository = get(),
             tagCrossRefRepository = get(),
             clusterCrossRefRepository = get(),
-            clusterMetadataRepository = get()
+            clusterMetadataRepository = get(),
+            imageClusterStore = get(IMAGE_CLUSTER_STORE),
+            videoClusterStore = get(VIDEO_CLUSTER_STORE),
+            imageStore = get(IMAGE_STORE),
+            videoStore = get(VIDEO_STORE),
         )
     }
 }
