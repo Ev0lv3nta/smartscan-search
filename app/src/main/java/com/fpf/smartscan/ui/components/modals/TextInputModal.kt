@@ -56,7 +56,10 @@ fun TextInputModal(
             TextButton(onClick = onClose) { Text("Cancel") }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(value.text) }) {
+            TextButton(onClick = {
+                onConfirm(value.text)
+                onClose()
+            }) {
                 Text("Confirm")
             }
         }
