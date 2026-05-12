@@ -126,6 +126,11 @@ class ClusterManager(
         assignments.clear()
     }
 
+    suspend fun updateLabel(clusterId: Long, newLabel: String){
+        val cluster = clusterMetadataRepository.getMetadatas(listOf(clusterId)).firstOrNull()
+        cluster?.let { clusterMetadataRepository.updateMetadatas(listOf(it.copy(label = newLabel))) }
+    }
+
     suspend fun toCollections(clusters: List<ClusterMetadataWithCount>): List<MediaCollection> {
         return clusters.mapNotNull {
             val meta = mediaMetadataRepository.getByCluster(it.clusterId, limit = 1, offset = 0).firstOrNull()
