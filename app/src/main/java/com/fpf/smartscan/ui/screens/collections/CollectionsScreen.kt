@@ -98,7 +98,7 @@ fun CollectionsScreen(
             }else{
                 onNavigate(Routes.viewCollection(it.name))
             }
-            viewModel.setCollectionToView(null)
+            viewModel.onAction(CollectionAction.SetCollectionToView(null))
         }
     }
 
@@ -125,13 +125,7 @@ fun CollectionsScreen(
         title="Rename collection",
         placeholder = "Enter new collection name",
         onClose = {isRenamingCollection = false},
-        onConfirm = { newName ->
-            if(state.viewAutoCollections){
-                viewModel.renameClusterCollection( state.selectedCollections.first(), newName)
-            } else{
-                viewModel.renameTagCollection( state.selectedCollections.first(), newName)
-            }
-                    },
+        onConfirm = { newName -> viewModel.onAction(CollectionAction.RenameCollection(newName))},
         leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
         onValueChange = {
             if (!it.text.contains(" ")) {
@@ -148,14 +142,7 @@ fun CollectionsScreen(
         title="Merge collections",
         label = "Primary collection",
         options = state.selectedCollections.map {it.name },
-        onConfirm = { selected ->
-            if(!state.viewAutoCollections){
-                viewModel.mergeCollections(selected, state.selectedCollections.filterNot { it.name == selected })
-            }else{
-                val selectedCollection = state.selectedCollections.first{it.name == selected}
-                viewModel.mergeClusterCollections(selectedCollection.id, state.selectedCollections.filterNot { it.name == selected })
-            }
-                    },
+        onConfirm = { selected -> viewModel.onAction(CollectionAction.MergeCollections(selected))},
         onClose = {
             isMergingCollections = false
             viewModel.clearSelectedCollections()
@@ -180,7 +167,7 @@ fun CollectionsScreen(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.deleteTagCollections( state.selectedCollections)
+                    viewModel.onAction(CollectionAction.DeleteCollections)
                     isDeletingCollection = false
                 })
                 { Text("Confirm") }
@@ -203,7 +190,7 @@ fun CollectionsScreen(
                 offsetPx = offset,
                 modifier = Modifier
                     .zIndex(1f)
-                    .heightIn(max=maxCollapsablePx.dp)
+                    .heightIn(max = maxCollapsablePx.dp)
                     .padding(bottom = 8.dp)
             ) {
                 val text = if (state.selectedCollections.isNotEmpty()) "${state.selectedCollections.size} Selected" else "Select items"
@@ -219,12 +206,14 @@ fun CollectionsScreen(
                     .fillMaxWidth()
                     .height(IntrinsicSize.Min)
                     .padding(bottom = 8.dp)
-                    .clip(RoundedCornerShape(
-                        topStart = 12.dp,
-                        bottomStart = 0.dp,
-                        topEnd = 12.dp,
-                        bottomEnd = 0.dp
-                    ))
+                    .clip(
+                        RoundedCornerShape(
+                            topStart = 12.dp,
+                            bottomStart = 0.dp,
+                            topEnd = 12.dp,
+                            bottomEnd = 0.dp
+                        )
+                    )
                     .background(color = MaterialTheme.colorScheme.surfaceContainer)
                     .border(
                         BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
@@ -245,7 +234,7 @@ fun CollectionsScreen(
                         .clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() },
-                            onClick = {viewModel.toggleViewAutoCollections()}
+                            onClick = { viewModel.onAction(CollectionAction.ToggleSelectedCollectionType) }
                         )
                 ) {
                     Text("Auto collections",
@@ -264,7 +253,7 @@ fun CollectionsScreen(
                         .clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() },
-                            onClick = {viewModel.toggleViewAutoCollections()}
+                            onClick = { viewModel.onAction(CollectionAction.ToggleSelectedCollectionType) }
                         )
                 ) {
                     Text("Tag collections",
@@ -277,7 +266,8 @@ fun CollectionsScreen(
             if(state.totalCollections >= TOP_N) {
                 TextButton(
                     modifier = Modifier.align(Alignment.End),
-                    onClick = { viewModel.toggleViewAllCollections() }) {
+                    onClick = {viewModel.onAction(CollectionAction.ToggleViewAllCollections)}
+                ) {
                     Text(
                         text = if (state.showAllCollections) "Show less" else "Show all",
                         style = MaterialTheme.typography.bodyMedium,
@@ -294,8 +284,8 @@ fun CollectionsScreen(
                 items = collections,
                 isSelecting = isSelecting,
                 selectedItems = state.selectedCollections,
-                onItemClick = viewModel::setCollectionToView,
-                onToggleSelected = viewModel::toggleSelectedCollection,
+                onItemClick = { viewModel.onAction(CollectionAction.SetCollectionToView(it)) },
+                onToggleSelected = { viewModel.onAction(CollectionAction.ToggleSelectedCollection(it)) },
                 onToggleSelectionMode = {
                     isSelecting = !isSelecting
                     offset = 0
@@ -366,10 +356,10 @@ fun CollectionsScreen(
                     viewModel.clearSelectedCollections()
                           },
                 onSelectCollection = {
-                    viewModel.copyFromClusterToTagCollection(state.selectedCollections, it)
+                    viewModel.onAction(CollectionAction.CopyFromAutoToTagCollection(it))
                     isCopyingCollection = false
                 },
-                onCreateNewCollection = {viewModel.createNewCollectionAndCopy(state.selectedCollections,it)}
+                onCreateNewCollection = { viewModel.onAction(CollectionAction.CreateNewTagCollectionAndCopy(it)) }
             )
         }
     }

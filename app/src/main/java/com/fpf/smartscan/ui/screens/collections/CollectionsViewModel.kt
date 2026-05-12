@@ -94,10 +94,32 @@ class CollectionsViewModel(
             initialValue = emptyList()
         )
 
-    fun renameTagCollection(collection: MediaCollection, newName: String){
+
+    fun onAction(action: CollectionAction){
+        when(action){
+            is CollectionAction.MergeCollections -> mergeCollections(action.primaryCollectionName)
+            is CollectionAction.RenameCollection -> renameCollection(action.newName)
+            is CollectionAction.CreateNewTagCollectionAndCopy -> createNewCollectionAndCopy(action.newName)
+            is CollectionAction.CopyFromAutoToTagCollection -> copyFromAutoToTagCollection(action.collection)
+            is CollectionAction.ToggleSelectedCollection -> toggleSelectedCollection(action.collection)
+            is CollectionAction.SetCollectionToView -> setCollectionToView(action.collection)
+            is CollectionAction.ToggleSelectedCollectionType -> toggleSelectedCollectionType()
+            is CollectionAction.DeleteCollections -> deleteCollections()
+            is CollectionAction.ToggleViewAllCollections -> toggleViewAllCollections()
+        }
+    }
+
+    fun clearSelectedCollections() = _state.update{currentState -> currentState.copy(selectedCollections = emptySet())}
+    fun resetErrorState() = _state.update { it.copy(error=null) }
+    private fun renameCollection(newName: String){
+        val collection = _state.value.selectedCollections.first()
         viewModelScope.launch(Dispatchers.IO) {
             try{
-                tagManager.renameTag(collection.name, newName)
+                if(_state.value.viewAutoCollections){
+                    clusterManager.updateLabel(collection.id, newName)
+                }else{
+                    tagManager.renameTag(collection.name, newName)
+                }
                 _state.update { it.copy(selectedCollections = emptySet()) }
             } catch (_: SQLiteConstraintException){
                 _state.update { it.copy(error="Collection already exists") }
@@ -105,36 +127,24 @@ class CollectionsViewModel(
         }
     }
 
-
-    fun deleteTagCollections(collections: Set<MediaCollection>){
+    private fun deleteCollections(){
         viewModelScope.launch(Dispatchers.IO) {
-            tagRepository.deleteTagsByName(collections.map{it.name})
+            tagRepository.deleteTagsByName(_state.value.selectedCollections.map{it.name})
             _state.update { it.copy(selectedCollections = emptySet()) }
         }
     }
 
-    fun mergeCollections(primaryCollectionName: String, otherCollections: List<MediaCollection>){
-        viewModelScope.launch (Dispatchers.IO) {
-           tagManager.mergeTags(primaryCollectionName, otherCollections.map{it.name})
-            _state.update { it.copy( selectedCollections = emptySet()) }
-        }
-    }
+    private fun mergeCollections(primaryCollectionName: String){
+        val selectedCollections = _state.value.selectedCollections
+        val otherCollections =selectedCollections.filter { it.name != primaryCollectionName }
+        val primaryCollection = selectedCollections.first{it.name == primaryCollectionName} // TODO: may have to edit this
 
-    fun renameClusterCollection(collection: MediaCollection, newName: String){
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val cluster = clusterMetadataRepository.getMetadatas(listOf(collection.id)).firstOrNull()
-                cluster?.let { clusterMetadataRepository.updateMetadatas(listOf(it.copy(label = newName))) }
-                _state.update { it.copy(selectedCollections = emptySet()) }
-            } catch (_: SQLiteConstraintException){
-                _state.update { it.copy(error="Collection already exists") }
+        viewModelScope.launch (Dispatchers.IO) {
+            if(_state.value.viewAutoCollections){
+                clusterManager.mergeClusters(primaryCollection.id, otherCollections.map{it.id}, imageStore, videoStore)
+            }else{
+                tagManager.mergeTags(primaryCollectionName, otherCollections.map{it.name})
             }
-        }
-    }
-
-    fun mergeClusterCollections(primaryCollectionId: Long, otherCollections: List<MediaCollection>){
-        viewModelScope.launch (Dispatchers.IO) {
-            clusterManager.mergeClusters(primaryCollectionId, otherCollections.map{it.id}, imageStore, videoStore)
             _state.update { it.copy( selectedCollections = emptySet()) }
         }
     }
@@ -144,31 +154,32 @@ class CollectionsViewModel(
         tagCrossRefRepository.upsertTagCrossRefs(clusterCrossRefs.map{ TagCrossRef(it.id, tagId)})
     }
 
-    fun copyFromClusterToTagCollection(clusterCollections: Set<MediaCollection>, tagCollection: MediaCollection){
+    private fun copyFromAutoToTagCollection(tagCollection: MediaCollection){
+        val selectedCollections = _state.value.selectedCollections
         viewModelScope.launch (Dispatchers.IO) {
-           clusterCollections.forEach { copyCollection(it.id, tagCollection.id) }
+            selectedCollections.forEach { copyCollection(it.id, tagCollection.id) }
             _state.update { it.copy( selectedCollections = emptySet()) }
         }
     }
 
-    fun createNewCollectionAndCopy(clusterCollections: Set<MediaCollection>, newCollectionName: String){
+    private fun createNewCollectionAndCopy(newCollectionName: String){
+        val selectedCollections = _state.value.selectedCollections
+        _state.update { it.copy(loading = true) }
+
         viewModelScope.launch (Dispatchers.IO) {
             try {
-                val insertedIds = tagRepository.insertTags(listOf(Tag(name = newCollectionName)))
-                val tagId = insertedIds.firstOrNull()?: return@launch
-                clusterCollections.forEach { copyCollection(it.id, tagId) }
+                val tagId = tagRepository.insertTags(listOf(Tag(name = newCollectionName))).firstOrNull()?: return@launch
+                selectedCollections.forEach { copyCollection(it.id, tagId) }
                 _state.update { it.copy( selectedCollections = emptySet()) }
             }catch (_: SQLiteConstraintException){
              _state.update { it.copy(error="Collection already exists") }
+            }finally {
+                _state.update { it.copy(loading = false) }
             }
         }
     }
 
-    fun resetErrorState(){
-        _state.update { it.copy(error=null) }
-    }
-
-    fun toggleSelectedCollection(collection: MediaCollection){
+    private fun toggleSelectedCollection(collection: MediaCollection){
         _state.update { currentState ->
             if (collection in currentState.selectedCollections) {
                 val updatedSelectedResults = currentState.selectedCollections - collection
@@ -180,19 +191,15 @@ class CollectionsViewModel(
         }
     }
 
-    fun clearSelectedCollections(){
-        _state.update{currentState -> currentState.copy(selectedCollections = emptySet())}
-    }
-
-    fun toggleViewAllCollections(){
+    private fun toggleViewAllCollections(){
         _state.update{ it.copy(showAllCollections = !it.showAllCollections)}
     }
 
-    fun setCollectionToView(collection: MediaCollection?){
+    private fun setCollectionToView(collection: MediaCollection?){
         _state.update { it.copy(collectToView = collection) }
     }
 
-    fun toggleViewAutoCollections(){
+    private fun toggleSelectedCollectionType(){
         _state.update { it.copy(viewAutoCollections = !it.viewAutoCollections) }
     }
 }
