@@ -41,6 +41,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.fpf.smartscan.events.AppEventType
+import com.fpf.smartscan.events.CollectionEventType
+import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.settings.AppSettings
 import com.fpf.smartscan.ui.components.SlideRevealBox
@@ -87,14 +90,7 @@ fun CollectionItemsScreen(
 
 
     LaunchedEffect(collectionName, clusterId) {
-        viewModel.setCollection(collectionName, clusterId)
-    }
-
-    LaunchedEffect(state.error) {
-        if(state.error != null){
-            Toast.makeText(context, state.error, Toast.LENGTH_SHORT).show()
-            viewModel.resetErrorState()
-        }
+        viewModel.onAction(MediaItemAction.SetCollectionToView(collectionName, clusterId))
     }
 
     val screenTitle = collectionName?: "?"
@@ -115,26 +111,59 @@ fun CollectionItemsScreen(
         )
     }
 
-    LaunchedEffect(isCreatingCollectionAndMoving, state.selectedMediaItems) {
-        val noSelectedMedia = state.selectedMediaItems.isEmpty()
+    LaunchedEffect(Unit) {
+        viewModel.event.collect { event ->
+            when(event.type){
+                CollectionEventType.MOVE -> {
+                    if(event.success){
+                        isSelecting = false
+                        items.refresh()
+                    }
+                    else {
+                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
+                    }
+                }
+                CollectionEventType.REMOVE -> {
+                    if(event.success){
+                        isSelecting = false
+                        items.refresh()
+                    }
+                    else {
+                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
+                    }
+                }
 
-        when {
-            noSelectedMedia && isCreatingCollectionAndMoving -> isCreatingCollectionAndMoving = false
+                CollectionEventType.COPY -> {
+                    if(event.success){
+                        isSelecting = false
+                    }
+                    else {
+                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
+                    }
+                }
+
+                CollectionEventType.SHARE -> {
+                    if(event.success){
+                        isSelecting = false
+                    }
+                    else {
+                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
+                    }
+                }
+            }
         }
-        if(noSelectedMedia) isSelecting = false
     }
 
     TextInputModal(
-        isLoading=state.loading,
         isVisible = isCreatingCollectionAndMoving,
+        isLoading=state.loading,
         title="Create collection",
         placeholder = "Enter collection name",
         onClose = {isCreatingCollectionAndMoving = false},
         onConfirm =  {
             // for tags only
-            viewModel.createNewCollectionAndMove(state.selectedMediaItems,it){
-                items.refresh()
-            }
+            viewModel.onAction(MediaItemAction.CreateNewTagCollectionAndMove(it))
+            isCreatingCollectionAndMoving = false
         },
         leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
         onValueChange = {
@@ -168,7 +197,7 @@ fun CollectionItemsScreen(
                 offsetPx = offset,
                 modifier = Modifier
                     .zIndex(1f)
-                    .heightIn(max=maxCollapsablePx.dp)
+                    .heightIn(max = maxCollapsablePx.dp)
                     .padding(bottom = 8.dp)
             ) {
                 val text = if (state.selectedMediaItems.isNotEmpty()) "${state.selectedMediaItems.size} Selected" else "Select items"
@@ -180,8 +209,8 @@ fun CollectionItemsScreen(
                 items = items,
                 isSelecting = isSelecting,
                 selectedItems = state.selectedMediaItems,
-                onViewItem = { uri -> viewModel.setMediaToView(context, uri, appSettings.enableDirectGalleryOpen, isSelecting) },
-                onToggleSelected = viewModel::toggleSelectedItem,
+                onViewItem = { uri -> viewModel.onAction(MediaItemAction.SetMediaToView(context, uri, appSettings.enableDirectGalleryOpen, isSelecting)) },
+                onToggleSelected = { viewModel.onAction(MediaItemAction.ToggleSelectedMedia(it)) },
                 onToggleSelectionMode = {
                     isSelecting = !isSelecting
                     offset = 0
@@ -209,16 +238,12 @@ fun CollectionItemsScreen(
         ) {
             CollectionItemsActionBar(
                 modifier = Modifier.height(70.dp),
-                onRemove = {
-                    viewModel.removeItems(state.selectedMediaItems.toList()){
-                        items.refresh()
-                    }
-                },
+                onRemove = { viewModel.onAction(MediaItemAction.RemoveMedia) },
                 removeEnabled = isTagCollection,
-                onShare = { viewModel.onShareItems(context) },
+                onShare = { viewModel.onAction(MediaItemAction.ShareMedia(context)) },
                 onMove = { isMoving = true },
                 moveEnabled = isTagCollection,
-                onCopy = { viewModel.onCopyItem(clipboard, context) }
+                onCopy = { viewModel.onAction(MediaItemAction.CopyMedia(clipboard, context)) }
             )
         }
         state.mediaToView?.let { item ->
@@ -241,7 +266,7 @@ fun CollectionItemsScreen(
                 MediaViewer(
                     items = mediaItems,
                     initialIndex = mediaItems.indexOf(item),
-                    onClose = { viewModel.setMediaToView(context, null) },
+                    onClose = { viewModel.onAction(MediaItemAction.SetMediaToView(context, null))},
                     onUpdateSearchImage = null,
                     onLoadMore = { val lastIndex = (items.itemCount - 1).coerceAtLeast(0)
                         items[lastIndex]}
@@ -263,10 +288,9 @@ fun CollectionItemsScreen(
                 collections = mediaCollections,
                 onClose = { isMoving = false },
                 onSelectCollection = {
-                    viewModel.moveItems(state.selectedMediaItems, it){
-                        items.refresh()
-                    }
-                },
+                    viewModel.onAction(MediaItemAction.MoveMedia( it))
+                    isMoving = false
+                                     },
                 onCreateNewCollection = {
                     isMoving = false
                     isCreatingCollectionAndMoving = true

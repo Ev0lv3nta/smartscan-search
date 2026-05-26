@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.ClipData
 import android.content.Context
 import android.database.sqlite.SQLiteConstraintException
+import android.util.Log
 import androidx.compose.ui.platform.Clipboard
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -18,6 +19,8 @@ import com.fpf.smartscan.data.clusters.ClusterPagingSource
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
 import com.fpf.smartscan.data.tags.TagRepository
+import com.fpf.smartscan.events.CollectionEvent
+import com.fpf.smartscan.events.CollectionEventType
 import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.mediaIdToUri
@@ -29,9 +32,11 @@ import com.fpf.smartscan.tag.TagManager
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -134,53 +139,96 @@ class CollectionItemsViewModel(
         initialValue = emptyList()
     )
 
-    fun removeItems(items: List<MediaItem>, onComplete: () -> Unit){
-        val mediaIds = items.map{it.id}
+    private val _event = MutableSharedFlow<CollectionEvent>()
+    val event = _event.asSharedFlow()
+
+    fun onAction(action: MediaItemAction){
+        when(action){
+            is MediaItemAction.CopyMedia -> onCopyItem(action.clipboard, action.context)
+            is MediaItemAction.CreateNewTagCollectionAndMove -> createNewCollectionAndMove(action.newName)
+            MediaItemAction.RemoveMedia -> removeItems()
+            is MediaItemAction.SetMediaToView -> setMediaToView(action.context, action.item, autoOpenInGallery = action.autoOpenInGallery, isSelecting = action.isSelecting)
+            is MediaItemAction.ShareMedia -> onShareItems(action.context)
+            is MediaItemAction.ToggleSelectedMedia -> toggleSelectedItem(action.item)
+            is MediaItemAction.SetCollectionToView -> setCollection(action.name, action.clusterId)
+            is MediaItemAction.MoveMedia -> moveItems(action.destinationCollection)
+        }
+    }
+
+    private fun removeItems(){
+        val state = _state.value
+        val mediaIds = state.selectedMediaItems.map{it.id}
         val collectionName = _state.value.collectionName?: return
 
         viewModelScope.launch (Dispatchers.IO){
-            tagManager.removeItems(collectionName, mediaIds)
-            onComplete()
-            clearSelectedItems()
-        }
-    }
-
-    fun moveItems(items: Set<MediaItem>, newCollection: MediaCollection, onComplete: () -> Unit){
-        val oldCollectionName = _state.value.collectionName?: return
-        viewModelScope.launch (Dispatchers.IO){
-            tagManager.moveItems(items, oldCollectionName, newCollection.name)
-            onComplete()
-            clearSelectedItems()
-        }
-    }
-
-    fun onCopyItem(clipboard: Clipboard, context: Context){
-        clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", _state.value.selectedMediaItems.first().uri))
-        clearSelectedItems()
-    }
-
-    fun onShareItems(context: Context){
-        shareMediaMulti(context, _state.value.selectedMediaItems.map{it.uri})
-        clearSelectedItems()
-    }
-
-    fun createNewCollectionAndMove(items: Set<MediaItem>, newCollectionName: String, onComplete: () -> Unit){
-        val oldCollectionName = _state.value.collectionName?: return
-        if(oldCollectionName == newCollectionName) return
-
-        viewModelScope.launch (Dispatchers.IO) {
             try {
-                tagManager.createNewTagAndMoveItems(items, oldCollectionName, newCollectionName)
-                onComplete()
+                tagManager.removeItems(collectionName, mediaIds)
                 clearSelectedItems()
-            }catch (_: SQLiteConstraintException){
-                _state.update { it.copy(error="Collection already exists", selectedMediaItems = emptySet()) }
+                _event.emit(CollectionEvent(CollectionEventType.REMOVE, success = true, message = "Removed ${mediaIds.size} item(s)"))
+            }catch (e: Exception){
+                Log.e(TAG, "Error removing items: ${e.message}")
+                _event.emit(CollectionEvent(CollectionEventType.REMOVE, success = false, message = "Error removing items"))
             }
         }
     }
 
+    private fun moveItems(newCollection: MediaCollection){
+        val state = _state.value
+        val oldCollectionName = state.collectionName?: return
+        val items = state.selectedMediaItems
+        if (items.isEmpty()) return
 
-    fun toggleSelectedItem(item: MediaItem){
+        viewModelScope.launch (Dispatchers.IO){
+            try {
+                tagManager.moveItems(items, oldCollectionName, newCollection.name)
+                clearSelectedItems()
+                _event.emit(CollectionEvent(CollectionEventType.MOVE, success = true, message = "Moved ${items.size} item(s)"))
+            }catch (e: Exception){
+                Log.e(TAG, "Error moving items: ${e.message}")
+                _event.emit(CollectionEvent(CollectionEventType.MOVE, success = false, message = "Error moving items"))
+            }
+        }
+    }
+
+    private fun onCopyItem(clipboard: Clipboard, context: Context){
+        clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", _state.value.selectedMediaItems.first().uri))
+        viewModelScope.launch {
+            _event.emit(CollectionEvent(CollectionEventType.COPY, success = true))
+            clearSelectedItems()
+        }
+    }
+
+    private fun onShareItems(context: Context){
+        shareMediaMulti(context, _state.value.selectedMediaItems.map{it.uri})
+        viewModelScope.launch {
+            _event.emit(CollectionEvent(CollectionEventType.SHARE, success = true))
+            clearSelectedItems()
+        }
+    }
+
+    private fun createNewCollectionAndMove( newCollectionName: String){
+        val state = _state.value
+        val oldCollectionName = state.collectionName?: return
+        if(oldCollectionName == newCollectionName) return
+
+        val items = state.selectedMediaItems
+        if (items.isEmpty()) return
+
+        viewModelScope.launch (Dispatchers.IO) {
+            try {
+                tagManager.createNewTagAndMoveItems(items, oldCollectionName, newCollectionName)
+                clearSelectedItems()
+                _event.emit(CollectionEvent(CollectionEventType.MOVE, success = true, message = "Moved ${items.size} item(s)"))
+            }catch (_: SQLiteConstraintException){
+                _event.emit(CollectionEvent(CollectionEventType.MOVE, success = false, message = "Collection already exists"))
+            }catch (e: Exception){
+                Log.e(TAG, "Error moving items: ${e.message}")
+                _event.emit(CollectionEvent(CollectionEventType.MOVE, success = false, message = "Error moving items"))            }
+        }
+    }
+
+
+   private fun toggleSelectedItem(item: MediaItem){
         _state.update { currentState ->
             if (item in currentState.selectedMediaItems) {
                 val updatedSelectedResults = currentState.selectedMediaItems - item
@@ -192,13 +240,11 @@ class CollectionItemsViewModel(
         }
     }
 
-    fun resetErrorState() = _state.update { it.copy(error=null) }
-
     fun clearSelectedItems() = _state.update{it.copy(selectedMediaItems = emptySet())}
 
     fun setCollection(name: String?, clusterId: Long) = _state.update { it.copy(collectionName=name, clusterId = clusterId) }
 
-    fun setMediaToView(context: Context, item: MediaItem?, autoOpenInGallery: Boolean? = null, isSelecting: Boolean = false){
+    private fun setMediaToView(context: Context, item: MediaItem?, autoOpenInGallery: Boolean? = null, isSelecting: Boolean = false){
         if(autoOpenInGallery == true && !isSelecting) {
             when(item?.type){
                 MediaType.IMAGE -> openImageInGallery(context, item.uri)
