@@ -73,7 +73,7 @@ fun CollectionPicker(
                         isVisible = true,
                         numGridColumns = 3,
                         items = collections,
-                        onItemClick = { onClose(); onSelectCollection(it);  },
+                        onItemClick = { onSelectCollection(it);  },
                     )
                 }
                 if(onCreateNewCollection != null) {
