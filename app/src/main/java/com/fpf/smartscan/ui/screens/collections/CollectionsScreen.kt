@@ -85,6 +85,7 @@ fun CollectionsScreen(
     var isRenamingCollection by remember { mutableStateOf(false) }
     var isMergingCollections by remember { mutableStateOf(false) }
     var isCopyingCollection by remember { mutableStateOf(false) }
+    var isCreatingAndCopyingCollection by remember { mutableStateOf(false) }
     var isDeletingCollection by remember { mutableStateOf(false) }
 
     var offset by remember { mutableIntStateOf(0) }
@@ -109,6 +110,18 @@ fun CollectionsScreen(
         }
     }
 
+    // Handle clean up on successfully action
+    LaunchedEffect(isCreatingAndCopyingCollection, isRenamingCollection, isMergingCollections, isDeletingCollection, state.selectedCollections) {
+        val noCollectionSelected = state.selectedCollections.isEmpty()
+        when {
+            noCollectionSelected && isCreatingAndCopyingCollection -> isCreatingAndCopyingCollection = false
+            noCollectionSelected && isRenamingCollection -> isRenamingCollection = false
+            noCollectionSelected && isMergingCollections -> isMergingCollections = false
+            noCollectionSelected && isDeletingCollection -> isDeletingCollection = false
+        }
+        if (noCollectionSelected) isSelecting = false // empty means action was successful
+    }
+
     val screenTitle = stringResource(R.string.title_collections)
 
     LaunchedEffect(Unit) {
@@ -124,8 +137,28 @@ fun CollectionsScreen(
         isVisible = isRenamingCollection,
         title="Rename collection",
         placeholder = "Enter new collection name",
-        onClose = {isRenamingCollection = false},
+        onClose = { isRenamingCollection = false },
         onConfirm = { newName -> viewModel.onAction(CollectionAction.RenameCollection(newName))},
+        leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
+        onValueChange = {
+            if (!it.text.contains(" ")) {
+                true
+            } else {
+                Toast.makeText(context, "Spaces are not allowed", Toast.LENGTH_SHORT).show()
+                false
+            }
+        }
+    )
+
+    TextInputModal(
+        isLoading=state.loading,
+        isVisible = isCreatingAndCopyingCollection,
+        title="Create collection",
+        placeholder = "Enter collection name",
+        onClose = { isCreatingAndCopyingCollection = false },
+        onConfirm =  {
+            viewModel.onAction(CollectionAction.CreateNewTagCollectionAndCopy(it))
+        },
         leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
         onValueChange = {
             if (!it.text.contains(" ")) {
@@ -142,11 +175,10 @@ fun CollectionsScreen(
         title="Merge collections",
         label = "Primary collection",
         options = state.selectedCollections.map {it.name },
-        onConfirm = { selected -> viewModel.onAction(CollectionAction.MergeCollections(selected))},
-        onClose = {
-            isMergingCollections = false
-            viewModel.clearSelectedCollections()
-        }
+        onConfirm = {
+            selected -> viewModel.onAction(CollectionAction.MergeCollections(selected))
+        },
+        onClose = { isMergingCollections = false }
     )
 
     if ( isDeletingCollection) {
@@ -168,7 +200,6 @@ fun CollectionsScreen(
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.onAction(CollectionAction.DeleteCollections)
-                    isDeletingCollection = false
                 })
                 { Text("Confirm") }
             }
@@ -297,6 +328,7 @@ fun CollectionsScreen(
             EmptyCollectionScreen(!isCollectionVisible)
         }
 
+
         SlideRevealBox(
             isVisible = isSelecting && state.selectedCollections.isNotEmpty(),
             offsetPx = offset,
@@ -317,24 +349,12 @@ fun CollectionsScreen(
                     .align(Alignment.BottomCenter)
                     .height(70.dp)
                     .zIndex(1f),
-                onDelete = {
-                    isDeletingCollection = true
-                    isSelecting = false
-                },
+                onDelete = { isDeletingCollection = true },
                 deleteEnabled = !state.viewAutoCollections,
-                onMerge = {
-                    isMergingCollections = true
-                    isSelecting = false
-                },
-                onRename = {
-                    isRenamingCollection = true
-                    isSelecting = false
-                },
+                onMerge = { isMergingCollections = true },
+                onRename = { isRenamingCollection = true },
                 renameEnabled = state.selectedCollections.size == 1,
-                onCopy  = {
-                    isCopyingCollection = true
-                    isSelecting = false
-                },
+                onCopy  = { isCopyingCollection = true },
                 copyEnabled = state.viewAutoCollections
             )
         }
@@ -351,15 +371,12 @@ fun CollectionsScreen(
         ) {
             CollectionPicker(
                 collections = tagCollections,
-                onClose = {
+                onClose = { isCopyingCollection = false },
+                onSelectCollection = { viewModel.onAction(CollectionAction.CopyFromAutoToTagCollection(it)) },
+                onCreateNewCollection = {
                     isCopyingCollection = false
-                    viewModel.clearSelectedCollections()
-                          },
-                onSelectCollection = {
-                    viewModel.onAction(CollectionAction.CopyFromAutoToTagCollection(it))
-                    isCopyingCollection = false
-                },
-                onCreateNewCollection = { viewModel.onAction(CollectionAction.CreateNewTagCollectionAndCopy(it)) }
+                    isCreatingAndCopyingCollection = true
+                }
             )
         }
     }

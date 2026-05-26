@@ -1,6 +1,5 @@
 package com.fpf.smartscan.ui.screens.collections
 
-import android.content.ClipData
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -20,13 +19,13 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -42,7 +41,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.paging.compose.collectAsLazyPagingItems
-import com.fpf.smartscan.media.shareMediaMulti
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.settings.AppSettings
 import com.fpf.smartscan.ui.components.SlideRevealBox
@@ -50,6 +48,7 @@ import com.fpf.smartscan.ui.components.collections.CollectionItemsActionBar
 import com.fpf.smartscan.ui.components.collections.CollectionItemsList
 import com.fpf.smartscan.ui.components.collections.CollectionPicker
 import com.fpf.smartscan.ui.components.media.MediaViewer
+import com.fpf.smartscan.ui.components.modals.TextInputModal
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.StateFlow
 import org.koin.compose.viewmodel.koinViewModel
@@ -75,6 +74,7 @@ fun CollectionItemsScreen(
 
     var isSelecting by remember { mutableStateOf(false) }
     var isMoving by remember { mutableStateOf(false) }
+    var isCreatingCollectionAndMoving by remember { mutableStateOf(false) }
 
     var offset by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
@@ -115,6 +115,37 @@ fun CollectionItemsScreen(
         )
     }
 
+    LaunchedEffect(isCreatingCollectionAndMoving, state.selectedMediaItems) {
+        val noSelectedMedia = state.selectedMediaItems.isEmpty()
+
+        when {
+            noSelectedMedia && isCreatingCollectionAndMoving -> isCreatingCollectionAndMoving = false
+        }
+        if(noSelectedMedia) isSelecting = false
+    }
+
+    TextInputModal(
+        isLoading=state.loading,
+        isVisible = isCreatingCollectionAndMoving,
+        title="Create collection",
+        placeholder = "Enter collection name",
+        onClose = {isCreatingCollectionAndMoving = false},
+        onConfirm =  {
+            // for tags only
+            viewModel.createNewCollectionAndMove(state.selectedMediaItems,it){
+                items.refresh()
+            }
+        },
+        leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
+        onValueChange = {
+            if (!it.text.contains(" ")) {
+                true
+            } else {
+                Toast.makeText(context, "Spaces are not allowed", Toast.LENGTH_SHORT).show()
+                false
+            }
+        }
+    )
 
 
     BackHandler(enabled = isSelecting) {
@@ -182,24 +213,12 @@ fun CollectionItemsScreen(
                     viewModel.removeItems(state.selectedMediaItems.toList()){
                         items.refresh()
                     }
-                    isSelecting = false
                 },
                 removeEnabled = isTagCollection,
-                onShare = {
-                    shareMediaMulti(context, state.selectedMediaItems.map{it.uri})
-                    isSelecting = false
-                    viewModel.clearSelectedItems()
-                          },
-                onMove = {
-                    isMoving = true
-                    isSelecting = false
-                         },
+                onShare = { viewModel.onShareItems(context) },
+                onMove = { isMoving = true },
                 moveEnabled = isTagCollection,
-                onCopy = {
-                    clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", state.selectedMediaItems.first().uri))
-                    isSelecting = false
-                    viewModel.clearSelectedItems()
-                }
+                onCopy = { viewModel.onCopyItem(clipboard, context) }
             )
         }
         state.mediaToView?.let { item ->
@@ -249,10 +268,8 @@ fun CollectionItemsScreen(
                     }
                 },
                 onCreateNewCollection = {
-                    // for tags only
-                    viewModel.createNewCollectionAndMove(state.selectedMediaItems,it){
-                        items.refresh()
-                    }
+                    isMoving = false
+                    isCreatingCollectionAndMoving = true
                 }
             )
         }
