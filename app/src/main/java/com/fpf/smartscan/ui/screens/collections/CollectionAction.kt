@@ -3,7 +3,7 @@ package com.fpf.smartscan.ui.screens.collections
 import com.fpf.smartscan.media.MediaCollection
 
 sealed interface CollectionAction {
-    data class MergeCollections(val primaryCollectionName: String): CollectionAction
+    data class MergeCollections(val primaryCollectionName: String, val isNewMergedLabel: Boolean = false): CollectionAction
     data class RenameCollection(val newName: String): CollectionAction
     data class CreateNewTagCollectionAndCopy(val newName: String): CollectionAction
     data class CopyFromAutoToTagCollection(val collection: MediaCollection): CollectionAction

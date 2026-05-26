@@ -104,7 +104,7 @@ class CollectionsViewModel(
 
     fun onAction(action: CollectionAction){
         when(action){
-            is CollectionAction.MergeCollections -> mergeCollections(action.primaryCollectionName)
+            is CollectionAction.MergeCollections -> mergeCollections(action.primaryCollectionName, action.isNewMergedLabel)
             is CollectionAction.RenameCollection -> renameCollection(action.newName)
             is CollectionAction.CreateNewTagCollectionAndCopy -> createNewCollectionAndCopy(action.newName)
             is CollectionAction.CopyFromAutoToTagCollection -> copyFromAutoToTagCollection(action.collection)
@@ -153,22 +153,39 @@ class CollectionsViewModel(
         }
     }
 
-    private fun mergeCollections(primaryCollectionName: String){
+    private fun mergeCollections(primaryCollectionName: String, isNewMergedLabel: Boolean){
         val currentState = _state.value
         val selectedCollections = currentState.selectedCollections
-        val otherCollections =selectedCollections.filter { it.name != primaryCollectionName }
-        val primaryCollection = selectedCollections.first{it.name == primaryCollectionName} // TODO: may have to edit this
+        var primaryCollection = selectedCollections.firstOrNull{it.name == primaryCollectionName}
 
         viewModelScope.launch (Dispatchers.IO) {
             try {
-                if(currentState.viewAutoCollections){
-                    clusterManager.mergeClusters(primaryCollection.id, otherCollections.map{it.id}, imageStore, videoStore)
-                }else{
-                    tagManager.mergeTags(primaryCollectionName, otherCollections.map{it.name})
+                if(isNewMergedLabel) {
+                    primaryCollection = selectedCollections.firstOrNull()
+                    primaryCollection?.let { collection ->
+                        if (collection.isAutoCollection) {
+                            clusterManager.updateLabel(collection.id, primaryCollectionName)
+                        } else {
+                            tagManager.renameTag(collection.name, primaryCollectionName)
+                        }
+                    }
+                }
+
+                primaryCollection?.let { collection ->
+                    val otherCollections = selectedCollections.filter { selectedCollection -> selectedCollection.id != collection.id }
+                    if (collection.isAutoCollection) {
+                        clusterManager.mergeClusters(collection.id, otherCollections.map { it.id }, imageStore, videoStore)
+                    } else {
+                        tagManager.mergeTags(primaryCollectionName, otherCollections.map { it.name })
+                    }
                 }
                 clearSelectedCollections()
                 _event.emit(CollectionEvent(CollectionEventType.MERGE, success = true))
-            }catch (e: Exception){
+            }
+            catch (_: SQLiteConstraintException){
+                _event.emit(CollectionEvent(CollectionEventType.MERGE, success = false, message = "Collection already exists"))
+            }
+            catch (e: Exception){
                 Log.e(TAG, "Error merging collections: ${e.message}")
                 _event.emit(CollectionEvent(CollectionEventType.MERGE, success = false, message = "Error merging collections"))
             }

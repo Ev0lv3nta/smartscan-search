@@ -197,17 +197,45 @@ fun CollectionsScreen(
         }
     )
 
-    SelectorModal(
-        isVisible = isMergingCollections && state.selectedCollections.isNotEmpty(),
-        title="Merge collections",
-        label = "Primary collection",
-        options = state.selectedCollections.map {it.name }.filterNot { it == UNLABELLED_COLLECTION },
-        onConfirm = {
-            selected -> viewModel.onAction(CollectionAction.MergeCollections(selected))
-            isMergingCollections = false
-        },
-        onClose = { isMergingCollections = false }
-    )
+    if (isMergingCollections) {
+        val labelledCollections: List<String> = state.selectedCollections.sortedByDescending { it.size}.map { it.name }.filterNot { it == UNLABELLED_COLLECTION }
+        var useSelectorInput by remember { mutableStateOf(labelledCollections.isNotEmpty()) }
+
+        if (useSelectorInput) {
+            SelectorModal(
+                isVisible = labelledCollections.isNotEmpty(),
+                initialOption = labelledCollections.first(),
+                title = "Merge collections",
+                label = "Primary collection",
+                options = labelledCollections,
+                onConfirm = { selected ->
+                    viewModel.onAction(CollectionAction.MergeCollections(selected))
+                    isMergingCollections = false
+                },
+                onClose = { isMergingCollections = false }
+            )
+        }else{
+            TextInputModal(
+                isVisible = true,
+                title="Merge collection",
+                placeholder = "Enter collection name",
+                onClose = { isMergingCollections = false },
+                onConfirm =  { newName ->
+                    viewModel.onAction(CollectionAction.MergeCollections(newName, isNewMergedLabel = true))
+                    isMergingCollections = false
+                },
+                leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
+                onValueChange = {
+                    if (!it.text.contains(" ")) {
+                        true
+                    } else {
+                        Toast.makeText(context, "Spaces are not allowed", Toast.LENGTH_SHORT).show()
+                        false
+                    }
+                }
+            )
+        }
+    }
 
     if ( isDeletingCollection) {
         val count = state.selectedCollections.size
