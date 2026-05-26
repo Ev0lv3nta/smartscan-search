@@ -177,7 +177,6 @@ fun CollectionsScreen(
     )
 
     TextInputModal(
-        isLoading=state.loading,
         isVisible = isCreatingAndCopyingCollection,
         title="Create collection",
         placeholder = "Enter collection name",
