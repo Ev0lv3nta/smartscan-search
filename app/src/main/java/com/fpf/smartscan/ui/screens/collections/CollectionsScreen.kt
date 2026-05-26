@@ -61,6 +61,7 @@ import kotlinx.coroutines.FlowPreview
 import com.fpf.smartscan.R
 import androidx.compose.ui.res.stringResource
 import com.fpf.smartscan.events.CollectionEventType
+import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
 import com.fpf.smartscan.navigation.TopBarState
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -200,7 +201,7 @@ fun CollectionsScreen(
         isVisible = isMergingCollections && state.selectedCollections.isNotEmpty(),
         title="Merge collections",
         label = "Primary collection",
-        options = state.selectedCollections.map {it.name },
+        options = state.selectedCollections.map {it.name }.filterNot { it == UNLABELLED_COLLECTION },
         onConfirm = {
             selected -> viewModel.onAction(CollectionAction.MergeCollections(selected))
             isMergingCollections = false

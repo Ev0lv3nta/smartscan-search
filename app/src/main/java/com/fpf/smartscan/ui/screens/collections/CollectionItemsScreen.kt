@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.fpf.smartscan.events.MediaEventType
+import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.settings.AppSettings
 import com.fpf.smartscan.ui.components.SlideRevealBox
@@ -91,7 +92,7 @@ fun CollectionItemsScreen(
         viewModel.onAction(MediaItemAction.SetCollectionToView(collectionName, clusterId))
     }
 
-    val screenTitle = collectionName?: "?"
+    val screenTitle = collectionName?: UNLABELLED_COLLECTION
 
     LaunchedEffect(Unit) {
         onTopBarChange(

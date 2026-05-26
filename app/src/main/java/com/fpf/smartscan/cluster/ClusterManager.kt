@@ -7,6 +7,7 @@ import com.fpf.smartscan.data.clusters.ClusterMetadataWithCount
 import com.fpf.smartscan.data.clusters.MediaClusterMetadata
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.media.MediaCollection
+import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
 import com.fpf.smartscan.media.mediaIdToUri
 import com.fpf.smartscan.utils.reservoirSample
 import com.fpf.smartscansdk.core.cluster.Cluster
@@ -138,7 +139,7 @@ class ClusterManager(
             uri?.let { uri ->
                 MediaCollection(
                     id = it.clusterId,
-                    name = it.label?: "?",
+                    name = it.label?: UNLABELLED_COLLECTION,
                     thumbNail = uri,
                     size = it.count,
                     isAutoCollection = true
