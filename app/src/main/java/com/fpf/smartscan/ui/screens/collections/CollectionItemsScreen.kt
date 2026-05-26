@@ -41,9 +41,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.paging.compose.collectAsLazyPagingItems
-import com.fpf.smartscan.events.AppEventType
-import com.fpf.smartscan.events.CollectionEventType
-import com.fpf.smartscan.media.MediaItem
+import com.fpf.smartscan.events.MediaEventType
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.settings.AppSettings
 import com.fpf.smartscan.ui.components.SlideRevealBox
@@ -114,7 +112,7 @@ fun CollectionItemsScreen(
     LaunchedEffect(Unit) {
         viewModel.event.collect { event ->
             when(event.type){
-                CollectionEventType.MOVE -> {
+                MediaEventType.MOVE -> {
                     if(event.success){
                         isSelecting = false
                         items.refresh()
@@ -123,7 +121,7 @@ fun CollectionItemsScreen(
                         event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                     }
                 }
-                CollectionEventType.REMOVE -> {
+                MediaEventType.REMOVE -> {
                     if(event.success){
                         isSelecting = false
                         items.refresh()
@@ -133,7 +131,7 @@ fun CollectionItemsScreen(
                     }
                 }
 
-                CollectionEventType.COPY -> {
+                MediaEventType.COPY -> {
                     if(event.success){
                         isSelecting = false
                     }
@@ -142,7 +140,7 @@ fun CollectionItemsScreen(
                     }
                 }
 
-                CollectionEventType.SHARE -> {
+                MediaEventType.SHARE -> {
                     if(event.success){
                         isSelecting = false
                     }

@@ -19,8 +19,8 @@ import com.fpf.smartscan.data.clusters.ClusterPagingSource
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
 import com.fpf.smartscan.data.tags.TagRepository
-import com.fpf.smartscan.events.CollectionEvent
-import com.fpf.smartscan.events.CollectionEventType
+import com.fpf.smartscan.events.MediaEvent
+import com.fpf.smartscan.events.MediaEventType
 import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.mediaIdToUri
@@ -139,7 +139,7 @@ class CollectionItemsViewModel(
         initialValue = emptyList()
     )
 
-    private val _event = MutableSharedFlow<CollectionEvent>()
+    private val _event = MutableSharedFlow<MediaEvent>()
     val event = _event.asSharedFlow()
 
     fun onAction(action: MediaItemAction){
@@ -164,10 +164,10 @@ class CollectionItemsViewModel(
             try {
                 tagManager.removeItems(collectionName, mediaIds)
                 clearSelectedItems()
-                _event.emit(CollectionEvent(CollectionEventType.REMOVE, success = true, message = "Removed ${mediaIds.size} item(s)"))
+                _event.emit(MediaEvent(MediaEventType.REMOVE, success = true, message = "Removed ${mediaIds.size} item(s)"))
             }catch (e: Exception){
                 Log.e(TAG, "Error removing items: ${e.message}")
-                _event.emit(CollectionEvent(CollectionEventType.REMOVE, success = false, message = "Error removing items"))
+                _event.emit(MediaEvent(MediaEventType.REMOVE, success = false, message = "Error removing items"))
             }
         }
     }
@@ -182,10 +182,10 @@ class CollectionItemsViewModel(
             try {
                 tagManager.moveItems(items, oldCollectionName, newCollection.name)
                 clearSelectedItems()
-                _event.emit(CollectionEvent(CollectionEventType.MOVE, success = true, message = "Moved ${items.size} item(s)"))
+                _event.emit(MediaEvent(MediaEventType.MOVE, success = true, message = "Moved ${items.size} item(s)"))
             }catch (e: Exception){
                 Log.e(TAG, "Error moving items: ${e.message}")
-                _event.emit(CollectionEvent(CollectionEventType.MOVE, success = false, message = "Error moving items"))
+                _event.emit(MediaEvent(MediaEventType.MOVE, success = false, message = "Error moving items"))
             }
         }
     }
@@ -193,7 +193,7 @@ class CollectionItemsViewModel(
     private fun onCopyItem(clipboard: Clipboard, context: Context){
         clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", _state.value.selectedMediaItems.first().uri))
         viewModelScope.launch {
-            _event.emit(CollectionEvent(CollectionEventType.COPY, success = true))
+            _event.emit(MediaEvent(MediaEventType.COPY, success = true))
             clearSelectedItems()
         }
     }
@@ -201,7 +201,7 @@ class CollectionItemsViewModel(
     private fun onShareItems(context: Context){
         shareMediaMulti(context, _state.value.selectedMediaItems.map{it.uri})
         viewModelScope.launch {
-            _event.emit(CollectionEvent(CollectionEventType.SHARE, success = true))
+            _event.emit(MediaEvent(MediaEventType.SHARE, success = true))
             clearSelectedItems()
         }
     }
@@ -218,12 +218,12 @@ class CollectionItemsViewModel(
             try {
                 tagManager.createNewTagAndMoveItems(items, oldCollectionName, newCollectionName)
                 clearSelectedItems()
-                _event.emit(CollectionEvent(CollectionEventType.MOVE, success = true, message = "Moved ${items.size} item(s)"))
+                _event.emit(MediaEvent(MediaEventType.MOVE, success = true, message = "Moved ${items.size} item(s)"))
             }catch (_: SQLiteConstraintException){
-                _event.emit(CollectionEvent(CollectionEventType.MOVE, success = false, message = "Collection already exists"))
+                _event.emit(MediaEvent(MediaEventType.MOVE, success = false, message = "Collection already exists"))
             }catch (e: Exception){
                 Log.e(TAG, "Error moving items: ${e.message}")
-                _event.emit(CollectionEvent(CollectionEventType.MOVE, success = false, message = "Error moving items"))            }
+                _event.emit(MediaEvent(MediaEventType.MOVE, success = false, message = "Error moving items"))            }
         }
     }
 
