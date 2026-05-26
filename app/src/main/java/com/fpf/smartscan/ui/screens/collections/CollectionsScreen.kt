@@ -35,7 +35,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -61,6 +60,7 @@ import com.fpf.smartscan.ui.screens.collections.CollectionsViewModel.Companion.T
 import kotlinx.coroutines.FlowPreview
 import com.fpf.smartscan.R
 import androidx.compose.ui.res.stringResource
+import com.fpf.smartscan.events.CollectionEventType
 import com.fpf.smartscan.navigation.TopBarState
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -103,23 +103,46 @@ fun CollectionsScreen(
         }
     }
 
-    LaunchedEffect(state.error) {
-        if(state.error != null){
-            Toast.makeText(context, state.error, Toast.LENGTH_SHORT).show()
-            viewModel.resetErrorState()
-        }
-    }
+    // Handle action result via events
+    LaunchedEffect(Unit) {
+        viewModel.event.collect { event ->
+            when(event.type){
+                CollectionEventType.MERGE -> {
+                    if(event.success){
+                        isSelecting = false
+                    }
+                    else {
+                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
+                    }
+                }
+                CollectionEventType.COPY -> {
+                    if(event.success){
+                        isSelecting = false
+                    }
+                    else {
+                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
+                    }
+                }
 
-    // Handle clean up on successfully action
-    LaunchedEffect(isCreatingAndCopyingCollection, isRenamingCollection, isMergingCollections, isDeletingCollection, state.selectedCollections) {
-        val noCollectionSelected = state.selectedCollections.isEmpty()
-        when {
-            noCollectionSelected && isCreatingAndCopyingCollection -> isCreatingAndCopyingCollection = false
-            noCollectionSelected && isRenamingCollection -> isRenamingCollection = false
-            noCollectionSelected && isMergingCollections -> isMergingCollections = false
-            noCollectionSelected && isDeletingCollection -> isDeletingCollection = false
+                CollectionEventType.RENAME -> {
+                    if(event.success){
+                        isSelecting = false
+                    }
+                    else {
+                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
+                    }
+                }
+
+                CollectionEventType.DELETE -> {
+                    if(event.success){
+                        isSelecting = false
+                    }
+                    else {
+                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
+                    }
+                }
+            }
         }
-        if (noCollectionSelected) isSelecting = false // empty means action was successful
     }
 
     val screenTitle = stringResource(R.string.title_collections)
@@ -138,7 +161,10 @@ fun CollectionsScreen(
         title="Rename collection",
         placeholder = "Enter new collection name",
         onClose = { isRenamingCollection = false },
-        onConfirm = { newName -> viewModel.onAction(CollectionAction.RenameCollection(newName))},
+        onConfirm = {
+            newName -> viewModel.onAction(CollectionAction.RenameCollection(newName))
+            isRenamingCollection = false
+                    },
         leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
         onValueChange = {
             if (!it.text.contains(" ")) {
@@ -158,6 +184,7 @@ fun CollectionsScreen(
         onClose = { isCreatingAndCopyingCollection = false },
         onConfirm =  {
             viewModel.onAction(CollectionAction.CreateNewTagCollectionAndCopy(it))
+            isCreatingAndCopyingCollection = false
         },
         leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
         onValueChange = {
@@ -177,6 +204,7 @@ fun CollectionsScreen(
         options = state.selectedCollections.map {it.name },
         onConfirm = {
             selected -> viewModel.onAction(CollectionAction.MergeCollections(selected))
+            isMergingCollections = false
         },
         onClose = { isMergingCollections = false }
     )
@@ -200,6 +228,7 @@ fun CollectionsScreen(
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.onAction(CollectionAction.DeleteCollections)
+                    isDeletingCollection = false
                 })
                 { Text("Confirm") }
             }
@@ -372,7 +401,10 @@ fun CollectionsScreen(
             CollectionPicker(
                 collections = tagCollections,
                 onClose = { isCopyingCollection = false },
-                onSelectCollection = { viewModel.onAction(CollectionAction.CopyFromAutoToTagCollection(it)) },
+                onSelectCollection = {
+                    viewModel.onAction(CollectionAction.CopyFromAutoToTagCollection(it))
+                    isCopyingCollection = false
+                },
                 onCreateNewCollection = {
                     isCopyingCollection = false
                     isCreatingAndCopyingCollection = true

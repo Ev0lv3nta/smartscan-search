@@ -2,6 +2,7 @@ package com.fpf.smartscan.ui.screens.collections
 
 import android.app.Application
 import android.database.sqlite.SQLiteConstraintException
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.fpf.smartscan.cluster.ClusterManager
@@ -13,12 +14,16 @@ import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscan.data.tags.TagCrossRef
+import com.fpf.smartscan.events.CollectionEvent
+import com.fpf.smartscan.events.CollectionEventType
 import com.fpf.smartscan.tag.TagManager
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
@@ -94,6 +99,8 @@ class CollectionsViewModel(
             initialValue = emptyList()
         )
 
+    private val _event = MutableSharedFlow<CollectionEvent>()
+    val event = _event.asSharedFlow()
 
     fun onAction(action: CollectionAction){
         when(action){
@@ -109,8 +116,8 @@ class CollectionsViewModel(
         }
     }
 
-    fun clearSelectedCollections() = _state.update{currentState -> currentState.copy(selectedCollections = emptySet())}
-    fun resetErrorState() = _state.update { it.copy(error=null) }
+    fun clearSelectedCollections() = _state.update{ it.copy(selectedCollections = emptySet())}
+
     private fun renameCollection(newName: String){
         val collection = _state.value.selectedCollections.first()
         viewModelScope.launch(Dispatchers.IO) {
@@ -120,32 +127,51 @@ class CollectionsViewModel(
                 }else{
                     tagManager.renameTag(collection.name, newName)
                 }
-                _state.update { it.copy(selectedCollections = emptySet()) }
+                clearSelectedCollections()
+                _event.emit(CollectionEvent(CollectionEventType.RENAME, success = true))
             } catch (_: SQLiteConstraintException){
-                _state.update { it.copy(error="Collection already exists") }
+                _event.emit(CollectionEvent(CollectionEventType.RENAME, success = false, message = "Collection already exists"))
+            }
+            catch (e: Exception){
+                Log.e(TAG, "Error renaming collection: ${e.message}")
+                _event.emit(CollectionEvent(CollectionEventType.RENAME, success = false, message = "Error renaming collection"))
+
             }
         }
     }
 
     private fun deleteCollections(){
         viewModelScope.launch(Dispatchers.IO) {
-            tagRepository.deleteTagsByName(_state.value.selectedCollections.map{it.name})
-            _state.update { it.copy(selectedCollections = emptySet()) }
+            try {
+                tagRepository.deleteTagsByName(_state.value.selectedCollections.map{it.name})
+                clearSelectedCollections()
+                _event.emit(CollectionEvent(CollectionEventType.DELETE, success = true))
+            }catch (e: Exception){
+                Log.e(TAG, "Error deleting collections: ${e.message}")
+                _event.emit(CollectionEvent(CollectionEventType.DELETE, success = false, message = "Error deleting collections"))
+            }
         }
     }
 
     private fun mergeCollections(primaryCollectionName: String){
-        val selectedCollections = _state.value.selectedCollections
+        val currentState = _state.value
+        val selectedCollections = currentState.selectedCollections
         val otherCollections =selectedCollections.filter { it.name != primaryCollectionName }
         val primaryCollection = selectedCollections.first{it.name == primaryCollectionName} // TODO: may have to edit this
 
         viewModelScope.launch (Dispatchers.IO) {
-            if(_state.value.viewAutoCollections){
-                clusterManager.mergeClusters(primaryCollection.id, otherCollections.map{it.id}, imageStore, videoStore)
-            }else{
-                tagManager.mergeTags(primaryCollectionName, otherCollections.map{it.name})
+            try {
+                if(currentState.viewAutoCollections){
+                    clusterManager.mergeClusters(primaryCollection.id, otherCollections.map{it.id}, imageStore, videoStore)
+                }else{
+                    tagManager.mergeTags(primaryCollectionName, otherCollections.map{it.name})
+                }
+                clearSelectedCollections()
+                _event.emit(CollectionEvent(CollectionEventType.MERGE, success = true))
+            }catch (e: Exception){
+                Log.e(TAG, "Error merging collections: ${e.message}")
+                _event.emit(CollectionEvent(CollectionEventType.MERGE, success = false, message = "Error merging collections"))
             }
-            _state.update { it.copy( selectedCollections = emptySet()) }
         }
     }
 
@@ -157,8 +183,14 @@ class CollectionsViewModel(
     private fun copyFromAutoToTagCollection(tagCollection: MediaCollection){
         val selectedCollections = _state.value.selectedCollections
         viewModelScope.launch (Dispatchers.IO) {
-            selectedCollections.forEach { copyCollection(it.id, tagCollection.id) }
-            _state.update { it.copy( selectedCollections = emptySet()) }
+            try {
+                selectedCollections.forEach { copyCollection(it.id, tagCollection.id) }
+                clearSelectedCollections()
+                _event.emit(CollectionEvent(CollectionEventType.COPY, success = true))
+            }catch (e: Exception){
+                Log.e(TAG, "Error copying collections: ${e.message}")
+                _event.emit(CollectionEvent(CollectionEventType.COPY, success = false, message = "Error copying collection(s)"))
+            }
         }
     }
 
@@ -170,10 +202,15 @@ class CollectionsViewModel(
             try {
                 val tagId = tagRepository.insertTags(listOf(Tag(name = newCollectionName))).firstOrNull()?: return@launch
                 selectedCollections.forEach { copyCollection(it.id, tagId) }
-                _state.update { it.copy( selectedCollections = emptySet()) }
+                clearSelectedCollections()
+                _event.emit(CollectionEvent(CollectionEventType.COPY, success = true))
             }catch (_: SQLiteConstraintException){
-             _state.update { it.copy(error="Collection already exists") }
-            }finally {
+                _event.emit(CollectionEvent(CollectionEventType.COPY, success = false, message = "Collection already exists"))
+            }catch (e: Exception){
+                Log.e(TAG, "Error copying collections: ${e.message}")
+                _event.emit(CollectionEvent(CollectionEventType.COPY, success = false, message = "Error copying collection(s)"))
+            }
+            finally {
                 _state.update { it.copy(loading = false) }
             }
         }
