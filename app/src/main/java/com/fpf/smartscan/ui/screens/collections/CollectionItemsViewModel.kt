@@ -1,8 +1,10 @@
 package com.fpf.smartscan.ui.screens.collections
 
 import android.app.Application
+import android.content.ClipData
 import android.content.Context
 import android.database.sqlite.SQLiteConstraintException
+import androidx.compose.ui.platform.Clipboard
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
@@ -22,6 +24,7 @@ import com.fpf.smartscan.media.mediaIdToUri
 import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.media.onMediaLoadingError
+import com.fpf.smartscan.media.shareMediaMulti
 import com.fpf.smartscan.tag.TagManager
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
@@ -38,6 +41,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.collections.map
 import kotlin.collections.plus
 
 
@@ -137,7 +141,7 @@ class CollectionItemsViewModel(
         viewModelScope.launch (Dispatchers.IO){
             tagManager.removeItems(collectionName, mediaIds)
             onComplete()
-            _state.update { it.copy(selectedMediaItems = emptySet()) }
+            clearSelectedItems()
         }
     }
 
@@ -146,8 +150,18 @@ class CollectionItemsViewModel(
         viewModelScope.launch (Dispatchers.IO){
             tagManager.moveItems(items, oldCollectionName, newCollection.name)
             onComplete()
-            _state.update { it.copy(selectedMediaItems = emptySet()) }
+            clearSelectedItems()
         }
+    }
+
+    fun onCopyItem(clipboard: Clipboard, context: Context){
+        clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", _state.value.selectedMediaItems.first().uri))
+        clearSelectedItems()
+    }
+
+    fun onShareItems(context: Context){
+        shareMediaMulti(context, _state.value.selectedMediaItems.map{it.uri})
+        clearSelectedItems()
     }
 
     fun createNewCollectionAndMove(items: Set<MediaItem>, newCollectionName: String, onComplete: () -> Unit){
@@ -158,7 +172,7 @@ class CollectionItemsViewModel(
             try {
                 tagManager.createNewTagAndMoveItems(items, oldCollectionName, newCollectionName)
                 onComplete()
-                _state.update { it.copy(selectedMediaItems = emptySet()) }
+                clearSelectedItems()
             }catch (_: SQLiteConstraintException){
                 _state.update { it.copy(error="Collection already exists", selectedMediaItems = emptySet()) }
             }
@@ -178,17 +192,11 @@ class CollectionItemsViewModel(
         }
     }
 
-    fun resetErrorState(){
-        _state.update { it.copy(error=null) }
-    }
+    fun resetErrorState() = _state.update { it.copy(error=null) }
 
-    fun clearSelectedItems(){
-        _state.update{currentState -> currentState.copy(selectedMediaItems = emptySet())}
-    }
+    fun clearSelectedItems() = _state.update{it.copy(selectedMediaItems = emptySet())}
 
-    fun setCollection(name: String?, clusterId: Long){
-        _state.update { it.copy(collectionName=name, clusterId = clusterId) }
-    }
+    fun setCollection(name: String?, clusterId: Long) = _state.update { it.copy(collectionName=name, clusterId = clusterId) }
 
     fun setMediaToView(context: Context, item: MediaItem?, autoOpenInGallery: Boolean? = null, isSelecting: Boolean = false){
         if(autoOpenInGallery == true && !isSelecting) {
