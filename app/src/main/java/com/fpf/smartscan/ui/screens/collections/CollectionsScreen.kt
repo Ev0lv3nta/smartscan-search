@@ -409,6 +409,7 @@ fun CollectionsScreen(
                 onDelete = { isDeletingCollection = true },
                 deleteEnabled = !state.viewAutoCollections,
                 onMerge = { isMergingCollections = true },
+                mergeEnabled = !state.loading,
                 onRename = { isRenamingCollection = true },
                 renameEnabled = state.selectedCollections.size == 1,
                 onTag  = { isTaggingClusters = true },
