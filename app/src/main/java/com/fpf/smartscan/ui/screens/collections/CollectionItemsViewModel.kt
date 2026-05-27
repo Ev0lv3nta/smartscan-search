@@ -158,7 +158,7 @@ class CollectionItemsViewModel(
     private fun removeItems(){
         val state = _state.value
         val mediaIds = state.selectedMediaItems.map{it.id}
-        val collectionName = _state.value.collectionName?: return
+        val collectionName = state.collectionName?: return
 
         viewModelScope.launch (Dispatchers.IO){
             try {
