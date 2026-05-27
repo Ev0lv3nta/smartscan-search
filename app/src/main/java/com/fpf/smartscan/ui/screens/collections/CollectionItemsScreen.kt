@@ -51,6 +51,7 @@ import com.fpf.smartscan.ui.components.collections.CollectionItemsList
 import com.fpf.smartscan.ui.components.collections.CollectionPicker
 import com.fpf.smartscan.ui.components.media.MediaViewer
 import com.fpf.smartscan.ui.components.modals.TextInputModal
+import com.fpf.smartscan.ui.screens.collections.CollectionItemsViewModel.Companion.INVALID_CLUSTER_ID
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.StateFlow
 import org.koin.compose.viewmodel.koinViewModel
@@ -61,7 +62,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun CollectionItemsScreen(
     collectionName: String?,
     appSettings: StateFlow<AppSettings>,
-    clusterId: Long = -1L, // null not allowed for longs in nav
+    clusterId: Long = INVALID_CLUSTER_ID, // null not allowed for longs in nav
     onTopBarChange: (TopBarState) -> Unit,
     onBack: () -> Unit,
     viewModel: CollectionItemsViewModel = koinViewModel(),
@@ -70,7 +71,8 @@ fun CollectionItemsScreen(
     val context = LocalContext.current
     val clipboard = LocalClipboard.current
 
-    val mediaCollections by viewModel.mediaCollections.collectAsState()
+    val tagCollections by viewModel.tagCollections.collectAsState()
+    val clusterCollections by viewModel.clusterCollections.collectAsState()
     val state by viewModel.state.collectAsState()
     val appSettings by appSettings.collectAsState()
 
@@ -84,7 +86,7 @@ fun CollectionItemsScreen(
 
     val tagCollectionItems = viewModel.tagItems.collectAsLazyPagingItems()
     val clusterCollectionItems = viewModel.clusterItems.collectAsLazyPagingItems()
-    val isTagCollection = state.clusterId == -1L
+    val isTagCollection = clusterId == INVALID_CLUSTER_ID
     val items = if(isTagCollection) tagCollectionItems else clusterCollectionItems
 
 
@@ -240,7 +242,7 @@ fun CollectionItemsScreen(
                 removeEnabled = isTagCollection,
                 onShare = { viewModel.onAction(MediaItemAction.ShareMedia(context)) },
                 onMove = { isMoving = true },
-                moveEnabled = isTagCollection,
+                moveEnabled = !state.loading,
                 onCopy = { viewModel.onAction(MediaItemAction.CopyMedia(clipboard, context)) }
             )
         }
@@ -283,16 +285,19 @@ fun CollectionItemsScreen(
             )
         ) {
             CollectionPicker(
-                collections = mediaCollections,
+                collections = if(isTagCollection) tagCollections else clusterCollections,
                 onClose = { isMoving = false },
                 onSelectCollection = {
-                    viewModel.onAction(MediaItemAction.MoveMedia( it))
+                    val safeClusterId = if(isTagCollection) null else clusterId
+                    viewModel.onAction(MediaItemAction.MoveMedia( it, safeClusterId))
                     isMoving = false
                                      },
-                onCreateNewCollection = {
-                    isMoving = false
-                    isCreatingCollectionAndMoving = true
-                }
+                onCreateNewCollection = if(isTagCollection){
+                    {
+                        isMoving = false
+                        isCreatingCollectionAndMoving = true
+                    }
+                } else null
             )
         }
     }
