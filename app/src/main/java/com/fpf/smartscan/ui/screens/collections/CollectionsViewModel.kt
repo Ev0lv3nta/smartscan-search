@@ -106,8 +106,8 @@ class CollectionsViewModel(
         when(action){
             is CollectionAction.MergeCollections -> mergeCollections(action.primaryCollectionName, action.isNewMergedLabel)
             is CollectionAction.RenameCollection -> renameCollection(action.newName)
-            is CollectionAction.CreateNewTagCollectionAndCopy -> createNewCollectionAndCopy(action.newName)
-            is CollectionAction.CopyFromAutoToTagCollection -> copyFromAutoToTagCollection(action.collection)
+            is CollectionAction.CreateNewTagAndTagClusters -> createNewTagAndTagClusters(action.newName)
+            is CollectionAction.TagClusters -> tagClusterCollections(action.tagId)
             is CollectionAction.ToggleSelectedCollection -> toggleSelectedCollection(action.collection)
             is CollectionAction.SetCollectionToView -> setCollectionToView(action.collection)
             is CollectionAction.ToggleSelectedCollectionType -> toggleSelectedCollectionType()
@@ -157,6 +157,7 @@ class CollectionsViewModel(
         val currentState = _state.value
         val selectedCollections = currentState.selectedCollections
         var primaryCollection = selectedCollections.firstOrNull{it.name == primaryCollectionName}
+        _state.update { it.copy(loading = true) }
 
         viewModelScope.launch (Dispatchers.IO) {
             try {
@@ -188,37 +189,43 @@ class CollectionsViewModel(
             catch (e: Exception){
                 Log.e(TAG, "Error merging collections: ${e.message}")
                 _event.emit(CollectionEvent(CollectionEventType.MERGE, success = false, message = "Error merging collections"))
+            }finally {
+                _state.update { it.copy(loading = false) }
             }
         }
     }
 
-    private suspend fun copyCollection(clusterId: Long, tagId: Long){
+    private suspend fun tagCluster(clusterId: Long, tagId: Long){
         val clusterCrossRefs = mediaMetadataRepository.getByCluster(clusterId)
         tagCrossRefRepository.upsertTagCrossRefs(clusterCrossRefs.map{ TagCrossRef(it.id, tagId)})
     }
 
-    private fun copyFromAutoToTagCollection(tagCollection: MediaCollection){
-        val selectedCollections = _state.value.selectedCollections
-        viewModelScope.launch (Dispatchers.IO) {
-            try {
-                selectedCollections.forEach { copyCollection(it.id, tagCollection.id) }
-                clearSelectedCollections()
-                _event.emit(CollectionEvent(CollectionEventType.COPY, success = true))
-            }catch (e: Exception){
-                Log.e(TAG, "Error copying collections: ${e.message}")
-                _event.emit(CollectionEvent(CollectionEventType.COPY, success = false, message = "Error copying collection(s)"))
-            }
-        }
-    }
-
-    private fun createNewCollectionAndCopy(newCollectionName: String){
+    private fun tagClusterCollections(tagId: Long){
         val selectedCollections = _state.value.selectedCollections
         _state.update { it.copy(loading = true) }
 
         viewModelScope.launch (Dispatchers.IO) {
             try {
-                val tagId = tagRepository.insertTags(listOf(Tag(name = newCollectionName))).firstOrNull()?: return@launch
-                selectedCollections.forEach { copyCollection(it.id, tagId) }
+                selectedCollections.forEach { tagCluster(it.id, tagId) }
+                clearSelectedCollections()
+                _event.emit(CollectionEvent(CollectionEventType.COPY, success = true))
+            }catch (e: Exception){
+                Log.e(TAG, "Error tagging collection(s): ${e.message}")
+                _event.emit(CollectionEvent(CollectionEventType.COPY, success = false, message = "Error tagging collection(s)"))
+            }finally {
+                _state.update { it.copy(loading = false) }
+            }
+        }
+    }
+
+    private fun createNewTagAndTagClusters(newTag: String){
+        val selectedCollections = _state.value.selectedCollections
+        _state.update { it.copy(loading = true) }
+
+        viewModelScope.launch (Dispatchers.IO) {
+            try {
+                val tagId = tagRepository.insertTags(listOf(Tag(name = newTag))).firstOrNull()?: return@launch
+                selectedCollections.forEach { tagCluster(it.id, tagId) }
                 clearSelectedCollections()
                 _event.emit(CollectionEvent(CollectionEventType.COPY, success = true))
             }catch (_: SQLiteConstraintException){

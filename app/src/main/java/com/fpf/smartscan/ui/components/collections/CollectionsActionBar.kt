@@ -9,8 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
-import androidx.compose.material.icons.filled.FolderCopy
 import androidx.compose.material.icons.filled.Merge
+import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -26,10 +26,10 @@ import androidx.compose.ui.unit.dp
 fun CollectionsActionBar(
     onMerge: () -> Unit,
     onDelete: () -> Unit,
-    onCopy: () -> Unit,
+    onTag: () -> Unit,
     onRename: () -> Unit,
     modifier: Modifier = Modifier,
-    copyEnabled: Boolean = true,
+    tagEnabled: Boolean = true,
     deleteEnabled: Boolean = true,
     mergeEnabled: Boolean = true,
     renameEnabled: Boolean = true,
@@ -38,7 +38,7 @@ fun CollectionsActionBar(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceContainerLowest)
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = 8.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -86,23 +86,23 @@ fun CollectionsActionBar(
         }
 
         Button(
-            enabled = copyEnabled,
+            enabled = tagEnabled,
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.Transparent,
                 disabledContainerColor = Color.Transparent,
                 contentColor = MaterialTheme.colorScheme.onSurface
             ),
-            onClick = { onCopy() }
+            onClick = { onTag() }
         ) {
             Column(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Icon(
-                    Icons.Filled.FolderCopy,
-                    contentDescription = "Copy collection",
+                    Icons.Filled.Tag,
+                    contentDescription = "Tag collection",
                 )
-                Text("Copy", style = MaterialTheme.typography.labelMedium)
+                Text("Add tag", style = MaterialTheme.typography.labelMedium)
             }
         }
 

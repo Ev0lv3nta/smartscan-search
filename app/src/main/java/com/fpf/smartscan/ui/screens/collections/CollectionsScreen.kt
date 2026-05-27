@@ -85,8 +85,8 @@ fun CollectionsScreen(
     var isSelecting by remember { mutableStateOf(false) }
     var isRenamingCollection by remember { mutableStateOf(false) }
     var isMergingCollections by remember { mutableStateOf(false) }
-    var isCopyingCollection by remember { mutableStateOf(false) }
-    var isCreatingAndCopyingCollection by remember { mutableStateOf(false) }
+    var isTaggingClusters by remember { mutableStateOf(false) }
+    var isCreatingNewTagAndTaggingClusters by remember { mutableStateOf(false) }
     var isDeletingCollection by remember { mutableStateOf(false) }
 
     var offset by remember { mutableIntStateOf(0) }
@@ -178,13 +178,13 @@ fun CollectionsScreen(
     )
 
     TextInputModal(
-        isVisible = isCreatingAndCopyingCollection,
-        title="Create collection",
-        placeholder = "Enter collection name",
-        onClose = { isCreatingAndCopyingCollection = false },
+        isVisible = isCreatingNewTagAndTaggingClusters,
+        title="Create tag",
+        placeholder = "Enter tag name",
+        onClose = { isCreatingNewTagAndTaggingClusters = false },
         onConfirm =  {
-            viewModel.onAction(CollectionAction.CreateNewTagCollectionAndCopy(it))
-            isCreatingAndCopyingCollection = false
+            viewModel.onAction(CollectionAction.CreateNewTagAndTagClusters(it))
+            isCreatingNewTagAndTaggingClusters = false
         },
         leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
         onValueChange = {
@@ -411,12 +411,12 @@ fun CollectionsScreen(
                 onMerge = { isMergingCollections = true },
                 onRename = { isRenamingCollection = true },
                 renameEnabled = state.selectedCollections.size == 1,
-                onCopy  = { isCopyingCollection = true },
-                copyEnabled = state.viewAutoCollections
+                onTag  = { isTaggingClusters = true },
+                tagEnabled = state.viewAutoCollections
             )
         }
         AnimatedVisibility(
-            visible = isCopyingCollection,
+            visible = isTaggingClusters,
             enter = fadeIn(animationSpec = tween(500)) + scaleIn(
                 initialScale = 0.8f,
                 animationSpec = tween(500)
@@ -428,14 +428,14 @@ fun CollectionsScreen(
         ) {
             CollectionPicker(
                 collections = tagCollections,
-                onClose = { isCopyingCollection = false },
+                onClose = { isTaggingClusters = false },
                 onSelectCollection = {
-                    viewModel.onAction(CollectionAction.CopyFromAutoToTagCollection(it))
-                    isCopyingCollection = false
+                    viewModel.onAction(CollectionAction.TagClusters(it.id))
+                    isTaggingClusters = false
                 },
                 onCreateNewCollection = {
-                    isCopyingCollection = false
-                    isCreatingAndCopyingCollection = true
+                    isTaggingClusters = false
+                    isCreatingNewTagAndTaggingClusters = true
                 }
             )
         }
