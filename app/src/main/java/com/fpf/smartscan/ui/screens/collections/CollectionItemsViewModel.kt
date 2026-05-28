@@ -169,18 +169,37 @@ class CollectionItemsViewModel(
 
     fun onAction(action: MediaItemAction){
         when(action){
-            is MediaItemAction.CopyMedia -> onCopyItem(action.clipboard, action.context)
+            is MediaItemAction.CopyMedia -> copyItem(action.clipboard, action.context)
             is MediaItemAction.CreateNewTagCollectionAndMove -> createNewCollectionAndMove(action.newName)
             MediaItemAction.RemoveMedia -> removeItems()
             is MediaItemAction.SetMediaToView -> setMediaToView(action.context, action.item, autoOpenInGallery = action.autoOpenInGallery, isSelecting = action.isSelecting)
-            is MediaItemAction.ShareMedia -> onShareItems(action.context)
+            is MediaItemAction.ShareMedia -> shareItems(action.context)
             is MediaItemAction.ToggleSelectedMedia -> toggleSelectedItem(action.item)
             is MediaItemAction.SetCollectionToView -> setCollection(action.name, action.clusterId)
             is MediaItemAction.MoveMedia -> moveItems(action.destinationCollection, action.clusterId)
+            is MediaItemAction.Tag -> tagItems(action.tag)
         }
     }
 
     fun clearSelectedItems() = _state.update{it.copy(selectedMediaItems = emptySet())}
+
+    private fun tagItems(tag: String){
+        viewModelScope.launch(Dispatchers.IO) {
+            val selectedItems = _state.value.selectedMediaItems
+            try {
+                tagManager.tagItems(tag, selectedItems)
+                clearSelectedItems()
+                _event.emit(MediaEvent(MediaEventType.TAG, success = true, message = "Tagged ${selectedItems.size} item(s)"))
+            }catch (e: Exception){
+                Log.e(TAG, "Error tagging items: ${e.message}")
+                _event.emit(MediaEvent(MediaEventType.TAG, success = false, message = "Error tagging items"))
+            }
+        }
+    }
+
+    fun handleAutoCompletionCheck(query: CharSequence, substringEnd: Int, startWithHashtag: Boolean =  true): List<String>{
+        return tagManager.checkAutoCompletion(query, substringEnd, tagCollections.value.map { it.name }, startWithHashtag)
+    }
 
     private fun removeItems(){
         val state = _state.value
@@ -225,7 +244,7 @@ class CollectionItemsViewModel(
         }
     }
 
-    private fun onCopyItem(clipboard: Clipboard, context: Context){
+    private fun copyItem(clipboard: Clipboard, context: Context){
         clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", _state.value.selectedMediaItems.first().uri))
         viewModelScope.launch {
             _event.emit(MediaEvent(MediaEventType.COPY, success = true))
@@ -233,7 +252,7 @@ class CollectionItemsViewModel(
         }
     }
 
-    private fun onShareItems(context: Context){
+    private fun shareItems(context: Context){
         shareMediaMulti(context, _state.value.selectedMediaItems.map{it.uri})
         viewModelScope.launch {
             _event.emit(MediaEvent(MediaEventType.SHARE, success = true))

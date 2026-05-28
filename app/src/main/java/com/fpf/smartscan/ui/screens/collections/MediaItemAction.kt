@@ -13,5 +13,6 @@ sealed interface MediaItemAction {
     data class ToggleSelectedMedia(val item: MediaItem): MediaItemAction
     data class SetMediaToView(val context: Context, val item: MediaItem?, val autoOpenInGallery: Boolean? = null, val isSelecting: Boolean = false): MediaItemAction
     data class SetCollectionToView(val name: String?, val clusterId: Long): MediaItemAction
+    data class Tag(val tag: String): MediaItemAction
     data object RemoveMedia : MediaItemAction
 }

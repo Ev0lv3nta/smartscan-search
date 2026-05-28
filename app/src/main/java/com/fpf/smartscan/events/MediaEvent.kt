@@ -4,7 +4,8 @@ enum class MediaEventType {
     MOVE,
     REMOVE,
     COPY,
-    SHARE
+    SHARE,
+    TAG,
 }
 data class MediaEvent (
     val type: MediaEventType,

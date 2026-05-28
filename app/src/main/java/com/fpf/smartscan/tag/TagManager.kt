@@ -26,7 +26,7 @@ class TagManager(
         tagCrossRefRepository.upsertTagCrossRefs(tagEntries)
     }
 
-    fun checkAutoCompletion(query: CharSequence, substringEnd: Int, tags: List<Tag>, startWithHashtag: Boolean =  true): List<String>{
+    fun checkAutoCompletion(query: CharSequence, substringEnd: Int, tags: List<String>, startWithHashtag: Boolean =  true): List<String>{
         val text = query.toString()
         val prefix = text.substring(0, substringEnd)
         // Regex: find #tag at the end of prefix
@@ -35,7 +35,7 @@ class TagManager(
         val match = Regex(pattern).find(prefix)
         return if (match != null) {
             val partialTag =  match.groupValues[1]
-            tags .filter { it.name.startsWith(partialTag, ignoreCase = true) }.map { it.name }
+            tags .filter { it.startsWith(partialTag, ignoreCase = true) }
         } else {
             emptyList()
         }

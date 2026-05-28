@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun DropDownMenuWrapper(
-    actions: Map<String, Pair<() -> Unit, Boolean>>,
+    actions: Map<String, ActionConfig>,
     expanded: Boolean,
     onClose: () -> Unit,
     offset: DpOffset = DpOffset(x = 0.dp, y = (-40).dp),
@@ -27,13 +27,13 @@ fun DropDownMenuWrapper(
     ) {
         for (action in actions){
             val label = action.key
-            val (actionHandler, enabled) = action.value
+            val actionConfig = action.value
             DropdownMenuItem(
-                enabled = enabled,
+                enabled = actionConfig.enabled,
                 text = { Text(label) },
                 onClick = {
                     onClose()
-                    actionHandler()
+                    actionConfig.onClick()
                 }
             )
         }
