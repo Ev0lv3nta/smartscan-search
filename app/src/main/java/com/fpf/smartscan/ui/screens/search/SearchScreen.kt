@@ -127,10 +127,9 @@ fun SearchScreen(
     var showEndDatePicker by remember { mutableStateOf(false) }
 
     // Menu
-    // TODO: rename resources
     var showMenu by remember { mutableStateOf(false) }
-    val scanImagesMenuLabel = stringResource(R.string.setting_scan_images)
-    val scanVideosMenuLabel = stringResource(R.string.setting_scan_videos)
+    val scanImagesMenuLabel = stringResource(R.string.scan_images_action)
+    val scanVideosMenuLabel = stringResource(R.string.scan_videos_action)
 
     val menuActions: Map<String, ActionConfig> = mapOf(
         scanImagesMenuLabel to ActionConfig({ showScanImagesDialog = true }, enabled = !isIndexing),

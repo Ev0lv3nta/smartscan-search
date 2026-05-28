@@ -40,14 +40,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.fpf.smartscan.R
 import com.fpf.smartscan.events.MediaEventType
 import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
 import com.fpf.smartscan.navigation.TopBarState
@@ -56,7 +57,7 @@ import com.fpf.smartscan.ui.components.ActionConfig
 import com.fpf.smartscan.ui.components.DropDownMenuWrapper
 import com.fpf.smartscan.ui.components.SlideRevealBox
 import com.fpf.smartscan.ui.components.TagAdder
-import com.fpf.smartscan.ui.components.collections.CollectionItemsActionBar
+import com.fpf.smartscan.ui.components.ActionBar
 import com.fpf.smartscan.ui.components.collections.CollectionItemsList
 import com.fpf.smartscan.ui.components.collections.CollectionPicker
 import com.fpf.smartscan.ui.components.media.MediaViewer
@@ -65,9 +66,6 @@ import com.fpf.smartscan.ui.screens.collections.CollectionItemsViewModel.Compani
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.StateFlow
 import org.koin.compose.viewmodel.koinViewModel
-
-const val ACTION_BAR_HEIGHT = 70
-
 
 @OptIn(FlowPreview::class)
 @Composable
@@ -79,6 +77,7 @@ fun CollectionItemsScreen(
     onBack: () -> Unit,
     viewModel: CollectionItemsViewModel = koinViewModel(),
     ) {
+    val actionBarHeight = 70
 
     val context = LocalContext.current
     val clipboard = LocalClipboard.current
@@ -99,34 +98,35 @@ fun CollectionItemsScreen(
     var isCreatingCollectionAndMoving by remember { mutableStateOf(false) }
     var isAddingTag by remember { mutableStateOf(false) }
     var showMoreActions by remember { mutableStateOf(false) }
+    val spaceNotAllowedMessage = stringResource(R.string.alert_space_not_allowed)
 
     val mainActions:  Map<String, ActionConfig> = mapOf(
-        "Share" to ActionConfig(
+        stringResource(R.string.share_action) to ActionConfig(
             onClick = { viewModel.onAction(MediaItemAction.ShareMedia(context)) },
             icon=Icons.Filled.Share
         ),
-        "Remove" to ActionConfig(
+        stringResource(R.string.remove_action) to ActionConfig(
             onClick = { viewModel.onAction(MediaItemAction.RemoveMedia) },
             enabled = isTagCollection,
             icon=Icons.Filled.RemoveCircle
         ),
-        "Move" to ActionConfig(
+        stringResource(R.string.move_action) to ActionConfig(
             onClick={ isMoving = true },
             enabled = !state.loading,
             icon = Icons.Default.DriveFileMoveRtl
         ),
-        "More" to ActionConfig(
+        stringResource(R.string.more_action) to ActionConfig(
             onClick = { showMoreActions = true },
             icon = Icons.Filled.MoreVert
         ),
     )
 
     val moreActions:  Map<String, ActionConfig> = mapOf(
-        "Copy to clipboard" to ActionConfig(
+        stringResource(R.string.copy_to_clipboard_action) to ActionConfig(
             { viewModel.onAction(MediaItemAction.CopyMedia(clipboard, context)) },
         ),
 
-        "Add tag" to ActionConfig(
+        stringResource(R.string.add_tag_action) to ActionConfig(
            { isAddingTag = true },
         ),
     )
@@ -274,10 +274,9 @@ fun CollectionItemsScreen(
             Box(
                 modifier = Modifier.fillMaxWidth(),
             ) {
-
-                CollectionItemsActionBar(
+                ActionBar(
                     actions = mainActions,
-                    modifier = Modifier.height(ACTION_BAR_HEIGHT.dp),
+                    modifier = Modifier.height(actionBarHeight.dp),
                 )
                 Box(
                     modifier = Modifier.align(Alignment.BottomEnd)
@@ -286,7 +285,7 @@ fun CollectionItemsScreen(
                     DropDownMenuWrapper(
                         expanded = showMoreActions,
                         actions = moreActions,
-                        offset = DpOffset(x = 0.dp, y = -(ACTION_BAR_HEIGHT).dp),
+                        offset = DpOffset(x = 0.dp, y = -(actionBarHeight).dp),
                         onClose = { showMoreActions = false }
                     )
                 }
@@ -352,8 +351,8 @@ fun CollectionItemsScreen(
 
     TextInputModal(
         isVisible = isCreatingCollectionAndMoving,
-        title="Create collection",
-        placeholder = "Enter collection name",
+        title=stringResource(R.string.add_tag_action),
+        placeholder = stringResource(R.string.placeholders_add_tag),
         onClose = {isCreatingCollectionAndMoving = false},
         onConfirm =  {
             // for tags only
@@ -365,7 +364,7 @@ fun CollectionItemsScreen(
             if (!it.text.contains(" ")) {
                 true
             } else {
-                Toast.makeText(context, "Spaces are not allowed", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, spaceNotAllowedMessage, Toast.LENGTH_SHORT).show()
                 false
             }
         }

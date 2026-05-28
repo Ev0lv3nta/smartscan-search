@@ -5,6 +5,30 @@
     <string name="source_code_url">https://github.com/dev-diaries41/smartscan</string>
     <string name="reddit_url">https://www.reddit.com/r/SmartScan/</string>
 
+    <!--___Actions___-->
+    <!--Common Actions-->
+    <string name="share_action">Share</string>
+    <string name="move_action">Move</string>
+    <string name="remove_action">Remove</string>
+    <string name="delete_action">Delete</string>
+    <string name="more_action">More</string>
+    <string name="copy_action">Copy</string>
+    <string name="add_tag_action">Add tag</string>
+    <string name="copy_to_clipboard_action">Copy to clipboard</string>
+    <string name="cancel_action">Cancel</string>
+    <string name="confirm_action">Confirm</string>
+
+
+    <!--Search Actions-->
+    <string name="scan_images_action">Scan images</string>
+    <string name="scan_videos_action">Scan videos</string>
+    <!--Collection Actions-->
+    <string name="rename_action">Rename</string>
+    <string name="merge_action">Merge</string>
+    <string name="group_by_tag_action">Group by tag</string>
+    <string name="group_by_similarity_action">Group by similarity</string>
+
+
     <!-- Screen titles-->
     <string name="title_search">Search</string>
     <string name="title_collections">Collections</string>
@@ -25,6 +49,7 @@
     <string name="notif_title_auto_tag">New tags added to media</string>
 
     <!--Alerts-->
+    <string name="alert_space_not_allowed">Spaces are not allowed</string>
     <string name="alert_scan_index_title">Scan %1$s</string>
     <string name="alert_scan_index_description">Refresh updates the index with new media only. Rebuild deletes and recreates the entire index.</string>
     <!-- Search screen -->
@@ -38,6 +63,7 @@
     <string name="search_error_index_loading">Error loading index.</string>
     <string name="search_start_indexing_alert">Start indexing %1$s</string>
 
+    <!--Collections Screen-->
     <string name="collections_no_collections_title">No Collections</string>
     <string name="collections_no_collections_description">Collections are created by automatically grouping similar items or when you tag items.</string>
     <string name="collections_delete_collections_alert_title">Delete collections</string>
@@ -46,6 +72,8 @@
         <item quantity="one">collection</item>
         <item quantity="other">collections</item>
     </plurals>
+    <string name="collections_primary_collection_label">Primary collection</string>
+
 
     <!-- Donate screen -->
     <string name="label_btc">Bitcoin</string>
@@ -80,8 +108,6 @@
     <string name="setting_similarity_threshold_label">Similarity threshold (%1$s)</string>
     <string name="setting_similarity_threshold_description">Minimum similarity score for matching results</string>
     <string name="setting_max_search_results">Max search results</string>
-    <string name="setting_scan_images">Scan images</string>
-    <string name="setting_scan_videos">Scan videos</string>
     <string name="setting_hide_duplicates">Hide duplicates</string>
 
 
@@ -113,4 +139,8 @@
     <string name="update_rebuild_index">Added ability to rebuild the index from scratch via the search screen menu</string>
     <string name="update_date_filters_search">Added date filters for search</string>
     <string name="update_tag_query_search_fix">Fixed tag-filtered queries missing results</string>
+
+    <!--Placeholders-->
+    <string name ="placeholders_add_tag">Enter tag name</string>
+    <string name="placeholders_rename">Enter collection name</string>
 </resources>
