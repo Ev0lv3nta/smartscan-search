@@ -44,6 +44,7 @@ import com.fpf.smartscan.search.IndexingStatus
 import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.settings.AppSettings
+import com.fpf.smartscan.ui.components.ActionConfig
 import com.fpf.smartscan.ui.components.DropDownMenuWrapper
 import com.fpf.smartscan.ui.components.LoadingIndicator
 import com.fpf.smartscan.ui.components.media.MediaViewer
@@ -131,9 +132,9 @@ fun SearchScreen(
     val scanImagesMenuLabel = stringResource(R.string.setting_scan_images)
     val scanVideosMenuLabel = stringResource(R.string.setting_scan_videos)
 
-    val menuActions: Map<String, Pair<() -> Unit, Boolean>> = mapOf(
-        scanImagesMenuLabel to Pair({ showScanImagesDialog = true }, !isIndexing),
-        scanVideosMenuLabel to Pair({ showScanVideosDialog = true }, !isIndexing)
+    val menuActions: Map<String, ActionConfig> = mapOf(
+        scanImagesMenuLabel to ActionConfig({ showScanImagesDialog = true }, enabled = !isIndexing),
+        scanVideosMenuLabel to ActionConfig({ showScanVideosDialog = true }, enabled=!isIndexing)
     )
 
     RequestPermissions { _, storageGranted ->
