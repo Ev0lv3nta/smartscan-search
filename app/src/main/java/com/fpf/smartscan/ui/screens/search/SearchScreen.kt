@@ -132,8 +132,8 @@ fun SearchScreen(
     val scanVideosMenuLabel = stringResource(R.string.scan_videos_action)
 
     val menuActions: Map<String, ActionConfig> = mapOf(
-        scanImagesMenuLabel to ActionConfig({ showScanImagesDialog = true }, enabled = !isIndexing),
-        scanVideosMenuLabel to ActionConfig({ showScanVideosDialog = true }, enabled=!isIndexing)
+        scanImagesMenuLabel to ActionConfig.Button({ showScanImagesDialog = true }, enabled = !isIndexing),
+        scanVideosMenuLabel to ActionConfig.Button({ showScanVideosDialog = true }, enabled=!isIndexing)
     )
 
     RequestPermissions { _, storageGranted ->

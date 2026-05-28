@@ -31,29 +31,29 @@ fun ActionBar(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        for (action in actions){
-            val label = action.key
-            val actionConfig = action.value
-
-            Button (
-                enabled = actionConfig.enabled,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Transparent,
-                    disabledContainerColor = Color.Transparent,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                onClick = { actionConfig.onClick() }
-            ) {
-                Column(
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally) {
-                    actionConfig.icon?.let{
-                        icon-> Icon(
-                            icon,
-                            contentDescription = "$label button",
-                        )
+        for ((label, action) in actions) {
+            if (action is ActionConfig.Button) {
+                Button(
+                    enabled = action.enabled,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent,
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    ),
+                    onClick = { action.onClick() }
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        action.icon?.let { icon ->
+                            Icon(
+                                icon,
+                                contentDescription = "$label button",
+                            )
+                        }
+                        Text(label, style = MaterialTheme.typography.labelMedium)
                     }
-                    Text(label, style = MaterialTheme.typography.labelMedium)
                 }
             }
         }

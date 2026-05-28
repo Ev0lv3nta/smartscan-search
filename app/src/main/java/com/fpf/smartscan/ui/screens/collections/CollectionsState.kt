@@ -4,7 +4,7 @@ import com.fpf.smartscan.media.MediaCollection
 
 data class CollectionsState(
     val showAllCollections: Boolean = false,
-    val viewAutoCollections: Boolean = true,
+    val groupBySimilarity: Boolean = true,
     val loading: Boolean = false,
     val collectToView: MediaCollection? = null,
     val selectedCollections: Set<MediaCollection> = emptySet(),

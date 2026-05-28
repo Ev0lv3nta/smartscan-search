@@ -68,7 +68,7 @@ class CollectionsViewModel(
 
     val clusterCollections: StateFlow<List<MediaCollection>> = combine(
         clusterCrossRefRepository.getClustersWithCount(),
-        _state.map {  it.showAllCollections to  it.viewAutoCollections }.distinctUntilChanged()
+        _state.map {  it.showAllCollections to  it.groupBySimilarity }.distinctUntilChanged()
     ) { clusters, ( showAllCollections, viewAutoCollections) ->
         if(viewAutoCollections){
             _state.update { it.copy(totalCollections = clusters.size) }
@@ -85,7 +85,7 @@ class CollectionsViewModel(
 
     val tagCollections: StateFlow<List<MediaCollection>> = combine(
         tagCrossRefRepository.getTagsWithCounts(),
-        _state.map {  it.showAllCollections to  it.viewAutoCollections }.distinctUntilChanged()
+        _state.map {  it.showAllCollections to  it.groupBySimilarity }.distinctUntilChanged()
     ) { tagsWithCount, ( showAllCollections, viewAutoCollections) ->
         if(!viewAutoCollections){
             _state.update { it.copy(totalCollections = tagsWithCount.size) }
@@ -110,8 +110,7 @@ class CollectionsViewModel(
             is CollectionAction.TagClusters -> tagClusterCollections(action.tagId)
             is CollectionAction.ToggleSelectedCollection -> toggleSelectedCollection(action.collection)
             is CollectionAction.SetCollectionToView -> setCollectionToView(action.collection)
-            is CollectionAction.GroupByTag -> groupByTag()
-            is CollectionAction.GroupBySimilarity -> groupBySimilarity()
+            is CollectionAction.SetGroupBySimilarity -> setGroupingMode(action.groupBySimilarity)
             is CollectionAction.DeleteCollections -> deleteCollections()
             is CollectionAction.ToggleViewAllCollections -> toggleViewAllCollections()
         }
@@ -123,7 +122,7 @@ class CollectionsViewModel(
         val collection = _state.value.selectedCollections.first()
         viewModelScope.launch(Dispatchers.IO) {
             try{
-                if(_state.value.viewAutoCollections){
+                if(_state.value.groupBySimilarity){
                     clusterManager.updateLabel(collection.id, newName)
                 }else{
                     tagManager.renameTag(collection.name, newName)
@@ -241,8 +240,10 @@ class CollectionsViewModel(
         }
     }
 
-    private fun groupBySimilarity() = _state.update { it.copy(viewAutoCollections = true) }
-    private fun groupByTag() = _state.update { it.copy(viewAutoCollections = false) }
+    private fun setGroupingMode(groupBySimilarity: Boolean) {
+        Log.d(TAG, "groupBySimilarity: $groupBySimilarity")
+        _state.update { it.copy(groupBySimilarity = groupBySimilarity) }
+    }
 
 
     private fun toggleSelectedCollection(collection: MediaCollection){

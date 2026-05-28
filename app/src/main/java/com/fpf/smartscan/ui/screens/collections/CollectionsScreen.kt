@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
-import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Merge
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Tag
@@ -80,8 +79,8 @@ fun CollectionsScreen(
     val clusterCollections by viewModel.clusterCollections.collectAsState()
     val tagCollections by viewModel.tagCollections.collectAsState()
 
-    val collections = if(state.viewAutoCollections) clusterCollections else tagCollections
-    val isCollectionVisible = tagCollections.isNotEmpty() && !state.viewAutoCollections || clusterCollections.isNotEmpty() && state.viewAutoCollections
+    val collections = if(state.groupBySimilarity) clusterCollections else tagCollections
+    val isCollectionVisible = tagCollections.isNotEmpty() && !state.groupBySimilarity || clusterCollections.isNotEmpty() && state.groupBySimilarity
 
     val context = LocalContext.current
 
@@ -94,17 +93,16 @@ fun CollectionsScreen(
     var isDeletingCollection by remember { mutableStateOf(false) }
 
     val actionBarActions: Map<String, ActionConfig> = mapOf(
-        stringResource(R.string.merge_action) to ActionConfig({ isMergingCollections = true }, enabled = !state.loading, icon = Icons.Filled.Merge),
-        stringResource(R.string.rename_action) to ActionConfig( { isRenamingCollection = true }, enabled = state.selectedCollections.size == 1, icon = Icons.Filled.DriveFileRenameOutline),
-        stringResource(R.string.add_tag_action) to ActionConfig({ isTaggingClusters = true }, enabled = state.viewAutoCollections, icon = Icons.Filled.Tag),
-        stringResource(R.string.delete_action) to ActionConfig({ isDeletingCollection = true }, enabled = !state.viewAutoCollections, icon = Icons.Filled.Delete)
+        stringResource(R.string.merge_action) to ActionConfig.Button({ isMergingCollections = true }, enabled = !state.loading, icon = Icons.Filled.Merge),
+        stringResource(R.string.rename_action) to ActionConfig.Button( { isRenamingCollection = true }, enabled = state.selectedCollections.size == 1, icon = Icons.Filled.DriveFileRenameOutline),
+        stringResource(R.string.add_tag_action) to ActionConfig.Button({ isTaggingClusters = true }, enabled = state.groupBySimilarity, icon = Icons.Filled.Tag),
+        stringResource(R.string.delete_action) to ActionConfig.Button({ isDeletingCollection = true }, enabled = !state.groupBySimilarity, icon = Icons.Filled.Delete)
     )
 
     // Menu
     var showMenu by remember { mutableStateOf(false) }
     val menuActions: Map<String, ActionConfig> = mapOf(
-        stringResource(R.string.group_by_tag_action) to ActionConfig({ viewModel.onAction(CollectionAction.GroupByTag) }),
-        stringResource(R.string.group_by_similarity_action) to ActionConfig({ viewModel.onAction(CollectionAction.GroupBySimilarity) })
+        stringResource(R.string.group_by_similarity_action) to ActionConfig.Switch(checked = state.groupBySimilarity, { viewModel.onAction(CollectionAction.SetGroupBySimilarity(it)) })
     )
     val spaceNotAllowedMessage = stringResource(R.string.alert_space_not_allowed)
 
@@ -168,7 +166,7 @@ fun CollectionsScreen(
 
     val screenTitle = stringResource(R.string.title_collections)
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(state.groupBySimilarity) {
         onTopBarChange(
             TopBarState(
                 title = screenTitle,
@@ -229,7 +227,7 @@ fun CollectionsScreen(
                 modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
             ){
                 Text(
-                    text = if (state.viewAutoCollections) "Auto" else "Tags",
+                    text = if (state.groupBySimilarity) "Auto" else "Tags",
                     style = MaterialTheme.typography.bodyMedium,
                 )
 

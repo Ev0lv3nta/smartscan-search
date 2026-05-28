@@ -101,32 +101,32 @@ fun CollectionItemsScreen(
     val spaceNotAllowedMessage = stringResource(R.string.alert_space_not_allowed)
 
     val mainActions:  Map<String, ActionConfig> = mapOf(
-        stringResource(R.string.share_action) to ActionConfig(
+        stringResource(R.string.share_action) to ActionConfig.Button(
             onClick = { viewModel.onAction(MediaItemAction.ShareMedia(context)) },
             icon=Icons.Filled.Share
         ),
-        stringResource(R.string.remove_action) to ActionConfig(
+        stringResource(R.string.remove_action) to ActionConfig.Button(
             onClick = { viewModel.onAction(MediaItemAction.RemoveMedia) },
             enabled = isTagCollection,
             icon=Icons.Filled.RemoveCircle
         ),
-        stringResource(R.string.move_action) to ActionConfig(
+        stringResource(R.string.move_action) to ActionConfig.Button(
             onClick={ isMoving = true },
             enabled = !state.loading,
             icon = Icons.Default.DriveFileMoveRtl
         ),
-        stringResource(R.string.more_action) to ActionConfig(
+        stringResource(R.string.more_action) to ActionConfig.Button(
             onClick = { showMoreActions = true },
             icon = Icons.Filled.MoreVert
         ),
     )
 
     val moreActions:  Map<String, ActionConfig> = mapOf(
-        stringResource(R.string.copy_to_clipboard_action) to ActionConfig(
+        stringResource(R.string.copy_to_clipboard_action) to ActionConfig.Button(
             { viewModel.onAction(MediaItemAction.CopyMedia(clipboard, context)) },
         ),
 
-        stringResource(R.string.add_tag_action) to ActionConfig(
+        stringResource(R.string.add_tag_action) to ActionConfig.Button(
            { isAddingTag = true },
         ),
     )
