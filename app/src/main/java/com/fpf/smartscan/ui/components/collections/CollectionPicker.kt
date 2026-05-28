@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
@@ -48,7 +49,7 @@ fun CollectionPicker(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onClose) {
@@ -58,11 +59,13 @@ fun CollectionPicker(
                             tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
-
-                    Text(
-                        text = "Pick collection",
-                        style = MaterialTheme.typography.titleLarge
-                    )
+                    if(onCreateNewCollection != null) {
+                        TextButton(
+                            onClick = { onCreateNewCollection.invoke() }
+                        ) {
+                            Text(text = "Create", style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
                 }
                 Box(
                     modifier = Modifier
@@ -75,17 +78,6 @@ fun CollectionPicker(
                         items = collections,
                         onItemClick = { onSelectCollection(it);  },
                     )
-                }
-                if(onCreateNewCollection != null) {
-                    Button(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .align(Alignment.CenterHorizontally)
-                            .fillMaxWidth(0.8f),
-                        onClick = { onCreateNewCollection.invoke() }
-                    ) {
-                        Text(text = "New collection", style = MaterialTheme.typography.bodyLarge)
-                    }
                 }
             }
         }

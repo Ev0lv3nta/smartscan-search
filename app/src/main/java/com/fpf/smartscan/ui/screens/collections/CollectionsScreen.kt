@@ -8,31 +8,30 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DriveFileRenameOutline
+import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.Merge
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -43,7 +42,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
@@ -54,7 +52,6 @@ import com.fpf.smartscan.ui.components.modals.SelectorModal
 import com.fpf.smartscan.ui.components.SlideRevealBox
 import com.fpf.smartscan.ui.components.modals.TextInputModal
 import com.fpf.smartscan.ui.components.collections.CollectionPicker
-import com.fpf.smartscan.ui.components.collections.CollectionsActionBar
 import com.fpf.smartscan.ui.components.collections.MediaCollectionsList
 import com.fpf.smartscan.ui.screens.collections.CollectionsViewModel.Companion.TOP_N
 import kotlinx.coroutines.FlowPreview
@@ -63,7 +60,11 @@ import androidx.compose.ui.res.stringResource
 import com.fpf.smartscan.events.CollectionEventType
 import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
 import com.fpf.smartscan.navigation.TopBarState
+import com.fpf.smartscan.ui.components.ActionBar
+import com.fpf.smartscan.ui.components.ActionConfig
+import com.fpf.smartscan.ui.components.DropDownMenuWrapper
 import org.koin.compose.viewmodel.koinViewModel
+
 
 @OptIn(FlowPreview::class)
 @Composable
@@ -72,6 +73,8 @@ fun CollectionsScreen(
     onTopBarChange: (TopBarState) -> Unit,
     viewModel: CollectionsViewModel = koinViewModel(),
     ) {
+
+    val actionBarHeight = 70
 
     val state by viewModel.state.collectAsState()
     val clusterCollections by viewModel.clusterCollections.collectAsState()
@@ -82,12 +85,29 @@ fun CollectionsScreen(
 
     val context = LocalContext.current
 
+    // actions
     var isSelecting by remember { mutableStateOf(false) }
     var isRenamingCollection by remember { mutableStateOf(false) }
     var isMergingCollections by remember { mutableStateOf(false) }
     var isTaggingClusters by remember { mutableStateOf(false) }
     var isCreatingNewTagAndTaggingClusters by remember { mutableStateOf(false) }
     var isDeletingCollection by remember { mutableStateOf(false) }
+
+    val actionBarActions: Map<String, ActionConfig> = mapOf(
+        stringResource(R.string.merge_action) to ActionConfig({ isMergingCollections = true }, enabled = !state.loading, icon = Icons.Filled.Merge),
+        stringResource(R.string.rename_action) to ActionConfig( { isRenamingCollection = true }, enabled = state.selectedCollections.size == 1, icon = Icons.Filled.DriveFileRenameOutline),
+        stringResource(R.string.add_tag_action) to ActionConfig({ isTaggingClusters = true }, enabled = state.viewAutoCollections, icon = Icons.Filled.Tag),
+        stringResource(R.string.delete_action) to ActionConfig({ isDeletingCollection = true }, enabled = !state.viewAutoCollections, icon = Icons.Filled.Delete)
+    )
+
+    // Menu
+    var showMenu by remember { mutableStateOf(false) }
+    val menuActions: Map<String, ActionConfig> = mapOf(
+        stringResource(R.string.group_by_tag_action) to ActionConfig({ viewModel.onAction(CollectionAction.GroupByTag) }),
+        stringResource(R.string.group_by_similarity_action) to ActionConfig({ viewModel.onAction(CollectionAction.GroupBySimilarity) })
+    )
+    val spaceNotAllowedMessage = stringResource(R.string.alert_space_not_allowed)
+
 
     var offset by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
@@ -149,118 +169,31 @@ fun CollectionsScreen(
     val screenTitle = stringResource(R.string.title_collections)
 
     LaunchedEffect(Unit) {
-       onTopBarChange( TopBarState(title = screenTitle))
+        onTopBarChange(
+            TopBarState(
+                title = screenTitle,
+                actions = {
+                    Box{
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(
+                                imageVector = Icons.Filled.MoreVert,
+                                contentDescription = "menu"
+                            )
+                        }
+                        DropDownMenuWrapper(
+                            expanded = showMenu,
+                            actions = menuActions,
+                            onClose = {showMenu = false}
+                        )
+                    }
+                }
+            )
+        )
     }
 
     BackHandler(enabled = isSelecting) {
         isSelecting = false
         viewModel.clearSelectedCollections()
-    }
-
-    TextInputModal(
-        isVisible = isRenamingCollection,
-        title="Rename collection",
-        placeholder = "Enter new collection name",
-        onClose = { isRenamingCollection = false },
-        onConfirm = {
-            newName -> viewModel.onAction(CollectionAction.RenameCollection(newName))
-            isRenamingCollection = false
-                    },
-        leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
-        onValueChange = {
-            if (!it.text.contains(" ")) {
-                true
-            } else {
-                Toast.makeText(context, "Spaces are not allowed", Toast.LENGTH_SHORT).show()
-                false
-            }
-        }
-    )
-
-    TextInputModal(
-        isVisible = isCreatingNewTagAndTaggingClusters,
-        title="Create tag",
-        placeholder = "Enter tag name",
-        onClose = { isCreatingNewTagAndTaggingClusters = false },
-        onConfirm =  {
-            viewModel.onAction(CollectionAction.CreateNewTagAndTagClusters(it))
-            isCreatingNewTagAndTaggingClusters = false
-        },
-        leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
-        onValueChange = {
-            if (!it.text.contains(" ")) {
-                true
-            } else {
-                Toast.makeText(context, "Spaces are not allowed", Toast.LENGTH_SHORT).show()
-                false
-            }
-        }
-    )
-
-    if (isMergingCollections) {
-        val labelledCollections: List<String> = state.selectedCollections.sortedByDescending { it.size}.map { it.name }.filterNot { it == UNLABELLED_COLLECTION }
-        var useSelectorInput by remember { mutableStateOf(labelledCollections.isNotEmpty()) }
-
-        if (useSelectorInput) {
-            SelectorModal(
-                isVisible = labelledCollections.isNotEmpty(),
-                initialOption = labelledCollections.first(),
-                title = "Merge collections",
-                label = "Primary collection",
-                options = labelledCollections,
-                onConfirm = { selected ->
-                    viewModel.onAction(CollectionAction.MergeCollections(selected))
-                    isMergingCollections = false
-                },
-                onClose = { isMergingCollections = false }
-            )
-        }else{
-            TextInputModal(
-                isVisible = true,
-                title="Merge collection",
-                placeholder = "Enter collection name",
-                onClose = { isMergingCollections = false },
-                onConfirm =  { newName ->
-                    viewModel.onAction(CollectionAction.MergeCollections(newName, isNewMergedLabel = true))
-                    isMergingCollections = false
-                },
-                leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
-                onValueChange = {
-                    if (!it.text.contains(" ")) {
-                        true
-                    } else {
-                        Toast.makeText(context, "Spaces are not allowed", Toast.LENGTH_SHORT).show()
-                        false
-                    }
-                }
-            )
-        }
-    }
-
-    if ( isDeletingCollection) {
-        val count = state.selectedCollections.size
-        val alertTitle = stringResource(R.string.collections_delete_collections_alert_title)
-        val alertDescription = stringResource(
-            R.string.collections_delete_collections_alert_description,
-            count,
-            pluralStringResource(R.plurals.collection_count, count)
-        )
-        AlertDialog(
-            onDismissRequest = { },
-            title = { Text(alertTitle) },
-            text = { Text(alertDescription) },
-            dismissButton = {
-                TextButton(onClick = { isDeletingCollection = false })
-                { Text("Cancel") }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.onAction(CollectionAction.DeleteCollections)
-                    isDeletingCollection = false
-                })
-                { Text("Confirm") }
-            }
-        )
     }
 
     Box(
@@ -289,82 +222,30 @@ fun CollectionsScreen(
                     color = MaterialTheme.colorScheme.primary
                 )
             }
+
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Min)
-                    .padding(bottom = 8.dp)
-                    .clip(
-                        RoundedCornerShape(
-                            topStart = 12.dp,
-                            bottomStart = 0.dp,
-                            topEnd = 12.dp,
-                            bottomEnd = 0.dp
-                        )
-                    )
-                    .background(color = MaterialTheme.colorScheme.surfaceContainer)
-                    .border(
-                        BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                        shape = RoundedCornerShape(
-                            topStart = 12.dp,
-                            bottomStart = 0.dp,
-                            topEnd = 12.dp,
-                            bottomEnd = 0.dp
-                        )
-                    ),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(8.dp)
-                        .clickable(
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() },
-                            onClick = { viewModel.onAction(CollectionAction.ToggleSelectedCollectionType) }
-                        )
-                ) {
-                    Text("Auto collections",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if(state.viewAutoCollections) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                    )
-                }
-                VerticalDivider(
-                    color = MaterialTheme.colorScheme.outline
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
+            ){
+                Text(
+                    text = if (state.viewAutoCollections) "Auto" else "Tags",
+                    style = MaterialTheme.typography.bodyMedium,
                 )
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(8.dp)
-                        .clickable(
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() },
-                            onClick = { viewModel.onAction(CollectionAction.ToggleSelectedCollectionType) }
+
+                if(state.totalCollections >= TOP_N) {
+                    TextButton(
+                        onClick = {viewModel.onAction(CollectionAction.ToggleViewAllCollections)}
+                    ) {
+                        Text(
+                            text = if (state.showAllCollections) "Show less" else "Show all",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
                         )
-                ) {
-                    Text("Tag collections",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if(!state.viewAutoCollections) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                    )
+                    }
                 }
             }
 
-            if(state.totalCollections >= TOP_N) {
-                TextButton(
-                    modifier = Modifier.align(Alignment.End),
-                    onClick = {viewModel.onAction(CollectionAction.ToggleViewAllCollections)}
-                ) {
-                    Text(
-                        text = if (state.showAllCollections) "Show less" else "Show all",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }else{
-                Spacer(modifier = Modifier.height(16.dp))
-            }
 
             MediaCollectionsList(
                 isVisible = isCollectionVisible,
@@ -401,19 +282,10 @@ fun CollectionsScreen(
                     else Modifier
                 )
         ) {
-            CollectionsActionBar(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .height(70.dp)
-                    .zIndex(1f),
-                onDelete = { isDeletingCollection = true },
-                deleteEnabled = !state.viewAutoCollections,
-                onMerge = { isMergingCollections = true },
-                mergeEnabled = !state.loading,
-                onRename = { isRenamingCollection = true },
-                renameEnabled = state.selectedCollections.size == 1,
-                onTag  = { isTaggingClusters = true },
-                tagEnabled = state.viewAutoCollections
+
+            ActionBar(
+                actions = actionBarActions,
+                modifier = Modifier.height(actionBarHeight.dp),
             )
         }
         AnimatedVisibility(
@@ -440,5 +312,111 @@ fun CollectionsScreen(
                 }
             )
         }
+    }
+
+    TextInputModal(
+        isVisible = isRenamingCollection,
+        title=stringResource(R.string.rename_action),
+        placeholder = stringResource(R.string.placeholders_rename),
+        onClose = { isRenamingCollection = false },
+        onConfirm = {
+                newName -> viewModel.onAction(CollectionAction.RenameCollection(newName))
+            isRenamingCollection = false
+        },
+        leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
+        onValueChange = {
+            if (!it.text.contains(" ")) {
+                true
+            } else {
+                Toast.makeText(context, spaceNotAllowedMessage, Toast.LENGTH_SHORT).show()
+                false
+            }
+        }
+    )
+
+    TextInputModal(
+        isVisible = isCreatingNewTagAndTaggingClusters,
+        title=stringResource(R.string.add_tag_action),
+        placeholder = stringResource(R.string.placeholders_add_tag),
+        onClose = { isCreatingNewTagAndTaggingClusters = false },
+        onConfirm =  {
+            viewModel.onAction(CollectionAction.CreateNewTagAndTagClusters(it))
+            isCreatingNewTagAndTaggingClusters = false
+        },
+        leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
+        onValueChange = {
+            if (!it.text.contains(" ")) {
+                true
+            } else {
+                Toast.makeText(context, spaceNotAllowedMessage, Toast.LENGTH_SHORT).show()
+                false
+            }
+        }
+    )
+
+    if (isMergingCollections) {
+        val labelledCollections: List<String> = state.selectedCollections.sortedByDescending { it.size}.map { it.name }.filterNot { it == UNLABELLED_COLLECTION }
+        var useSelectorInput by remember { mutableStateOf(labelledCollections.isNotEmpty()) }
+
+        if (useSelectorInput) {
+            SelectorModal(
+                isVisible = labelledCollections.isNotEmpty(),
+                initialOption = labelledCollections.first(),
+                title = stringResource(R.string.merge_action),
+                label = stringResource(R.string.collections_primary_collection_label),
+                options = labelledCollections,
+                onConfirm = { selected ->
+                    viewModel.onAction(CollectionAction.MergeCollections(selected))
+                    isMergingCollections = false
+                },
+                onClose = { isMergingCollections = false }
+            )
+        }else{
+            TextInputModal(
+                isVisible = true,
+                title = stringResource(R.string.merge_action),
+                placeholder = stringResource(R.string.placeholders_rename),
+                onClose = { isMergingCollections = false },
+                onConfirm =  { newName ->
+                    viewModel.onAction(CollectionAction.MergeCollections(newName, isNewMergedLabel = true))
+                    isMergingCollections = false
+                },
+                leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
+                onValueChange = {
+                    if (!it.text.contains(" ")) {
+                        true
+                    } else {
+                        Toast.makeText(context, spaceNotAllowedMessage, Toast.LENGTH_SHORT).show()
+                        false
+                    }
+                }
+            )
+        }
+    }
+
+    if ( isDeletingCollection) {
+        val count = state.selectedCollections.size
+        val alertTitle = stringResource(R.string.collections_delete_collections_alert_title)
+        val alertDescription = stringResource(
+            R.string.collections_delete_collections_alert_description,
+            count,
+            pluralStringResource(R.plurals.collection_count, count)
+        )
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text(alertTitle) },
+            text = { Text(alertDescription) },
+            dismissButton = {
+                TextButton(onClick = { isDeletingCollection = false })
+                { Text(stringResource(R.string.cancel_action)) }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.onAction(CollectionAction.DeleteCollections)
+                    isDeletingCollection = false
+                })
+                { Text(stringResource(R.string.confirm_action)) }
+            }
+        )
     }
 }

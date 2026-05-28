@@ -1,4 +1,4 @@
-package com.fpf.smartscan.ui.components.collections
+package com.fpf.smartscan.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -16,10 +16,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.fpf.smartscan.ui.components.ActionConfig
+import kotlin.collections.iterator
 
 @Composable
-fun CollectionItemsActionBar(
+fun ActionBar(
     actions: Map<String, ActionConfig>,
     modifier: Modifier = Modifier,
     ) {
@@ -27,7 +27,7 @@ fun CollectionItemsActionBar(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceContainerLowest)
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
