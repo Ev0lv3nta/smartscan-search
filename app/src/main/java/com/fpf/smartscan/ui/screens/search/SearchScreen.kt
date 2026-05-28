@@ -16,8 +16,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,8 +44,8 @@ import com.fpf.smartscan.search.IndexingStatus
 import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.settings.AppSettings
+import com.fpf.smartscan.ui.components.DropDownMenuWrapper
 import com.fpf.smartscan.ui.components.LoadingIndicator
-import com.fpf.smartscan.ui.components.OverflowMenu
 import com.fpf.smartscan.ui.components.media.MediaViewer
 import com.fpf.smartscan.ui.components.ProgressBar
 import com.fpf.smartscan.ui.components.SelectorIconItem
@@ -118,6 +120,13 @@ fun SearchScreen(
     var showStartDatePicker by remember { mutableStateOf(false) }
     var showEndDatePicker by remember { mutableStateOf(false) }
 
+    // Menu
+    // TODO: rename resources
+    var showMenu by remember { mutableStateOf(false) }
+    val scanImagesMenuLabel = stringResource(R.string.setting_scan_images)
+    val scanVideosMenuLabel = stringResource(R.string.setting_scan_videos)
+
+
     RequestPermissions { _, storageGranted ->
         hasStoragePermission = storageGranted
     }
@@ -156,20 +165,28 @@ fun SearchScreen(
     }
 
     LaunchedEffect(isIndexing) {
+        val menuActions: Map<String, Pair<() -> Unit, Boolean>> = mapOf(
+            scanImagesMenuLabel to Pair({ showScanImagesDialog = true }, !isIndexing),
+            scanVideosMenuLabel to Pair({ showScanVideosDialog = true }, !isIndexing)
+        )
+
         onTopBarChange(
             TopBarState(
                 title = screenTitle,
                 actions = {
-                    OverflowMenu(
-                        scanImagesEnabled = !isIndexing,
-                        onScanImages = {
-                            showScanImagesDialog = true
-                        },
-                        scanVideosEnabled = !isIndexing,
-                        onScanVideos = {
-                            showScanVideosDialog = true
+                    Box{
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(
+                                imageVector = Icons.Filled.MoreVert,
+                                contentDescription = "menu"
+                            )
                         }
-                    )
+                        DropDownMenuWrapper(
+                            expanded = showMenu,
+                            actions = menuActions,
+                            onClose = {showMenu = false}
+                        )
+                    }
                 }
             )
         )
