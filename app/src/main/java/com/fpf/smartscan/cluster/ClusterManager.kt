@@ -8,10 +8,8 @@ import com.fpf.smartscan.data.clusters.MediaClusterMetadata
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
-import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.media.mediaIdToUri
 import com.fpf.smartscan.utils.reservoirSample
-import com.fpf.smartscansdk.core.cluster.Assignments
 import com.fpf.smartscansdk.core.cluster.Cluster
 import com.fpf.smartscansdk.core.cluster.ClusterResult
 import com.fpf.smartscansdk.core.cluster.IncrementalClusterer
@@ -78,7 +76,7 @@ class ClusterManager(
     suspend fun mergeClusters(primaryClusterId: Long, otherClusters: List<Long>, imageEmbedStore: FileEmbeddingStore, videoEmbedStore: FileEmbeddingStore){
         val otherClustersCrossRefs = clusterCrossRefRepository.getByClusterIds(otherClusters)
         val updatedClusterCrossRefs = otherClustersCrossRefs.map { it.copy(clusterId = primaryClusterId) }
-        clusterCrossRefRepository.upsertClusterCrossRefs(updatedClusterCrossRefs)
+        clusterCrossRefRepository.insertClusterCrossRefs(updatedClusterCrossRefs)
 
         // Delete clusters which are being merged
         clusterMetadataRepository.deleteMetadatas(otherClusters) // cascades all related crossrefs
@@ -207,13 +205,13 @@ class ClusterManager(
             if (it.key !in validIds) return@mapNotNull null
             ClusterCrossRef(clusterId = it.value, mediaId = it.key)
         }
-        clusterCrossRefRepository.upsertClusterCrossRefs(crossRefs)
+        clusterCrossRefRepository.insertClusterCrossRefs(crossRefs)
     }
 
     private suspend fun updateAssignments(itemIds: List<Long>, newClusterId: Long) {
         val crossRefs = itemIds.map { ClusterCrossRef(clusterId = newClusterId, mediaId = it) }
         clusterCrossRefRepository.deleteByMediaIds(itemIds) // clear old
-        clusterCrossRefRepository.upsertClusterCrossRefs(crossRefs)
+        clusterCrossRefRepository.insertClusterCrossRefs(crossRefs)
     }
 
     private fun computeClusterMetrics(embeddings: List<FloatArray> ): Triple<FloatArray, Float, Float>{

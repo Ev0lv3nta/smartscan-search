@@ -147,7 +147,7 @@ object DbManager {
             )
         }
 
-        newTagsCrossRefRepository.upsertTagCrossRefs(updatedImageCrossRefs)
+        newTagsCrossRefRepository.insertTagCrossRefs(updatedImageCrossRefs)
         oldImageDb.close()
 
         Log.d(TAG, "Image transfer complete. ${imageTagIds.size} tags transferred. ${updatedImageCrossRefs.size} cross refs transferred.")
@@ -177,7 +177,7 @@ object DbManager {
             )
         }
 
-        newTagsCrossRefRepository.upsertTagCrossRefs(updatedVideoCrossRefs)
+        newTagsCrossRefRepository.insertTagCrossRefs(updatedVideoCrossRefs)
         oldVideoDb.close()
 
         Log.d(TAG, "Video transfer complete. ${videoTagIds.size} tags transferred. ${updatedVideoCrossRefs.size} cross refs transferred.")

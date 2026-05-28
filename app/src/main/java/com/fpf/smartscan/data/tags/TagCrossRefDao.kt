@@ -15,8 +15,8 @@ interface TagCrossRefDao {
     @Query("SELECT * FROM tag_crossref")
     suspend fun getAllCrossRefs(): List<TagCrossRef>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(tags: List<TagCrossRef>)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(tags: List<TagCrossRef>)
 
     @Query("DELETE FROM tag_crossref WHERE mediaId IN (:mediaIds)")
     suspend fun deleteByMediaIds(mediaIds: List<Long>)

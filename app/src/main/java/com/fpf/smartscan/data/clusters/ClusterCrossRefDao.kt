@@ -33,8 +33,8 @@ interface ClusterCrossRefDao {
     @Query("SELECT * FROM media_cluster_crossref WHERE clusterId in (:ids)")
     suspend fun getByClusterIds(ids: List<Long>): List<ClusterCrossRef>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(crossRefs: List<ClusterCrossRef>)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(crossRefs: List<ClusterCrossRef>)
 
     @Query("DELETE FROM media_cluster_crossref WHERE clusterId IN (:clusterIds)")
     suspend fun deleteByClusterIds(clusterIds: List<Long>)

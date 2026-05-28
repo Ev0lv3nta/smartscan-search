@@ -197,7 +197,7 @@ class CollectionsViewModel(
 
     private suspend fun tagCluster(clusterId: Long, tagId: Long){
         val clusterCrossRefs = mediaMetadataRepository.getByCluster(clusterId)
-        tagCrossRefRepository.upsertTagCrossRefs(clusterCrossRefs.map{ TagCrossRef(it.id, tagId)})
+        tagCrossRefRepository.insertTagCrossRefs(clusterCrossRefs.map{ TagCrossRef(it.id, tagId)})
     }
 
     private fun tagClusterCollections(tagId: Long){

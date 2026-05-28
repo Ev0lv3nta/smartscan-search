@@ -23,7 +23,7 @@ class TagManager(
             id = tagRepository.insertTags(listOf(Tag(name = tagName.trim()))).first()
         }
         val tagEntries = items.map { TagCrossRef(mediaId = it.id, tagId = id) }
-        tagCrossRefRepository.upsertTagCrossRefs(tagEntries)
+        tagCrossRefRepository.insertTagCrossRefs(tagEntries)
     }
 
     fun checkAutoCompletion(query: CharSequence, substringEnd: Int, tags: List<String>, startWithHashtag: Boolean =  true): List<String>{
@@ -72,7 +72,7 @@ class TagManager(
         val mediaToUpdate = tagsToMerge.flatMap { mediaMetadataRepository.getByTag(it.id) }
         if(primaryTag != null && mediaToUpdate.isNotEmpty()){
             val updated = mediaToUpdate.map{ TagCrossRef(mediaId = it.id, tagId = primaryTag.id) }
-            tagCrossRefRepository.upsertTagCrossRefs(updated)
+            tagCrossRefRepository.insertTagCrossRefs(updated)
             tagRepository.deleteTags(tagsToMerge)
         }
     }
@@ -89,7 +89,7 @@ class TagManager(
 
     private suspend fun moveItems(items: Set<MediaItem>, currentTagName: String, destinationTagId: Long){
         val updatedCrossRef = items.map{ TagCrossRef(mediaId = it.id, tagId = destinationTagId) }
-        tagCrossRefRepository.upsertTagCrossRefs(updatedCrossRef)
+        tagCrossRefRepository.insertTagCrossRefs(updatedCrossRef)
 
         val currentTag = tagRepository.getTagsByName(listOf(currentTagName)).firstOrNull()?: return
         tagCrossRefRepository.deleteMediaMatchTag(  items.map{it.id}, currentTag.id)
