@@ -106,9 +106,8 @@ fun CollectionsScreen(
 
     // Menu
     var showMenu by remember { mutableStateOf(false) }
-    val menuActions: Map<String, MenuItemConfig> = mapOf(
-        stringResource(R.string.group_by_similarity_action) to MenuItemConfig.Switch(checked = state.groupBySimilarity, { viewModel.onAction(CollectionAction.SetGroupBySimilarity(it)) })
-    )
+//    val menuActions: Map<String, MenuItemConfig> = mapOf(
+//    )
     val spaceNotAllowedMessage = stringResource(R.string.alert_space_not_allowed)
 
 
@@ -175,21 +174,21 @@ fun CollectionsScreen(
         onTopBarChange(
             TopBarState(
                 title = screenTitle,
-                actions = {
-                    Box{
-                        IconButton(onClick = { showMenu = true }) {
-                            Icon(
-                                imageVector = Icons.Filled.MoreVert,
-                                contentDescription = "menu"
-                            )
-                        }
-                        DropDownMenuWrapper(
-                            expanded = showMenu,
-                            actions = menuActions,
-                            onClose = {showMenu = false}
-                        )
-                    }
-                }
+//                actions = {
+//                    Box{
+//                        IconButton(onClick = { showMenu = true }) {
+//                            Icon(
+//                                imageVector = Icons.Filled.MoreVert,
+//                                contentDescription = "menu"
+//                            )
+//                        }
+//                        DropDownMenuWrapper(
+//                            expanded = showMenu,
+//                            actions = menuActions,
+//                            onClose = {showMenu = false}
+//                        )
+//                    }
+//                }
             )
         )
     }
