@@ -15,7 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.fpf.smartscan.constants.Routes
+import com.fpf.smartscan.navigation.Routes
 import com.fpf.smartscan.navigation.BottomNavigationBar
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.search.SearchQuery

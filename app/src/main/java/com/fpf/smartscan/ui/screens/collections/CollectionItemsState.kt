@@ -8,7 +8,6 @@ data class CollectionItemsState(
     val clusterId: Long = -1L,
     val mediaType: MediaType? = null,
     val loading: Boolean = false,
-    val error: String? = null,
     val mediaToView: MediaItem? = null,
     val selectedMediaItems: Set<MediaItem> = emptySet(),
 )

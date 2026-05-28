@@ -24,10 +24,11 @@ fun SelectorModal(
     onClose: () -> Unit,
     onConfirm: (String) -> Unit,
     label: String = "items",
+    initialOption: String? = null
 ) {
     if (!isVisible) return
 
-    var selectedOption by remember { mutableStateOf("") }
+    var selectedOption by remember { mutableStateOf(initialOption?: "") }
 
     AlertDialog(
         onDismissRequest = { },

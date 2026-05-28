@@ -3,37 +3,42 @@ package com.fpf.smartscan.cluster
 import com.fpf.smartscan.data.clusters.ClusterCrossRef
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
+import com.fpf.smartscan.data.clusters.ClusterMetadataWithCount
 import com.fpf.smartscan.data.clusters.MediaClusterMetadata
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
-import com.fpf.smartscan.media.MediaType
+import com.fpf.smartscan.media.MediaCollection
+import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
+import com.fpf.smartscan.media.MediaItem
+import com.fpf.smartscan.media.mediaIdToUri
 import com.fpf.smartscan.utils.reservoirSample
+import com.fpf.smartscansdk.core.cluster.Assignments
 import com.fpf.smartscansdk.core.cluster.Cluster
 import com.fpf.smartscansdk.core.cluster.ClusterResult
 import com.fpf.smartscansdk.core.cluster.IncrementalClusterer
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
+import com.fpf.smartscansdk.core.embeddings.generatePrototypeEmbedding
+import com.fpf.smartscansdk.core.embeddings.getSimilarities
 import kotlin.collections.iterator
+import kotlin.math.sqrt
 
 class ClusterManager(
     private val clusterCrossRefRepository: ClusterCrossRefRepository,
     private val clusterStore: FileEmbeddingStore,
     private val clusterMetadataRepository: ClusterMetadataRepository,
     private val mediaMetadataRepository: MediaMetadataRepository,
-    private val mediaType: MediaType
 ) {
     companion object {
         private const val LARGE_DATASET_SIZE: Int = 10000
         private const val MIN_SAMPLE_SIZE: Int = 500
         private const val MAX_SAMPLE_SIZE: Int = 5000
-
-
     }
     private var clusterToMediaIdsMap: MutableMap<Long, MutableSet<Long>> = mutableMapOf()
     private var assignments: MutableMap<Long, Long> = mutableMapOf()
 
-    suspend fun clusterMedia(itemEmbeds: List<StoredEmbedding>) {
+    suspend fun cluster(itemEmbeds: List<StoredEmbedding>) {
         val existingAssignments = getAssignments()
-        val validIds = mediaMetadataRepository.getByType(mediaType).map { it.id }.toSet()
+        val validIds = mediaMetadataRepository.getAllIds().toSet()
         val existingClusters: Map<Long, Cluster> = getExistingClusters()
 
         val filteredItems = itemEmbeds
@@ -54,8 +59,8 @@ class ClusterManager(
         val result = clusterer.cluster(filteredItems)
 
         // Must update clusters first
-        updateClusters(result, existingClusters)
-        updateAssignments(result, validIds)
+        updateClustersFromResult(result, existingClusters)
+        updateAssignmentsFromResult(result, validIds)
     }
 
     suspend fun getExistingClusters(): Map<Long, Cluster> {
@@ -70,9 +75,72 @@ class ClusterManager(
         } else emptyMap()
     }
 
-    suspend fun updateClusters(clusterResult: ClusterResult, existingClustersMap: Map<Long, Cluster>) {
-        val (existingClusters, newClusters) =
-            clusterResult.clusters.values.partition { it.prototypeId in existingClustersMap }
+    suspend fun mergeClusters(primaryClusterId: Long, otherClusters: List<Long>, imageEmbedStore: FileEmbeddingStore, videoEmbedStore: FileEmbeddingStore){
+        val otherClustersCrossRefs = clusterCrossRefRepository.getByClusterIds(otherClusters)
+        val updatedClusterCrossRefs = otherClustersCrossRefs.map { it.copy(clusterId = primaryClusterId) }
+        clusterCrossRefRepository.upsertClusterCrossRefs(updatedClusterCrossRefs)
+
+        // Delete clusters which are being merged
+        clusterMetadataRepository.deleteMetadatas(otherClusters) // cascades all related crossrefs
+        clusterStore.remove(otherClusters)
+        sync(primaryClusterId, imageEmbedStore, videoEmbedStore)
+    }
+
+    suspend fun moveItems(itemIds: List<Long>,newClusterId: Long, oldClusterId: Long, imageEmbedStore: FileEmbeddingStore, videoEmbedStore: FileEmbeddingStore){
+        updateAssignments(itemIds, newClusterId)
+        listOf(oldClusterId, newClusterId).forEach { sync(it, imageEmbedStore, videoEmbedStore) }
+    }
+
+    suspend fun getClusterToMediaIdsMap(): Map<Long, MutableSet<Long>> {
+        if (clusterToMediaIdsMap.isNotEmpty()) return clusterToMediaIdsMap
+
+        for(ref in clusterCrossRefRepository.getAllCrossRefs()){
+            clusterToMediaIdsMap.computeIfAbsent(ref.clusterId) { HashSet() }.add(ref.mediaId)
+        }
+        return clusterToMediaIdsMap
+    }
+
+    suspend fun getAssignments(): Map<Long, Long> {
+        if (assignments.isNotEmpty()) return assignments
+
+        val map = getClusterToMediaIdsMap()
+
+        for ((clusterId, mediaIds) in map) {
+            for (mediaId in mediaIds) {
+                assignments[mediaId] = clusterId
+            }
+        }
+        return assignments
+    }
+
+    fun clear() {
+        clusterToMediaIdsMap.clear()
+        assignments.clear()
+    }
+
+    suspend fun updateLabel(clusterId: Long, newLabel: String){
+        val cluster = clusterMetadataRepository.getMetadatas(listOf(clusterId)).firstOrNull()
+        cluster?.let { clusterMetadataRepository.updateMetadatas(listOf(it.copy(label = newLabel))) }
+    }
+
+    suspend fun toCollections(clusters: List<ClusterMetadataWithCount>): List<MediaCollection> {
+        return clusters.mapNotNull {
+            val meta = mediaMetadataRepository.getByCluster(it.clusterId, limit = 1, offset = 0).firstOrNull()
+            val uri = meta?.let { meta -> mediaIdToUri(meta.id, meta.type) }
+            uri?.let { uri ->
+                MediaCollection(
+                    id = it.clusterId,
+                    name = it.label?: UNLABELLED_COLLECTION,
+                    thumbNail = uri,
+                    size = it.count,
+                    isAutoCollection = true
+                )
+            }
+        }
+    }
+
+    private suspend fun updateClustersFromResult(clusterResult: ClusterResult, existingClustersMap: Map<Long, Cluster>) {
+        val (existingClusters, newClusters) = clusterResult.clusters.values.partition { it.prototypeId in existingClustersMap }
 
         val existingMetadata = existingClusters.map {
             MediaClusterMetadata(
@@ -81,7 +149,6 @@ class ClusterManager(
                 meanSimilarity = it.metadata.meanSimilarity,
                 stdSimilarity = it.metadata.stdSimilarity,
                 label = it.metadata.label,
-                type = mediaType
             )
         }
 
@@ -92,7 +159,6 @@ class ClusterManager(
                 meanSimilarity = it.metadata.meanSimilarity,
                 stdSimilarity = it.metadata.stdSimilarity,
                 label = it.metadata.label,
-                type = mediaType
             )
         }
 
@@ -118,34 +184,6 @@ class ClusterManager(
         clusterStore.add(newEmbeds)
         clusterStore.update(existingEmbeds)
     }
-
-    suspend fun getClusterToMediaIdsMap(): Map<Long, MutableSet<Long>> {
-        if (clusterToMediaIdsMap.isNotEmpty()) return clusterToMediaIdsMap
-
-        for(ref in clusterCrossRefRepository.getByType(mediaType)){
-            clusterToMediaIdsMap.computeIfAbsent(ref.clusterId) { HashSet() }.add(ref.mediaId)
-        }
-        return clusterToMediaIdsMap
-    }
-
-    suspend fun getAssignments(): Map<Long, Long> {
-        if (assignments.isNotEmpty()) return assignments
-
-        val map = getClusterToMediaIdsMap()
-
-        for ((clusterId, mediaIds) in map) {
-            for (mediaId in mediaIds) {
-                assignments[mediaId] = clusterId
-            }
-        }
-        return assignments
-    }
-
-    fun clear() {
-        clusterToMediaIdsMap.clear()
-        assignments.clear()
-    }
-
     private fun getDefaultThresholdFromSample(items: List<StoredEmbedding>, n: Int): Float{
         val sample = getSample(items, n)
         val clusterer = IncrementalClusterer(
@@ -164,15 +202,47 @@ class ClusterManager(
             items.shuffled().take(n)
         }
     }
-    private suspend fun updateAssignments(clusterResult: ClusterResult, validIds: Set<Long> ) {
+    private suspend fun updateAssignmentsFromResult(clusterResult: ClusterResult, validIds: Set<Long> ) {
         val crossRefs = clusterResult.assignments.mapNotNull {
             if (it.key !in validIds) return@mapNotNull null
-
-            ClusterCrossRef(
-                clusterId = it.value,
-                mediaId = it.key,
-            )
+            ClusterCrossRef(clusterId = it.value, mediaId = it.key)
         }
         clusterCrossRefRepository.upsertClusterCrossRefs(crossRefs)
+    }
+
+    private suspend fun updateAssignments(itemIds: List<Long>, newClusterId: Long) {
+        val crossRefs = itemIds.map { ClusterCrossRef(clusterId = newClusterId, mediaId = it) }
+        clusterCrossRefRepository.deleteByMediaIds(itemIds) // clear old
+        clusterCrossRefRepository.upsertClusterCrossRefs(crossRefs)
+    }
+
+    private fun computeClusterMetrics(embeddings: List<FloatArray> ): Triple<FloatArray, Float, Float>{
+        val prototypeEmbedding = generatePrototypeEmbedding(embeddings)
+        val sims = getSimilarities(prototypeEmbedding, embeddings)
+        val meanSim = sims.average().toFloat()
+        val stdSim = sqrt(sims.map { (it - meanSim) * (it - meanSim) }.average()).toFloat()
+        return Triple(prototypeEmbedding, meanSim, stdSim)
+    }
+
+    private suspend fun sync(clusterId: Long, imageEmbedStore: FileEmbeddingStore, videoEmbedStore: FileEmbeddingStore){
+        val clusterCrossRefs = clusterCrossRefRepository.getByClusterIds(listOf(clusterId))
+        val mediaIds = clusterCrossRefs.map{it.mediaId}
+        val embeddings = mutableListOf<FloatArray>()
+
+        // Note: mediaIds may contain both image and video ids so get calls are required to both stores
+        // In the event that it only contains 1 media type, then an empty list will be returned if that media type doesnt match the embed store
+        // This is quicker than checking type via db
+        embeddings.addAll(imageEmbedStore.get(mediaIds).map{it.embedding})
+        embeddings.addAll(videoEmbedStore.get(mediaIds).map{it.embedding})
+        val (prototypeEmbedding, meanSim, stdSim) = computeClusterMetrics(embeddings)
+
+        // Update primary cluster
+        val oldStoredEmbed = clusterStore.get(listOf(clusterId)).firstOrNull()?: error("Cluster embedding not found")
+        val updatedStoredEmbed = oldStoredEmbed.copy(embedding = prototypeEmbedding)
+        clusterStore.update(listOf(updatedStoredEmbed))
+
+        val clusterMetadata = clusterMetadataRepository.getMetadatas(listOf(clusterId)).firstOrNull()?: return
+        val updatedMetadata = clusterMetadata.copy(meanSimilarity = meanSim, stdSimilarity = stdSim, prototypeSize = mediaIds.size)
+        clusterMetadataRepository.updateMetadatas(listOf(updatedMetadata))
     }
 }

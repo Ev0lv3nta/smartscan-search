@@ -1,4 +1,4 @@
-package com.fpf.smartscan.ui.components.search
+package com.fpf.smartscan.ui.components
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import com.fpf.smartscan.ui.components.search.AutoCompleter
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -35,15 +36,15 @@ import kotlinx.coroutines.flow.debounce
 @Composable
 fun TagAdder(
     isVisible: Boolean,
-    autoCompleteTagResults: List<String>,
     onClose: () -> Unit,
     onAddTag: (String) -> Unit,
-    onCheckAutoCompletion: (text: String, subStringEnd: Int, startWithHashtag: Boolean) -> Unit
+    onCheckAutoCompletion: (text: String, subStringEnd: Int, startWithHashtag: Boolean) -> List<String>
 ){
     if(!isVisible) return
 
     var newTag by remember { mutableStateOf(TextFieldValue(text = "", selection = TextRange(0))) }
     var isFocused by remember { mutableStateOf(false) }
+    var autoCompleteTagResults by remember { mutableStateOf<List<String>>(emptyList()) }
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
@@ -51,7 +52,7 @@ fun TagAdder(
             .debounce(50)
 //            .filter { it.isNotBlank() }
             .collectLatest { value ->
-                onCheckAutoCompletion(value, value.length, false)
+                autoCompleteTagResults = onCheckAutoCompletion(value, value.length, false)
             }
     }
 
@@ -82,7 +83,9 @@ fun TagAdder(
                     isVisible = autoCompleteTagResults.isNotEmpty() && isFocused,
                     autoCompleteResults = autoCompleteTagResults,
                     query = newTag.text,
-                    onSelect = { newTag = TextFieldValue(text = it, selection = TextRange(it.length))},
+                    onSelect = {
+                        newTag = TextFieldValue(text = it, selection = TextRange(it.length))
+                    },
                     label = "Tags",
                 )
             }

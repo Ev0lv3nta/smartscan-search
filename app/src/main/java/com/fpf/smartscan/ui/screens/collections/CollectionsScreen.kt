@@ -35,7 +35,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -50,7 +49,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import com.fpf.smartscan.constants.Routes
+import com.fpf.smartscan.navigation.Routes
 import com.fpf.smartscan.ui.components.modals.SelectorModal
 import com.fpf.smartscan.ui.components.SlideRevealBox
 import com.fpf.smartscan.ui.components.modals.TextInputModal
@@ -61,6 +60,8 @@ import com.fpf.smartscan.ui.screens.collections.CollectionsViewModel.Companion.T
 import kotlinx.coroutines.FlowPreview
 import com.fpf.smartscan.R
 import androidx.compose.ui.res.stringResource
+import com.fpf.smartscan.events.CollectionEventType
+import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
 import com.fpf.smartscan.navigation.TopBarState
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -84,7 +85,8 @@ fun CollectionsScreen(
     var isSelecting by remember { mutableStateOf(false) }
     var isRenamingCollection by remember { mutableStateOf(false) }
     var isMergingCollections by remember { mutableStateOf(false) }
-    var isCopyingCollection by remember { mutableStateOf(false) }
+    var isTaggingClusters by remember { mutableStateOf(false) }
+    var isCreatingNewTagAndTaggingClusters by remember { mutableStateOf(false) }
     var isDeletingCollection by remember { mutableStateOf(false) }
 
     var offset by remember { mutableIntStateOf(0) }
@@ -98,14 +100,49 @@ fun CollectionsScreen(
             }else{
                 onNavigate(Routes.viewCollection(it.name))
             }
-            viewModel.setCollectionToView(null)
+            viewModel.onAction(CollectionAction.SetCollectionToView(null))
         }
     }
 
-    LaunchedEffect(state.error) {
-        if(state.error != null){
-            Toast.makeText(context, state.error, Toast.LENGTH_SHORT).show()
-            viewModel.resetErrorState()
+    // Handle action result via events
+    LaunchedEffect(Unit) {
+        viewModel.event.collect { event ->
+            when(event.type){
+                CollectionEventType.MERGE -> {
+                    if(event.success){
+                        isSelecting = false
+                    }
+                    else {
+                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
+                    }
+                }
+                CollectionEventType.COPY -> {
+                    if(event.success){
+                        isSelecting = false
+                    }
+                    else {
+                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
+                    }
+                }
+
+                CollectionEventType.RENAME -> {
+                    if(event.success){
+                        isSelecting = false
+                    }
+                    else {
+                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
+                    }
+                }
+
+                CollectionEventType.DELETE -> {
+                    if(event.success){
+                        isSelecting = false
+                    }
+                    else {
+                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
+                    }
+                }
+            }
         }
     }
 
@@ -121,16 +158,13 @@ fun CollectionsScreen(
     }
 
     TextInputModal(
-        isVisible = isRenamingCollection && state.selectedCollections.size == 1,
+        isVisible = isRenamingCollection,
         title="Rename collection",
         placeholder = "Enter new collection name",
-        onClose = {isRenamingCollection = false},
-        onConfirm = { newName ->
-            if(state.viewAutoCollections){
-                viewModel.renameClusterCollection( state.selectedCollections.first(), newName)
-            } else{
-                viewModel.renameTagCollection( state.selectedCollections.first(), newName)
-            }
+        onClose = { isRenamingCollection = false },
+        onConfirm = {
+            newName -> viewModel.onAction(CollectionAction.RenameCollection(newName))
+            isRenamingCollection = false
                     },
         leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
         onValueChange = {
@@ -143,18 +177,65 @@ fun CollectionsScreen(
         }
     )
 
-    SelectorModal(
-        isVisible = isMergingCollections && state.selectedCollections.isNotEmpty(),
-        title="Merge collections",
-        label = "Primary collection",
-        options = state.selectedCollections.map {it.name },
-        onConfirm = { selected ->
-            if(!state.viewAutoCollections){
-                viewModel.mergeCollections(selected, state.selectedCollections.filterNot { it.name == selected })
+    TextInputModal(
+        isVisible = isCreatingNewTagAndTaggingClusters,
+        title="Create tag",
+        placeholder = "Enter tag name",
+        onClose = { isCreatingNewTagAndTaggingClusters = false },
+        onConfirm =  {
+            viewModel.onAction(CollectionAction.CreateNewTagAndTagClusters(it))
+            isCreatingNewTagAndTaggingClusters = false
+        },
+        leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
+        onValueChange = {
+            if (!it.text.contains(" ")) {
+                true
+            } else {
+                Toast.makeText(context, "Spaces are not allowed", Toast.LENGTH_SHORT).show()
+                false
             }
-                    },
-        onClose = { isMergingCollections = false }
+        }
     )
+
+    if (isMergingCollections) {
+        val labelledCollections: List<String> = state.selectedCollections.sortedByDescending { it.size}.map { it.name }.filterNot { it == UNLABELLED_COLLECTION }
+        var useSelectorInput by remember { mutableStateOf(labelledCollections.isNotEmpty()) }
+
+        if (useSelectorInput) {
+            SelectorModal(
+                isVisible = labelledCollections.isNotEmpty(),
+                initialOption = labelledCollections.first(),
+                title = "Merge collections",
+                label = "Primary collection",
+                options = labelledCollections,
+                onConfirm = { selected ->
+                    viewModel.onAction(CollectionAction.MergeCollections(selected))
+                    isMergingCollections = false
+                },
+                onClose = { isMergingCollections = false }
+            )
+        }else{
+            TextInputModal(
+                isVisible = true,
+                title="Merge collection",
+                placeholder = "Enter collection name",
+                onClose = { isMergingCollections = false },
+                onConfirm =  { newName ->
+                    viewModel.onAction(CollectionAction.MergeCollections(newName, isNewMergedLabel = true))
+                    isMergingCollections = false
+                },
+                leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
+                onValueChange = {
+                    if (!it.text.contains(" ")) {
+                        true
+                    } else {
+                        Toast.makeText(context, "Spaces are not allowed", Toast.LENGTH_SHORT).show()
+                        false
+                    }
+                }
+            )
+        }
+    }
 
     if ( isDeletingCollection) {
         val count = state.selectedCollections.size
@@ -174,7 +255,7 @@ fun CollectionsScreen(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.deleteTagCollections( state.selectedCollections)
+                    viewModel.onAction(CollectionAction.DeleteCollections)
                     isDeletingCollection = false
                 })
                 { Text("Confirm") }
@@ -197,7 +278,7 @@ fun CollectionsScreen(
                 offsetPx = offset,
                 modifier = Modifier
                     .zIndex(1f)
-                    .heightIn(max=maxCollapsablePx.dp)
+                    .heightIn(max = maxCollapsablePx.dp)
                     .padding(bottom = 8.dp)
             ) {
                 val text = if (state.selectedCollections.isNotEmpty()) "${state.selectedCollections.size} Selected" else "Select items"
@@ -213,12 +294,14 @@ fun CollectionsScreen(
                     .fillMaxWidth()
                     .height(IntrinsicSize.Min)
                     .padding(bottom = 8.dp)
-                    .clip(RoundedCornerShape(
-                        topStart = 12.dp,
-                        bottomStart = 0.dp,
-                        topEnd = 12.dp,
-                        bottomEnd = 0.dp
-                    ))
+                    .clip(
+                        RoundedCornerShape(
+                            topStart = 12.dp,
+                            bottomStart = 0.dp,
+                            topEnd = 12.dp,
+                            bottomEnd = 0.dp
+                        )
+                    )
                     .background(color = MaterialTheme.colorScheme.surfaceContainer)
                     .border(
                         BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
@@ -239,7 +322,7 @@ fun CollectionsScreen(
                         .clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() },
-                            onClick = {viewModel.toggleViewAutoCollections()}
+                            onClick = { viewModel.onAction(CollectionAction.ToggleSelectedCollectionType) }
                         )
                 ) {
                     Text("Auto collections",
@@ -258,7 +341,7 @@ fun CollectionsScreen(
                         .clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() },
-                            onClick = {viewModel.toggleViewAutoCollections()}
+                            onClick = { viewModel.onAction(CollectionAction.ToggleSelectedCollectionType) }
                         )
                 ) {
                     Text("Tag collections",
@@ -271,7 +354,8 @@ fun CollectionsScreen(
             if(state.totalCollections >= TOP_N) {
                 TextButton(
                     modifier = Modifier.align(Alignment.End),
-                    onClick = { viewModel.toggleViewAllCollections() }) {
+                    onClick = {viewModel.onAction(CollectionAction.ToggleViewAllCollections)}
+                ) {
                     Text(
                         text = if (state.showAllCollections) "Show less" else "Show all",
                         style = MaterialTheme.typography.bodyMedium,
@@ -288,8 +372,8 @@ fun CollectionsScreen(
                 items = collections,
                 isSelecting = isSelecting,
                 selectedItems = state.selectedCollections,
-                onItemClick = viewModel::setCollectionToView,
-                onToggleSelected = viewModel::toggleSelectedCollection,
+                onItemClick = { viewModel.onAction(CollectionAction.SetCollectionToView(it)) },
+                onToggleSelected = { viewModel.onAction(CollectionAction.ToggleSelectedCollection(it)) },
                 onToggleSelectionMode = {
                     isSelecting = !isSelecting
                     offset = 0
@@ -300,6 +384,7 @@ fun CollectionsScreen(
 
             EmptyCollectionScreen(!isCollectionVisible)
         }
+
 
         SlideRevealBox(
             isVisible = isSelecting && state.selectedCollections.isNotEmpty(),
@@ -321,29 +406,18 @@ fun CollectionsScreen(
                     .align(Alignment.BottomCenter)
                     .height(70.dp)
                     .zIndex(1f),
-                onDelete = {
-                    isDeletingCollection = true
-                    isSelecting = false
-                },
+                onDelete = { isDeletingCollection = true },
                 deleteEnabled = !state.viewAutoCollections,
-                onMerge = {
-                    isMergingCollections = true
-                    isSelecting = false
-                },
-                mergeEnabled = !state.viewAutoCollections,
-                onRename = {
-                    isRenamingCollection = true
-                    isSelecting = false
-                },
-                onCopy  = {
-                    isCopyingCollection = true
-                    isSelecting = false
-                },
-                copyEnabled = state.viewAutoCollections
+                onMerge = { isMergingCollections = true },
+                mergeEnabled = !state.loading,
+                onRename = { isRenamingCollection = true },
+                renameEnabled = state.selectedCollections.size == 1,
+                onTag  = { isTaggingClusters = true },
+                tagEnabled = state.viewAutoCollections
             )
         }
         AnimatedVisibility(
-            visible = isCopyingCollection,
+            visible = isTaggingClusters,
             enter = fadeIn(animationSpec = tween(500)) + scaleIn(
                 initialScale = 0.8f,
                 animationSpec = tween(500)
@@ -355,15 +429,15 @@ fun CollectionsScreen(
         ) {
             CollectionPicker(
                 collections = tagCollections,
-                onClose = {
-                    isCopyingCollection = false
-                    viewModel.clearSelectedCollections()
-                          },
+                onClose = { isTaggingClusters = false },
                 onSelectCollection = {
-                    viewModel.copyFromClusterToTagCollection(state.selectedCollections, it)
-                    isCopyingCollection = false
+                    viewModel.onAction(CollectionAction.TagClusters(it.id))
+                    isTaggingClusters = false
                 },
-                onCreateNewCollection = {viewModel.createNewCollectionAndCopy(state.selectedCollections,it)}
+                onCreateNewCollection = {
+                    isTaggingClusters = false
+                    isCreatingNewTagAndTaggingClusters = true
+                }
             )
         }
     }

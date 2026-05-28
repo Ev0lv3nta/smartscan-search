@@ -5,7 +5,6 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.launch
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -109,9 +108,6 @@ class SearchViewModel(
 
     init {
         loadImageIndex()
-        viewModelScope.launch{
-            processQuery()
-        }
     }
 
     private fun loadImageIndex(){
@@ -173,7 +169,6 @@ class SearchViewModel(
             totalResults = 0,
             searchResults = emptyList(),
             selectedResults = emptySet(),
-            autoCompleteTagResults = emptyList(),
             error = null,
             tagFilter = null,
             tagOnlySearch = false
@@ -453,10 +448,6 @@ class SearchViewModel(
         }
     }
 
-    fun updateAutoCompleteResults(results: List<String>){
-        _state.update{currentState -> currentState.copy(autoCompleteTagResults = results)}
-    }
-
     fun onErrorAsyncImage(error: AsyncImagePainter.State.Error){
         viewModelScope.launch (Dispatchers.IO){
             onMediaLoadingError(error,
@@ -467,19 +458,8 @@ class SearchViewModel(
         }
     }
 
-    fun handleAutoCompletionCheck(query: CharSequence, substringEnd: Int, startWithHashtag: Boolean =  true){
-        val results = tagManager.checkAutoCompletion(query, substringEnd, allTags.value, startWithHashtag)
-        updateAutoCompleteResults(results)
-    }
-
-    @OptIn(FlowPreview::class)
-    suspend fun processQuery() {
-        snapshotFlow { searchFieldState.text }
-            .debounce(50)
-            .collectLatest { query: CharSequence ->
-                val subStringEnd = searchFieldState.selection.end
-                handleAutoCompletionCheck(query, subStringEnd)
-            }
+    fun handleAutoCompletionCheck(query: CharSequence, substringEnd: Int, startWithHashtag: Boolean =  true): List<String>{
+        return tagManager.checkAutoCompletion(query, substringEnd, allTags.value.map{it.name}, startWithHashtag)
     }
 
     fun onSelectAutoCompleteResult(tag: String){

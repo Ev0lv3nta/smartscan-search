@@ -8,4 +8,8 @@ data class MediaCollection (
     val thumbNail: Uri,
     val size: Int,
     val isAutoCollection: Boolean = false
-)
+){
+    companion object {
+        const val UNLABELLED_COLLECTION = "?"
+    }
+}

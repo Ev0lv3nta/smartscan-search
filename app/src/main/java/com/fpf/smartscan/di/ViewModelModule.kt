@@ -15,9 +15,8 @@ val viewModelModule = module {
             db = get(),
             imageStore = get(IMAGE_STORE),
             videoStore = get(VIDEO_STORE),
-            imageClusterStore = get(IMAGE_CLUSTER_STORE),
-            videoClusterStore = get(VIDEO_CLUSTER_STORE),
-        )
+            clusterStore = get(CLUSTER_STORE),
+            )
     }
     viewModel {
         SearchViewModel(
@@ -39,7 +38,10 @@ val viewModelModule = module {
             mediaMetadataRepository = get(),
             tagRepository = get(),
             tagCrossRefRepository = get(),
-        )
+            clusterCrossRefRepository = get(),
+            clusterMetadataRepository = get(),
+            clusterStore = get(CLUSTER_STORE),
+            )
     }
 
     viewModel {
@@ -49,7 +51,10 @@ val viewModelModule = module {
             tagRepository = get(),
             tagCrossRefRepository = get(),
             clusterCrossRefRepository = get(),
-            clusterMetadataRepository = get()
-        )
+            clusterMetadataRepository = get(),
+            imageStore = get(IMAGE_STORE),
+            videoStore = get(VIDEO_STORE),
+            clusterStore = get(CLUSTER_STORE),
+            )
     }
 }

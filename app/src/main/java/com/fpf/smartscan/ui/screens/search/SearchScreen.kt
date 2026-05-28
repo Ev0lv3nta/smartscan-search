@@ -16,8 +16,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,8 +44,9 @@ import com.fpf.smartscan.search.IndexingStatus
 import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.settings.AppSettings
+import com.fpf.smartscan.ui.components.ActionConfig
+import com.fpf.smartscan.ui.components.DropDownMenuWrapper
 import com.fpf.smartscan.ui.components.LoadingIndicator
-import com.fpf.smartscan.ui.components.OverflowMenu
 import com.fpf.smartscan.ui.components.media.MediaViewer
 import com.fpf.smartscan.ui.components.ProgressBar
 import com.fpf.smartscan.ui.components.SelectorIconItem
@@ -55,13 +58,15 @@ import com.fpf.smartscan.ui.components.search.ImageSearcher
 import com.fpf.smartscan.ui.components.search.SearchActionBar
 import com.fpf.smartscan.ui.components.search.SearchBar
 import com.fpf.smartscan.ui.components.search.SearchResults
-import com.fpf.smartscan.ui.components.search.TagAdder
+import com.fpf.smartscan.ui.components.TagAdder
 import com.fpf.smartscan.ui.permissions.RequestPermissions
 import com.fpf.smartscan.ui.screens.search.SearchViewModel.Companion.RESULTS_BATCH_SIZE
 import com.fpf.smartscan.utils.formatDate
 import com.fpf.smartscan.utils.toEpochSeconds
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.max
 
@@ -102,9 +107,12 @@ fun SearchScreen(
         "Search by tag: #tag",
         "Search by tag: #tag query"
     )
+
     var hasStoragePermission by remember { mutableStateOf(false) }
     var isAddingTag by remember { mutableStateOf(false) }
     var isSelecting by remember { mutableStateOf(false) }
+    var tagAutoCompleteTagResults by remember { mutableStateOf<List<String>>(emptyList()) }
+
 
     // Dynamic hide animation
     var offset by remember { mutableIntStateOf(0) }
@@ -117,6 +125,17 @@ fun SearchScreen(
     var showFilters by remember { mutableStateOf(false) }
     var showStartDatePicker by remember { mutableStateOf(false) }
     var showEndDatePicker by remember { mutableStateOf(false) }
+
+    // Menu
+    // TODO: rename resources
+    var showMenu by remember { mutableStateOf(false) }
+    val scanImagesMenuLabel = stringResource(R.string.setting_scan_images)
+    val scanVideosMenuLabel = stringResource(R.string.setting_scan_videos)
+
+    val menuActions: Map<String, ActionConfig> = mapOf(
+        scanImagesMenuLabel to ActionConfig({ showScanImagesDialog = true }, enabled = !isIndexing),
+        scanVideosMenuLabel to ActionConfig({ showScanVideosDialog = true }, enabled=!isIndexing)
+    )
 
     RequestPermissions { _, storageGranted ->
         hasStoragePermission = storageGranted
@@ -160,16 +179,19 @@ fun SearchScreen(
             TopBarState(
                 title = screenTitle,
                 actions = {
-                    OverflowMenu(
-                        scanImagesEnabled = !isIndexing,
-                        onScanImages = {
-                            showScanImagesDialog = true
-                        },
-                        scanVideosEnabled = !isIndexing,
-                        onScanVideos = {
-                            showScanVideosDialog = true
+                    Box{
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(
+                                imageVector = Icons.Filled.MoreVert,
+                                contentDescription = "menu"
+                            )
                         }
-                    )
+                        DropDownMenuWrapper(
+                            expanded = showMenu,
+                            actions = menuActions,
+                            onClose = {showMenu = false}
+                        )
+                    }
                 }
             )
         )
@@ -180,6 +202,15 @@ fun SearchScreen(
             searchViewModel.toggleViewResult(context, null)
             searchViewModel.clearSelectedResults()
         }
+    }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { searchViewModel.searchFieldState.text }
+            .debounce(50)
+            .collectLatest { query: CharSequence ->
+                val subStringEnd = searchViewModel.searchFieldState.selection.end
+                tagAutoCompleteTagResults = searchViewModel.handleAutoCompletionCheck(query, subStringEnd)
+            }
     }
 
 
@@ -266,16 +297,13 @@ fun SearchScreen(
 
     TagAdder(
         isVisible = isAddingTag,
-        autoCompleteTagResults = state.autoCompleteTagResults,
         onAddTag = {
             searchViewModel.tagSelectedItems(it)
-            searchViewModel.updateAutoCompleteResults(emptyList())
             isAddingTag = false
         },
         onClose = {
             isAddingTag = false
             searchViewModel.clearSelectedResults()
-            searchViewModel.updateAutoCompleteResults(emptyList())
         },
         onCheckAutoCompletion = searchViewModel::handleAutoCompletionCheck
     )
@@ -439,8 +467,8 @@ fun SearchScreen(
                     }
                 }
                 AutoCompleter(
-                    isVisible = state.autoCompleteTagResults.isNotEmpty() && !isAddingTag,
-                    autoCompleteResults = state.autoCompleteTagResults,
+                    isVisible = tagAutoCompleteTagResults.isNotEmpty() && !isAddingTag,
+                    autoCompleteResults = tagAutoCompleteTagResults,
                     query = searchViewModel.searchFieldState.text.toString(),
                     onSelect = searchViewModel::onSelectAutoCompleteResult,
                     label = "Tags",

@@ -1,6 +1,5 @@
 package com.fpf.smartscan.ui.screens.collections
 
-import android.content.ClipData
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -15,18 +14,23 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.DriveFileMoveRtl
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.RemoveCircle
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -36,23 +40,33 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.paging.compose.collectAsLazyPagingItems
-import com.fpf.smartscan.media.shareMediaMulti
+import com.fpf.smartscan.events.MediaEventType
+import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.settings.AppSettings
+import com.fpf.smartscan.ui.components.ActionConfig
+import com.fpf.smartscan.ui.components.DropDownMenuWrapper
 import com.fpf.smartscan.ui.components.SlideRevealBox
+import com.fpf.smartscan.ui.components.TagAdder
 import com.fpf.smartscan.ui.components.collections.CollectionItemsActionBar
 import com.fpf.smartscan.ui.components.collections.CollectionItemsList
 import com.fpf.smartscan.ui.components.collections.CollectionPicker
 import com.fpf.smartscan.ui.components.media.MediaViewer
+import com.fpf.smartscan.ui.components.modals.TextInputModal
+import com.fpf.smartscan.ui.screens.collections.CollectionItemsViewModel.Companion.INVALID_CLUSTER_ID
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.StateFlow
 import org.koin.compose.viewmodel.koinViewModel
+
+const val ACTION_BAR_HEIGHT = 70
 
 
 @OptIn(FlowPreview::class)
@@ -60,7 +74,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun CollectionItemsScreen(
     collectionName: String?,
     appSettings: StateFlow<AppSettings>,
-    clusterId: Long = -1L, // null not allowed for longs in nav
+    clusterId: Long = INVALID_CLUSTER_ID, // null not allowed for longs in nav
     onTopBarChange: (TopBarState) -> Unit,
     onBack: () -> Unit,
     viewModel: CollectionItemsViewModel = koinViewModel(),
@@ -69,35 +83,65 @@ fun CollectionItemsScreen(
     val context = LocalContext.current
     val clipboard = LocalClipboard.current
 
-    val mediaCollections by viewModel.mediaCollections.collectAsState()
     val state by viewModel.state.collectAsState()
     val appSettings by appSettings.collectAsState()
 
+    val tagCollections by viewModel.tagCollections.collectAsState()
+    val clusterCollections by viewModel.clusterCollections.collectAsState()
+    val tagCollectionItems = viewModel.tagItems.collectAsLazyPagingItems()
+    val clusterCollectionItems = viewModel.clusterItems.collectAsLazyPagingItems()
+    val isTagCollection = clusterId == INVALID_CLUSTER_ID
+    val items = if(isTagCollection) tagCollectionItems else clusterCollectionItems
+
+    // actions
     var isSelecting by remember { mutableStateOf(false) }
     var isMoving by remember { mutableStateOf(false) }
+    var isCreatingCollectionAndMoving by remember { mutableStateOf(false) }
+    var isAddingTag by remember { mutableStateOf(false) }
+    var showMoreActions by remember { mutableStateOf(false) }
 
+    val mainActions:  Map<String, ActionConfig> = mapOf(
+        "Share" to ActionConfig(
+            onClick = { viewModel.onAction(MediaItemAction.ShareMedia(context)) },
+            icon=Icons.Filled.Share
+        ),
+        "Remove" to ActionConfig(
+            onClick = { viewModel.onAction(MediaItemAction.RemoveMedia) },
+            enabled = isTagCollection,
+            icon=Icons.Filled.RemoveCircle
+        ),
+        "Move" to ActionConfig(
+            onClick={ isMoving = true },
+            enabled = !state.loading,
+            icon = Icons.Default.DriveFileMoveRtl
+        ),
+        "More" to ActionConfig(
+            onClick = { showMoreActions = true },
+            icon = Icons.Filled.MoreVert
+        ),
+    )
+
+    val moreActions:  Map<String, ActionConfig> = mapOf(
+        "Copy to clipboard" to ActionConfig(
+            { viewModel.onAction(MediaItemAction.CopyMedia(clipboard, context)) },
+        ),
+
+        "Add tag" to ActionConfig(
+           { isAddingTag = true },
+        ),
+    )
+
+
+    // For dynamic smooth hiding effect of action bars and other components
     var offset by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val maxCollapsablePx = with(density) { 70.dp.toPx() }.toInt()
 
-    val tagCollectionItems = viewModel.tagItems.collectAsLazyPagingItems()
-    val clusterCollectionItems = viewModel.clusterItems.collectAsLazyPagingItems()
-    val isTagCollection = state.clusterId == -1L
-    val items = if(isTagCollection) tagCollectionItems else clusterCollectionItems
-
-
     LaunchedEffect(collectionName, clusterId) {
-        viewModel.setCollection(collectionName, clusterId)
+        viewModel.onAction(MediaItemAction.SetCollectionToView(collectionName, clusterId))
     }
 
-    LaunchedEffect(state.error) {
-        if(state.error != null){
-            Toast.makeText(context, state.error, Toast.LENGTH_SHORT).show()
-            viewModel.resetErrorState()
-        }
-    }
-
-    val screenTitle = collectionName?: "?"
+    val screenTitle = collectionName?: UNLABELLED_COLLECTION
 
     LaunchedEffect(Unit) {
         onTopBarChange(
@@ -115,6 +159,57 @@ fun CollectionItemsScreen(
         )
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.event.collect { event ->
+            when(event.type){
+                MediaEventType.MOVE -> {
+                    if(event.success){
+                        isSelecting = false
+                        items.refresh()
+                    }
+                    else {
+                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
+                    }
+                }
+                MediaEventType.REMOVE -> {
+                    if(event.success){
+                        isSelecting = false
+                        items.refresh()
+                    }
+                    else {
+                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
+                    }
+                }
+
+                MediaEventType.COPY -> {
+                    if(event.success){
+                        isSelecting = false
+                    }
+                    else {
+                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
+                    }
+                }
+
+                MediaEventType.SHARE -> {
+                    if(event.success){
+                        isSelecting = false
+                    }
+                    else {
+                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
+                    }
+                }
+                MediaEventType.TAG -> {
+                    if(event.success){
+                        isSelecting = false
+                        tagCollectionItems.refresh()
+                    }
+                    else {
+                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
+                    }
+                }
+            }
+        }
+    }
 
 
     BackHandler(enabled = isSelecting) {
@@ -137,7 +232,7 @@ fun CollectionItemsScreen(
                 offsetPx = offset,
                 modifier = Modifier
                     .zIndex(1f)
-                    .heightIn(max=maxCollapsablePx.dp)
+                    .heightIn(max = maxCollapsablePx.dp)
                     .padding(bottom = 8.dp)
             ) {
                 val text = if (state.selectedMediaItems.isNotEmpty()) "${state.selectedMediaItems.size} Selected" else "Select items"
@@ -149,8 +244,8 @@ fun CollectionItemsScreen(
                 items = items,
                 isSelecting = isSelecting,
                 selectedItems = state.selectedMediaItems,
-                onViewItem = { uri -> viewModel.setMediaToView(context, uri, appSettings.enableDirectGalleryOpen, isSelecting) },
-                onToggleSelected = viewModel::toggleSelectedItem,
+                onViewItem = { uri -> viewModel.onAction(MediaItemAction.SetMediaToView(context, uri, appSettings.enableDirectGalleryOpen, isSelecting)) },
+                onToggleSelected = { viewModel.onAction(MediaItemAction.ToggleSelectedMedia(it)) },
                 onToggleSelectionMode = {
                     isSelecting = !isSelecting
                     offset = 0
@@ -176,32 +271,29 @@ fun CollectionItemsScreen(
                     else Modifier
                 )
         ) {
-            CollectionItemsActionBar(
-                modifier = Modifier.height(70.dp),
-                onRemove = {
-                    viewModel.removeItems(state.selectedMediaItems.toList()){
-                        items.refresh()
-                    }
-                    isSelecting = false
-                },
-                removeEnabled = isTagCollection,
-                onShare = {
-                    shareMediaMulti(context, state.selectedMediaItems.map{it.uri})
-                    isSelecting = false
-                    viewModel.clearSelectedItems()
-                          },
-                onMove = {
-                    isMoving = true
-                    isSelecting = false
-                         },
-                moveEnabled = isTagCollection,
-                onCopy = {
-                    clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", state.selectedMediaItems.first().uri))
-                    isSelecting = false
-                    viewModel.clearSelectedItems()
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+
+                CollectionItemsActionBar(
+                    actions = mainActions,
+                    modifier = Modifier.height(ACTION_BAR_HEIGHT.dp),
+                )
+                Box(
+                    modifier = Modifier.align(Alignment.BottomEnd)
+
+                ) {
+                    DropDownMenuWrapper(
+                        expanded = showMoreActions,
+                        actions = moreActions,
+                        offset = DpOffset(x = 0.dp, y = -(ACTION_BAR_HEIGHT).dp),
+                        onClose = { showMoreActions = false }
+                    )
                 }
-            )
+            }
         }
+
+
         state.mediaToView?.let { item ->
             val mediaItems by remember {
                 derivedStateOf {
@@ -222,7 +314,7 @@ fun CollectionItemsScreen(
                 MediaViewer(
                     items = mediaItems,
                     initialIndex = mediaItems.indexOf(item),
-                    onClose = { viewModel.setMediaToView(context, null) },
+                    onClose = { viewModel.onAction(MediaItemAction.SetMediaToView(context, null))},
                     onUpdateSearchImage = null,
                     onLoadMore = { val lastIndex = (items.itemCount - 1).coerceAtLeast(0)
                         items[lastIndex]}
@@ -241,20 +333,54 @@ fun CollectionItemsScreen(
             )
         ) {
             CollectionPicker(
-                collections = mediaCollections,
+                collections = if(isTagCollection) tagCollections else clusterCollections,
                 onClose = { isMoving = false },
                 onSelectCollection = {
-                    viewModel.moveItems(state.selectedMediaItems, it){
-                        items.refresh()
+                    val safeClusterId = if(isTagCollection) null else clusterId
+                    viewModel.onAction(MediaItemAction.MoveMedia( it, safeClusterId))
+                    isMoving = false
+                                     },
+                onCreateNewCollection = if(isTagCollection){
+                    {
+                        isMoving = false
+                        isCreatingCollectionAndMoving = true
                     }
-                },
-                onCreateNewCollection = {
-                    // for tags only
-                    viewModel.createNewCollectionAndMove(state.selectedMediaItems,it){
-                        items.refresh()
-                    }
-                }
+                } else null
             )
         }
     }
+
+    TextInputModal(
+        isVisible = isCreatingCollectionAndMoving,
+        title="Create collection",
+        placeholder = "Enter collection name",
+        onClose = {isCreatingCollectionAndMoving = false},
+        onConfirm =  {
+            // for tags only
+            viewModel.onAction(MediaItemAction.CreateNewTagCollectionAndMove(it))
+            isCreatingCollectionAndMoving = false
+        },
+        leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
+        onValueChange = {
+            if (!it.text.contains(" ")) {
+                true
+            } else {
+                Toast.makeText(context, "Spaces are not allowed", Toast.LENGTH_SHORT).show()
+                false
+            }
+        }
+    )
+
+    TagAdder(
+        isVisible = isAddingTag,
+        onAddTag = {
+            viewModel.onAction(MediaItemAction.Tag(it))
+            isAddingTag = false
+        },
+        onClose = {
+            isAddingTag = false
+        },
+        onCheckAutoCompletion = viewModel::handleAutoCompletionCheck
+    )
+
 }
