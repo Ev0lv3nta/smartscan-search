@@ -1,4 +1,4 @@
-package com.fpf.smartscan.ui.components.search
+package com.fpf.smartscan.ui.components
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import com.fpf.smartscan.ui.components.search.AutoCompleter
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -82,7 +83,9 @@ fun TagAdder(
                     isVisible = autoCompleteTagResults.isNotEmpty() && isFocused,
                     autoCompleteResults = autoCompleteTagResults,
                     query = newTag.text,
-                    onSelect = { newTag = TextFieldValue(text = it, selection = TextRange(it.length))},
+                    onSelect = {
+                        newTag = TextFieldValue(text = it, selection = TextRange(it.length))
+                    },
                     label = "Tags",
                 )
             }

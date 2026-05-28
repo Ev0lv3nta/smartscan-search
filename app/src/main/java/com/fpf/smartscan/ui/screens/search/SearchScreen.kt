@@ -57,7 +57,7 @@ import com.fpf.smartscan.ui.components.search.ImageSearcher
 import com.fpf.smartscan.ui.components.search.SearchActionBar
 import com.fpf.smartscan.ui.components.search.SearchBar
 import com.fpf.smartscan.ui.components.search.SearchResults
-import com.fpf.smartscan.ui.components.search.TagAdder
+import com.fpf.smartscan.ui.components.TagAdder
 import com.fpf.smartscan.ui.permissions.RequestPermissions
 import com.fpf.smartscan.ui.screens.search.SearchViewModel.Companion.RESULTS_BATCH_SIZE
 import com.fpf.smartscan.utils.formatDate
@@ -126,6 +126,11 @@ fun SearchScreen(
     val scanImagesMenuLabel = stringResource(R.string.setting_scan_images)
     val scanVideosMenuLabel = stringResource(R.string.setting_scan_videos)
 
+    val menuActions: Map<String, Pair<() -> Unit, Boolean>> = mapOf(
+        scanImagesMenuLabel to Pair({ showScanImagesDialog = true }, !isIndexing),
+        scanVideosMenuLabel to Pair({ showScanVideosDialog = true }, !isIndexing)
+    )
+
 
     RequestPermissions { _, storageGranted ->
         hasStoragePermission = storageGranted
@@ -165,11 +170,6 @@ fun SearchScreen(
     }
 
     LaunchedEffect(isIndexing) {
-        val menuActions: Map<String, Pair<() -> Unit, Boolean>> = mapOf(
-            scanImagesMenuLabel to Pair({ showScanImagesDialog = true }, !isIndexing),
-            scanVideosMenuLabel to Pair({ showScanVideosDialog = true }, !isIndexing)
-        )
-
         onTopBarChange(
             TopBarState(
                 title = screenTitle,
