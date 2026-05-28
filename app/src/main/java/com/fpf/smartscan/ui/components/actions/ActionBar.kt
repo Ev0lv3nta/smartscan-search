@@ -1,4 +1,4 @@
-package com.fpf.smartscan.ui.components
+package com.fpf.smartscan.ui.components.actions
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.fpf.smartscan.ui.components.menus.MenuItemConfig
 import kotlin.collections.iterator
 
 @Composable
@@ -32,28 +33,26 @@ fun ActionBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         for ((label, action) in actions) {
-            if (action is ActionConfig.Button) {
-                Button(
-                    enabled = action.enabled,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent,
-                        contentColor = MaterialTheme.colorScheme.onSurface
-                    ),
-                    onClick = { action.onClick() }
+            Button(
+                enabled = action.enabled,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Transparent,
+                    disabledContainerColor = Color.Transparent,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                onClick = { action.onClick() }
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        action.icon?.let { icon ->
-                            Icon(
-                                icon,
-                                contentDescription = "$label button",
-                            )
-                        }
-                        Text(label, style = MaterialTheme.typography.labelMedium)
+                    action.icon?.let { icon ->
+                        Icon(
+                            icon,
+                            contentDescription = "$label button",
+                        )
                     }
+                    Text(label, style = MaterialTheme.typography.labelMedium)
                 }
             }
         }

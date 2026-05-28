@@ -8,15 +8,12 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -37,7 +34,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -67,9 +63,10 @@ import androidx.compose.ui.res.stringResource
 import com.fpf.smartscan.events.CollectionEventType
 import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
 import com.fpf.smartscan.navigation.TopBarState
-import com.fpf.smartscan.ui.components.ActionBar
-import com.fpf.smartscan.ui.components.ActionConfig
-import com.fpf.smartscan.ui.components.DropDownMenuWrapper
+import com.fpf.smartscan.ui.components.actions.ActionBar
+import com.fpf.smartscan.ui.components.actions.ActionConfig
+import com.fpf.smartscan.ui.components.menus.MenuItemConfig
+import com.fpf.smartscan.ui.components.menus.DropDownMenuWrapper
 import org.koin.compose.viewmodel.koinViewModel
 
 
@@ -101,16 +98,16 @@ fun CollectionsScreen(
     var isDeletingCollection by remember { mutableStateOf(false) }
 
     val actionBarActions: Map<String, ActionConfig> = mapOf(
-        stringResource(R.string.merge_action) to ActionConfig.Button({ isMergingCollections = true }, enabled = !state.loading, icon = Icons.Filled.Merge),
-        stringResource(R.string.rename_action) to ActionConfig.Button( { isRenamingCollection = true }, enabled = state.selectedCollections.size == 1, icon = Icons.Filled.DriveFileRenameOutline),
-        stringResource(R.string.add_tag_action) to ActionConfig.Button({ isTaggingClusters = true }, enabled = state.groupBySimilarity, icon = Icons.Filled.Tag),
-        stringResource(R.string.delete_action) to ActionConfig.Button({ isDeletingCollection = true }, enabled = !state.groupBySimilarity, icon = Icons.Filled.Delete)
+        stringResource(R.string.merge_action) to ActionConfig({ isMergingCollections = true }, enabled = !state.loading, icon = Icons.Filled.Merge),
+        stringResource(R.string.rename_action) to ActionConfig( { isRenamingCollection = true }, enabled = state.selectedCollections.size == 1, icon = Icons.Filled.DriveFileRenameOutline),
+        stringResource(R.string.add_tag_action) to ActionConfig({ isTaggingClusters = true }, enabled = state.groupBySimilarity, icon = Icons.Filled.Tag),
+        stringResource(R.string.delete_action) to ActionConfig({ isDeletingCollection = true }, enabled = !state.groupBySimilarity, icon = Icons.Filled.Delete)
     )
 
     // Menu
     var showMenu by remember { mutableStateOf(false) }
-    val menuActions: Map<String, ActionConfig> = mapOf(
-        stringResource(R.string.group_by_similarity_action) to ActionConfig.Switch(checked = state.groupBySimilarity, { viewModel.onAction(CollectionAction.SetGroupBySimilarity(it)) })
+    val menuActions: Map<String, MenuItemConfig> = mapOf(
+        stringResource(R.string.group_by_similarity_action) to MenuItemConfig.Switch(checked = state.groupBySimilarity, { viewModel.onAction(CollectionAction.SetGroupBySimilarity(it)) })
     )
     val spaceNotAllowedMessage = stringResource(R.string.alert_space_not_allowed)
 

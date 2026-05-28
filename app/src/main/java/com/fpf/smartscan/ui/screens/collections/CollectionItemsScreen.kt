@@ -53,11 +53,12 @@ import com.fpf.smartscan.events.MediaEventType
 import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.settings.AppSettings
-import com.fpf.smartscan.ui.components.ActionConfig
-import com.fpf.smartscan.ui.components.DropDownMenuWrapper
+import com.fpf.smartscan.ui.components.menus.MenuItemConfig
+import com.fpf.smartscan.ui.components.menus.DropDownMenuWrapper
 import com.fpf.smartscan.ui.components.SlideRevealBox
 import com.fpf.smartscan.ui.components.TagAdder
-import com.fpf.smartscan.ui.components.ActionBar
+import com.fpf.smartscan.ui.components.actions.ActionBar
+import com.fpf.smartscan.ui.components.actions.ActionConfig
 import com.fpf.smartscan.ui.components.collections.CollectionItemsList
 import com.fpf.smartscan.ui.components.collections.CollectionPicker
 import com.fpf.smartscan.ui.components.media.MediaViewer
@@ -101,32 +102,32 @@ fun CollectionItemsScreen(
     val spaceNotAllowedMessage = stringResource(R.string.alert_space_not_allowed)
 
     val mainActions:  Map<String, ActionConfig> = mapOf(
-        stringResource(R.string.share_action) to ActionConfig.Button(
+        stringResource(R.string.share_action) to ActionConfig(
             onClick = { viewModel.onAction(MediaItemAction.ShareMedia(context)) },
             icon=Icons.Filled.Share
         ),
-        stringResource(R.string.remove_action) to ActionConfig.Button(
+        stringResource(R.string.remove_action) to ActionConfig(
             onClick = { viewModel.onAction(MediaItemAction.RemoveMedia) },
             enabled = isTagCollection,
             icon=Icons.Filled.RemoveCircle
         ),
-        stringResource(R.string.move_action) to ActionConfig.Button(
+        stringResource(R.string.move_action) to ActionConfig(
             onClick={ isMoving = true },
             enabled = !state.loading,
             icon = Icons.Default.DriveFileMoveRtl
         ),
-        stringResource(R.string.more_action) to ActionConfig.Button(
+        stringResource(R.string.more_action) to ActionConfig(
             onClick = { showMoreActions = true },
             icon = Icons.Filled.MoreVert
         ),
     )
 
-    val moreActions:  Map<String, ActionConfig> = mapOf(
-        stringResource(R.string.copy_to_clipboard_action) to ActionConfig.Button(
+    val moreActions:  Map<String, MenuItemConfig> = mapOf(
+        stringResource(R.string.copy_to_clipboard_action) to MenuItemConfig.Button(
             { viewModel.onAction(MediaItemAction.CopyMedia(clipboard, context)) },
         ),
 
-        stringResource(R.string.add_tag_action) to ActionConfig.Button(
+        stringResource(R.string.add_tag_action) to MenuItemConfig.Button(
            { isAddingTag = true },
         ),
     )
@@ -280,7 +281,6 @@ fun CollectionItemsScreen(
                 )
                 Box(
                     modifier = Modifier.align(Alignment.BottomEnd)
-
                 ) {
                     DropDownMenuWrapper(
                         expanded = showMoreActions,
