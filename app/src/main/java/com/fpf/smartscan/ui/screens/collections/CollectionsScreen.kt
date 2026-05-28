@@ -20,6 +20,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DriveFileRenameOutline
+import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.Merge
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material3.AlertDialog
@@ -90,10 +94,10 @@ fun CollectionsScreen(
     var isDeletingCollection by remember { mutableStateOf(false) }
 
     val actionBarActions: Map<String, ActionConfig> = mapOf(
-        stringResource(R.string.merge_action) to ActionConfig({ isMergingCollections = true }, enabled = !state.loading),
-        stringResource(R.string.rename_action) to ActionConfig( { isRenamingCollection = true }, enabled = state.selectedCollections.size == 1),
-        stringResource(R.string.add_tag_action) to ActionConfig({ isTaggingClusters = true }, enabled = state.viewAutoCollections),
-        stringResource(R.string.delete_action) to ActionConfig({ isDeletingCollection = true }, enabled = !state.viewAutoCollections)
+        stringResource(R.string.merge_action) to ActionConfig({ isMergingCollections = true }, enabled = !state.loading, icon = Icons.Filled.Merge),
+        stringResource(R.string.rename_action) to ActionConfig( { isRenamingCollection = true }, enabled = state.selectedCollections.size == 1, icon = Icons.Filled.DriveFileRenameOutline),
+        stringResource(R.string.add_tag_action) to ActionConfig({ isTaggingClusters = true }, enabled = state.viewAutoCollections, icon = Icons.Filled.Tag),
+        stringResource(R.string.delete_action) to ActionConfig({ isDeletingCollection = true }, enabled = !state.viewAutoCollections, icon = Icons.Filled.Delete)
     )
 
     // Menu
@@ -227,7 +231,6 @@ fun CollectionsScreen(
                 Text(
                     text = if (state.viewAutoCollections) "Auto" else "Tags",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary
                 )
 
                 if(state.totalCollections >= TOP_N) {
