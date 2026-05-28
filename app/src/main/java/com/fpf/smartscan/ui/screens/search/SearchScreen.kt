@@ -64,6 +64,8 @@ import com.fpf.smartscan.utils.formatDate
 import com.fpf.smartscan.utils.toEpochSeconds
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.max
 
@@ -104,9 +106,12 @@ fun SearchScreen(
         "Search by tag: #tag",
         "Search by tag: #tag query"
     )
+
     var hasStoragePermission by remember { mutableStateOf(false) }
     var isAddingTag by remember { mutableStateOf(false) }
     var isSelecting by remember { mutableStateOf(false) }
+    var tagAutoCompleteTagResults by remember { mutableStateOf<List<String>>(emptyList()) }
+
 
     // Dynamic hide animation
     var offset by remember { mutableIntStateOf(0) }
@@ -130,7 +135,6 @@ fun SearchScreen(
         scanImagesMenuLabel to Pair({ showScanImagesDialog = true }, !isIndexing),
         scanVideosMenuLabel to Pair({ showScanVideosDialog = true }, !isIndexing)
     )
-
 
     RequestPermissions { _, storageGranted ->
         hasStoragePermission = storageGranted
@@ -197,6 +201,15 @@ fun SearchScreen(
             searchViewModel.toggleViewResult(context, null)
             searchViewModel.clearSelectedResults()
         }
+    }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { searchViewModel.searchFieldState.text }
+            .debounce(50)
+            .collectLatest { query: CharSequence ->
+                val subStringEnd = searchViewModel.searchFieldState.selection.end
+                tagAutoCompleteTagResults = searchViewModel.handleAutoCompletionCheck(query, subStringEnd)
+            }
     }
 
 
@@ -283,16 +296,13 @@ fun SearchScreen(
 
     TagAdder(
         isVisible = isAddingTag,
-        autoCompleteTagResults = state.autoCompleteTagResults,
         onAddTag = {
             searchViewModel.tagSelectedItems(it)
-            searchViewModel.updateAutoCompleteResults(emptyList())
             isAddingTag = false
         },
         onClose = {
             isAddingTag = false
             searchViewModel.clearSelectedResults()
-            searchViewModel.updateAutoCompleteResults(emptyList())
         },
         onCheckAutoCompletion = searchViewModel::handleAutoCompletionCheck
     )
@@ -456,8 +466,8 @@ fun SearchScreen(
                     }
                 }
                 AutoCompleter(
-                    isVisible = state.autoCompleteTagResults.isNotEmpty() && !isAddingTag,
-                    autoCompleteResults = state.autoCompleteTagResults,
+                    isVisible = tagAutoCompleteTagResults.isNotEmpty() && !isAddingTag,
+                    autoCompleteResults = tagAutoCompleteTagResults,
                     query = searchViewModel.searchFieldState.text.toString(),
                     onSelect = searchViewModel::onSelectAutoCompleteResult,
                     label = "Tags",

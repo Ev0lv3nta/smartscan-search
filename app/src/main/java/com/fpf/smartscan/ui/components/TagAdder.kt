@@ -36,15 +36,15 @@ import kotlinx.coroutines.flow.debounce
 @Composable
 fun TagAdder(
     isVisible: Boolean,
-    autoCompleteTagResults: List<String>,
     onClose: () -> Unit,
     onAddTag: (String) -> Unit,
-    onCheckAutoCompletion: (text: String, subStringEnd: Int, startWithHashtag: Boolean) -> Unit
+    onCheckAutoCompletion: (text: String, subStringEnd: Int, startWithHashtag: Boolean) -> List<String>
 ){
     if(!isVisible) return
 
     var newTag by remember { mutableStateOf(TextFieldValue(text = "", selection = TextRange(0))) }
     var isFocused by remember { mutableStateOf(false) }
+    var autoCompleteTagResults by remember { mutableStateOf<List<String>>(emptyList()) }
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
@@ -52,7 +52,7 @@ fun TagAdder(
             .debounce(50)
 //            .filter { it.isNotBlank() }
             .collectLatest { value ->
-                onCheckAutoCompletion(value, value.length, false)
+                autoCompleteTagResults = onCheckAutoCompletion(value, value.length, false)
             }
     }
 
