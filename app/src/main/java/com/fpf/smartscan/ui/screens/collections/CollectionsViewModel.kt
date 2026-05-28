@@ -110,7 +110,8 @@ class CollectionsViewModel(
             is CollectionAction.TagClusters -> tagClusterCollections(action.tagId)
             is CollectionAction.ToggleSelectedCollection -> toggleSelectedCollection(action.collection)
             is CollectionAction.SetCollectionToView -> setCollectionToView(action.collection)
-            is CollectionAction.ToggleSelectedCollectionType -> toggleSelectedCollectionType()
+            is CollectionAction.GroupByTag -> groupByTag()
+            is CollectionAction.GroupBySimilarity -> groupBySimilarity()
             is CollectionAction.DeleteCollections -> deleteCollections()
             is CollectionAction.ToggleViewAllCollections -> toggleViewAllCollections()
         }
@@ -240,6 +241,10 @@ class CollectionsViewModel(
         }
     }
 
+    private fun groupBySimilarity() = _state.update { it.copy(viewAutoCollections = true) }
+    private fun groupByTag() = _state.update { it.copy(viewAutoCollections = false) }
+
+
     private fun toggleSelectedCollection(collection: MediaCollection){
         _state.update { currentState ->
             if (collection in currentState.selectedCollections) {
@@ -258,9 +263,5 @@ class CollectionsViewModel(
 
     private fun setCollectionToView(collection: MediaCollection?){
         _state.update { it.copy(collectToView = collection) }
-    }
-
-    private fun toggleSelectedCollectionType(){
-        _state.update { it.copy(viewAutoCollections = !it.viewAutoCollections) }
     }
 }

@@ -26,9 +26,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -63,6 +65,8 @@ import androidx.compose.ui.res.stringResource
 import com.fpf.smartscan.events.CollectionEventType
 import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
 import com.fpf.smartscan.navigation.TopBarState
+import com.fpf.smartscan.ui.components.ActionConfig
+import com.fpf.smartscan.ui.components.DropDownMenuWrapper
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(FlowPreview::class)
@@ -89,6 +93,12 @@ fun CollectionsScreen(
     var isCreatingNewTagAndTaggingClusters by remember { mutableStateOf(false) }
     var isDeletingCollection by remember { mutableStateOf(false) }
 
+    // Menu
+    var showMenu by remember { mutableStateOf(false) }
+    val menuActions: Map<String, ActionConfig> = mapOf(
+        "Group by tag" to ActionConfig({ viewModel.onAction(CollectionAction.GroupByTag) }),
+        "Group by similarity" to ActionConfig({ viewModel.onAction(CollectionAction.GroupBySimilarity) })
+    )
     var offset by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val maxCollapsablePx = with(density) { 70.dp.toPx() }.toInt()
@@ -149,7 +159,26 @@ fun CollectionsScreen(
     val screenTitle = stringResource(R.string.title_collections)
 
     LaunchedEffect(Unit) {
-       onTopBarChange( TopBarState(title = screenTitle))
+        onTopBarChange(
+            TopBarState(
+                title = screenTitle,
+                actions = {
+                    Box{
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(
+                                imageVector = Icons.Filled.MoreVert,
+                                contentDescription = "menu"
+                            )
+                        }
+                        DropDownMenuWrapper(
+                            expanded = showMenu,
+                            actions = menuActions,
+                            onClose = {showMenu = false}
+                        )
+                    }
+                }
+            )
+        )
     }
 
     BackHandler(enabled = isSelecting) {
@@ -289,82 +318,31 @@ fun CollectionsScreen(
                     color = MaterialTheme.colorScheme.primary
                 )
             }
+
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Min)
-                    .padding(bottom = 8.dp)
-                    .clip(
-                        RoundedCornerShape(
-                            topStart = 12.dp,
-                            bottomStart = 0.dp,
-                            topEnd = 12.dp,
-                            bottomEnd = 0.dp
-                        )
-                    )
-                    .background(color = MaterialTheme.colorScheme.surfaceContainer)
-                    .border(
-                        BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                        shape = RoundedCornerShape(
-                            topStart = 12.dp,
-                            bottomStart = 0.dp,
-                            topEnd = 12.dp,
-                            bottomEnd = 0.dp
-                        )
-                    ),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(8.dp)
-                        .clickable(
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() },
-                            onClick = { viewModel.onAction(CollectionAction.ToggleSelectedCollectionType) }
-                        )
-                ) {
-                    Text("Auto collections",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if(state.viewAutoCollections) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                    )
-                }
-                VerticalDivider(
-                    color = MaterialTheme.colorScheme.outline
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
+            ){
+                Text(
+                    text = if (state.viewAutoCollections) "Auto" else "Tags",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
                 )
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(8.dp)
-                        .clickable(
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() },
-                            onClick = { viewModel.onAction(CollectionAction.ToggleSelectedCollectionType) }
+
+                if(state.totalCollections >= TOP_N) {
+                    TextButton(
+                        onClick = {viewModel.onAction(CollectionAction.ToggleViewAllCollections)}
+                    ) {
+                        Text(
+                            text = if (state.showAllCollections) "Show less" else "Show all",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
                         )
-                ) {
-                    Text("Tag collections",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if(!state.viewAutoCollections) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                    )
+                    }
                 }
             }
 
-            if(state.totalCollections >= TOP_N) {
-                TextButton(
-                    modifier = Modifier.align(Alignment.End),
-                    onClick = {viewModel.onAction(CollectionAction.ToggleViewAllCollections)}
-                ) {
-                    Text(
-                        text = if (state.showAllCollections) "Show less" else "Show all",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }else{
-                Spacer(modifier = Modifier.height(16.dp))
-            }
 
             MediaCollectionsList(
                 isVisible = isCollectionVisible,
