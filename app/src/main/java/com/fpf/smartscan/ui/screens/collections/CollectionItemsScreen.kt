@@ -29,7 +29,6 @@ import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -54,7 +53,7 @@ import com.fpf.smartscan.events.CollectionItemEventType
 import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.settings.AppSettings
-import com.fpf.smartscan.ui.components.CircularCheckbox
+import com.fpf.smartscan.ui.components.SelectionHeaderRow
 import com.fpf.smartscan.ui.components.menus.MenuItemConfig
 import com.fpf.smartscan.ui.components.menus.DropDownMenuWrapper
 import com.fpf.smartscan.ui.components.SlideRevealBox
@@ -243,18 +242,11 @@ fun CollectionItemsScreen(
                     .heightIn(max = maxCollapsablePx.dp)
                     .padding(bottom = 8.dp)
             ) {
-                val text = if (state.selectedCount > 0) "${state.selectedCount} Selected" else "Select items"
-                Row (
-                    modifier = Modifier.padding(bottom = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ){
-                    CircularCheckbox(
-                        checked = state.selectAll && state.excludedMediaItems.isEmpty(),
-                        onCheckedChange = {viewModel.onAction(CollectionItemAction.SetSelectAll(it))}
-                    )
-                    Text(text, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
-                }
+                SelectionHeaderRow (
+                    selectedCount = state.selectedCount,
+                    checked = state.selectAll && state.excludedMediaItems.isEmpty(),
+                    onSelectAllChange = {viewModel.onAction(CollectionItemAction.SetSelectAll(it))}
+                )
             }
             CollectionItemsList(
                 isVisible = tagCollectionItems.itemCount > 0 || clusterCollectionItems.itemCount> 0,
