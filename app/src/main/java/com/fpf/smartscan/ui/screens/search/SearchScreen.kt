@@ -1,6 +1,5 @@
 package com.fpf.smartscan.ui.screens.search
 
-import android.app.Application
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -104,11 +103,11 @@ fun SearchScreen(
     val tags by searchViewModel.allTags.collectAsState()
     val searchBarPlaceholders = listOf(
         when (state.mediaType) {
-            MediaType.IMAGE -> "Search images"
-            MediaType.VIDEO -> "Search videos"
+            MediaType.IMAGE -> stringResource(R.string.placeholders_search_images)
+            MediaType.VIDEO -> stringResource(R.string.placeholders_search_videos)
         },
-        "Search by tag: #tag",
-        "Search by tag: #tag query"
+       stringResource(R.string.placeholders_search_by_tag),
+        stringResource(R.string.placeholders_search_by_tag_query),
     )
 
     var hasStoragePermission by remember { mutableStateOf(false) }

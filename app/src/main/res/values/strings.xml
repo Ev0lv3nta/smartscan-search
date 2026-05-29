@@ -142,4 +142,9 @@
     <!--Placeholders-->
     <string name ="placeholders_add_tag">Enter tag name</string>
     <string name="placeholders_rename">Enter collection name</string>
+    <string name="placeholders_search_images">Search images</string>
+    <string name="placeholders_search_videos">Search videos</string>
+    <string name="placeholders_search_by_tag">Search by tag: #tag</string>
+    <string name="placeholders_search_by_tag_query">Search by tag: #tag query</string>
+
 </resources>
