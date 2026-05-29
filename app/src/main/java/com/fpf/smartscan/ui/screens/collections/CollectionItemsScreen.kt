@@ -13,6 +13,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -50,9 +51,10 @@ import androidx.compose.ui.zIndex
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.fpf.smartscan.R
 import com.fpf.smartscan.events.CollectionItemEventType
-import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
+import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.settings.AppSettings
+import com.fpf.smartscan.ui.components.CircularCheckbox
 import com.fpf.smartscan.ui.components.menus.MenuItemConfig
 import com.fpf.smartscan.ui.components.menus.DropDownMenuWrapper
 import com.fpf.smartscan.ui.components.SlideRevealBox
@@ -63,7 +65,6 @@ import com.fpf.smartscan.ui.components.collections.CollectionItemsList
 import com.fpf.smartscan.ui.components.collections.CollectionPicker
 import com.fpf.smartscan.ui.components.media.MediaViewer
 import com.fpf.smartscan.ui.components.modals.TextInputModal
-import com.fpf.smartscan.ui.screens.collections.CollectionItemsViewModel.Companion.INVALID_CLUSTER_ID
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.StateFlow
 import org.koin.compose.viewmodel.koinViewModel
@@ -71,13 +72,14 @@ import org.koin.compose.viewmodel.koinViewModel
 @OptIn(FlowPreview::class)
 @Composable
 fun CollectionItemsScreen(
-    collectionName: String?,
     appSettings: StateFlow<AppSettings>,
-    clusterId: Long = INVALID_CLUSTER_ID, // null not allowed for longs in nav
+    collection: MediaCollection?,
     onTopBarChange: (TopBarState) -> Unit,
     onBack: () -> Unit,
     viewModel: CollectionItemsViewModel = koinViewModel(),
     ) {
+    if(collection == null) return
+
     val actionBarHeight = 70
 
     val context = LocalContext.current
@@ -90,8 +92,8 @@ fun CollectionItemsScreen(
     val clusterCollections by viewModel.clusterCollections.collectAsState()
     val tagCollectionItems = viewModel.tagItems.collectAsLazyPagingItems()
     val clusterCollectionItems = viewModel.clusterItems.collectAsLazyPagingItems()
-    val isTagCollection = clusterId == INVALID_CLUSTER_ID
-    val items = if(isTagCollection) tagCollectionItems else clusterCollectionItems
+    val items = if(collection.isAutoCollection)  clusterCollectionItems else tagCollectionItems
+    val isTagCollection = collection.isAutoCollection
 
     // actions
     var isSelecting by remember { mutableStateOf(false) }
@@ -143,12 +145,11 @@ fun CollectionItemsScreen(
     var offset by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val maxCollapsablePx = with(density) { 70.dp.toPx() }.toInt()
+    val screenTitle = collection.name
 
-    LaunchedEffect(collectionName, clusterId) {
-        viewModel.onAction(CollectionItemAction.SetCollectionToView(collectionName, clusterId))
+    LaunchedEffect(collection) {
+        viewModel.onAction(CollectionItemAction.SetCollectionToView(collection))
     }
-
-    val screenTitle = collectionName?: UNLABELLED_COLLECTION
 
     LaunchedEffect(Unit) {
         onTopBarChange(
@@ -242,14 +243,26 @@ fun CollectionItemsScreen(
                     .heightIn(max = maxCollapsablePx.dp)
                     .padding(bottom = 8.dp)
             ) {
-                val text = if (state.selectedMediaItems.isNotEmpty()) "${state.selectedMediaItems.size} Selected" else "Select items"
-                Text(text, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp), color = MaterialTheme.colorScheme.primary)
+                val text = if (state.selectedCount > 0) "${state.selectedCount} Selected" else "Select items"
+                Row (
+                    modifier = Modifier.padding(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ){
+                    CircularCheckbox(
+                        checked = state.selectAll && state.excludedMediaItems.isEmpty(),
+                        onCheckedChange = {viewModel.onAction(CollectionItemAction.SetSelectAll(it))}
+                    )
+                    Text(text, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
+                }
             }
             CollectionItemsList(
                 isVisible = tagCollectionItems.itemCount > 0 || clusterCollectionItems.itemCount> 0,
                 numGridColumns = appSettings.resultsPerRow,
                 items = items,
                 isSelecting = isSelecting,
+                selectAll = state.selectAll,
+                excludedItems = state.excludedMediaItems,
                 selectedItems = state.selectedMediaItems,
                 onViewItem = { uri -> viewModel.onAction(CollectionItemAction.SetMediaToView(context, uri, appSettings.enableDirectGalleryOpen, isSelecting)) },
                 onToggleSelected = { viewModel.onAction(CollectionItemAction.ToggleSelectedMedia(it)) },
@@ -264,7 +277,7 @@ fun CollectionItemsScreen(
         }
 
         SlideRevealBox(
-            isVisible = isSelecting && state.selectedMediaItems.isNotEmpty(),
+            isVisible = isSelecting && state.selectedCount > 0,
             offsetPx = offset,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -341,8 +354,7 @@ fun CollectionItemsScreen(
                 collections = if(isTagCollection) tagCollections else clusterCollections,
                 onClose = { isMoving = false },
                 onSelectCollection = {
-                    val safeClusterId = if(isTagCollection) null else clusterId
-                    viewModel.onAction(CollectionItemAction.MoveMedia( it, safeClusterId))
+                    viewModel.onAction(CollectionItemAction.MoveMedia( it))
                     isMoving = false
                                      },
                 onCreateNewCollection = if(isTagCollection){

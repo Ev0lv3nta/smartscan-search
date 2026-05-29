@@ -43,6 +43,8 @@ fun CollectionItemsList(
     isVisible: Boolean,
     items: LazyPagingItems<MediaItem>,
     selectedItems: Set<MediaItem>,
+    excludedItems: Set<MediaItem>,
+    selectAll: Boolean,
     onViewItem: (item: MediaItem?) -> Unit,
     onToggleSelected: (MediaItem) -> Unit,
     onToggleSelectionMode: () -> Unit,
@@ -127,7 +129,7 @@ fun CollectionItemsList(
                         onToggleSelected = onToggleSelected,
                         onToggleSelectionMode = onToggleSelectionMode,
                         isSelecting = isSelecting,
-                        isChecked = { item in selectedItems },
+                        isChecked = { item in selectedItems || (selectAll && item !in excludedItems)},
                         onError=onError
                     )
                 }
