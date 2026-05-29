@@ -17,11 +17,10 @@
     <string name="copy_to_clipboard_action">Copy to clipboard</string>
     <string name="cancel_action">Cancel</string>
     <string name="confirm_action">Confirm</string>
-
-
     <!--Search Actions-->
     <string name="scan_images_action">Scan images</string>
     <string name="scan_videos_action">Scan videos</string>
+    <string name="search_action">Search</string>
     <!--Collection Actions-->
     <string name="rename_action">Rename</string>
     <string name="merge_action">Merge</string>
