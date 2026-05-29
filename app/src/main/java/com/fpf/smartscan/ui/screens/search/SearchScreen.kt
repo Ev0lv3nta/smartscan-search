@@ -245,100 +245,6 @@ fun SearchScreen(
             }
     }
 
-
-
-    if ( !alertTitle.isNullOrBlank() && !alertDescription.isNullOrBlank()) {
-        AlertDialog(
-            onDismissRequest = { },
-            title = { Text(alertTitle!!) },
-            text = { Text(alertDescription!!) },
-            dismissButton = {
-                TextButton(onClick = {
-                    searchViewModel.clearIndexAlert()
-                }) {
-                    Text("Cancel")
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    searchViewModel.clearIndexAlert()
-                    searchViewModel.onAction(SearchAction.Index)
-                }) {
-                    Text("Confirm")
-                }
-            }
-        )
-    }
-
-    if (showScanImagesDialog || showScanVideosDialog) {
-        val media = if (showScanImagesDialog) "images" else "videos"
-
-        AlertDialog(
-            onDismissRequest = {
-                if (showScanImagesDialog) showScanImagesDialog = false else showScanVideosDialog = false
-            },
-            title = {
-                Text(stringResource(R.string.alert_scan_index_title, media))
-            },
-            text = {
-                Column {
-                    Text(stringResource(R.string.alert_scan_index_description))
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    TextButton(
-                        onClick = {
-                            if (showScanImagesDialog) {
-                                showScanImagesDialog = false
-                                searchViewModel.onAction(SearchAction.RefreshIndex(MediaType.IMAGE))
-                            } else {
-                                showScanVideosDialog = false
-                                searchViewModel.onAction(SearchAction.RefreshIndex(MediaType.VIDEO))
-                            }
-                        }
-                    ) {
-                        Text("Refresh")
-                    }
-
-                    TextButton(
-                        onClick = {
-                            if (showScanImagesDialog) {
-                                showScanImagesDialog = false
-                                searchViewModel.onAction(SearchAction.RebuildIndex(MediaType.IMAGE))
-                            } else {
-                                showScanVideosDialog = false
-                                searchViewModel.onAction(SearchAction.RebuildIndex(MediaType.VIDEO))
-                            }
-                        }
-                    ) {
-                        Text("Rebuild")
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (showScanImagesDialog) showScanImagesDialog = false else showScanVideosDialog = false
-                    }
-                ) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
-    TagAdder(
-        isVisible = isAddingTag,
-        onAddTag = {
-            searchViewModel.onAction(SearchAction.TagItems(it))
-            isAddingTag = false
-        },
-        onClose = {
-            isAddingTag = false
-        },
-        onCheckAutoCompletion = searchViewModel::handleAutoCompletionCheck
-    )
-
     BackHandler(enabled = isSelecting) {
         isSelecting = false
         searchViewModel.clearSelectedResults()
@@ -550,93 +456,188 @@ fun SearchScreen(
                 actions = actionBarActions
             )
         }
-        state.resultToView?.let { item ->
-            AnimatedVisibility(
-                visible = true,
-                enter = fadeIn(animationSpec = tween(500)) + scaleIn(initialScale = 0.8f, animationSpec = tween(500)),
-                exit = fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.8f, animationSpec = tween(300))
-            ) {
-                MediaViewer(
-                    items = state.searchResults,
-                    initialIndex = state.searchResults.indexOf(item),
-                    onLoadMore = searchViewModel::onLoadMore,
-                    onClose = { searchViewModel.onAction(SearchAction.ClearResultView)},
-                    onUpdateSearchImage = {
-                        searchViewModel.onAction(SearchAction.ClearResultView)
-                        searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(item.uri, appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
-                    }
-                )
-            }
-        }
-        DatePickerModal(
-            show = showStartDatePicker,
-            onDismiss = { showStartDatePicker = false },
-            onDateSelected = { y, m, d ->
-                val startDate = toEpochSeconds(y, m, d)
-                searchViewModel.onAction(SearchAction.SetStartDateFilter(startDate))
-                showStartDatePicker = false
-            },
-            initialDateMillis = state.startDateFilter?.times(1000)
+    }
 
-        )
-
-        DatePickerModal(
-            show = showEndDatePicker,
-            onDismiss = { showEndDatePicker = false },
-            onDateSelected = { y, m, d ->
-                val endDate = toEpochSeconds(y, m, d)
-                searchViewModel.onAction(SearchAction.SetEndDateFilter(endDate))
-                showEndDatePicker = false
-            },
-            initialDateMillis = state.endDateFilter?.times(1000)
-        )
-        BottomSheet(
-            show = showFilters,
-            onDismiss = { showFilters = false }
+    state.resultToView?.let { item ->
+        AnimatedVisibility(
+            visible = true,
+            enter = fadeIn(animationSpec = tween(500)) + scaleIn(initialScale = 0.8f, animationSpec = tween(500)),
+            exit = fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.8f, animationSpec = tween(300))
         ) {
-            Text("Filters", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
-
-            Spacer(Modifier.height(16.dp))
-
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Start date")
-                    TextButton(onClick = { showStartDatePicker = true }) {
-                        Text(state.startDateFilter?.let { formatDate(it) } ?: "Any time")
-                    }
+            MediaViewer(
+                items = state.searchResults,
+                initialIndex = state.searchResults.indexOf(item),
+                onLoadMore = searchViewModel::onLoadMore,
+                onClose = { searchViewModel.onAction(SearchAction.ClearResultView)},
+                onUpdateSearchImage = {
+                    searchViewModel.onAction(SearchAction.ClearResultView)
+                    searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(item.uri, appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
                 }
+            )
+        }
+    }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("End date")
-                    TextButton(onClick = { showEndDatePicker = true }) {
-                        Text(state.endDateFilter?.let { formatDate(it) } ?: "Any time")
-                    }
-                }
-            }
+    DatePickerModal(
+        show = showStartDatePicker,
+        onDismiss = { showStartDatePicker = false },
+        onDateSelected = { y, m, d ->
+            val startDate = toEpochSeconds(y, m, d)
+            searchViewModel.onAction(SearchAction.SetStartDateFilter(startDate))
+            showStartDatePicker = false
+        },
+        initialDateMillis = state.startDateFilter?.times(1000)
 
-            Spacer(Modifier.height(24.dp))
+    )
+
+    DatePickerModal(
+        show = showEndDatePicker,
+        onDismiss = { showEndDatePicker = false },
+        onDateSelected = { y, m, d ->
+            val endDate = toEpochSeconds(y, m, d)
+            searchViewModel.onAction(SearchAction.SetEndDateFilter(endDate))
+            showEndDatePicker = false
+        },
+        initialDateMillis = state.endDateFilter?.times(1000)
+    )
+
+    BottomSheet(
+        show = showFilters,
+        onDismiss = { showFilters = false }
+    ) {
+        Text("Filters", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
+
+        Spacer(Modifier.height(16.dp))
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                OutlinedButton (
-                    onClick = {
-                        searchViewModel.onAction(SearchAction.ClearDateFilters)
-                    }
-                ) {
-                    Text("Clear")
+                Text("Start date")
+                TextButton(onClick = { showStartDatePicker = true }) {
+                    Text(state.startDateFilter?.let { formatDate(it) } ?: "Any time")
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("End date")
+                TextButton(onClick = { showEndDatePicker = true }) {
+                    Text(state.endDateFilter?.let { formatDate(it) } ?: "Any time")
                 }
             }
         }
+
+        Spacer(Modifier.height(24.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            OutlinedButton (
+                onClick = {
+                    searchViewModel.onAction(SearchAction.ClearDateFilters)
+                }
+            ) {
+                Text("Clear")
+            }
+        }
     }
+
+    if ( !alertTitle.isNullOrBlank() && !alertDescription.isNullOrBlank()) {
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text(alertTitle!!) },
+            text = { Text(alertDescription!!) },
+            dismissButton = {
+                TextButton(onClick = {
+                    searchViewModel.clearIndexAlert()
+                }) {
+                    Text("Cancel")
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    searchViewModel.clearIndexAlert()
+                    searchViewModel.onAction(SearchAction.Index)
+                }) {
+                    Text("Confirm")
+                }
+            }
+        )
+    }
+
+    if (showScanImagesDialog || showScanVideosDialog) {
+        val media = if (showScanImagesDialog) "images" else "videos"
+
+        AlertDialog(
+            onDismissRequest = {
+                if (showScanImagesDialog) showScanImagesDialog = false else showScanVideosDialog = false
+            },
+            title = {
+                Text(stringResource(R.string.alert_scan_index_title, media))
+            },
+            text = {
+                Column {
+                    Text(stringResource(R.string.alert_scan_index_description))
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    TextButton(
+                        onClick = {
+                            if (showScanImagesDialog) {
+                                showScanImagesDialog = false
+                                searchViewModel.onAction(SearchAction.RefreshIndex(MediaType.IMAGE))
+                            } else {
+                                showScanVideosDialog = false
+                                searchViewModel.onAction(SearchAction.RefreshIndex(MediaType.VIDEO))
+                            }
+                        }
+                    ) {
+                        Text("Refresh")
+                    }
+
+                    TextButton(
+                        onClick = {
+                            if (showScanImagesDialog) {
+                                showScanImagesDialog = false
+                                searchViewModel.onAction(SearchAction.RebuildIndex(MediaType.IMAGE))
+                            } else {
+                                showScanVideosDialog = false
+                                searchViewModel.onAction(SearchAction.RebuildIndex(MediaType.VIDEO))
+                            }
+                        }
+                    ) {
+                        Text("Rebuild")
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (showScanImagesDialog) showScanImagesDialog = false else showScanVideosDialog = false
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    TagAdder(
+        isVisible = isAddingTag,
+        onAddTag = {
+            searchViewModel.onAction(SearchAction.TagItems(it))
+            isAddingTag = false
+        },
+        onClose = {
+            isAddingTag = false
+        },
+        onCheckAutoCompletion = searchViewModel::handleAutoCompletionCheck
+    )
 }
 
 
