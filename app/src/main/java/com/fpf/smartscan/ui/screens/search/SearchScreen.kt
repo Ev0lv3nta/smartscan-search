@@ -14,8 +14,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -53,10 +57,11 @@ import com.fpf.smartscan.ui.components.pickers.DatePickerModal
 import com.fpf.smartscan.ui.components.modals.BottomSheet
 import com.fpf.smartscan.ui.components.search.AutoCompleter
 import com.fpf.smartscan.ui.components.search.ImageSearcher
-import com.fpf.smartscan.ui.components.search.SearchActionBar
 import com.fpf.smartscan.ui.components.search.SearchBar
 import com.fpf.smartscan.ui.components.search.SearchResults
 import com.fpf.smartscan.ui.components.TagAdder
+import com.fpf.smartscan.ui.components.actions.ActionBar
+import com.fpf.smartscan.ui.components.actions.ActionConfig
 import com.fpf.smartscan.ui.permissions.RequestPermissions
 import com.fpf.smartscan.ui.screens.search.SearchViewModel.Companion.RESULTS_BATCH_SIZE
 import com.fpf.smartscan.utils.formatDate
@@ -111,6 +116,37 @@ fun SearchScreen(
     var isSelecting by remember { mutableStateOf(false) }
     var tagAutoCompleteTagResults by remember { mutableStateOf<List<String>>(emptyList()) }
 
+    // action bar actions
+    val actionBarActions: Map<String, ActionConfig> = mapOf(
+        stringResource(R.string.share_action) to ActionConfig(
+            onClick = {
+                searchViewModel.onAction(SearchAction.ShareResults(context))
+                isSelecting = false
+            },
+            icon = Icons.Filled.Share
+        ),
+        stringResource(R.string.search_action) to ActionConfig(
+            onClick = {
+                isSelecting = false
+                searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(state.selectedResults.first().uri, appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
+                searchViewModel.clearSelectedResults()
+            },
+            enabled = state.selectedResults.size == 1 && state.mediaType == MediaType.IMAGE,
+            icon = Icons.Filled.Search
+        ),
+        stringResource(R.string.copy_action) to ActionConfig(
+            onClick = {
+                searchViewModel.onAction(SearchAction.CopyResult(clipboard, context))
+                isSelecting = false
+            },
+            icon = Icons.Filled.ContentCopy),
+        stringResource(R.string.add_tag_action) to ActionConfig(
+            onClick = {
+                isAddingTag = true
+                isSelecting = false
+            },
+            icon = Icons.Filled.Tag),
+        )
 
     // Dynamic hide animation
     var offset by remember { mutableIntStateOf(0) }
@@ -509,26 +545,9 @@ fun SearchScreen(
                     else Modifier
                 )
             ) {
-            SearchActionBar(
+            ActionBar(
                 modifier = Modifier.height(70.dp),
-                searchEnabled = state.selectedResults.size == 1 && state.mediaType == MediaType.IMAGE,
-                onSearch = {
-                    isSelecting = false
-                    searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(state.selectedResults.first().uri, appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
-                    searchViewModel.clearSelectedResults()
-                },
-                onShare = {
-                    searchViewModel.onAction(SearchAction.ShareResults(context))
-                    isSelecting = false
-                },
-                onAddTag = {
-                    isAddingTag = true
-                    isSelecting = false
-                },
-                onCopy = {
-                    searchViewModel.onAction(SearchAction.CopyResult(clipboard, context))
-                    isSelecting = false
-                },
+                actions = actionBarActions
             )
         }
         state.resultToView?.let { item ->
