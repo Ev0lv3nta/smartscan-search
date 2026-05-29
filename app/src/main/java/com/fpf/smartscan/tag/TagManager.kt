@@ -28,7 +28,8 @@ class TagManager(
 
     fun checkAutoCompletion(query: CharSequence, substringEnd: Int, tags: List<String>, startWithHashtag: Boolean =  true): List<String>{
         val text = query.toString()
-        val prefix = text.substring(0, substringEnd)
+        val safeEnd = substringEnd.coerceIn(0, text.length)
+        val prefix = text.substring(0, safeEnd)
         // Regex: find #tag at the end of prefix
         var pattern =  """^#([a-zA-Z0-9_]*)$"""
         pattern = if(!startWithHashtag )  pattern.replace("#", "") else pattern
