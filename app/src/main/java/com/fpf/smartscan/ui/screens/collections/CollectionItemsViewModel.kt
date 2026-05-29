@@ -22,8 +22,8 @@ import com.fpf.smartscan.data.clusters.ClusterPagingSource
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
 import com.fpf.smartscan.data.tags.TagRepository
-import com.fpf.smartscan.events.MediaEvent
-import com.fpf.smartscan.events.MediaEventType
+import com.fpf.smartscan.events.CollectionItemEvent
+import com.fpf.smartscan.events.CollectionItemEventType
 import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.mediaIdToUri
@@ -164,7 +164,7 @@ class CollectionItemsViewModel(
             initialValue = emptyList()
         )
 
-    private val _event = MutableSharedFlow<MediaEvent>()
+    private val _event = MutableSharedFlow<CollectionItemEvent>()
     val event = _event.asSharedFlow()
 
     fun onAction(action: CollectionItemAction){
@@ -189,10 +189,10 @@ class CollectionItemsViewModel(
             try {
                 tagManager.tagItems(tag, selectedItems)
                 clearSelectedItems()
-                _event.emit(MediaEvent(MediaEventType.TAG, success = true, message = "Tagged ${selectedItems.size} item(s)"))
+                _event.emit(CollectionItemEvent(CollectionItemEventType.TAG, success = true, message = "Tagged ${selectedItems.size} item(s)"))
             }catch (e: Exception){
                 Log.e(TAG, "Error tagging items: ${e.message}")
-                _event.emit(MediaEvent(MediaEventType.TAG, success = false, message = "Error tagging items"))
+                _event.emit(CollectionItemEvent(CollectionItemEventType.TAG, success = false, message = "Error tagging items"))
             }
         }
     }
@@ -210,10 +210,10 @@ class CollectionItemsViewModel(
             try {
                 tagManager.removeItems(collectionName, mediaIds)
                 clearSelectedItems()
-                _event.emit(MediaEvent(MediaEventType.REMOVE, success = true, message = "Removed ${mediaIds.size} item(s)"))
+                _event.emit(CollectionItemEvent(CollectionItemEventType.REMOVE, success = true, message = "Removed ${mediaIds.size} item(s)"))
             }catch (e: Exception){
                 Log.e(TAG, "Error removing items: ${e.message}")
-                _event.emit(MediaEvent(MediaEventType.REMOVE, success = false, message = "Error removing items"))
+                _event.emit(CollectionItemEvent(CollectionItemEventType.REMOVE, success = false, message = "Error removing items"))
             }
         }
     }
@@ -234,10 +234,10 @@ class CollectionItemsViewModel(
                     tagManager.moveItems(items, oldCollectionName, newCollection.name)
                 }
                 clearSelectedItems()
-                _event.emit(MediaEvent(MediaEventType.MOVE, success = true, message = "Moved ${items.size} item(s)"))
+                _event.emit(CollectionItemEvent(CollectionItemEventType.MOVE, success = true, message = "Moved ${items.size} item(s)"))
             }catch (e: Exception){
                 Log.e(TAG, "Error moving items: ${e.message}")
-                _event.emit(MediaEvent(MediaEventType.MOVE, success = false, message = "Error moving items"))
+                _event.emit(CollectionItemEvent(CollectionItemEventType.MOVE, success = false, message = "Error moving items"))
             }finally {
                 _state.update { it.copy(loading = false) }
             }
@@ -247,7 +247,7 @@ class CollectionItemsViewModel(
     private fun copyItem(clipboard: Clipboard, context: Context){
         clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", _state.value.selectedMediaItems.first().uri))
         viewModelScope.launch {
-            _event.emit(MediaEvent(MediaEventType.COPY, success = true))
+            _event.emit(CollectionItemEvent(CollectionItemEventType.COPY, success = true))
             clearSelectedItems()
         }
     }
@@ -255,7 +255,7 @@ class CollectionItemsViewModel(
     private fun shareItems(context: Context){
         shareMediaMulti(context, _state.value.selectedMediaItems.map{it.uri})
         viewModelScope.launch {
-            _event.emit(MediaEvent(MediaEventType.SHARE, success = true))
+            _event.emit(CollectionItemEvent(CollectionItemEventType.SHARE, success = true))
             clearSelectedItems()
         }
     }
@@ -272,12 +272,12 @@ class CollectionItemsViewModel(
             try {
                 tagManager.createNewTagAndMoveItems(items, oldCollectionName, newCollectionName)
                 clearSelectedItems()
-                _event.emit(MediaEvent(MediaEventType.MOVE, success = true, message = "Moved ${items.size} item(s)"))
+                _event.emit(CollectionItemEvent(CollectionItemEventType.MOVE, success = true, message = "Moved ${items.size} item(s)"))
             }catch (_: SQLiteConstraintException){
-                _event.emit(MediaEvent(MediaEventType.MOVE, success = false, message = "Collection already exists"))
+                _event.emit(CollectionItemEvent(CollectionItemEventType.MOVE, success = false, message = "Collection already exists"))
             }catch (e: Exception){
                 Log.e(TAG, "Error moving items: ${e.message}")
-                _event.emit(MediaEvent(MediaEventType.MOVE, success = false, message = "Error moving items"))            }
+                _event.emit(CollectionItemEvent(CollectionItemEventType.MOVE, success = false, message = "Error moving items"))            }
         }
     }
 

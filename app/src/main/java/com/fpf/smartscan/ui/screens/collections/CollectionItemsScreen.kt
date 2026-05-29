@@ -49,7 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.fpf.smartscan.R
-import com.fpf.smartscan.events.MediaEventType
+import com.fpf.smartscan.events.CollectionItemEventType
 import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.settings.AppSettings
@@ -169,7 +169,7 @@ fun CollectionItemsScreen(
     LaunchedEffect(Unit) {
         viewModel.event.collect { event ->
             when(event.type){
-                MediaEventType.MOVE -> {
+                CollectionItemEventType.MOVE -> {
                     if(event.success){
                         isSelecting = false
                         items.refresh()
@@ -178,7 +178,7 @@ fun CollectionItemsScreen(
                         event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                     }
                 }
-                MediaEventType.REMOVE -> {
+                CollectionItemEventType.REMOVE -> {
                     if(event.success){
                         isSelecting = false
                         items.refresh()
@@ -188,7 +188,7 @@ fun CollectionItemsScreen(
                     }
                 }
 
-                MediaEventType.COPY -> {
+                CollectionItemEventType.COPY -> {
                     if(event.success){
                         isSelecting = false
                     }
@@ -197,7 +197,7 @@ fun CollectionItemsScreen(
                     }
                 }
 
-                MediaEventType.SHARE -> {
+                CollectionItemEventType.SHARE -> {
                     if(event.success){
                         isSelecting = false
                     }
@@ -205,7 +205,7 @@ fun CollectionItemsScreen(
                         event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                     }
                 }
-                MediaEventType.TAG -> {
+                CollectionItemEventType.TAG -> {
                     if(event.success){
                         isSelecting = false
                         tagCollectionItems.refresh()

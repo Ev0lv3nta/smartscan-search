@@ -1,14 +1,14 @@
 package com.fpf.smartscan.events
 
-enum class MediaEventType {
+enum class CollectionItemEventType {
     MOVE,
     REMOVE,
     COPY,
     SHARE,
     TAG,
 }
-data class MediaEvent (
-    val type: MediaEventType,
+data class CollectionItemEvent (
+    val type: CollectionItemEventType,
     val success: Boolean,
     val message: String? = null,
     )
