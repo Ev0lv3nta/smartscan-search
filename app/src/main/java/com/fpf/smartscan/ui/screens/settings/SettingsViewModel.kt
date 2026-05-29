@@ -9,8 +9,10 @@ import androidx.lifecycle.viewModelScope
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.constants.PrefsNames
 import com.fpf.smartscan.data.MediaDatabase
-import com.fpf.smartscan.events.AppEvent
-import com.fpf.smartscan.events.AppEventType
+import com.fpf.smartscan.events.BackupEvent
+import com.fpf.smartscan.events.BackupEventType
+import com.fpf.smartscan.events.ModelEvent
+import com.fpf.smartscan.events.ModelEventType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -42,8 +44,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private val _importedModels = MutableStateFlow(ModelManager.listModels(application))
     val importedModels: StateFlow<List<ModelName>> = _importedModels
-    private val _event = MutableSharedFlow<AppEvent>()
-    val event = _event.asSharedFlow()
+    private val _modelEvent = MutableSharedFlow<ModelEvent>()
+    val modelEvent = _modelEvent.asSharedFlow()
+
+    private val _backupEvent = MutableSharedFlow<BackupEvent>()
+    val backupEvent = _backupEvent.asSharedFlow()
 
     private val _isBackupLoading = MutableStateFlow(false)
     val isBackupLoading: StateFlow<Boolean> = _isBackupLoading
@@ -80,14 +85,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             try {
                 ModelManager.importModel(getApplication(), modelInfo, uri)
                 _importedModels.value = ModelManager.listModels(getApplication())
-                _event.emit(AppEvent(AppEventType.MODEL_IMPORT_SUCCESS, "Model imported successfully"))
+                _modelEvent.emit(ModelEvent(ModelEventType.IMPORT, success = true, "Model imported successfully"))
             }catch (e: SmartScanException.InvalidModelFile){
                 Log.e(TAG, "${e.message}")
-                _event.emit(AppEvent(AppEventType.MODEL_IMPORT_FAILED, e.message?: "Model import failed"))
+                _modelEvent.emit(ModelEvent(ModelEventType.IMPORT, success = false, e.message?: "Model import failed"))
             }
             catch (e: Exception) {
                 Log.e(TAG, "${e.message}")
-                _event.emit(AppEvent(AppEventType.MODEL_IMPORT_FAILED,"Model import failed"))
+                _modelEvent.emit(ModelEvent(ModelEventType.IMPORT, success = false,  "Model import failed"))
             }
         }
     }
@@ -160,11 +165,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
                 zipFiles(indexZipFile, filesToZip)
                 copyToUri(getApplication(), uri, indexZipFile)
-                _event.emit(AppEvent(AppEventType.BACKUP_SUCCESS, "Backup successful"))
+                _backupEvent.emit(BackupEvent(BackupEventType.BACKUP, success = true, "Backup successful"))
             }catch (e: Exception){
                 Log.e(TAG, "Error backing up: ${e.message}")
                 val appEventMessage = if(e.message == "Missing index file(s)")  "Missing index file(s)" else "Backup failed"
-                _event.emit(AppEvent(AppEventType.BACKUP_FAILED, appEventMessage))
+                _backupEvent.emit(BackupEvent(BackupEventType.BACKUP, success = false, appEventMessage))
             }finally {
                 indexZipFile.delete()
                 hashFile.delete()
@@ -190,10 +195,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     extractedFiles.forEach { it.delete() }
                     error("Invalid backup file")
                 }
-                _event.emit(AppEvent(AppEventType.RESTORE_SUCCESS, "Restore successful"))
+                _backupEvent.emit(BackupEvent(BackupEventType.RESTORE, success = true, "Restore successful"))
             }catch (e: Exception){
                 Log.e(TAG, "Error restoring: ${e.message}")
-                _event.emit(AppEvent(AppEventType.RESTORE_FAILED, "Invalid backup file"))
+                _backupEvent.emit(BackupEvent(BackupEventType.RESTORE, success = false, "Invalid backup file"))
             }finally {
                 indexZipFile.delete()
                 _isRestoreLoading.emit(false)

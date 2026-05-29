@@ -24,7 +24,7 @@ import com.fpf.smartscan.ui.components.pickers.DirectoryPicker
 import com.fpf.smartscan.R
 import com.fpf.smartscan.ui.components.CustomSlider
 import com.fpf.smartscan.settings.SettingTypes
-import com.fpf.smartscan.events.AppEventType
+import com.fpf.smartscan.events.BackupEventType
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.ui.components.BackupAndRestore
 import com.fpf.smartscan.ui.components.SwitchItem
@@ -52,12 +52,18 @@ fun SettingsDetailScreen(
     val availableModels = ModelRegistry.filter {item -> item.key in listOf(ModelName.ALL_MINILM_L6_V2, ModelName.DINOV2_SMALL)}
 
     LaunchedEffect(Unit) {
-        viewModel.event.collect { event ->
+        viewModel.backupEvent.collect { event ->
             Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
             when(event.type){
-                AppEventType.RESTORE_SUCCESS -> onRestartApp()
+                BackupEventType.RESTORE -> if(event.success) onRestartApp()
                 else -> {}
             }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.modelEvent.collect { event ->
+            Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
         }
     }
 
