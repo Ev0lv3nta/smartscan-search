@@ -167,17 +167,17 @@ class CollectionItemsViewModel(
     private val _event = MutableSharedFlow<MediaEvent>()
     val event = _event.asSharedFlow()
 
-    fun onAction(action: MediaItemAction){
+    fun onAction(action: CollectionItemAction){
         when(action){
-            is MediaItemAction.CopyMedia -> copyItem(action.clipboard, action.context)
-            is MediaItemAction.CreateNewTagCollectionAndMove -> createNewCollectionAndMove(action.newName)
-            MediaItemAction.RemoveMedia -> removeItems()
-            is MediaItemAction.SetMediaToView -> setMediaToView(action.context, action.item, autoOpenInGallery = action.autoOpenInGallery, isSelecting = action.isSelecting)
-            is MediaItemAction.ShareMedia -> shareItems(action.context)
-            is MediaItemAction.ToggleSelectedMedia -> toggleSelectedItem(action.item)
-            is MediaItemAction.SetCollectionToView -> setCollection(action.name, action.clusterId)
-            is MediaItemAction.MoveMedia -> moveItems(action.destinationCollection, action.clusterId)
-            is MediaItemAction.Tag -> tagItems(action.tag)
+            is CollectionItemAction.CopyMedia -> copyItem(action.clipboard, action.context)
+            is CollectionItemAction.CreateNewTagCollectionAndMove -> createNewCollectionAndMove(action.newName)
+            CollectionItemAction.RemoveMedia -> removeItems()
+            is CollectionItemAction.SetMediaToView -> setMediaToView(action.context, action.item, autoOpenInGallery = action.autoOpenInGallery, isSelecting = action.isSelecting)
+            is CollectionItemAction.ShareMedia -> shareItems(action.context)
+            is CollectionItemAction.ToggleSelectedMedia -> toggleSelectedItem(action.item)
+            is CollectionItemAction.SetCollectionToView -> setCollection(action.name, action.clusterId)
+            is CollectionItemAction.MoveMedia -> moveItems(action.destinationCollection, action.clusterId)
+            is CollectionItemAction.Tag -> tagItems(action.tag)
         }
     }
 
