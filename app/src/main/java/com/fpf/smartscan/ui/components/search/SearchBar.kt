@@ -41,7 +41,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,7 +52,6 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -61,8 +59,7 @@ fun SearchBar(
     searchFieldState: TextFieldState,
     enabled: Boolean,
     onSearch: () -> Unit,
-    onImageSelected: (Uri?) -> Unit,
-    onImagePasted: (Uri?) -> Unit,
+    onSearchImage: (Uri) -> Unit,
     onClearResults : () -> Unit,
     placeholders: List<String>,
     modifier: Modifier = Modifier,
@@ -73,7 +70,7 @@ fun SearchBar(
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri: Uri? ->
-            uri?.let { onImageSelected(it) }
+            uri?.let { onSearchImage(it) }
         }
     )
     val receiveContentListener = remember {
@@ -82,7 +79,7 @@ fun SearchBar(
                 transferableContent.hasMediaType(MediaType.Image) -> {
                     transferableContent.consume { item ->
                         val uri = item.uri
-                        if (uri != null) onImagePasted(uri)
+                        if (uri != null) onSearchImage(uri)
                         uri != null
                     }
                 }

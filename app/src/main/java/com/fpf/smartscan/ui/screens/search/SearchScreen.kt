@@ -1,6 +1,5 @@
 package com.fpf.smartscan.ui.screens.search
 
-import android.content.ClipData
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -15,8 +14,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,14 +41,13 @@ import androidx.compose.ui.zIndex
 import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.mediaTypeOptions
 import com.fpf.smartscan.media.MediaType
-import com.fpf.smartscan.media.shareMediaMulti
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.search.IndexingStatus
 import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.settings.AppSettings
-import com.fpf.smartscan.ui.components.ActionConfig
-import com.fpf.smartscan.ui.components.DropDownMenuWrapper
+import com.fpf.smartscan.ui.components.menus.MenuItemConfig
+import com.fpf.smartscan.ui.components.menus.DropDownMenuWrapper
 import com.fpf.smartscan.ui.components.LoadingIndicator
 import com.fpf.smartscan.ui.components.media.MediaViewer
 import com.fpf.smartscan.ui.components.ProgressBar
@@ -55,10 +57,11 @@ import com.fpf.smartscan.ui.components.pickers.DatePickerModal
 import com.fpf.smartscan.ui.components.modals.BottomSheet
 import com.fpf.smartscan.ui.components.search.AutoCompleter
 import com.fpf.smartscan.ui.components.search.ImageSearcher
-import com.fpf.smartscan.ui.components.search.SearchActionBar
 import com.fpf.smartscan.ui.components.search.SearchBar
 import com.fpf.smartscan.ui.components.search.SearchResults
 import com.fpf.smartscan.ui.components.TagAdder
+import com.fpf.smartscan.ui.components.actions.ActionBar
+import com.fpf.smartscan.ui.components.actions.ActionConfig
 import com.fpf.smartscan.ui.permissions.RequestPermissions
 import com.fpf.smartscan.ui.screens.search.SearchViewModel.Companion.RESULTS_BATCH_SIZE
 import com.fpf.smartscan.utils.formatDate
@@ -90,10 +93,9 @@ fun SearchScreen(
     val imageIndexStatus by searchViewModel.imageIndexStatus.collectAsState()
     val videoIndexStatus by searchViewModel.videoIndexStatus.collectAsState()
     val isIndexing = imageIndexStatus == IndexingStatus.ACTIVE || videoIndexStatus == IndexingStatus.ACTIVE
-    val alertTitle by searchViewModel.alertTitle.collectAsState()
-    val alertDescription by searchViewModel.alertDescription.collectAsState()
     var showScanImagesDialog by remember { mutableStateOf(false) }
     var showScanVideosDialog by remember { mutableStateOf(false) }
+    var showIndexAlert by remember { mutableStateOf(false) }
 
 
     // Search state
@@ -101,11 +103,11 @@ fun SearchScreen(
     val tags by searchViewModel.allTags.collectAsState()
     val searchBarPlaceholders = listOf(
         when (state.mediaType) {
-            MediaType.IMAGE -> "Search images"
-            MediaType.VIDEO -> "Search videos"
+            MediaType.IMAGE -> stringResource(R.string.placeholders_search_images)
+            MediaType.VIDEO -> stringResource(R.string.placeholders_search_videos)
         },
-        "Search by tag: #tag",
-        "Search by tag: #tag query"
+       stringResource(R.string.placeholders_search_by_tag),
+        stringResource(R.string.placeholders_search_by_tag_query),
     )
 
     var hasStoragePermission by remember { mutableStateOf(false) }
@@ -113,6 +115,37 @@ fun SearchScreen(
     var isSelecting by remember { mutableStateOf(false) }
     var tagAutoCompleteTagResults by remember { mutableStateOf<List<String>>(emptyList()) }
 
+    // action bar actions
+    val actionBarActions: Map<String, ActionConfig> = mapOf(
+        stringResource(R.string.share_action) to ActionConfig(
+            onClick = {
+                searchViewModel.onAction(SearchAction.ShareResults(context))
+                isSelecting = false
+            },
+            icon = Icons.Filled.Share
+        ),
+        stringResource(R.string.search_action) to ActionConfig(
+            onClick = {
+                isSelecting = false
+                searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(state.selectedResults.first().uri, appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
+                searchViewModel.clearSelectedResults()
+            },
+            enabled = state.selectedResults.size == 1 && state.mediaType == MediaType.IMAGE,
+            icon = Icons.Filled.Search
+        ),
+        stringResource(R.string.copy_action) to ActionConfig(
+            onClick = {
+                searchViewModel.onAction(SearchAction.CopyResult(clipboard, context))
+                isSelecting = false
+            },
+            icon = Icons.Filled.ContentCopy),
+        stringResource(R.string.add_tag_action) to ActionConfig(
+            onClick = {
+                isAddingTag = true
+                isSelecting = false
+            },
+            icon = Icons.Filled.Tag),
+        )
 
     // Dynamic hide animation
     var offset by remember { mutableIntStateOf(0) }
@@ -131,9 +164,9 @@ fun SearchScreen(
     val scanImagesMenuLabel = stringResource(R.string.scan_images_action)
     val scanVideosMenuLabel = stringResource(R.string.scan_videos_action)
 
-    val menuActions: Map<String, ActionConfig> = mapOf(
-        scanImagesMenuLabel to ActionConfig.Button({ showScanImagesDialog = true }, enabled = !isIndexing),
-        scanVideosMenuLabel to ActionConfig.Button({ showScanVideosDialog = true }, enabled=!isIndexing)
+    val menuActions: Map<String, MenuItemConfig> = mapOf(
+        scanImagesMenuLabel to MenuItemConfig.Button({ showScanImagesDialog = true }, enabled = !isIndexing),
+        scanVideosMenuLabel to MenuItemConfig.Button({ showScanVideosDialog = true }, enabled=!isIndexing)
     )
 
     RequestPermissions { _, storageGranted ->
@@ -142,14 +175,11 @@ fun SearchScreen(
 
     val screenTitle = stringResource(R.string.title_search)
 
-    LaunchedEffect(state.hasIndexedImages, state.hasIndexedVideos, state.isRescanning, state.mediaType, hasStoragePermission) {
+    LaunchedEffect(state.hasIndexedImages, state.hasIndexedVideos, isIndexing, state.mediaType, hasStoragePermission) {
         val isFirstImageScanNeeded = hasStoragePermission && state.hasIndexedImages == false && (state.mediaType == MediaType.IMAGE)
         val isFirstVideoScanNeeded = hasStoragePermission && state.hasIndexedVideos == false && (state.mediaType == MediaType.VIDEO)
-
-        if(isFirstImageScanNeeded && !state.isRescanning){
-            searchViewModel.showIndexAlert()
-        }else if(isFirstVideoScanNeeded && !state.isRescanning){
-            searchViewModel.showIndexAlert()
+        if( !isIndexing && (isFirstImageScanNeeded || isFirstVideoScanNeeded)){
+            showIndexAlert = true
         }
     }
 
@@ -198,8 +228,7 @@ fun SearchScreen(
 
     DisposableEffect(Unit) {
         onDispose {
-            searchViewModel.toggleViewResult(context, null)
-            searchViewModel.clearSelectedResults()
+            searchViewModel.onAction(SearchAction.Reset)
         }
     }
 
@@ -211,101 +240,6 @@ fun SearchScreen(
                 tagAutoCompleteTagResults = searchViewModel.handleAutoCompletionCheck(query, subStringEnd)
             }
     }
-
-
-
-    if ( !alertTitle.isNullOrBlank() && !alertDescription.isNullOrBlank()) {
-        AlertDialog(
-            onDismissRequest = { },
-            title = { Text(alertTitle!!) },
-            text = { Text(alertDescription!!) },
-            dismissButton = {
-                TextButton(onClick = {
-                    searchViewModel.clearIndexAlert()
-                }) {
-                    Text("Cancel")
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    searchViewModel.clearIndexAlert()
-                    searchViewModel.onIndex()
-                }) {
-                    Text("Confirm")
-                }
-            }
-        )
-    }
-
-    if (showScanImagesDialog || showScanVideosDialog) {
-        val media = if (showScanImagesDialog) "images" else "videos"
-
-        AlertDialog(
-            onDismissRequest = {
-                if (showScanImagesDialog) showScanImagesDialog = false else showScanVideosDialog = false
-            },
-            title = {
-                Text(stringResource(R.string.alert_scan_index_title, media))
-            },
-            text = {
-                Column {
-                    Text(stringResource(R.string.alert_scan_index_description))
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    TextButton(
-                        onClick = {
-                            if (showScanImagesDialog) {
-                                showScanImagesDialog = false
-                                searchViewModel.refreshMediaIndex(MediaType.IMAGE)
-                            } else {
-                                showScanVideosDialog = false
-                                searchViewModel.refreshMediaIndex(MediaType.VIDEO)
-                            }
-                        }
-                    ) {
-                        Text("Refresh")
-                    }
-
-                    TextButton(
-                        onClick = {
-                            if (showScanImagesDialog) {
-                                showScanImagesDialog = false
-                                searchViewModel.rebuildMediaIndex(MediaType.IMAGE)
-                            } else {
-                                showScanVideosDialog = false
-                                searchViewModel.rebuildMediaIndex(MediaType.VIDEO)
-                            }
-                        }
-                    ) {
-                        Text("Rebuild")
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (showScanImagesDialog) showScanImagesDialog = false else showScanVideosDialog = false
-                    }
-                ) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
-    TagAdder(
-        isVisible = isAddingTag,
-        onAddTag = {
-            searchViewModel.tagSelectedItems(it)
-            isAddingTag = false
-        },
-        onClose = {
-            isAddingTag = false
-            searchViewModel.clearSelectedResults()
-        },
-        onCheckAutoCompletion = searchViewModel::handleAutoCompletionCheck
-    )
 
     BackHandler(enabled = isSelecting) {
         isSelecting = false
@@ -340,7 +274,7 @@ fun SearchScreen(
                     offsetPx = offset,
                     modifier = Modifier
                         .zIndex(1f)
-                        .heightIn(max=180.dp)
+                        .heightIn(max = 180.dp)
                         .padding(bottom = 8.dp)
                 ) {
                     Column {
@@ -355,15 +289,13 @@ fun SearchScreen(
                             imageSize = 140.dp,
                             mediaTypeSelectorEnabled = (videoIndexStatus != IndexingStatus.ACTIVE && imageIndexStatus != IndexingStatus.ACTIVE), // prevent switching modes when indexing in progress
                             onSearch = {
-                                searchViewModel.search(appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold)
+                                searchViewModel.onAction(SearchAction.Search(appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
                                 isSelecting = false
                             },
-                            onMediaTypeChange = searchViewModel::setMediaType,
+                            onMediaTypeChange = { searchViewModel.onAction(SearchAction.SetMediaTypeFilter(it)) },
                             onRemoveImage = {
                                 isSelecting = false
-                                searchViewModel.updateSearchImageUri(null)
-                                searchViewModel.reset()
-                                searchViewModel.updateQueryType(QueryType.TEXT)
+                                searchViewModel.onAction(SearchAction.RemoveUploadedImage)
                             }
                         )
                     }
@@ -374,7 +306,7 @@ fun SearchScreen(
                     offsetPx = offset,
                     modifier = Modifier
                         .padding(bottom = 8.dp)
-                        .heightIn(max=120.dp)
+                        .heightIn(max = 120.dp)
 
                 ) {
                     Column {
@@ -393,24 +325,16 @@ fun SearchScreen(
                                 searchFieldState = searchViewModel.searchFieldState,
                                 enabled = hasStoragePermission && !state.loading && !isIndexing ,
                                 onSearch = {
-                                    searchViewModel.search(appSettings.similarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold)
+                                    searchViewModel.onAction(SearchAction.Search(appSettings.similarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
                                     isSelecting = false
                                 },
-                                onImageSelected = {
-                                    searchViewModel.updateSearchImageUri(it)
-                                    searchViewModel.updateQueryType(QueryType.IMAGE)
-                                    searchViewModel.search(appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold)
-                                    isSelecting = false
-                                },
-                                onImagePasted = {
-                                    searchViewModel.updateSearchImageUri(it)
-                                    searchViewModel.updateQueryType(QueryType.IMAGE)
-                                    searchViewModel.search(appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold)
+                                onSearchImage = {
+                                    searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(it, appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
                                     isSelecting = false
                                 },
                                 onClearResults = {
+                                    searchViewModel.onAction(SearchAction.Reset)
                                     isSelecting = false
-                                    searchViewModel.reset()
                                 },
                                 placeholders = searchBarPlaceholders,
                                 trailingIcon = {
@@ -420,10 +344,10 @@ fun SearchScreen(
                                         options = mediaTypeOptions.values.toList(),
                                         selectedOption = mediaTypeOptions[state.mediaType]!!,
                                         onOptionSelected = { selected ->
-                                            val newMode = mediaTypeOptions.entries
+                                            val mediaType = mediaTypeOptions.entries
                                                 .find { it.value == selected }
                                                 ?.key ?: MediaType.IMAGE
-                                            searchViewModel.setMediaType(newMode)
+                                            searchViewModel.onAction(SearchAction.SetMediaTypeFilter(mediaType))
                                         }
                                     )
                                 }
@@ -432,7 +356,7 @@ fun SearchScreen(
                             Box(
                                 modifier = Modifier
                                     .heightIn(min = 56.dp)
-                                    .widthIn(min=42.dp)
+                                    .widthIn(min = 42.dp)
                                     .background(
                                         color = MaterialTheme.colorScheme.surfaceContainer,
                                         shape = RoundedCornerShape(8.dp)
@@ -457,7 +381,7 @@ fun SearchScreen(
                         }
                         if(state.startDateFilter != null || state.endDateFilter != null){
                             TextButton(
-                                onClick = { searchViewModel.clearDateFilters() },
+                                onClick = { searchViewModel.onAction(SearchAction.ClearDateFilters) },
                                 modifier = Modifier.align(Alignment.End)
                             ) {
                                 Text("Clear filters")
@@ -496,9 +420,9 @@ fun SearchScreen(
                 isSelecting = isSelecting,
                 selectedResults = state.selectedResults,
                 loadMoreBuffer = (RESULTS_BATCH_SIZE * 0.4).toInt(),
-                onViewResult = { uri -> searchViewModel.toggleViewResult(context, uri, autoOpenInGallery = appSettings.enableDirectGalleryOpen, isSelecting = isSelecting ) },
+                onItemClick = { uri -> searchViewModel.onAction(SearchAction.ViewResult(context, uri, autoOpenInGallery = appSettings.enableDirectGalleryOpen )) },
                 onLoadMore = searchViewModel::onLoadMore,
-                onToggleSelected = searchViewModel::toggleSelectedResult,
+                onToggleSelected = { searchViewModel.onAction(SearchAction.ToggleSelectedResult(it)) },
                 onToggleSelectionMode = {
                     isSelecting = !isSelecting
                     offset = 0
@@ -523,123 +447,201 @@ fun SearchScreen(
                     else Modifier
                 )
             ) {
-            SearchActionBar(
+            ActionBar(
                 modifier = Modifier.height(70.dp),
-                searchEnabled = state.selectedResults.size == 1 && state.mediaType == MediaType.IMAGE,
-                onSearch = {
-                    if (state.selectedResults.size == 1) {
-                        searchViewModel.updateSearchImageUri(state.selectedResults.first().uri)
-                        searchViewModel.updateQueryType(QueryType.IMAGE)
-                        isSelecting = false
-                        searchViewModel.clearSelectedResults()
-                        searchViewModel.search(appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold)
-                    }
-                },
-                onShare = {
-                    shareMediaMulti(context, state.selectedResults.map{it.uri})
-                    isSelecting = false
-                    searchViewModel.clearSelectedResults()
-                },
-                onAddTag = {
-                    isAddingTag = true
-                    isSelecting = false
-                },
-                onCopy = {
-                    clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", state.selectedResults.first().uri))
-                    isSelecting = false
-                    searchViewModel.clearSelectedResults()
-                },
+                actions = actionBarActions
             )
         }
-        state.resultToView?.let { item ->
-            AnimatedVisibility(
-                visible = true,
-                enter = fadeIn(animationSpec = tween(500)) + scaleIn(initialScale = 0.8f, animationSpec = tween(500)),
-                exit = fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.8f, animationSpec = tween(300))
-            ) {
-                MediaViewer(
-                    items = state.searchResults,
-                    initialIndex = state.searchResults.indexOf(item),
-                    onLoadMore = searchViewModel::onLoadMore,
-                    onClose = { searchViewModel.toggleViewResult(context, null)},
-                    onUpdateSearchImage = {
-                        searchViewModel.updateSearchImageUri(item.uri)
-                        searchViewModel.updateQueryType(QueryType.IMAGE)
-                        searchViewModel.search(appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold)
-                        searchViewModel.toggleViewResult(context, null)
-                    }
-                )
-            }
-        }
-        DatePickerModal(
-            show = showStartDatePicker,
-            onDismiss = { showStartDatePicker = false },
-            onDateSelected = { y, m, d ->
-                val startDate = toEpochSeconds(y, m, d)
-                searchViewModel.setStartDateFilter(startDate)
-                showStartDatePicker = false
-            },
-            initialDateMillis = state.startDateFilter?.times(1000)
+    }
 
-        )
-
-        DatePickerModal(
-            show = showEndDatePicker,
-            onDismiss = { showEndDatePicker = false },
-            onDateSelected = { y, m, d ->
-                val endDate = toEpochSeconds(y, m, d)
-                searchViewModel.setEndDateFilter(endDate)
-                showEndDatePicker = false
-            },
-            initialDateMillis = state.endDateFilter?.times(1000)
-        )
-        BottomSheet(
-            show = showFilters,
-            onDismiss = { showFilters = false }
+    state.resultToView?.let { item ->
+        AnimatedVisibility(
+            visible = true,
+            enter = fadeIn(animationSpec = tween(500)) + scaleIn(initialScale = 0.8f, animationSpec = tween(500)),
+            exit = fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.8f, animationSpec = tween(300))
         ) {
-            Text("Filters", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
-
-            Spacer(Modifier.height(16.dp))
-
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Start date")
-                    TextButton(onClick = { showStartDatePicker = true }) {
-                        Text(state.startDateFilter?.let { formatDate(it) } ?: "Any time")
-                    }
+            MediaViewer(
+                items = state.searchResults,
+                initialIndex = state.searchResults.indexOf(item),
+                onLoadMore = searchViewModel::onLoadMore,
+                onClose = { searchViewModel.onAction(SearchAction.ClearResultView)},
+                onUpdateSearchImage = {
+                    searchViewModel.onAction(SearchAction.ClearResultView)
+                    searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(item.uri, appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
                 }
+            )
+        }
+    }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("End date")
-                    TextButton(onClick = { showEndDatePicker = true }) {
-                        Text(state.endDateFilter?.let { formatDate(it) } ?: "Any time")
-                    }
-                }
-            }
+    DatePickerModal(
+        show = showStartDatePicker,
+        onDismiss = { showStartDatePicker = false },
+        onDateSelected = { y, m, d ->
+            val startDate = toEpochSeconds(y, m, d)
+            searchViewModel.onAction(SearchAction.SetStartDateFilter(startDate))
+            showStartDatePicker = false
+        },
+        initialDateMillis = state.startDateFilter?.times(1000)
 
-            Spacer(Modifier.height(24.dp))
+    )
+
+    DatePickerModal(
+        show = showEndDatePicker,
+        onDismiss = { showEndDatePicker = false },
+        onDateSelected = { y, m, d ->
+            val endDate = toEpochSeconds(y, m, d)
+            searchViewModel.onAction(SearchAction.SetEndDateFilter(endDate))
+            showEndDatePicker = false
+        },
+        initialDateMillis = state.endDateFilter?.times(1000)
+    )
+
+    BottomSheet(
+        show = showFilters,
+        onDismiss = { showFilters = false }
+    ) {
+        Text("Filters", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
+
+        Spacer(Modifier.height(16.dp))
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                OutlinedButton (
-                    onClick = {
-                        searchViewModel.clearDateFilters()
-                    }
-                ) {
-                    Text("Clear")
+                Text("Start date")
+                TextButton(onClick = { showStartDatePicker = true }) {
+                    Text(state.startDateFilter?.let { formatDate(it) } ?: "Any time")
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("End date")
+                TextButton(onClick = { showEndDatePicker = true }) {
+                    Text(state.endDateFilter?.let { formatDate(it) } ?: "Any time")
                 }
             }
         }
+
+        Spacer(Modifier.height(24.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            OutlinedButton (
+                onClick = {
+                    searchViewModel.onAction(SearchAction.ClearDateFilters)
+                }
+            ) {
+                Text("Clear")
+            }
+        }
     }
+
+    if ( showIndexAlert) {
+        val title = when(state.mediaType){
+            MediaType.IMAGE -> stringResource(R.string.search_start_indexing_alert, "images")
+            MediaType.VIDEO -> stringResource(R.string.search_start_indexing_alert, "videos")
+        }
+        val description = when(state.mediaType){
+            MediaType.IMAGE -> stringResource(R.string.first_indexing, "image")
+            MediaType.VIDEO -> stringResource(R.string.first_indexing, "video")
+        }
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text(title) },
+            text = { Text(description) },
+            dismissButton = {
+                TextButton(onClick = {
+                    showIndexAlert = false
+                }) {
+                    Text("Cancel")
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showIndexAlert = false
+                    searchViewModel.onAction(SearchAction.Index)
+                }) {
+                    Text("Confirm")
+                }
+            }
+        )
+    }
+
+    if (showScanImagesDialog || showScanVideosDialog) {
+        val media = if (showScanImagesDialog) "images" else "videos"
+
+        AlertDialog(
+            onDismissRequest = {
+                if (showScanImagesDialog) showScanImagesDialog = false else showScanVideosDialog = false
+            },
+            title = {
+                Text(stringResource(R.string.alert_scan_index_title, media))
+            },
+            text = {
+                Column {
+                    Text(stringResource(R.string.alert_scan_index_description))
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    TextButton(
+                        onClick = {
+                            if (showScanImagesDialog) {
+                                showScanImagesDialog = false
+                                searchViewModel.onAction(SearchAction.RefreshIndex(MediaType.IMAGE))
+                            } else {
+                                showScanVideosDialog = false
+                                searchViewModel.onAction(SearchAction.RefreshIndex(MediaType.VIDEO))
+                            }
+                        }
+                    ) {
+                        Text("Refresh")
+                    }
+
+                    TextButton(
+                        onClick = {
+                            if (showScanImagesDialog) {
+                                showScanImagesDialog = false
+                                searchViewModel.onAction(SearchAction.RebuildIndex(MediaType.IMAGE))
+                            } else {
+                                showScanVideosDialog = false
+                                searchViewModel.onAction(SearchAction.RebuildIndex(MediaType.VIDEO))
+                            }
+                        }
+                    ) {
+                        Text("Rebuild")
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (showScanImagesDialog) showScanImagesDialog = false else showScanVideosDialog = false
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    TagAdder(
+        isVisible = isAddingTag,
+        onAddTag = {
+            searchViewModel.onAction(SearchAction.TagItems(it))
+            isAddingTag = false
+        },
+        onClose = {
+            isAddingTag = false
+        },
+        onCheckAutoCompletion = searchViewModel::handleAutoCompletionCheck
+    )
 }
 
 
