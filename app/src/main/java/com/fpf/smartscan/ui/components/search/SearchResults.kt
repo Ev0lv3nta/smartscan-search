@@ -55,7 +55,7 @@ fun SearchResults(
     selectedResults: Set<MediaItem>,
     totalResults: Int,
     onLoadMore: () -> Unit,
-    onViewResult: (MediaItem?) -> Unit,
+    onItemClick: (MediaItem) -> Unit,
     onToggleSelected: (MediaItem) -> Unit,
     onToggleSelectionMode: () -> Unit,
     onOffsetChange: (Int) -> Unit,
@@ -150,7 +150,7 @@ fun SearchResults(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() },
                             onClick = {
-                                if(isSelecting) onToggleSelected(item) else onViewResult(item)
+                                if(isSelecting) onToggleSelected(item) else onItemClick(item)
                             },
                             onLongClick = {
                                 if(!isSelecting) {
@@ -181,7 +181,7 @@ fun SearchResults(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
                                 ) {
-                                    onViewResult(item)
+                                    onItemClick(item)
                                 }
                                 .offset((-8).dp, (-8).dp)
                                 .align(Alignment.BottomEnd)
