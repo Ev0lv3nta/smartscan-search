@@ -1,5 +1,6 @@
 package com.fpf.smartscan
 
+import android.util.Log
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.ui.Modifier
@@ -15,8 +16,10 @@ import androidx.compose.runtime.remember
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.navigation.Routes
 import com.fpf.smartscan.navigation.BottomNavigationBar
+import com.fpf.smartscan.navigation.NavDataKeys
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.ui.components.UpdatePopUp
@@ -43,7 +46,7 @@ fun Main(
     val isUpdatePopUpVisible by mainViewModel.isUpdatePopUpVisible.collectAsState()
 
     LaunchedEffect(Unit) {
-        mainViewModel.prepareApp(){onAppReady() }
+        mainViewModel.prepareApp{onAppReady() }
     }
 
         if (isUpdatePopUpVisible) {
@@ -84,27 +87,23 @@ fun Main(
                     composable(Routes.COLLECTIONS) {
                         CollectionsScreen(
                             onTopBarChange = { topBarState.value = it },
-                            onNavigate = { route: String ->
-                                navController.navigate(route)
+                            onViewCollection = { collection ->
+                                navController.currentBackStackEntry
+                                    ?.savedStateHandle
+                                    ?.set(NavDataKeys.COLLECTION, collection)
+
+                                navController.navigate(Routes.COLLECTION_ITEMS)
                             }
                         )
                     }
                     composable(
                         route = Routes.COLLECTION_ITEMS,
-                        arguments = listOf(
-                            navArgument("collectionName") { type = NavType.StringType },
-                            navArgument("clusterId") {
-                                type = NavType.LongType
-                                defaultValue = -1L
-                            }
-                        )
-                    ) { backStackEntry ->
-                        val collectionName = backStackEntry.arguments?.getString("collectionName")
-                        val clusterId = backStackEntry.arguments?.getLong("clusterId") ?: -1L
+                    ) { _ ->
+                        val collection = navController.previousBackStackEntry?.savedStateHandle?.get<MediaCollection>(NavDataKeys.COLLECTION)
+
                         CollectionItemsScreen(
                             onTopBarChange = { topBarState.value = it },
-                            clusterId = clusterId,
-                            collectionName = collectionName,
+                            collection = collection,
                             appSettings = settingsViewModel.appSettings,
                             onBack = {navController.popBackStack()}
                         )

@@ -61,6 +61,7 @@ import kotlinx.coroutines.FlowPreview
 import com.fpf.smartscan.R
 import androidx.compose.ui.res.stringResource
 import com.fpf.smartscan.events.CollectionEventType
+import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.ui.components.actions.ActionBar
@@ -73,8 +74,8 @@ import org.koin.compose.viewmodel.koinViewModel
 @OptIn(FlowPreview::class)
 @Composable
 fun CollectionsScreen(
-    onNavigate: (String) -> Unit,
     onTopBarChange: (TopBarState) -> Unit,
+    onViewCollection: (MediaCollection) -> Unit,
     viewModel: CollectionsViewModel = koinViewModel(),
     ) {
 
@@ -117,11 +118,7 @@ fun CollectionsScreen(
 
     LaunchedEffect(state.collectToView) {
         state.collectToView?.let{
-            if(it.isAutoCollection){
-                onNavigate(Routes.viewCollection(it.name, it.id))
-            }else{
-                onNavigate(Routes.viewCollection(it.name))
-            }
+            onViewCollection(it)
             viewModel.onAction(CollectionAction.SetCollectionToView(null))
         }
     }
