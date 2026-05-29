@@ -16,12 +16,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.fpf.smartscan.ui.components.menus.MenuItemConfig
-import kotlin.collections.iterator
 
 @Composable
 fun ActionBar(
-    actions: Map<String, ActionConfig>,
+    actions: List<ActionConfig>,
     modifier: Modifier = Modifier,
     ) {
     Row(
@@ -32,7 +30,7 @@ fun ActionBar(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        for ((label, action) in actions) {
+        for (action in actions) {
             Button(
                 enabled = action.enabled,
                 colors = ButtonDefaults.buttonColors(
@@ -49,10 +47,10 @@ fun ActionBar(
                     action.icon?.let { icon ->
                         Icon(
                             icon,
-                            contentDescription = "$label button",
+                            contentDescription = "${action.label} button",
                         )
                     }
-                    Text(label, style = MaterialTheme.typography.labelMedium)
+                    Text(action.label, style = MaterialTheme.typography.labelMedium)
                 }
             }
         }

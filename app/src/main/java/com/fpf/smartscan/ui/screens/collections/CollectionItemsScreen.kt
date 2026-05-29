@@ -101,33 +101,39 @@ fun CollectionItemsScreen(
     var showMoreActions by remember { mutableStateOf(false) }
     val spaceNotAllowedMessage = stringResource(R.string.alert_space_not_allowed)
 
-    val mainActions:  Map<String, ActionConfig> = mapOf(
-        stringResource(R.string.share_action) to ActionConfig(
+    val mainActions: List<ActionConfig> = listOf(
+        ActionConfig(
+            label = stringResource(R.string.share_action),
             onClick = { viewModel.onAction(MediaItemAction.ShareMedia(context)) },
             icon=Icons.Filled.Share
         ),
-        stringResource(R.string.remove_action) to ActionConfig(
+        ActionConfig(
+            label = stringResource(R.string.remove_action),
             onClick = { viewModel.onAction(MediaItemAction.RemoveMedia) },
             enabled = isTagCollection,
             icon=Icons.Filled.RemoveCircle
         ),
-        stringResource(R.string.move_action) to ActionConfig(
+        ActionConfig(
+            label = stringResource(R.string.move_action),
             onClick={ isMoving = true },
             enabled = !state.loading,
             icon = Icons.Default.DriveFileMoveRtl
         ),
-        stringResource(R.string.more_action) to ActionConfig(
+        ActionConfig(
+            label = stringResource(R.string.more_action),
             onClick = { showMoreActions = true },
             icon = Icons.Filled.MoreVert
         ),
     )
 
-    val moreActions:  Map<String, MenuItemConfig> = mapOf(
-        stringResource(R.string.copy_to_clipboard_action) to MenuItemConfig.Button(
+    val moreActions: List<MenuItemConfig> = listOf(
+         MenuItemConfig.Button(
+             label = stringResource(R.string.copy_to_clipboard_action),
             { viewModel.onAction(MediaItemAction.CopyMedia(clipboard, context)) },
         ),
 
-        stringResource(R.string.add_tag_action) to MenuItemConfig.Button(
+         MenuItemConfig.Button(
+             label = stringResource(R.string.add_tag_action),
            { isAddingTag = true },
         ),
     )
