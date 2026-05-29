@@ -13,7 +13,6 @@ data class SearchState(
     val queryImage: Uri? = null,
     val hasIndexedImages: Boolean? = null,
     val hasIndexedVideos: Boolean? = null,
-    val isRescanning: Boolean = false,
     val loading: Boolean = false,
     val error: String? = null,
     val resultToView: MediaItem? = null,

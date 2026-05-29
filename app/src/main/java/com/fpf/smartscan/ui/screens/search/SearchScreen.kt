@@ -1,5 +1,6 @@
 package com.fpf.smartscan.ui.screens.search
 
+import android.app.Application
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -93,10 +94,9 @@ fun SearchScreen(
     val imageIndexStatus by searchViewModel.imageIndexStatus.collectAsState()
     val videoIndexStatus by searchViewModel.videoIndexStatus.collectAsState()
     val isIndexing = imageIndexStatus == IndexingStatus.ACTIVE || videoIndexStatus == IndexingStatus.ACTIVE
-    val alertTitle by searchViewModel.alertTitle.collectAsState()
-    val alertDescription by searchViewModel.alertDescription.collectAsState()
     var showScanImagesDialog by remember { mutableStateOf(false) }
     var showScanVideosDialog by remember { mutableStateOf(false) }
+    var showIndexAlert by remember { mutableStateOf(false) }
 
 
     // Search state
@@ -176,14 +176,11 @@ fun SearchScreen(
 
     val screenTitle = stringResource(R.string.title_search)
 
-    LaunchedEffect(state.hasIndexedImages, state.hasIndexedVideos, state.isRescanning, state.mediaType, hasStoragePermission) {
+    LaunchedEffect(state.hasIndexedImages, state.hasIndexedVideos, isIndexing, state.mediaType, hasStoragePermission) {
         val isFirstImageScanNeeded = hasStoragePermission && state.hasIndexedImages == false && (state.mediaType == MediaType.IMAGE)
         val isFirstVideoScanNeeded = hasStoragePermission && state.hasIndexedVideos == false && (state.mediaType == MediaType.VIDEO)
-
-        if(isFirstImageScanNeeded && !state.isRescanning){
-            searchViewModel.showIndexAlert()
-        }else if(isFirstVideoScanNeeded && !state.isRescanning){
-            searchViewModel.showIndexAlert()
+        if( !isIndexing && (isFirstImageScanNeeded || isFirstVideoScanNeeded)){
+            showIndexAlert = true
         }
     }
 
@@ -547,21 +544,29 @@ fun SearchScreen(
         }
     }
 
-    if ( !alertTitle.isNullOrBlank() && !alertDescription.isNullOrBlank()) {
+    if ( showIndexAlert) {
+        val title = when(state.mediaType){
+            MediaType.IMAGE -> stringResource(R.string.search_start_indexing_alert, "images")
+            MediaType.VIDEO -> stringResource(R.string.search_start_indexing_alert, "videos")
+        }
+        val description = when(state.mediaType){
+            MediaType.IMAGE -> stringResource(R.string.first_indexing, "image")
+            MediaType.VIDEO -> stringResource(R.string.first_indexing, "video")
+        }
         AlertDialog(
             onDismissRequest = { },
-            title = { Text(alertTitle!!) },
-            text = { Text(alertDescription!!) },
+            title = { Text(title) },
+            text = { Text(description) },
             dismissButton = {
                 TextButton(onClick = {
-                    searchViewModel.clearIndexAlert()
+                    showIndexAlert = false
                 }) {
                     Text("Cancel")
                 }
             },
             confirmButton = {
                 TextButton(onClick = {
-                    searchViewModel.clearIndexAlert()
+                    showIndexAlert = false
                     searchViewModel.onAction(SearchAction.Index)
                 }) {
                     Text("Confirm")

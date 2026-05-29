@@ -93,12 +93,7 @@ class SearchViewModel(
     val searchFieldState: TextFieldState = TextFieldState()
     private val _hasRefreshedImageIndex = MutableStateFlow(false)
     private val _hasRefreshedVideoIndex = MutableStateFlow(false)
-    private val _hasShownImageIndexAlert = MutableStateFlow(false)
-    private val _hasShownVideoIndexAlert = MutableStateFlow(false)
-    private val _alertTitle = MutableStateFlow<String?>(null)
-    val alertTitle: StateFlow<String?> = _alertTitle
-    private val _alertDescription = MutableStateFlow<String?>(null)
-    val alertDescription: StateFlow<String?> = _alertDescription
+
     private val isLoadingMoreSearchResults = AtomicBoolean(false)
 
     private var hasHandledExternalSearch = false
@@ -165,16 +160,12 @@ class SearchViewModel(
     fun reloadIndex(mode : MediaType){
         if(mode == MediaType.IMAGE && !_hasRefreshedImageIndex.value){
             loadImageIndex()
-            setIsRescanning(false)
             _hasRefreshedImageIndex.value = true
         }else if (mode == MediaType.VIDEO && !_hasRefreshedVideoIndex.value){
             loadVideoIndex()
-            setIsRescanning(false)
             _hasRefreshedVideoIndex.value = true
         }
     }
-
-    private fun setIsRescanning(isRescanning: Boolean) = _state.update { it.copy(isRescanning = isRescanning) }
 
     private fun setMediaType(type: MediaType) {
         _state.update { it.copy(mediaType = type) }
@@ -381,33 +372,11 @@ class SearchViewModel(
     private fun rebuildMediaIndex(mediaType: MediaType){
         val storageAccess = getStorageAccess(getApplication())
         if (storageAccess != StorageAccess.Denied) {
-            setIsRescanning(true)
             val store = getStore()
             viewModelScope.launch {
                 rebuildIndex(getApplication(), listOf(mediaType to store), clusterCrossRefRepository, clusterMetadataRepository)
             }
         }
-    }
-
-    fun showIndexAlert(){
-        val hasShown = if (_state.value.mediaType == MediaType.IMAGE) _hasShownImageIndexAlert else _hasShownVideoIndexAlert
-        if (hasShown.value) return
-        when(_state.value.mediaType){
-            MediaType.IMAGE -> {
-                _alertTitle.value = getApplication<Application>().getString(R.string.search_start_indexing_alert, "images")
-                _alertDescription.value = getApplication<Application>().getString(R.string.first_indexing, "image")
-            }
-            MediaType.VIDEO -> {
-                _alertTitle.value = getApplication<Application>().getString(R.string.search_start_indexing_alert, "videos")
-                _alertDescription.value = getApplication<Application>().getString(R.string.first_indexing, "video")
-            }
-        }
-        hasShown.value = true
-    }
-
-    fun clearIndexAlert(){
-        _alertTitle.value = null
-        _alertDescription.value = null
     }
 
     private fun setQueryImage(uri: Uri?){
