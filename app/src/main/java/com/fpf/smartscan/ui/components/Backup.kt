@@ -20,6 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fpf.smartscan.R
+import com.fpf.smartscan.ui.components.common.LoadingIndicator
 
 @Composable
 fun BackupAndRestore(
@@ -56,7 +57,7 @@ fun BackupAndRestore(
         buttonContent = { enabled, onClick ->
             Button(
                 modifier = Modifier.padding(horizontal = 8.dp),
-                enabled=enabled && !backupLoading,
+                enabled = enabled && !backupLoading,
                 onClick = { onClick() }
             ) {
                 Icon(
@@ -65,18 +66,31 @@ fun BackupAndRestore(
                     modifier = Modifier.padding(end = 4.dp).size(16.dp)
                 )
                 Text(text = "Backup", fontSize = 12.sp)
-                LoadingIndicator(isVisible = backupLoading, size = 18.dp, strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.padding(start = 8.dp))
+                LoadingIndicator(
+                    isVisible = backupLoading,
+                    size = 18.dp,
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
             }
         }
     )
     ActionItem(
         text = stringResource(id = R.string.setting_restore),
         description = stringResource(R.string.setting_backup_restore_description, "Import"),
-        onClick = {restoreLauncher.launch(arrayOf("application/zip", "application/octet-stream")) },
+        onClick = {
+            restoreLauncher.launch(
+                arrayOf(
+                    "application/zip",
+                    "application/octet-stream"
+                )
+            )
+        },
         buttonContent = { enabled, onClick ->
             Button(
                 modifier = Modifier.padding(horizontal = 8.dp),
-                enabled=enabled && !restoreLoading,
+                enabled = enabled && !restoreLoading,
                 onClick = { onClick() }
             ) {
                 Icon(
@@ -85,7 +99,13 @@ fun BackupAndRestore(
                     modifier = Modifier.padding(end = 4.dp).size(16.dp)
                 )
                 Text(text = "Restore", fontSize = 12.sp)
-                LoadingIndicator(isVisible = restoreLoading, size = 18.dp, strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.padding(start = 8.dp))
+                LoadingIndicator(
+                    isVisible = restoreLoading,
+                    size = 18.dp,
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
 
             }
         }

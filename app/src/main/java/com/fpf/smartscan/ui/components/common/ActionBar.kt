@@ -1,4 +1,4 @@
-package com.fpf.smartscan.ui.components.actions
+package com.fpf.smartscan.ui.components.common
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

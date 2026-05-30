@@ -48,13 +48,13 @@ import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.settings.AppSettings
 import com.fpf.smartscan.ui.action.SearchAction
 import com.fpf.smartscan.ui.action.MenuActionConfig
-import com.fpf.smartscan.ui.components.menus.DropDownMenuWrapper
-import com.fpf.smartscan.ui.components.LoadingIndicator
+import com.fpf.smartscan.ui.components.common.DropDownMenuWrapper
+import com.fpf.smartscan.ui.components.common.LoadingIndicator
 import com.fpf.smartscan.ui.components.media.MediaViewer
-import com.fpf.smartscan.ui.components.ProgressBar
-import com.fpf.smartscan.ui.components.SelectionHeaderRow
+import com.fpf.smartscan.ui.components.common.ProgressBar
+import com.fpf.smartscan.ui.components.common.SelectionHeaderRow
 import com.fpf.smartscan.ui.components.SelectorIconItem
-import com.fpf.smartscan.ui.components.SlideRevealBox
+import com.fpf.smartscan.ui.components.common.SlideRevealBox
 import com.fpf.smartscan.ui.components.pickers.DatePickerModal
 import com.fpf.smartscan.ui.components.modals.BottomSheet
 import com.fpf.smartscan.ui.components.search.AutoCompleter
@@ -62,7 +62,7 @@ import com.fpf.smartscan.ui.components.search.ImageSearcher
 import com.fpf.smartscan.ui.components.search.SearchBar
 import com.fpf.smartscan.ui.components.search.SearchResults
 import com.fpf.smartscan.ui.components.TagAdder
-import com.fpf.smartscan.ui.components.actions.ActionBar
+import com.fpf.smartscan.ui.components.common.ActionBar
 import com.fpf.smartscan.ui.action.ActionConfig
 import com.fpf.smartscan.ui.permissions.RequestPermissions
 import com.fpf.smartscan.ui.screens.search.SearchViewModel.Companion.RESULTS_BATCH_SIZE

@@ -36,7 +36,7 @@ import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.media.shareMedia
-import com.fpf.smartscan.ui.components.ActionRowWithFade
+import com.fpf.smartscan.ui.components.common.ActionRowWithFade
 import com.fpf.smartscan.utils.canOpenUri
 
 @Composable

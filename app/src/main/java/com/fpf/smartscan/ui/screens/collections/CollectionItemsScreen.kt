@@ -53,12 +53,12 @@ import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.settings.AppSettings
 import com.fpf.smartscan.ui.action.CollectionItemAction
-import com.fpf.smartscan.ui.components.SelectionHeaderRow
+import com.fpf.smartscan.ui.components.common.SelectionHeaderRow
 import com.fpf.smartscan.ui.action.MenuActionConfig
-import com.fpf.smartscan.ui.components.menus.DropDownMenuWrapper
-import com.fpf.smartscan.ui.components.SlideRevealBox
+import com.fpf.smartscan.ui.components.common.DropDownMenuWrapper
+import com.fpf.smartscan.ui.components.common.SlideRevealBox
 import com.fpf.smartscan.ui.components.TagAdder
-import com.fpf.smartscan.ui.components.actions.ActionBar
+import com.fpf.smartscan.ui.components.common.ActionBar
 import com.fpf.smartscan.ui.action.ActionConfig
 import com.fpf.smartscan.ui.components.collections.CollectionItemsList
 import com.fpf.smartscan.ui.components.collections.CollectionPicker

@@ -1,4 +1,4 @@
-package com.fpf.smartscan.ui.components.menus
+package com.fpf.smartscan.ui.components.common
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement

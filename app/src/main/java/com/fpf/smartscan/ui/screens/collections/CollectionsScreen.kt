@@ -49,7 +49,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.fpf.smartscan.ui.components.modals.SelectorModal
-import com.fpf.smartscan.ui.components.SlideRevealBox
+import com.fpf.smartscan.ui.components.common.SlideRevealBox
 import com.fpf.smartscan.ui.components.modals.TextInputModal
 import com.fpf.smartscan.ui.components.collections.CollectionPicker
 import com.fpf.smartscan.ui.components.collections.MediaCollectionsList
@@ -62,8 +62,8 @@ import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.ui.action.CollectionAction
-import com.fpf.smartscan.ui.components.SelectionHeaderRow
-import com.fpf.smartscan.ui.components.actions.ActionBar
+import com.fpf.smartscan.ui.components.common.SelectionHeaderRow
+import com.fpf.smartscan.ui.components.common.ActionBar
 import com.fpf.smartscan.ui.action.ActionConfig
 import org.koin.compose.viewmodel.koinViewModel
 

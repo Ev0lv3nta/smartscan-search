@@ -1,4 +1,4 @@
-package com.fpf.smartscan.ui.components
+package com.fpf.smartscan.ui.components.common
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween

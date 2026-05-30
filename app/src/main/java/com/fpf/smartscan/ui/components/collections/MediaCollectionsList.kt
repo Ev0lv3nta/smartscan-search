@@ -47,7 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.media.MediaType
-import com.fpf.smartscan.ui.components.CircularCheckbox
+import com.fpf.smartscan.ui.components.common.CircularCheckbox
 import com.fpf.smartscan.ui.components.media.ImageDisplay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt

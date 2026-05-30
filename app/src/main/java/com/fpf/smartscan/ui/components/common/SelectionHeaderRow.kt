@@ -1,4 +1,4 @@
-package com.fpf.smartscan.ui.components
+package com.fpf.smartscan.ui.components.common
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
