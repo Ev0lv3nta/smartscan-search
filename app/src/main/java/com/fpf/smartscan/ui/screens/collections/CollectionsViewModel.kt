@@ -109,7 +109,6 @@ class CollectionsViewModel(
             is CollectionAction.MergeCollections -> mergeCollections(action.primaryCollectionName, action.isNewMergedLabel)
             is CollectionAction.RenameCollection -> renameCollection(action.newName)
             is CollectionAction.CreateNewTagAndTagClusters -> createNewTagAndTagClusters(action.newName)
-            is CollectionAction.TagClusters -> tagClusterCollections(action.tagId)
             is CollectionAction.ToggleSelectedCollection -> toggleSelectedCollection(action.collection)
             is CollectionAction.SetCollectionToView -> setCollectionToView(action.collection)
             is CollectionAction.SetGroupBySimilarity -> setGroupingMode(action.groupBySimilarity)

@@ -6,7 +6,6 @@ sealed interface CollectionAction {
     data class MergeCollections(val primaryCollectionName: String, val isNewMergedLabel: Boolean = false): CollectionAction
     data class RenameCollection(val newName: String): CollectionAction
     data class CreateNewTagAndTagClusters(val newName: String): CollectionAction
-    data class TagClusters(val tagId: Long): CollectionAction
     data class ToggleSelectedCollection(val collection: MediaCollection): CollectionAction
     data class SetCollectionToView(val collection: MediaCollection?): CollectionAction
     data class SetGroupBySimilarity(val groupBySimilarity: Boolean) : CollectionAction

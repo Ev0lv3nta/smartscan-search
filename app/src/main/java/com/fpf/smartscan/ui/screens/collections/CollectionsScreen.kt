@@ -91,15 +91,13 @@ fun CollectionsScreen(
     var isSelecting by remember { mutableStateOf(false) }
     var isRenamingCollection by remember { mutableStateOf(false) }
     var isMergingCollections by remember { mutableStateOf(false) }
-    var isTaggingClusters by remember { mutableStateOf(false) }
     var isCreatingNewTagAndTaggingClusters by remember { mutableStateOf(false) }
     var isDeletingCollection by remember { mutableStateOf(false) }
-    var isActionBarVisible = isSelecting && state.selection.selectedCount > 0
+    val isActionBarVisible = isSelecting && state.selection.selectedCount > 0
 
     val actionBarActions: List<ActionConfig> = listOf(
         ActionConfig(label = stringResource(R.string.merge_action), { isMergingCollections = true }, enabled = !state.loading, icon = Icons.Filled.Merge),
         ActionConfig( label = stringResource(R.string.rename_action), { isRenamingCollection = true }, enabled = state.selection.selectedItems.size == 1, icon = Icons.Filled.DriveFileRenameOutline),
-        ActionConfig(label=stringResource(R.string.add_tag_action), { isTaggingClusters = true }, enabled = state.groupBySimilarity, icon = Icons.Filled.Tag),
         ActionConfig(label = stringResource(R.string.delete_action), { isDeletingCollection = true }, enabled = !state.groupBySimilarity, icon = Icons.Filled.Delete)
     )
 
@@ -344,30 +342,6 @@ fun CollectionsScreen(
             ActionBar(
                 actions = actionBarActions,
                 modifier = Modifier.height(actionBarHeight.dp),
-            )
-        }
-        AnimatedVisibility(
-            visible = isTaggingClusters,
-            enter = fadeIn(animationSpec = tween(500)) + scaleIn(
-                initialScale = 0.8f,
-                animationSpec = tween(500)
-            ),
-            exit = fadeOut(animationSpec = tween(300)) + scaleOut(
-                targetScale = 0.8f,
-                animationSpec = tween(300)
-            )
-        ) {
-            CollectionPicker(
-                collections = tagCollections,
-                onClose = { isTaggingClusters = false },
-                onSelectCollection = {
-                    viewModel.onAction(CollectionAction.TagClusters(it.id))
-                    isTaggingClusters = false
-                },
-                onCreateNewCollection = {
-                    isTaggingClusters = false
-                    isCreatingNewTagAndTaggingClusters = true
-                }
             )
         }
     }
