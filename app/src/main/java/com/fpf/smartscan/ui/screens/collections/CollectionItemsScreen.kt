@@ -130,12 +130,13 @@ fun CollectionItemsScreen(
     val moreActions: List<MenuActionConfig> = listOf(
          MenuActionConfig.Button(
              label = stringResource(R.string.copy_to_clipboard_action),
-            { viewModel.onAction(CollectionItemAction.CopyMedia(clipboard, context)) },
+             onClick = { viewModel.onAction(CollectionItemAction.CopyMedia(clipboard, context)) },
+             enabled = state.selection.selectedItems.size == 1
         ),
 
          MenuActionConfig.Button(
              label = stringResource(R.string.add_tag_action),
-           { isAddingTag = true },
+             onClick = { isAddingTag = true },
         ),
     )
 

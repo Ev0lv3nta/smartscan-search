@@ -143,7 +143,9 @@ fun SearchScreen(
                 searchViewModel.onAction(SearchAction.CopyResult(clipboard, context))
                 isSelecting = false
             },
-            icon = Icons.Filled.ContentCopy),
+            icon = Icons.Filled.ContentCopy,
+            enabled = state.selection.selectedItems.size == 1 && state.mediaType == MediaType.IMAGE,
+        ),
         ActionConfig(
             label = stringResource(R.string.add_tag_action),
             onClick = {
@@ -154,7 +156,7 @@ fun SearchScreen(
         )
 
     // Dynamic hide animation
-    var isActionBarVisible =  isSelecting && state.selection.selectedCount > 0
+    val isActionBarVisible =  isSelecting && state.selection.selectedCount > 0
     var offset by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val actionBarHeight = with(density) { 70.dp.toPx() }
