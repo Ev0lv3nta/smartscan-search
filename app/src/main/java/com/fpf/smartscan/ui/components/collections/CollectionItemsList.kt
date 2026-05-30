@@ -125,7 +125,7 @@ fun CollectionItemsList(
                 if (item != null) {
                     MediaItemCard(
                         item=item,
-                        onViewItem=onViewItem,
+                        onItemClick=onViewItem,
                         onToggleSelected = onToggleSelected,
                         onToggleSelectionMode = onToggleSelectionMode,
                         isSelecting = isSelecting,
