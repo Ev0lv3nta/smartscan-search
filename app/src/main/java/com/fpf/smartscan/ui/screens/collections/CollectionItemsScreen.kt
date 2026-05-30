@@ -93,7 +93,6 @@ fun CollectionItemsScreen(
     val tagCollectionItems = viewModel.tagItems.collectAsLazyPagingItems()
     val clusterCollectionItems = viewModel.clusterItems.collectAsLazyPagingItems()
     val items = if(collection.isAutoCollection)  clusterCollectionItems else tagCollectionItems
-    val isTagCollection = collection.isAutoCollection
 
     // actions
     var isMoving by remember { mutableStateOf(false) }
@@ -111,7 +110,7 @@ fun CollectionItemsScreen(
         ActionConfig(
             label = stringResource(R.string.remove_action),
             onClick = { viewModel.onAction(CollectionItemAction.RemoveMedia) },
-            enabled = isTagCollection,
+            enabled = !collection.isAutoCollection,
             icon=Icons.Filled.RemoveCircle
         ),
         ActionConfig(
@@ -325,13 +324,13 @@ fun CollectionItemsScreen(
             )
         ) {
             CollectionPicker(
-                collections = if(isTagCollection) tagCollections else clusterCollections,
+                collections = if(collection.isAutoCollection) clusterCollections else tagCollections,
                 onClose = { isMoving = false },
                 onSelectCollection = {
                     viewModel.onAction(CollectionItemAction.MoveMedia( it))
                     isMoving = false
                                      },
-                onCreateNewCollection = if(isTagCollection){
+                onCreateNewCollection = if(!collection.isAutoCollection){
                     {
                         isMoving = false
                         isCreatingCollectionAndMoving = true
