@@ -43,6 +43,9 @@ import com.fpf.smartscan.services.refreshIndex
 import com.fpf.smartscan.services.startIndexing
 import com.fpf.smartscan.ui.permissions.StorageAccess
 import com.fpf.smartscan.ui.permissions.getStorageAccess
+import com.fpf.smartscan.ui.state.SearchState
+import com.fpf.smartscan.ui.state.common.SelectionState
+import com.fpf.smartscan.ui.utils.SelectionUtils
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.media.getBitmapFromUri
 import com.fpf.smartscansdk.ml.models.ModelAssetSource
@@ -185,10 +188,7 @@ class SearchViewModel(
         _state.update{ it.copy(
             totalResults = 0,
             searchResults = emptyList(),
-            selectedResults = emptySet(),
-            excludedResults = emptySet(),
-            selectedCount = 0,
-            selectAll = false,
+            selection = SelectionState(),
             resultToView = null,
             error = null,
             tagFilter = null,
@@ -402,9 +402,9 @@ class SearchViewModel(
     }
 
     private fun copyItem(clipboard: Clipboard, context: Context){
-        // Uses `selectedResults` directly instead of `getSelectedResults` since copyItem is always singular
-        clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", _state.value.selectedResults.first().uri))
         viewModelScope.launch {
+            val itemToCopy = getSelectedResults().first().uri
+            clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", itemToCopy))
             clearSelectedResults()
         }
     }
@@ -426,9 +426,7 @@ class SearchViewModel(
         }
     }
 
-    fun clearSelectedResults(){
-        _state.update{currentState -> currentState.copy(selectedResults = emptySet(), selectAll = false, excludedResults = emptySet(), selectedCount = 0)}
-    }
+    fun clearSelectedResults() = _state.update{it.copy(selection = SelectionUtils.clearSelection(it.selection))}
 
     private fun tagItems(tag: String){
         viewModelScope.launch(Dispatchers.IO) {
@@ -461,75 +459,25 @@ class SearchViewModel(
     private fun getStore() = if(_state.value.mediaType == MediaType.VIDEO) videoStore else imageStore
 
     private fun toggleSelectedResult(item: MediaItem){
-        _state.update {
-            if(it.selectAll){
-                if (item in it.excludedResults) {
-                    val updatedExcludedResults = it.excludedResults - item
-                    val safeCount = ( it.selectedCount + 1).coerceAtLeast(0 )
-                    it.copy(excludedResults = updatedExcludedResults, selectedCount =safeCount)
-                } else {
-                    val safeCount = ( it.selectedCount - 1).coerceAtMost(it.totalResults )
-                    val updatedExcludedResults = it.excludedResults + item
-                    it.copy(excludedResults = updatedExcludedResults, selectedCount = safeCount)
-                }
-            }
-            else{
-                if (item in it.selectedResults) {
-                    val safeCount = ( it.selectedCount - 1).coerceAtLeast(0 )
-                    val updatedSelectedResults = it.selectedResults - item
-                    it.copy(selectedResults = updatedSelectedResults, selectedCount = safeCount)
-                } else {
-                    val safeCount = ( it.selectedCount + 1).coerceAtMost(it.totalResults )
-                    val updatedSelectedResults = it.selectedResults + item
-                    it.copy(selectedResults = updatedSelectedResults, selectedCount = safeCount)
-                }
-            }
-        }
+        _state.update { it.copy(selection = SelectionUtils.toggleSelectedItem(it.selection, item, it.totalResults)) }
     }
 
     private fun setSelectAll(selectAll: Boolean) {
-        val currentState = _state.value
-        if(currentState.selectAll){
-            if(currentState.excludedResults.isNotEmpty()){
-                _state.update { it.copy(selectAll = true, selectedResults = emptySet(), excludedResults = emptySet())}
-            }else{
-                _state.update { it.copy(selectAll = selectAll, selectedResults = emptySet(), excludedResults = emptySet())}
-            }
-        }else{
-            _state.update { it.copy(selectAll = selectAll, selectedResults = emptySet(), excludedResults = emptySet())}
-        }
-
-        _state.update { it.copy(selectedCount=getSelectedCount(it.totalResults)) }
+        _state.update { it.copy(selection = SelectionUtils.setSelectAll(it.selection, selectAll, it.totalResults))}
     }
 
-    private suspend fun getSelectedResults(): Set<MediaItem> {
-        val currentState = state.value
+    private suspend fun getSelectedResults(): Set<MediaItem> = SelectionUtils.getSelectedItems(_state.value.selection){getAllResults()}
 
-        return if (currentState.selectAll) {
-            withContext(Dispatchers.IO) {
-                val mediaMetadataList = mediaMetadataRepository.getByIds(cachedIds)
-
-                mediaMetadataList.map {
-                    MediaItem(
-                        id = it.id,
-                        uri = mediaIdToUri(it.id, it.type),
-                        type = it.type
-                    )
-                }.toMutableSet().apply {
-                    removeAll(currentState.excludedResults)
-                }
-            }
-        } else {
-            currentState.selectedResults
-        }
-    }
-
-    private fun getSelectedCount(total: Int): Int{
-        val currentState = _state.value
-        return if(currentState.selectAll){
-            if(currentState.excludedResults.isEmpty()) total else total - currentState.excludedResults.size
-        }else{
-            currentState.selectedResults.size
+    private suspend fun getAllResults(): MutableSet<MediaItem> {
+        return withContext(Dispatchers.IO) {
+            val mediaMetadataList = mediaMetadataRepository.getByIds(cachedIds)
+            mediaMetadataList.map {
+                MediaItem(
+                    id = it.id,
+                    uri = mediaIdToUri(it.id, it.type),
+                    type = it.type
+                )
+            }.toMutableSet()
         }
     }
 

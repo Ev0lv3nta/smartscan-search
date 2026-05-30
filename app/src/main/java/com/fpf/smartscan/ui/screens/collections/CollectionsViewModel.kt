@@ -16,9 +16,9 @@ import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.events.CollectionEvent
 import com.fpf.smartscan.events.CollectionEventType
-import com.fpf.smartscan.media.MediaItem
-import com.fpf.smartscan.media.mediaIdToUri
 import com.fpf.smartscan.tag.TagManager
+import com.fpf.smartscan.ui.state.CollectionsState
+import com.fpf.smartscan.ui.utils.SelectionUtils
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -35,8 +35,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.collections.forEach
-import kotlin.collections.plus
-
 
 class CollectionsViewModel( 
     application: Application,
@@ -120,12 +118,12 @@ class CollectionsViewModel(
         }
     }
 
-    fun clearSelectedCollections() = _state.update{ it.copy(selectedCollections = emptySet(), excludedCollections = emptySet(), selectAll = false, selectedCount = 0)}
+    fun clearSelectedCollections() = _state.update{it.copy(selection = SelectionUtils.clearSelection(it.selection))}
 
     private fun renameCollection(newName: String){
-        val collection = _state.value.selectedCollections.first()
         viewModelScope.launch(Dispatchers.IO) {
             try{
+                val collection = getSelectedCollections().first()
                 if(_state.value.groupBySimilarity){
                     clusterManager.updateLabel(collection.id, newName)
                 }else{
@@ -244,89 +242,34 @@ class CollectionsViewModel(
         }
     }
 
-    private fun setGroupingMode(groupBySimilarity: Boolean) {
-        Log.d(TAG, "groupBySimilarity: $groupBySimilarity")
-        _state.update { it.copy(groupBySimilarity = groupBySimilarity) }
-    }
-    
+    private fun setGroupingMode(groupBySimilarity: Boolean) = _state.update { it.copy(groupBySimilarity = groupBySimilarity) }
 
-    private fun toggleViewAllCollections(){
-        _state.update{ it.copy(showAllCollections = !it.showAllCollections)}
-    }
+    private fun toggleViewAllCollections() = _state.update{ it.copy(showAllCollections = !it.showAllCollections)}
+    private fun setCollectionToView(collection: MediaCollection?) = _state.update { it.copy(collectToView = collection) }
 
-    private fun setCollectionToView(collection: MediaCollection?){
-        _state.update { it.copy(collectToView = collection) }
-    }
-
-
- 
     private fun toggleSelectedCollection(item: MediaCollection){
-        _state.update {
-            if(it.selectAll){
-                if (item in it.excludedCollections) {
-                    val updatedExcludedResults = it.excludedCollections - item
-                    val safeCount = ( it.selectedCount + 1).coerceAtLeast(0 )
-                    it.copy(excludedCollections = updatedExcludedResults, selectedCount =safeCount)
-                } else {
-                    val safeCount = ( it.selectedCount - 1).coerceAtMost(it.totalCollections )
-                    val updatedExcludedResults = it.excludedCollections + item
-                    it.copy(excludedCollections = updatedExcludedResults, selectedCount = safeCount)
-                }
-            }
-            else{
-                if (item in it.selectedCollections) {
-                    val safeCount = ( it.selectedCount - 1).coerceAtLeast(0 )
-                    val updatedSelectedResults = it.selectedCollections - item
-                    it.copy(selectedCollections = updatedSelectedResults, selectedCount = safeCount)
-                } else {
-                    val safeCount = ( it.selectedCount + 1).coerceAtMost(it.totalCollections )
-                    val updatedSelectedResults = it.selectedCollections + item
-                    it.copy(selectedCollections = updatedSelectedResults, selectedCount = safeCount)
-                }
-            }
-        }
+        _state.update { it.copy(selection = SelectionUtils.toggleSelectedItem(it.selection, item, it.totalCollections)) }
     }
 
     private fun setSelectAll(selectAll: Boolean) {
-        val currentState = _state.value
-        if(currentState.selectAll && currentState.excludedCollections.isNotEmpty()){
-            _state.update { it.copy(selectAll = true, selectedCollections = emptySet(), excludedCollections = emptySet())}
-        }else{
-            _state.update { it.copy(selectAll = selectAll, selectedCollections = emptySet(), excludedCollections = emptySet())}
-        }
-
-        _state.update { it.copy(selectedCount=getSelectedCount()) }
+        _state.update { it.copy(selection = SelectionUtils.setSelectAll(it.selection, selectAll, it.totalCollections))}
     }
+    private suspend fun getSelectedCollections(): Set<MediaCollection> = SelectionUtils.getSelectedItems(_state.value.selection){getAllCollections()}
 
-    private suspend fun getSelectedCollections(): Set<MediaCollection>{
+    private suspend fun getAllCollections(): MutableSet<MediaCollection>{
         val currentState = state.value
-        return if(currentState.selectAll){
-            val items = if (currentState.groupBySimilarity ){
-               if(currentState.showAllCollections) {
-                   clusterCollections.value
-               } else {
-                   clusterManager.toCollections(clusterCrossRefRepository.getClustersWithCount().first() )
-               }
-            }else{
-                if(currentState.showAllCollections) {
-                    tagCollections.value
-                } else {
-                    tagManager.tagsToCollections(tagCrossRefRepository.getTagsWithCounts().first())
-                }
-            }.toMutableSet()
-            items.removeAll(currentState.excludedCollections)
-            items
+        return if (currentState.groupBySimilarity ){
+            if(currentState.showAllCollections) {
+                clusterCollections.value
+            } else {
+                clusterManager.toCollections(clusterCrossRefRepository.getClustersWithCount().first() )
+            }
         }else{
-            currentState.selectedCollections
-        }
-    }
-
-    private fun getSelectedCount(): Int{
-        val currentState = _state.value
-        return if(currentState.selectAll){
-            if(currentState.excludedCollections.isEmpty()) currentState.totalCollections else currentState.totalCollections - currentState.excludedCollections.size
-        }else{
-            currentState.selectedCollections.size
-        }
+            if(currentState.showAllCollections) {
+                tagCollections.value
+            } else {
+                tagManager.tagsToCollections(tagCrossRefRepository.getTagsWithCounts().first())
+            }
+        }.toMutableSet()
     }
 }

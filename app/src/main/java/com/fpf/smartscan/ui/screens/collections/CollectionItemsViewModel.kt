@@ -5,7 +5,6 @@ import android.content.ClipData
 import android.content.Context
 import android.database.sqlite.SQLiteConstraintException
 import android.util.Log
-import androidx.compose.runtime.currentCompositionErrors
 import androidx.compose.ui.platform.Clipboard
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -33,6 +32,8 @@ import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.media.onMediaLoadingError
 import com.fpf.smartscan.media.shareMediaMulti
 import com.fpf.smartscan.tag.TagManager
+import com.fpf.smartscan.ui.state.CollectionItemsState
+import com.fpf.smartscan.ui.utils.SelectionUtils
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -180,7 +181,7 @@ class CollectionItemsViewModel(
         }
     }
 
-    fun clearSelectedItems() = _state.update{it.copy(selectedMediaItems = emptySet(), excludedMediaItems = emptySet(), selectAll = false, selectedCount = 0)}
+    fun clearSelectedItems() = _state.update{it.copy(selection = SelectionUtils.clearSelection(it.selection))}
 
     private fun tagItems(tag: String){
         viewModelScope.launch(Dispatchers.IO) {
@@ -242,8 +243,9 @@ class CollectionItemsViewModel(
     }
 
     private fun copyItem(clipboard: Clipboard, context: Context){
-        clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", _state.value.selectedMediaItems.first().uri))
         viewModelScope.launch {
+            val itemToCopy = getSelectedItems().first().uri
+            clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", itemToCopy))
             _event.emit(CollectionItemEvent(CollectionItemEventType.COPY, success = true))
             clearSelectedItems()
         }
@@ -281,81 +283,41 @@ class CollectionItemsViewModel(
 
    private fun toggleSelectedItem(item: MediaItem){
        _state.update {
-           val collection = it.collection?: return
-
-           if(it.selectAll){
-                if (item in it.excludedMediaItems) {
-                    val updatedExcludedResults = it.excludedMediaItems - item
-                    val safeCount = ( it.selectedCount + 1).coerceAtLeast(0 )
-                    it.copy(excludedMediaItems = updatedExcludedResults, selectedCount =safeCount)
-                } else {
-                    val safeCount = ( it.selectedCount - 1).coerceAtMost(collection.size )
-                    val updatedExcludedResults = it.excludedMediaItems + item
-                    it.copy(excludedMediaItems = updatedExcludedResults, selectedCount = safeCount)
-                }
-            }
-            else{
-                if (item in it.selectedMediaItems) {
-                    val safeCount = ( it.selectedCount - 1).coerceAtLeast(0 )
-                    val updatedSelectedResults = it.selectedMediaItems - item
-                    it.copy(selectedMediaItems = updatedSelectedResults, selectedCount = safeCount)
-                } else {
-                    val safeCount = ( it.selectedCount + 1).coerceAtMost(collection.size )
-                    val updatedSelectedResults = it.selectedMediaItems + item
-                    it.copy(selectedMediaItems = updatedSelectedResults, selectedCount = safeCount)
-                }
-            }
-        }
+           val collection = it.collection ?: return
+           it.copy(selection = SelectionUtils.toggleSelectedItem(it.selection, item, collection.size))
+       }
    }
 
     private fun setSelectAll(selectAll: Boolean) {
         val currentState = _state.value
-        if(currentState.selectAll && currentState.excludedMediaItems.isNotEmpty()){
-            _state.update { it.copy(selectAll = true, selectedMediaItems = emptySet(), excludedMediaItems = emptySet())}
-        }else{
-            _state.update { it.copy(selectAll = selectAll, selectedMediaItems = emptySet(), excludedMediaItems = emptySet())}
-        }
+        val collection = currentState.collection?: return
+        _state.update { it.copy(selection = SelectionUtils.setSelectAll(it.selection, selectAll, collection.size))}
 
-        _state.update { it.copy(selectedCount=getSelectedCount()) }
     }
 
-    private suspend fun getSelectedItems(): Set<MediaItem>{
+    private suspend fun getSelectedItems(): Set<MediaItem> = SelectionUtils.getSelectedItems(_state.value.selection){getAllItemInCollection()}
+
+    private suspend fun getAllItemInCollection(): MutableSet<MediaItem>{
         val currentState = state.value
-        val currentCollection = currentState.collection?: return emptySet()
-        return if(currentState.selectAll){
-             val items = if (currentCollection.isAutoCollection ){
-                 val itemsMatchingCluster = mediaMetadataRepository.getByCluster(currentCollection.id)
-                 itemsMatchingCluster.map {
-                     MediaItem(
-                         id=it.id,
-                         uri=mediaIdToUri(it.id, it.type),
-                         type = it.type
-                     )
-                 }.toMutableSet()
-            }else{
-                 val itemsMatchingTag = mediaMetadataRepository.getByTag(currentCollection.id)
-                 itemsMatchingTag.map {
-                     MediaItem(
-                         id=it.id,
-                         uri=mediaIdToUri(it.id, it.type),
-                         type = it.type
-                     )
-                 }.toMutableSet()
-             }
-            items.removeAll(currentState.excludedMediaItems)
-            items
+        val currentCollection = currentState.collection?: return mutableSetOf()
+        return if (currentCollection.isAutoCollection ){
+            val itemsMatchingCluster = mediaMetadataRepository.getByCluster(currentCollection.id)
+            itemsMatchingCluster.map {
+                MediaItem(
+                    id=it.id,
+                    uri=mediaIdToUri(it.id, it.type),
+                    type = it.type
+                )
+            }.toMutableSet()
         }else{
-            currentState.selectedMediaItems
-        }
-    }
-
-    private fun getSelectedCount(): Int{
-        val currentState = _state.value
-        val collection = currentState.collection?: return 0
-        return if(currentState.selectAll){
-            if(currentState.excludedMediaItems.isEmpty()) collection.size else collection.size - currentState.excludedMediaItems.size
-        }else{
-            currentState.selectedMediaItems.size
+            val itemsMatchingTag = mediaMetadataRepository.getByTag(currentCollection.id)
+            itemsMatchingTag.map {
+                MediaItem(
+                    id=it.id,
+                    uri=mediaIdToUri(it.id, it.type),
+                    type = it.type
+                )
+            }.toMutableSet()
         }
     }
 

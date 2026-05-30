@@ -98,11 +98,11 @@ fun CollectionsScreen(
     var isTaggingClusters by remember { mutableStateOf(false) }
     var isCreatingNewTagAndTaggingClusters by remember { mutableStateOf(false) }
     var isDeletingCollection by remember { mutableStateOf(false) }
-    var isActionBarVisible = isSelecting && state.selectedCount > 0
+    var isActionBarVisible = isSelecting && state.selection.selectedCount > 0
 
     val actionBarActions: List<ActionConfig> = listOf(
         ActionConfig(label = stringResource(R.string.merge_action), { isMergingCollections = true }, enabled = !state.loading, icon = Icons.Filled.Merge),
-        ActionConfig( label = stringResource(R.string.rename_action), { isRenamingCollection = true }, enabled = state.selectedCollections.size == 1, icon = Icons.Filled.DriveFileRenameOutline),
+        ActionConfig( label = stringResource(R.string.rename_action), { isRenamingCollection = true }, enabled = state.selection.selectedItems.size == 1, icon = Icons.Filled.DriveFileRenameOutline),
         ActionConfig(label=stringResource(R.string.add_tag_action), { isTaggingClusters = true }, enabled = state.groupBySimilarity, icon = Icons.Filled.Tag),
         ActionConfig(label = stringResource(R.string.delete_action), { isDeletingCollection = true }, enabled = !state.groupBySimilarity, icon = Icons.Filled.Delete)
     )
@@ -216,8 +216,8 @@ fun CollectionsScreen(
                     .padding(bottom = 8.dp)
             ) {
                 SelectionHeaderRow (
-                    selectedCount = state.selectedCount,
-                    checked = state.selectAll && state.excludedCollections.isEmpty(),
+                    selectedCount = state.selection.selectedCount,
+                    checked = state.selection.selectAll && state.selection.excludedItems.isEmpty(),
                     onSelectAllChange = {viewModel.onAction(CollectionAction.SetSelectAll(it))}
                 )
             }
@@ -312,7 +312,9 @@ fun CollectionsScreen(
                 numGridColumns = 3,
                 items = collections,
                 isSelecting = isSelecting,
-                selectedItems = state.selectedCollections,
+                selectAll = state.selection.selectAll,
+                selectedItems = state.selection.selectedItems,
+                excludedItems = state.selection.excludedItems,
                 onItemClick = { viewModel.onAction(CollectionAction.SetCollectionToView(it)) },
                 onToggleSelected = { viewModel.onAction(CollectionAction.ToggleSelectedCollection(it)) },
                 onToggleSelectionMode = {
@@ -321,8 +323,6 @@ fun CollectionsScreen(
                 },
                 onOffsetChange = {  offset = it },
                 maxCollapsePx = maxCollapsablePx,
-                selectAll = state.selectAll,
-                excludedItems = state.excludedCollections
             )
 
             EmptyCollectionScreen(!isCollectionVisible)
@@ -417,7 +417,7 @@ fun CollectionsScreen(
     )
 
     if (isMergingCollections) {
-        val labelledCollections: List<String> = state.selectedCollections.sortedByDescending { it.size}.map { it.name }.filterNot { it == UNLABELLED_COLLECTION }
+        val labelledCollections: List<String> = state.selection.selectedItems.sortedByDescending { it.size}.map { it.name }.filterNot { it == UNLABELLED_COLLECTION }
         var useSelectorInput by remember { mutableStateOf(labelledCollections.isNotEmpty()) }
 
         if (useSelectorInput) {
@@ -457,7 +457,7 @@ fun CollectionsScreen(
     }
 
     if ( isDeletingCollection) {
-        val count = state.selectedCount
+        val count = state.selection.selectedCount
         val alertTitle = stringResource(R.string.collections_delete_collections_alert_title)
         val alertDescription = stringResource(
             R.string.collections_delete_collections_alert_description,

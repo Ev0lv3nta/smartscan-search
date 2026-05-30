@@ -243,8 +243,8 @@ fun CollectionItemsScreen(
                     .padding(bottom = 8.dp)
             ) {
                 SelectionHeaderRow (
-                    selectedCount = state.selectedCount,
-                    checked = state.selectAll && state.excludedMediaItems.isEmpty(),
+                    selectedCount = state.selection.selectedCount,
+                    checked = state.selection.selectAll && state.selection.excludedItems.isEmpty(),
                     onSelectAllChange = {viewModel.onAction(CollectionItemAction.SetSelectAll(it))}
                 )
             }
@@ -253,9 +253,9 @@ fun CollectionItemsScreen(
                 numGridColumns = appSettings.resultsPerRow,
                 items = items,
                 isSelecting = isSelecting,
-                selectAll = state.selectAll,
-                excludedItems = state.excludedMediaItems,
-                selectedItems = state.selectedMediaItems,
+                selectAll = state.selection.selectAll,
+                excludedItems = state.selection.excludedItems,
+                selectedItems = state.selection.selectedItems,
                 onViewItem = { uri -> viewModel.onAction(CollectionItemAction.SetMediaToView(context, uri, appSettings.enableDirectGalleryOpen, isSelecting)) },
                 onToggleSelected = { viewModel.onAction(CollectionItemAction.ToggleSelectedMedia(it)) },
                 onToggleSelectionMode = {
@@ -269,7 +269,7 @@ fun CollectionItemsScreen(
         }
 
         SlideRevealBox(
-            isVisible = isSelecting && state.selectedCount > 0,
+            isVisible = isSelecting && state.selection.selectedCount > 0,
             offsetPx = offset,
             modifier = Modifier
                 .align(Alignment.BottomCenter)

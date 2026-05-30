@@ -64,7 +64,6 @@ import com.fpf.smartscan.ui.components.TagAdder
 import com.fpf.smartscan.ui.components.actions.ActionBar
 import com.fpf.smartscan.ui.components.actions.ActionConfig
 import com.fpf.smartscan.ui.permissions.RequestPermissions
-import com.fpf.smartscan.ui.screens.collections.CollectionItemAction
 import com.fpf.smartscan.ui.screens.search.SearchViewModel.Companion.RESULTS_BATCH_SIZE
 import com.fpf.smartscan.utils.formatDate
 import com.fpf.smartscan.utils.toEpochSeconds
@@ -131,10 +130,10 @@ fun SearchScreen(
             label = stringResource(R.string.search_action),
             onClick = {
                 isSelecting = false
-                searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(state.selectedResults.first().uri, appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
+                searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(state.selection.selectedItems.first().uri, appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
                 searchViewModel.clearSelectedResults()
             },
-            enabled = state.selectedResults.size == 1 && state.mediaType == MediaType.IMAGE,
+            enabled = state.selection.selectedItems.size == 1 && state.mediaType == MediaType.IMAGE,
             icon = Icons.Filled.Search
         ),
         ActionConfig(
@@ -154,7 +153,7 @@ fun SearchScreen(
         )
 
     // Dynamic hide animation
-    var isActionBarVisible =  isSelecting && state.selectedCount > 0
+    var isActionBarVisible =  isSelecting && state.selection.selectedCount > 0
     var offset by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val actionBarHeight = with(density) { 70.dp.toPx() }
@@ -285,8 +284,8 @@ fun SearchScreen(
                     Column {
                         if (isSelecting) {
                             SelectionHeaderRow (
-                                selectedCount = state.selectedCount,
-                                checked = state.selectAll && state.excludedResults.isEmpty(),
+                                selectedCount = state.selection.selectedCount,
+                                checked = state.selection.selectAll && state.selection.excludedItems.isEmpty(),
                                 onSelectAllChange = {searchViewModel.onAction(SearchAction.SetSelectAll(it))}
                             )
                         }
@@ -320,8 +319,8 @@ fun SearchScreen(
                     Column {
                         if (isSelecting) {
                             SelectionHeaderRow (
-                                selectedCount = state.selectedCount,
-                                checked = state.selectAll && state.excludedResults.isEmpty(),
+                                selectedCount = state.selection.selectedCount,
+                                checked = state.selection.selectAll && state.selection.excludedItems.isEmpty(),
                                 onSelectAllChange = {searchViewModel.onAction(SearchAction.SetSelectAll(it))}
                             )
                         }
@@ -429,7 +428,9 @@ fun SearchScreen(
                 searchResults = state.searchResults,
                 totalResults=state.totalResults,
                 isSelecting = isSelecting,
-                selectedResults = state.selectedResults,
+                selectAll = state.selection.selectAll,
+                selectedResults = state.selection.selectedItems,
+                excludedResults = state.selection.excludedItems,
                 loadMoreBuffer = (RESULTS_BATCH_SIZE * 0.4).toInt(),
                 onItemClick = { uri -> searchViewModel.onAction(SearchAction.ViewResult(context, uri, autoOpenInGallery = appSettings.enableDirectGalleryOpen )) },
                 onLoadMore = searchViewModel::onLoadMore,
@@ -441,8 +442,7 @@ fun SearchScreen(
                 onOffsetChange = {  offset = it },
                 maxCollapsePx = maxCollapsePx,
                 onError = searchViewModel::onErrorAsyncImage,
-                selectAll = state.selectAll,
-                excludedResults = state.excludedResults
+
             )
         }
         SlideRevealBox(
