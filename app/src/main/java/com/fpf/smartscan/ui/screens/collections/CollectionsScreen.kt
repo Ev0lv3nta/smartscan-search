@@ -88,12 +88,11 @@ fun CollectionsScreen(
     val context = LocalContext.current
 
     // actions
-    var isSelecting by remember { mutableStateOf(false) }
     var isRenamingCollection by remember { mutableStateOf(false) }
     var isMergingCollections by remember { mutableStateOf(false) }
     var isCreatingNewTagAndTaggingClusters by remember { mutableStateOf(false) }
     var isDeletingCollection by remember { mutableStateOf(false) }
-    val isActionBarVisible = isSelecting && state.selection.selectedCount > 0
+    val isActionBarVisible = state.selection.isSelecting && state.selection.selectedCount > 0
 
     val actionBarActions: List<ActionConfig> = listOf(
         ActionConfig(label = stringResource(R.string.merge_action), { isMergingCollections = true }, enabled = !state.loading, icon = Icons.Filled.Merge),
@@ -124,38 +123,18 @@ fun CollectionsScreen(
         viewModel.event.collect { event ->
             when(event.type){
                 CollectionEventType.MERGE -> {
-                    if(event.success){
-                        isSelecting = false
-                    }
-                    else {
-                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
-                    }
+                    event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                 }
                 CollectionEventType.COPY -> {
-                    if(event.success){
-                        isSelecting = false
-                    }
-                    else {
-                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
-                    }
+                    event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                 }
 
                 CollectionEventType.RENAME -> {
-                    if(event.success){
-                        isSelecting = false
-                    }
-                    else {
-                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
-                    }
+                    event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                 }
 
                 CollectionEventType.DELETE -> {
-                    if(event.success){
-                        isSelecting = false
-                    }
-                    else {
-                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
-                    }
+                    event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                 }
             }
         }
@@ -186,9 +165,8 @@ fun CollectionsScreen(
         )
     }
 
-    BackHandler(enabled = isSelecting) {
-        isSelecting = false
-        viewModel.clearSelectedCollections()
+    BackHandler(enabled = state.selection.isSelecting) {
+        viewModel.onAction(CollectionAction.ResetSelection)
     }
 
     Box(
@@ -201,7 +179,7 @@ fun CollectionsScreen(
             verticalArrangement = Arrangement.Top
         ) {
             SlideRevealBox(
-                isVisible = isSelecting,
+                isVisible = state.selection.isSelecting,
                 reverse = true,
                 offsetPx = offset,
                 modifier = Modifier
@@ -305,14 +283,14 @@ fun CollectionsScreen(
                 isVisible = isCollectionVisible,
                 numGridColumns = 3,
                 items = collections,
-                isSelecting = isSelecting,
+                isSelecting = state.selection.isSelecting,
                 selectAll = state.selection.selectAll,
                 selectedItems = state.selection.selectedItems,
                 excludedItems = state.selection.excludedItems,
                 onItemClick = { viewModel.onAction(CollectionAction.SetCollectionToView(it)) },
                 onToggleSelected = { viewModel.onAction(CollectionAction.ToggleSelectedCollection(it)) },
                 onToggleSelectionMode = {
-                    isSelecting = !isSelecting
+                    viewModel.onAction(CollectionAction.ToggleSelectionMode)
                     offset = 0
                 },
                 onOffsetChange = {  offset = it },

@@ -26,5 +26,7 @@ sealed interface SearchAction {
     data object Index: SearchAction
     data object Reset: SearchAction
     data object ClearResultView: SearchAction
-
+    data object ToggleSelectionMode: SearchAction
+    data object ClearSelection: SearchAction
+    data object ResetSelection: SearchAction
 }

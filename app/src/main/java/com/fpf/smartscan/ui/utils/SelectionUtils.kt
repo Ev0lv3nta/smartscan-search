@@ -58,4 +58,9 @@ object SelectionUtils {
             state.selectedItems
         }
     }
+
+    fun <T> toggleSelectionMode(state: SelectionState<T>): SelectionState<T> = state.copy(isSelecting = !state.isSelecting)
+
+    fun <T>resetSelection(state: SelectionState<T>): SelectionState<T> = state.copy(selectedItems = emptySet(), excludedItems = emptySet(), selectAll = false, selectedCount = 0, isSelecting = false)
+
 }

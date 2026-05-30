@@ -53,8 +53,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.collections.map
-import kotlin.collections.plus
-
 
 class CollectionItemsViewModel(
     application: Application,
@@ -172,24 +170,30 @@ class CollectionItemsViewModel(
             is CollectionItemAction.CopyMedia -> copyItem(action.clipboard, action.context)
             is CollectionItemAction.CreateNewTagCollectionAndMove -> createNewCollectionAndMove(action.newName)
             CollectionItemAction.RemoveMedia -> removeItems()
-            is CollectionItemAction.SetMediaToView -> setMediaToView(action.context, action.item, autoOpenInGallery = action.autoOpenInGallery, isSelecting = action.isSelecting)
+            is CollectionItemAction.SetMediaToView -> setMediaToView(action.context, action.item, autoOpenInGallery = action.autoOpenInGallery)
             is CollectionItemAction.ShareMedia -> shareItems(action.context)
             is CollectionItemAction.ToggleSelectedMedia -> toggleSelectedItem(action.item)
             is CollectionItemAction.SetCollectionToView -> setCollection(action.collection)
             is CollectionItemAction.MoveMedia -> moveItems(action.destinationCollection)
             is CollectionItemAction.Tag -> tagItems(action.tag)
             is CollectionItemAction.SetSelectAll -> setSelectAll(action.selectAll)
+            is CollectionItemAction.ToggleSelectionMode -> toggleSelectionMode()
+            is CollectionItemAction.ResetSelection -> resetSelection()
+            is CollectionItemAction.ClearSelection -> clearSelection()
         }
     }
 
-    fun clearSelectedItems() = _state.update{it.copy(selection = SelectionUtils.clearSelection(it.selection))}
+    private fun clearSelection() = _state.update{it.copy(selection = SelectionUtils.clearSelection(it.selection))}
+    private fun resetSelection() = _state.update{it.copy(selection = SelectionUtils.resetSelection(it.selection))}
+    private fun toggleSelectionMode() = _state.update { it.copy(selection = SelectionUtils.toggleSelectionMode(it.selection)) }
+
 
     private fun tagItems(tag: String){
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val selectedItems = getSelectedItems()
                 tagManager.tagItems(tag, selectedItems)
-                clearSelectedItems()
+                resetSelection()
                 _event.emit(CollectionItemEvent(CollectionItemEventType.TAG, success = true, message = "Tagged ${selectedItems.size} item(s)"))
             }catch (e: Exception){
                 Log.e(TAG, "Error tagging items: ${e.message}")
@@ -210,7 +214,7 @@ class CollectionItemsViewModel(
             try {
                 val mediaIds = getSelectedItems().map{it.id}
                 tagManager.removeItems(currentCollection.name, mediaIds)
-                clearSelectedItems()
+                resetSelection()
                 _event.emit(CollectionItemEvent(CollectionItemEventType.REMOVE, success = true, message = "Removed ${mediaIds.size} item(s)"))
             }catch (e: Exception){
                 Log.e(TAG, "Error removing items: ${e.message}")
@@ -232,7 +236,7 @@ class CollectionItemsViewModel(
                 }else{
                     tagManager.moveItems(items, currentCollection.name, newCollection.name)
                 }
-                clearSelectedItems()
+                resetSelection()
                 _event.emit(CollectionItemEvent(CollectionItemEventType.MOVE, success = true, message = "Moved ${items.size} item(s)"))
             }catch (e: Exception){
                 Log.e(TAG, "Error moving items: ${e.message}")
@@ -248,7 +252,7 @@ class CollectionItemsViewModel(
             val itemToCopy = getSelectedItems().first().uri
             clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", itemToCopy))
             _event.emit(CollectionItemEvent(CollectionItemEventType.COPY, success = true))
-            clearSelectedItems()
+            resetSelection()
         }
     }
 
@@ -257,7 +261,7 @@ class CollectionItemsViewModel(
             val items = getSelectedItems()
             shareMediaMulti(context, items.map{it.uri})
             _event.emit(CollectionItemEvent(CollectionItemEventType.SHARE, success = true))
-            clearSelectedItems()
+            resetSelection()
         }
     }
 
@@ -271,7 +275,7 @@ class CollectionItemsViewModel(
                 val items = getSelectedItems()
                 if (items.isEmpty()) return@launch
                 tagManager.createNewTagAndMoveItems(items, currentCollection.name, newCollectionName)
-                clearSelectedItems()
+                resetSelection()
                 _event.emit(CollectionItemEvent(CollectionItemEventType.MOVE, success = true, message = "Moved ${items.size} item(s)"))
             }catch (_: SQLiteConstraintException){
                 _event.emit(CollectionItemEvent(CollectionItemEventType.MOVE, success = false, message = "Collection already exists"))
@@ -324,8 +328,8 @@ class CollectionItemsViewModel(
 
     private fun setCollection(collection: MediaCollection?) = _state.update { it.copy(collection=collection) }
 
-    private fun setMediaToView(context: Context, item: MediaItem?, autoOpenInGallery: Boolean? = null, isSelecting: Boolean = false){
-        if(autoOpenInGallery == true && !isSelecting) {
+    private fun setMediaToView(context: Context, item: MediaItem?, autoOpenInGallery: Boolean? = null){
+        if(autoOpenInGallery == true) {
             when(item?.type){
                 MediaType.IMAGE -> openImageInGallery(context, item.uri)
                 MediaType.VIDEO -> openVideoInGallery(context, item.uri)

@@ -16,4 +16,7 @@ sealed interface CollectionItemAction {
     data class Tag(val tag: String): CollectionItemAction
     data class SetSelectAll(val selectAll: Boolean): CollectionItemAction
     data object RemoveMedia : CollectionItemAction
+    data object ToggleSelectionMode: CollectionItemAction
+    data object ClearSelection: CollectionItemAction
+    data object ResetSelection: CollectionItemAction
 }

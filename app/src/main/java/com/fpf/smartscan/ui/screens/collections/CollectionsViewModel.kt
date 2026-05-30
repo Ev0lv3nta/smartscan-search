@@ -115,10 +115,15 @@ class CollectionsViewModel(
             is CollectionAction.DeleteCollections -> deleteCollections()
             is CollectionAction.ToggleViewAllCollections -> toggleViewAllCollections()
             is CollectionAction.SetSelectAll -> setSelectAll(action.selectAll)
+            is CollectionAction.ToggleSelectionMode -> toggleSelectionMode()
+            is CollectionAction.ClearSelection -> clearSelection()
+            is CollectionAction.ResetSelection -> resetSelection()
         }
     }
 
-    fun clearSelectedCollections() = _state.update{it.copy(selection = SelectionUtils.clearSelection(it.selection))}
+    private fun clearSelection() = _state.update{it.copy(selection = SelectionUtils.clearSelection(it.selection))}
+    private fun resetSelection() = _state.update{it.copy(selection = SelectionUtils.resetSelection(it.selection))}
+    private fun toggleSelectionMode() = _state.update { it.copy(selection = SelectionUtils.toggleSelectionMode(it.selection)) }
 
     private fun renameCollection(newName: String){
         viewModelScope.launch(Dispatchers.IO) {
@@ -129,7 +134,7 @@ class CollectionsViewModel(
                 }else{
                     tagManager.renameTag(collection.name, newName)
                 }
-                clearSelectedCollections()
+                resetSelection()
                 _event.emit(CollectionEvent(CollectionEventType.RENAME, success = true))
             } catch (_: SQLiteConstraintException){
                 _event.emit(CollectionEvent(CollectionEventType.RENAME, success = false, message = "Collection already exists"))
@@ -147,7 +152,7 @@ class CollectionsViewModel(
             try {
                 val selectedCollections = getSelectedCollections()
                 tagRepository.deleteTagsByName(selectedCollections.map{it.name})
-                clearSelectedCollections()
+                resetSelection()
                 _event.emit(CollectionEvent(CollectionEventType.DELETE, success = true))
             }catch (e: Exception){
                 Log.e(TAG, "Error deleting collections: ${e.message}")
@@ -183,7 +188,7 @@ class CollectionsViewModel(
                         tagManager.mergeTags(primaryCollectionName, otherCollections.map { it.name })
                     }
                 }
-                clearSelectedCollections()
+                resetSelection()
                 _event.emit(CollectionEvent(CollectionEventType.MERGE, success = true))
             }
             catch (_: SQLiteConstraintException){
@@ -203,23 +208,6 @@ class CollectionsViewModel(
         tagCrossRefRepository.insertTagCrossRefs(clusterCrossRefs.map{ TagCrossRef(it.id, tagId)})
     }
 
-    private fun tagClusterCollections(tagId: Long){
-        _state.update { it.copy(loading = true) }
-        viewModelScope.launch (Dispatchers.IO) {
-            try {
-                val selectedCollections = getSelectedCollections()
-                selectedCollections.forEach { tagCluster(it.id, tagId) }
-                clearSelectedCollections()
-                _event.emit(CollectionEvent(CollectionEventType.COPY, success = true))
-            }catch (e: Exception){
-                Log.e(TAG, "Error tagging collection(s): ${e.message}")
-                _event.emit(CollectionEvent(CollectionEventType.COPY, success = false, message = "Error tagging collection(s)"))
-            }finally {
-                _state.update { it.copy(loading = false) }
-            }
-        }
-    }
-
     private fun createNewTagAndTagClusters(newTag: String){
         _state.update { it.copy(loading = true) }
 
@@ -228,7 +216,7 @@ class CollectionsViewModel(
                 val selectedCollections = getSelectedCollections()
                 val tagId = tagRepository.insertTags(listOf(Tag(name = newTag))).firstOrNull()?: return@launch
                 selectedCollections.forEach { tagCluster(it.id, tagId) }
-                clearSelectedCollections()
+                resetSelection()
                 _event.emit(CollectionEvent(CollectionEventType.COPY, success = true))
             }catch (_: SQLiteConstraintException){
                 _event.emit(CollectionEvent(CollectionEventType.COPY, success = false, message = "Collection already exists"))
@@ -243,7 +231,7 @@ class CollectionsViewModel(
     }
 
     private fun setGroupingMode(groupBySimilarity: Boolean) {
-        clearSelectedCollections()
+        resetSelection()
         _state.update { it.copy(groupBySimilarity = groupBySimilarity) }
     }
 

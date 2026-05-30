@@ -96,7 +96,6 @@ fun CollectionItemsScreen(
     val isTagCollection = collection.isAutoCollection
 
     // actions
-    var isSelecting by remember { mutableStateOf(false) }
     var isMoving by remember { mutableStateOf(false) }
     var isCreatingCollectionAndMoving by remember { mutableStateOf(false) }
     var isAddingTag by remember { mutableStateOf(false) }
@@ -172,48 +171,30 @@ fun CollectionItemsScreen(
         viewModel.event.collect { event ->
             when(event.type){
                 CollectionItemEventType.MOVE -> {
+                    event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                     if(event.success){
-                        isSelecting = false
                         items.refresh()
-                    }
-                    else {
-                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                     }
                 }
                 CollectionItemEventType.REMOVE -> {
+                    event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                     if(event.success){
-                        isSelecting = false
                         items.refresh()
-                    }
-                    else {
-                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                     }
                 }
 
                 CollectionItemEventType.COPY -> {
-                    if(event.success){
-                        isSelecting = false
-                    }
-                    else {
-                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
-                    }
+                    event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                 }
 
                 CollectionItemEventType.SHARE -> {
-                    if(event.success){
-                        isSelecting = false
-                    }
-                    else {
-                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
-                    }
+                    event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                 }
+
                 CollectionItemEventType.TAG -> {
+                    event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                     if(event.success){
-                        isSelecting = false
                         tagCollectionItems.refresh()
-                    }
-                    else {
-                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                     }
                 }
             }
@@ -221,9 +202,8 @@ fun CollectionItemsScreen(
     }
 
 
-    BackHandler(enabled = isSelecting) {
-        isSelecting = false
-        viewModel.clearSelectedItems()
+    BackHandler(enabled = state.selection.isSelecting) {
+        viewModel.onAction(CollectionItemAction.ResetSelection)
     }
 
     Box(
@@ -236,7 +216,7 @@ fun CollectionItemsScreen(
             verticalArrangement = Arrangement.Top
         ) {
             SlideRevealBox(
-                isVisible = isSelecting,
+                isVisible = state.selection.isSelecting,
                 reverse = true,
                 offsetPx = offset,
                 modifier = Modifier
@@ -254,14 +234,14 @@ fun CollectionItemsScreen(
                 isVisible = tagCollectionItems.itemCount > 0 || clusterCollectionItems.itemCount> 0,
                 numGridColumns = appSettings.resultsPerRow,
                 items = items,
-                isSelecting = isSelecting,
+                isSelecting = state.selection.isSelecting,
                 selectAll = state.selection.selectAll,
                 excludedItems = state.selection.excludedItems,
                 selectedItems = state.selection.selectedItems,
-                onViewItem = { uri -> viewModel.onAction(CollectionItemAction.SetMediaToView(context, uri, appSettings.enableDirectGalleryOpen, isSelecting)) },
+                onViewItem = { uri -> viewModel.onAction(CollectionItemAction.SetMediaToView(context, uri, appSettings.enableDirectGalleryOpen)) },
                 onToggleSelected = { viewModel.onAction(CollectionItemAction.ToggleSelectedMedia(it)) },
                 onToggleSelectionMode = {
-                    isSelecting = !isSelecting
+                    viewModel.onAction(CollectionItemAction.ToggleSelectionMode)
                     offset = 0
                 },
                 onOffsetChange = {  offset = it },
@@ -271,7 +251,7 @@ fun CollectionItemsScreen(
         }
 
         SlideRevealBox(
-            isVisible = isSelecting && state.selection.selectedCount > 0,
+            isVisible = state.selection.isSelecting && state.selection.selectedCount > 0,
             offsetPx = offset,
             modifier = Modifier
                 .align(Alignment.BottomCenter)

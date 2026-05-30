@@ -134,8 +134,15 @@ class SearchViewModel(
             is SearchAction.Reset -> reset()
             is SearchAction.ClearResultView -> clearResultView()
             is SearchAction.SetSelectAll -> setSelectAll(action.selectAll)
+            is SearchAction.ToggleSelectionMode -> toggleSelectionMode()
+            is SearchAction.ResetSelection -> resetSelection()
+            is SearchAction.ClearSelection -> clearSelection()
         }
     }
+
+    private fun clearSelection() = _state.update{it.copy(selection = SelectionUtils.clearSelection(it.selection))}
+    private fun resetSelection() = _state.update{it.copy(selection = SelectionUtils.resetSelection(it.selection))}
+    private fun toggleSelectionMode() = _state.update { it.copy(selection = SelectionUtils.toggleSelectionMode(it.selection)) }
 
     private fun loadImageIndex(){
         loadIndex(imageStore)
@@ -406,7 +413,7 @@ class SearchViewModel(
         viewModelScope.launch {
             val itemToCopy = getSelectedResults().first().uri
             clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", itemToCopy))
-            clearSelectedResults()
+            resetSelection()
         }
     }
 
@@ -414,7 +421,7 @@ class SearchViewModel(
         viewModelScope.launch {
             val selected = getSelectedResults()
             shareMediaMulti(context, selected.map{it.uri})
-            clearSelectedResults()
+            resetSelection()
         }
     }
 
@@ -427,16 +434,11 @@ class SearchViewModel(
         }
     }
 
-    fun clearSelectedResults() = _state.update{it.copy(selection = SelectionUtils.clearSelection(it.selection))}
-
     private fun tagItems(tag: String){
         viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val selected = getSelectedResults()
-              tagManager.tagItems(tag, selected)
-            }finally {
-                clearSelectedResults()
-            }
+            val selected = getSelectedResults()
+            tagManager.tagItems(tag, selected)
+            resetSelection()
         }
     }
 
