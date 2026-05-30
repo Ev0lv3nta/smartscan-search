@@ -32,6 +32,8 @@ import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.media.onMediaLoadingError
 import com.fpf.smartscan.media.shareMediaMulti
 import com.fpf.smartscan.tag.TagManager
+import com.fpf.smartscan.ui.state.CollectionItemsState
+import com.fpf.smartscan.ui.utils.SelectionUtils
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -66,7 +68,6 @@ class CollectionItemsViewModel(
 ) : AndroidViewModel(application) {
     companion object {
         private const val TAG = "CollectionItemsViewModel"
-        const val INVALID_CLUSTER_ID = -1L
     }
 
     val tagManager = TagManager(
@@ -86,13 +87,11 @@ class CollectionItemsViewModel(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val tagItems = _state
-        .map { it.mediaType to it.collectionName }
+        .map { it.mediaType to it.collection }
         .distinctUntilChanged()
-        .flatMapLatest { (mediaType, collectionName) ->
+        .flatMapLatest { (mediaType, collection) ->
 
-            val tagId = collectionName?.let{tagRepository.getTagsByName(listOf(it)).firstOrNull()?.id}
-
-            if (tagId == null) {
+            if (collection?.id == null) {
                 flowOf(PagingData.empty())
             } else {
                 Pager(
@@ -105,7 +104,7 @@ class CollectionItemsViewModel(
                     pagingSourceFactory = {
                         TagPagingSource(
                             mediaType = mediaType,
-                            tagId = tagId,
+                            tagId = collection.id,
                             mediaMetadataRepository = mediaMetadataRepository,
                             mediaIdToUri = ::mediaIdToUri
                         )
@@ -117,10 +116,10 @@ class CollectionItemsViewModel(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val clusterItems = _state
-        .map { Triple(it.mediaType, it.collectionName, it.clusterId) }
+        .map { it.mediaType to it.collection }
         .distinctUntilChanged()
-        .flatMapLatest { (mediaType, collectionName, clusterId) ->
-            if (clusterId == INVALID_CLUSTER_ID) {
+        .flatMapLatest { (mediaType, collection) ->
+            if (collection?.id == null) {
                 flowOf(PagingData.empty())
             } else {
                 Pager(
@@ -133,7 +132,7 @@ class CollectionItemsViewModel(
                     pagingSourceFactory = {
                         ClusterPagingSource(
                             mediaType = mediaType,
-                            clusterId = clusterId,
+                            clusterId = collection.id,
                             mediaMetadataRepository = mediaMetadataRepository,
                             mediaIdToUri = ::mediaIdToUri
                         )
@@ -175,18 +174,19 @@ class CollectionItemsViewModel(
             is CollectionItemAction.SetMediaToView -> setMediaToView(action.context, action.item, autoOpenInGallery = action.autoOpenInGallery, isSelecting = action.isSelecting)
             is CollectionItemAction.ShareMedia -> shareItems(action.context)
             is CollectionItemAction.ToggleSelectedMedia -> toggleSelectedItem(action.item)
-            is CollectionItemAction.SetCollectionToView -> setCollection(action.name, action.clusterId)
-            is CollectionItemAction.MoveMedia -> moveItems(action.destinationCollection, action.clusterId)
+            is CollectionItemAction.SetCollectionToView -> setCollection(action.collection)
+            is CollectionItemAction.MoveMedia -> moveItems(action.destinationCollection)
             is CollectionItemAction.Tag -> tagItems(action.tag)
+            is CollectionItemAction.SetSelectAll -> setSelectAll(action.selectAll)
         }
     }
 
-    fun clearSelectedItems() = _state.update{it.copy(selectedMediaItems = emptySet())}
+    fun clearSelectedItems() = _state.update{it.copy(selection = SelectionUtils.clearSelection(it.selection))}
 
     private fun tagItems(tag: String){
         viewModelScope.launch(Dispatchers.IO) {
-            val selectedItems = _state.value.selectedMediaItems
             try {
+                val selectedItems = getSelectedItems()
                 tagManager.tagItems(tag, selectedItems)
                 clearSelectedItems()
                 _event.emit(CollectionItemEvent(CollectionItemEventType.TAG, success = true, message = "Tagged ${selectedItems.size} item(s)"))
@@ -202,13 +202,13 @@ class CollectionItemsViewModel(
     }
 
     private fun removeItems(){
-        val state = _state.value
-        val mediaIds = state.selectedMediaItems.map{it.id}
-        val collectionName = state.collectionName?: return
+        val currentCollection = _state.value.collection?: return
+        if(currentCollection.isAutoCollection) return // Only allowed for tag collections
 
         viewModelScope.launch (Dispatchers.IO){
             try {
-                tagManager.removeItems(collectionName, mediaIds)
+                val mediaIds = getSelectedItems().map{it.id}
+                tagManager.removeItems(currentCollection.name, mediaIds)
                 clearSelectedItems()
                 _event.emit(CollectionItemEvent(CollectionItemEventType.REMOVE, success = true, message = "Removed ${mediaIds.size} item(s)"))
             }catch (e: Exception){
@@ -218,20 +218,18 @@ class CollectionItemsViewModel(
         }
     }
 
-    private fun moveItems(newCollection: MediaCollection, oldClusterId: Long? = null){
-        val state = _state.value
-        val oldCollectionName = state.collectionName?: return
-        val items = state.selectedMediaItems
-        if (items.isEmpty()) return
+    private fun moveItems(newCollection: MediaCollection){
+        val currentCollection = _state.value.collection?: return
         _state.update { it.copy(loading = true) }
 
         viewModelScope.launch (Dispatchers.IO){
             try {
+                val items = getSelectedItems()
+                if (items.isEmpty()) return@launch
                 if(newCollection.isAutoCollection){
-                    val clusterId = oldClusterId?: error("Invalid Cluster ID")
-                    clusterManager.moveItems(items.map{it.id}, newCollection.id, clusterId, imageEmbedStore = imageStore, videoEmbedStore = videoStore)
+                    clusterManager.moveItems(items.map{it.id}, newCollection.id, currentCollection.id, imageEmbedStore = imageStore, videoEmbedStore = videoStore)
                 }else{
-                    tagManager.moveItems(items, oldCollectionName, newCollection.name)
+                    tagManager.moveItems(items, currentCollection.name, newCollection.name)
                 }
                 clearSelectedItems()
                 _event.emit(CollectionItemEvent(CollectionItemEventType.MOVE, success = true, message = "Moved ${items.size} item(s)"))
@@ -245,16 +243,18 @@ class CollectionItemsViewModel(
     }
 
     private fun copyItem(clipboard: Clipboard, context: Context){
-        clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", _state.value.selectedMediaItems.first().uri))
         viewModelScope.launch {
+            val itemToCopy = getSelectedItems().first().uri
+            clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", itemToCopy))
             _event.emit(CollectionItemEvent(CollectionItemEventType.COPY, success = true))
             clearSelectedItems()
         }
     }
 
     private fun shareItems(context: Context){
-        shareMediaMulti(context, _state.value.selectedMediaItems.map{it.uri})
         viewModelScope.launch {
+            val items = getSelectedItems()
+            shareMediaMulti(context, items.map{it.uri})
             _event.emit(CollectionItemEvent(CollectionItemEventType.SHARE, success = true))
             clearSelectedItems()
         }
@@ -262,15 +262,14 @@ class CollectionItemsViewModel(
 
     private fun createNewCollectionAndMove( newCollectionName: String){
         val state = _state.value
-        val oldCollectionName = state.collectionName?: return
-        if(oldCollectionName == newCollectionName) return
-
-        val items = state.selectedMediaItems
-        if (items.isEmpty()) return
+        val currentCollection = state.collection?: return
+        if(currentCollection.name == newCollectionName) return
 
         viewModelScope.launch (Dispatchers.IO) {
             try {
-                tagManager.createNewTagAndMoveItems(items, oldCollectionName, newCollectionName)
+                val items = getSelectedItems()
+                if (items.isEmpty()) return@launch
+                tagManager.createNewTagAndMoveItems(items, currentCollection.name, newCollectionName)
                 clearSelectedItems()
                 _event.emit(CollectionItemEvent(CollectionItemEventType.MOVE, success = true, message = "Moved ${items.size} item(s)"))
             }catch (_: SQLiteConstraintException){
@@ -283,18 +282,46 @@ class CollectionItemsViewModel(
 
 
    private fun toggleSelectedItem(item: MediaItem){
-        _state.update { currentState ->
-            if (item in currentState.selectedMediaItems) {
-                val updatedSelectedResults = currentState.selectedMediaItems - item
-                currentState.copy(selectedMediaItems = updatedSelectedResults)
-            } else {
-                val updatedSelectedResults = currentState.selectedMediaItems + item
-                currentState.copy(selectedMediaItems = updatedSelectedResults)
-            }
+       _state.update {
+           val collection = it.collection ?: return
+           it.copy(selection = SelectionUtils.toggleSelectedItem(it.selection, item, collection.size))
+       }
+   }
+
+    private fun setSelectAll(selectAll: Boolean) {
+        val currentState = _state.value
+        val collection = currentState.collection?: return
+        _state.update { it.copy(selection = SelectionUtils.setSelectAll(it.selection, selectAll, collection.size))}
+
+    }
+
+    private suspend fun getSelectedItems(): Set<MediaItem> = SelectionUtils.getSelectedItems(_state.value.selection){getAllItemInCollection()}
+
+    private suspend fun getAllItemInCollection(): MutableSet<MediaItem>{
+        val currentState = state.value
+        val currentCollection = currentState.collection?: return mutableSetOf()
+        return if (currentCollection.isAutoCollection ){
+            val itemsMatchingCluster = mediaMetadataRepository.getByCluster(currentCollection.id)
+            itemsMatchingCluster.map {
+                MediaItem(
+                    id=it.id,
+                    uri=mediaIdToUri(it.id, it.type),
+                    type = it.type
+                )
+            }.toMutableSet()
+        }else{
+            val itemsMatchingTag = mediaMetadataRepository.getByTag(currentCollection.id)
+            itemsMatchingTag.map {
+                MediaItem(
+                    id=it.id,
+                    uri=mediaIdToUri(it.id, it.type),
+                    type = it.type
+                )
+            }.toMutableSet()
         }
     }
 
-    private fun setCollection(name: String?, clusterId: Long) = _state.update { it.copy(collectionName=name, clusterId = clusterId) }
+    private fun setCollection(collection: MediaCollection?) = _state.update { it.copy(collection=collection) }
 
     private fun setMediaToView(context: Context, item: MediaItem?, autoOpenInGallery: Boolean? = null, isSelecting: Boolean = false){
         if(autoOpenInGallery == true && !isSelecting) {

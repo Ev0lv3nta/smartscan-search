@@ -51,6 +51,7 @@ import com.fpf.smartscan.ui.components.menus.DropDownMenuWrapper
 import com.fpf.smartscan.ui.components.LoadingIndicator
 import com.fpf.smartscan.ui.components.media.MediaViewer
 import com.fpf.smartscan.ui.components.ProgressBar
+import com.fpf.smartscan.ui.components.SelectionHeaderRow
 import com.fpf.smartscan.ui.components.SelectorIconItem
 import com.fpf.smartscan.ui.components.SlideRevealBox
 import com.fpf.smartscan.ui.components.pickers.DatePickerModal
@@ -129,10 +130,10 @@ fun SearchScreen(
             label = stringResource(R.string.search_action),
             onClick = {
                 isSelecting = false
-                searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(state.selectedResults.first().uri, appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
+                searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(state.selection.selectedItems.first().uri, appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
                 searchViewModel.clearSelectedResults()
             },
-            enabled = state.selectedResults.size == 1 && state.mediaType == MediaType.IMAGE,
+            enabled = state.selection.selectedItems.size == 1 && state.mediaType == MediaType.IMAGE,
             icon = Icons.Filled.Search
         ),
         ActionConfig(
@@ -152,6 +153,7 @@ fun SearchScreen(
         )
 
     // Dynamic hide animation
+    var isActionBarVisible =  isSelecting && state.selection.selectedCount > 0
     var offset by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val actionBarHeight = with(density) { 70.dp.toPx() }
@@ -281,8 +283,11 @@ fun SearchScreen(
                 ) {
                     Column {
                         if (isSelecting) {
-                            val text = if (state.selectedResults.isNotEmpty()) "${state.selectedResults.size} Selected" else "Select items"
-                            Text(text, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp), color = MaterialTheme.colorScheme.primary)
+                            SelectionHeaderRow (
+                                selectedCount = state.selection.selectedCount,
+                                checked = state.selection.selectAll && state.selection.excludedItems.isEmpty(),
+                                onSelectAllChange = {searchViewModel.onAction(SearchAction.SetSelectAll(it))}
+                            )
                         }
 
                         ImageSearcher(
@@ -313,8 +318,11 @@ fun SearchScreen(
                 ) {
                     Column {
                         if (isSelecting) {
-                            val text = if (state.selectedResults.isNotEmpty()) "${state.selectedResults.size} Selected" else "Select items"
-                            Text(text, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp), color = MaterialTheme.colorScheme.primary)
+                            SelectionHeaderRow (
+                                selectedCount = state.selection.selectedCount,
+                                checked = state.selection.selectAll && state.selection.excludedItems.isEmpty(),
+                                onSelectAllChange = {searchViewModel.onAction(SearchAction.SetSelectAll(it))}
+                            )
                         }
 
                         Row(
@@ -420,7 +428,9 @@ fun SearchScreen(
                 searchResults = state.searchResults,
                 totalResults=state.totalResults,
                 isSelecting = isSelecting,
-                selectedResults = state.selectedResults,
+                selectAll = state.selection.selectAll,
+                selectedResults = state.selection.selectedItems,
+                excludedResults = state.selection.excludedItems,
                 loadMoreBuffer = (RESULTS_BATCH_SIZE * 0.4).toInt(),
                 onItemClick = { uri -> searchViewModel.onAction(SearchAction.ViewResult(context, uri, autoOpenInGallery = appSettings.enableDirectGalleryOpen )) },
                 onLoadMore = searchViewModel::onLoadMore,
@@ -431,11 +441,12 @@ fun SearchScreen(
                                         },
                 onOffsetChange = {  offset = it },
                 maxCollapsePx = maxCollapsePx,
-                onError = searchViewModel::onErrorAsyncImage
+                onError = searchViewModel::onErrorAsyncImage,
+
             )
         }
         SlideRevealBox(
-            isVisible = isSelecting && state.selectedResults.isNotEmpty(),
+            isVisible = isActionBarVisible,
             offsetPx = offset,
             modifier = Modifier
                 .align(Alignment.BottomCenter)

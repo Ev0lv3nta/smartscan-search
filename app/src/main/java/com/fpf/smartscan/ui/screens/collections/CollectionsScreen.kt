@@ -61,8 +61,10 @@ import kotlinx.coroutines.FlowPreview
 import com.fpf.smartscan.R
 import androidx.compose.ui.res.stringResource
 import com.fpf.smartscan.events.CollectionEventType
+import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
 import com.fpf.smartscan.navigation.TopBarState
+import com.fpf.smartscan.ui.components.SelectionHeaderRow
 import com.fpf.smartscan.ui.components.actions.ActionBar
 import com.fpf.smartscan.ui.components.actions.ActionConfig
 import com.fpf.smartscan.ui.components.menus.MenuItemConfig
@@ -73,8 +75,8 @@ import org.koin.compose.viewmodel.koinViewModel
 @OptIn(FlowPreview::class)
 @Composable
 fun CollectionsScreen(
-    onNavigate: (String) -> Unit,
     onTopBarChange: (TopBarState) -> Unit,
+    onViewCollection: (MediaCollection) -> Unit,
     viewModel: CollectionsViewModel = koinViewModel(),
     ) {
 
@@ -96,10 +98,11 @@ fun CollectionsScreen(
     var isTaggingClusters by remember { mutableStateOf(false) }
     var isCreatingNewTagAndTaggingClusters by remember { mutableStateOf(false) }
     var isDeletingCollection by remember { mutableStateOf(false) }
+    var isActionBarVisible = isSelecting && state.selection.selectedCount > 0
 
     val actionBarActions: List<ActionConfig> = listOf(
         ActionConfig(label = stringResource(R.string.merge_action), { isMergingCollections = true }, enabled = !state.loading, icon = Icons.Filled.Merge),
-        ActionConfig( label = stringResource(R.string.rename_action), { isRenamingCollection = true }, enabled = state.selectedCollections.size == 1, icon = Icons.Filled.DriveFileRenameOutline),
+        ActionConfig( label = stringResource(R.string.rename_action), { isRenamingCollection = true }, enabled = state.selection.selectedItems.size == 1, icon = Icons.Filled.DriveFileRenameOutline),
         ActionConfig(label=stringResource(R.string.add_tag_action), { isTaggingClusters = true }, enabled = state.groupBySimilarity, icon = Icons.Filled.Tag),
         ActionConfig(label = stringResource(R.string.delete_action), { isDeletingCollection = true }, enabled = !state.groupBySimilarity, icon = Icons.Filled.Delete)
     )
@@ -117,11 +120,7 @@ fun CollectionsScreen(
 
     LaunchedEffect(state.collectToView) {
         state.collectToView?.let{
-            if(it.isAutoCollection){
-                onNavigate(Routes.viewCollection(it.name, it.id))
-            }else{
-                onNavigate(Routes.viewCollection(it.name))
-            }
+            onViewCollection(it)
             viewModel.onAction(CollectionAction.SetCollectionToView(null))
         }
     }
@@ -216,12 +215,10 @@ fun CollectionsScreen(
                     .heightIn(max = maxCollapsablePx.dp)
                     .padding(bottom = 8.dp)
             ) {
-                val text = if (state.selectedCollections.isNotEmpty()) "${state.selectedCollections.size} Selected" else "Select items"
-                Text(
-                    text,
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(bottom = 16.dp),
-                    color = MaterialTheme.colorScheme.primary
+                SelectionHeaderRow (
+                    selectedCount = state.selection.selectedCount,
+                    checked = state.selection.selectAll && state.selection.excludedItems.isEmpty(),
+                    onSelectAllChange = {viewModel.onAction(CollectionAction.SetSelectAll(it))}
                 )
             }
 
@@ -315,7 +312,9 @@ fun CollectionsScreen(
                 numGridColumns = 3,
                 items = collections,
                 isSelecting = isSelecting,
-                selectedItems = state.selectedCollections,
+                selectAll = state.selection.selectAll,
+                selectedItems = state.selection.selectedItems,
+                excludedItems = state.selection.excludedItems,
                 onItemClick = { viewModel.onAction(CollectionAction.SetCollectionToView(it)) },
                 onToggleSelected = { viewModel.onAction(CollectionAction.ToggleSelectedCollection(it)) },
                 onToggleSelectionMode = {
@@ -323,7 +322,7 @@ fun CollectionsScreen(
                     offset = 0
                 },
                 onOffsetChange = {  offset = it },
-                maxCollapsePx = maxCollapsablePx
+                maxCollapsePx = maxCollapsablePx,
             )
 
             EmptyCollectionScreen(!isCollectionVisible)
@@ -331,7 +330,7 @@ fun CollectionsScreen(
 
 
         SlideRevealBox(
-            isVisible = isSelecting && state.selectedCollections.isNotEmpty(),
+            isVisible = isActionBarVisible,
             offsetPx = offset,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -418,7 +417,7 @@ fun CollectionsScreen(
     )
 
     if (isMergingCollections) {
-        val labelledCollections: List<String> = state.selectedCollections.sortedByDescending { it.size}.map { it.name }.filterNot { it == UNLABELLED_COLLECTION }
+        val labelledCollections: List<String> = state.selection.selectedItems.sortedByDescending { it.size}.map { it.name }.filterNot { it == UNLABELLED_COLLECTION }
         var useSelectorInput by remember { mutableStateOf(labelledCollections.isNotEmpty()) }
 
         if (useSelectorInput) {
@@ -458,7 +457,7 @@ fun CollectionsScreen(
     }
 
     if ( isDeletingCollection) {
-        val count = state.selectedCollections.size
+        val count = state.selection.selectedCount
         val alertTitle = stringResource(R.string.collections_delete_collections_alert_title)
         val alertDescription = stringResource(
             R.string.collections_delete_collections_alert_description,

@@ -58,13 +58,16 @@ fun MediaCollectionsList(
     items: List<MediaCollection>,
     onItemClick: (MediaCollection) -> Unit,
     selectedItems: Set<MediaCollection> = emptySet(),
+    excludedItems: Set<MediaCollection> = emptySet(),
     onToggleSelected: ((MediaCollection) -> Unit)? = null,
     onToggleSelectionMode: (() -> Unit)? = null,
     onOffsetChange: ((Int) -> Unit)? = null,
     numGridColumns: Int = 3,
     maxCollapsePx: Int = 0,
     isSelecting: Boolean = false,
-) {
+    selectAll: Boolean = false,
+
+    ) {
     if (!isVisible) return
 
     val scope = rememberCoroutineScope()
@@ -154,7 +157,7 @@ fun MediaCollectionsList(
 
                         if (isSelecting) {
                             CircularCheckbox(
-                                checked = item in selectedItems,
+                                checked = item in selectedItems || (selectAll && item !in excludedItems),
                                 onCheckedChange = { onToggleSelected?.invoke(item) },
                                 modifier = Modifier
                                     .offset(x = 8.dp, y = 8.dp)

@@ -33,6 +33,7 @@ import com.fpf.smartscan.index.ImageIndexListener
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.tag.TagManager
 import com.fpf.smartscan.index.VideoIndexListener
+import com.fpf.smartscan.media.mediaIdToUri
 import com.fpf.smartscan.media.shareMediaMulti
 import com.fpf.smartscan.search.dedupe
 import com.fpf.smartscan.search.getPaginatedResult
@@ -42,6 +43,9 @@ import com.fpf.smartscan.services.refreshIndex
 import com.fpf.smartscan.services.startIndexing
 import com.fpf.smartscan.ui.permissions.StorageAccess
 import com.fpf.smartscan.ui.permissions.getStorageAccess
+import com.fpf.smartscan.ui.state.SearchState
+import com.fpf.smartscan.ui.state.common.SelectionState
+import com.fpf.smartscan.ui.utils.SelectionUtils
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.media.getBitmapFromUri
 import com.fpf.smartscansdk.ml.models.ModelAssetSource
@@ -53,6 +57,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicBoolean
 
 
@@ -126,7 +131,8 @@ class SearchViewModel(
             is SearchAction.ViewResult -> viewResult(action.context, action.item, action.autoOpenInGallery)
             is SearchAction.ToggleSelectedResult -> toggleSelectedResult(action.item)
             is SearchAction.Reset -> reset()
-            SearchAction.ClearResultView -> clearResultView()
+            is SearchAction.ClearResultView -> clearResultView()
+            is SearchAction.SetSelectAll -> setSelectAll(action.selectAll)
         }
     }
 
@@ -182,7 +188,7 @@ class SearchViewModel(
         _state.update{ it.copy(
             totalResults = 0,
             searchResults = emptyList(),
-            selectedResults = emptySet(),
+            selection = SelectionState(),
             resultToView = null,
             error = null,
             tagFilter = null,
@@ -396,15 +402,17 @@ class SearchViewModel(
     }
 
     private fun copyItem(clipboard: Clipboard, context: Context){
-        clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", _state.value.selectedResults.first().uri))
         viewModelScope.launch {
+            val itemToCopy = getSelectedResults().first().uri
+            clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", itemToCopy))
             clearSelectedResults()
         }
     }
 
     private fun shareItems(context: Context){
-        shareMediaMulti(context, _state.value.selectedResults.map{it.uri})
         viewModelScope.launch {
+            val selected = getSelectedResults()
+            shareMediaMulti(context, selected.map{it.uri})
             clearSelectedResults()
         }
     }
@@ -418,26 +426,13 @@ class SearchViewModel(
         }
     }
 
-    private fun toggleSelectedResult(item: MediaItem){
-        _state.update { currentState ->
-            if (item in currentState.selectedResults) {
-                val updatedSelectedResults = currentState.selectedResults - item
-                currentState.copy(selectedResults = updatedSelectedResults)
-            } else {
-                val updatedSelectedResults = currentState.selectedResults + item
-                currentState.copy(selectedResults = updatedSelectedResults)
-            }
-        }
-    }
-
-    fun clearSelectedResults(){
-        _state.update{currentState -> currentState.copy(selectedResults = emptySet())}
-    }
+    fun clearSelectedResults() = _state.update{it.copy(selection = SelectionUtils.clearSelection(it.selection))}
 
     private fun tagItems(tag: String){
         viewModelScope.launch(Dispatchers.IO) {
             try {
-              tagManager.tagItems(tag, _state.value.selectedResults)
+                val selected = getSelectedResults()
+              tagManager.tagItems(tag, selected)
             }finally {
                 clearSelectedResults()
             }
@@ -462,6 +457,29 @@ class SearchViewModel(
         searchFieldState.edit { replace(0, searchFieldState.text.length, "#$tag ") }
     }
     private fun getStore() = if(_state.value.mediaType == MediaType.VIDEO) videoStore else imageStore
+
+    private fun toggleSelectedResult(item: MediaItem){
+        _state.update { it.copy(selection = SelectionUtils.toggleSelectedItem(it.selection, item, it.totalResults)) }
+    }
+
+    private fun setSelectAll(selectAll: Boolean) {
+        _state.update { it.copy(selection = SelectionUtils.setSelectAll(it.selection, selectAll, it.totalResults))}
+    }
+
+    private suspend fun getSelectedResults(): Set<MediaItem> = SelectionUtils.getSelectedItems(_state.value.selection){getAllResults()}
+
+    private suspend fun getAllResults(): MutableSet<MediaItem> {
+        return withContext(Dispatchers.IO) {
+            val mediaMetadataList = mediaMetadataRepository.getByIds(cachedIds)
+            mediaMetadataList.map {
+                MediaItem(
+                    id = it.id,
+                    uri = mediaIdToUri(it.id, it.type),
+                    type = it.type
+                )
+            }.toMutableSet()
+        }
+    }
 
     override fun onCleared() {
         textEmbedder.closeSession()

@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.compose.ui.platform.Clipboard
 import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.media.MediaType
+import com.fpf.smartscan.ui.screens.collections.CollectionItemAction
 
 sealed interface SearchAction {
     data class Search(val similarityThreshold: Float, val dedupeEnabled: Boolean, val dedupeThreshold: Float): SearchAction
@@ -19,6 +20,8 @@ sealed interface SearchAction {
     data class SetMediaTypeFilter(val mediaType: MediaType): SearchAction
     data class CopyResult(val clipboard: Clipboard, val context: Context): SearchAction
     data class ShareResults(val context: Context): SearchAction
+
+    data class SetSelectAll(val selectAll: Boolean): SearchAction
     data object RemoveUploadedImage: SearchAction
     data object ClearDateFilters: SearchAction
     data object Index: SearchAction

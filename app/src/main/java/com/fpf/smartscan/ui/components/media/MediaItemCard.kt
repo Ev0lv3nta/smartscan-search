@@ -34,7 +34,7 @@ fun MediaItemCard(
     isSelecting: Boolean,
     isChecked: () -> Boolean,
     onToggleSelected: (MediaItem) -> Unit,
-    onViewItem: (MediaItem) -> Unit,
+    onItemClick: (MediaItem) -> Unit,
     modifier: Modifier = Modifier,
     onToggleSelectionMode: () -> Unit,
     onError:((AsyncImagePainter.State.Error) -> Unit)? = null,
@@ -48,7 +48,7 @@ fun MediaItemCard(
                 indication = null,
                 interactionSource = remember { MutableInteractionSource() },
                 onClick = {
-                    if (isSelecting) onToggleSelected(item) else onViewItem(item)
+                    if (isSelecting) onToggleSelected(item) else onItemClick(item)
                 },
                 onLongClick = {
                     if (!isSelecting) {
@@ -79,7 +79,7 @@ fun MediaItemCard(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {
-                        onViewItem(item)
+                        onItemClick(item)
                     }
                     .offset((-8).dp, (-8).dp)
                     .align(Alignment.BottomEnd)
