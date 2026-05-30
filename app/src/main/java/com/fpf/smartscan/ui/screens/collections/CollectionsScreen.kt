@@ -64,6 +64,7 @@ import com.fpf.smartscan.events.CollectionEventType
 import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
 import com.fpf.smartscan.navigation.TopBarState
+import com.fpf.smartscan.ui.components.SelectionHeaderRow
 import com.fpf.smartscan.ui.components.actions.ActionBar
 import com.fpf.smartscan.ui.components.actions.ActionConfig
 import com.fpf.smartscan.ui.components.menus.MenuItemConfig
@@ -97,6 +98,7 @@ fun CollectionsScreen(
     var isTaggingClusters by remember { mutableStateOf(false) }
     var isCreatingNewTagAndTaggingClusters by remember { mutableStateOf(false) }
     var isDeletingCollection by remember { mutableStateOf(false) }
+    var isActionBarVisible = isSelecting && state.selectedCount > 0
 
     val actionBarActions: List<ActionConfig> = listOf(
         ActionConfig(label = stringResource(R.string.merge_action), { isMergingCollections = true }, enabled = !state.loading, icon = Icons.Filled.Merge),
@@ -213,12 +215,10 @@ fun CollectionsScreen(
                     .heightIn(max = maxCollapsablePx.dp)
                     .padding(bottom = 8.dp)
             ) {
-                val text = if (state.selectedCollections.isNotEmpty()) "${state.selectedCollections.size} Selected" else "Select items"
-                Text(
-                    text,
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(bottom = 16.dp),
-                    color = MaterialTheme.colorScheme.primary
+                SelectionHeaderRow (
+                    selectedCount = state.selectedCount,
+                    checked = state.selectAll && state.excludedCollections.isEmpty(),
+                    onSelectAllChange = {viewModel.onAction(CollectionAction.SetSelectAll(it))}
                 )
             }
 
@@ -320,7 +320,9 @@ fun CollectionsScreen(
                     offset = 0
                 },
                 onOffsetChange = {  offset = it },
-                maxCollapsePx = maxCollapsablePx
+                maxCollapsePx = maxCollapsablePx,
+                selectAll = state.selectAll,
+                excludedItems = state.excludedCollections
             )
 
             EmptyCollectionScreen(!isCollectionVisible)
@@ -328,7 +330,7 @@ fun CollectionsScreen(
 
 
         SlideRevealBox(
-            isVisible = isSelecting && state.selectedCollections.isNotEmpty(),
+            isVisible = isActionBarVisible,
             offsetPx = offset,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -455,7 +457,7 @@ fun CollectionsScreen(
     }
 
     if ( isDeletingCollection) {
-        val count = state.selectedCollections.size
+        val count = state.selectedCount
         val alertTitle = stringResource(R.string.collections_delete_collections_alert_title)
         val alertDescription = stringResource(
             R.string.collections_delete_collections_alert_description,

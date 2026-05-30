@@ -7,6 +7,9 @@ data class CollectionsState(
     val groupBySimilarity: Boolean = true,
     val loading: Boolean = false,
     val collectToView: MediaCollection? = null,
+    val totalCollections: Int = 0,
     val selectedCollections: Set<MediaCollection> = emptySet(),
-    val totalCollections: Int = 0
+    val excludedCollections: Set<MediaCollection> = emptySet(),
+    val selectAll: Boolean = false,
+    val selectedCount: Int = 0
 )

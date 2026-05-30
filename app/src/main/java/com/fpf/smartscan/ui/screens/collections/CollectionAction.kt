@@ -9,7 +9,8 @@ sealed interface CollectionAction {
     data class TagClusters(val tagId: Long): CollectionAction
     data class ToggleSelectedCollection(val collection: MediaCollection): CollectionAction
     data class SetCollectionToView(val collection: MediaCollection?): CollectionAction
-    data object DeleteCollections : CollectionAction
     data class SetGroupBySimilarity(val groupBySimilarity: Boolean) : CollectionAction
+    data class SetSelectAll(val selectAll: Boolean): CollectionAction
+    data object DeleteCollections : CollectionAction
     data object ToggleViewAllCollections: CollectionAction
 }

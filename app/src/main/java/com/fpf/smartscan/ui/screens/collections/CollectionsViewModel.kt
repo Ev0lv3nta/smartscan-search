@@ -16,6 +16,8 @@ import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.events.CollectionEvent
 import com.fpf.smartscan.events.CollectionEventType
+import com.fpf.smartscan.media.MediaItem
+import com.fpf.smartscan.media.mediaIdToUri
 import com.fpf.smartscan.tag.TagManager
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +28,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -113,10 +116,11 @@ class CollectionsViewModel(
             is CollectionAction.SetGroupBySimilarity -> setGroupingMode(action.groupBySimilarity)
             is CollectionAction.DeleteCollections -> deleteCollections()
             is CollectionAction.ToggleViewAllCollections -> toggleViewAllCollections()
+            is CollectionAction.SetSelectAll -> setSelectAll(action.selectAll)
         }
     }
 
-    fun clearSelectedCollections() = _state.update{ it.copy(selectedCollections = emptySet())}
+    fun clearSelectedCollections() = _state.update{ it.copy(selectedCollections = emptySet(), excludedCollections = emptySet(), selectAll = false, selectedCount = 0)}
 
     private fun renameCollection(newName: String){
         val collection = _state.value.selectedCollections.first()
@@ -143,7 +147,8 @@ class CollectionsViewModel(
     private fun deleteCollections(){
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                tagRepository.deleteTagsByName(_state.value.selectedCollections.map{it.name})
+                val selectedCollections = getSelectedCollections()
+                tagRepository.deleteTagsByName(selectedCollections.map{it.name})
                 clearSelectedCollections()
                 _event.emit(CollectionEvent(CollectionEventType.DELETE, success = true))
             }catch (e: Exception){
@@ -154,13 +159,13 @@ class CollectionsViewModel(
     }
 
     private fun mergeCollections(primaryCollectionName: String, isNewMergedLabel: Boolean){
-        val currentState = _state.value
-        val selectedCollections = currentState.selectedCollections
-        var primaryCollection = selectedCollections.firstOrNull{it.name == primaryCollectionName}
         _state.update { it.copy(loading = true) }
 
         viewModelScope.launch (Dispatchers.IO) {
             try {
+                val selectedCollections = getSelectedCollections()
+                var primaryCollection = selectedCollections.firstOrNull{it.name == primaryCollectionName}
+
                 if(isNewMergedLabel) {
                     primaryCollection = selectedCollections.firstOrNull()
                     primaryCollection?.let { collection ->
@@ -201,11 +206,10 @@ class CollectionsViewModel(
     }
 
     private fun tagClusterCollections(tagId: Long){
-        val selectedCollections = _state.value.selectedCollections
         _state.update { it.copy(loading = true) }
-
         viewModelScope.launch (Dispatchers.IO) {
             try {
+                val selectedCollections = getSelectedCollections()
                 selectedCollections.forEach { tagCluster(it.id, tagId) }
                 clearSelectedCollections()
                 _event.emit(CollectionEvent(CollectionEventType.COPY, success = true))
@@ -219,11 +223,11 @@ class CollectionsViewModel(
     }
 
     private fun createNewTagAndTagClusters(newTag: String){
-        val selectedCollections = _state.value.selectedCollections
         _state.update { it.copy(loading = true) }
 
         viewModelScope.launch (Dispatchers.IO) {
             try {
+                val selectedCollections = getSelectedCollections()
                 val tagId = tagRepository.insertTags(listOf(Tag(name = newTag))).firstOrNull()?: return@launch
                 selectedCollections.forEach { tagCluster(it.id, tagId) }
                 clearSelectedCollections()
@@ -244,19 +248,7 @@ class CollectionsViewModel(
         Log.d(TAG, "groupBySimilarity: $groupBySimilarity")
         _state.update { it.copy(groupBySimilarity = groupBySimilarity) }
     }
-
-
-    private fun toggleSelectedCollection(collection: MediaCollection){
-        _state.update { currentState ->
-            if (collection in currentState.selectedCollections) {
-                val updatedSelectedResults = currentState.selectedCollections - collection
-                currentState.copy(selectedCollections = updatedSelectedResults)
-            } else {
-                val updatedSelectedResults = currentState.selectedCollections + collection
-                currentState.copy(selectedCollections = updatedSelectedResults)
-            }
-        }
-    }
+    
 
     private fun toggleViewAllCollections(){
         _state.update{ it.copy(showAllCollections = !it.showAllCollections)}
@@ -264,5 +256,77 @@ class CollectionsViewModel(
 
     private fun setCollectionToView(collection: MediaCollection?){
         _state.update { it.copy(collectToView = collection) }
+    }
+
+
+ 
+    private fun toggleSelectedCollection(item: MediaCollection){
+        _state.update {
+            if(it.selectAll){
+                if (item in it.excludedCollections) {
+                    val updatedExcludedResults = it.excludedCollections - item
+                    val safeCount = ( it.selectedCount + 1).coerceAtLeast(0 )
+                    it.copy(excludedCollections = updatedExcludedResults, selectedCount =safeCount)
+                } else {
+                    val safeCount = ( it.selectedCount - 1).coerceAtMost(it.totalCollections )
+                    val updatedExcludedResults = it.excludedCollections + item
+                    it.copy(excludedCollections = updatedExcludedResults, selectedCount = safeCount)
+                }
+            }
+            else{
+                if (item in it.selectedCollections) {
+                    val safeCount = ( it.selectedCount - 1).coerceAtLeast(0 )
+                    val updatedSelectedResults = it.selectedCollections - item
+                    it.copy(selectedCollections = updatedSelectedResults, selectedCount = safeCount)
+                } else {
+                    val safeCount = ( it.selectedCount + 1).coerceAtMost(it.totalCollections )
+                    val updatedSelectedResults = it.selectedCollections + item
+                    it.copy(selectedCollections = updatedSelectedResults, selectedCount = safeCount)
+                }
+            }
+        }
+    }
+
+    private fun setSelectAll(selectAll: Boolean) {
+        val currentState = _state.value
+        if(currentState.selectAll && currentState.excludedCollections.isNotEmpty()){
+            _state.update { it.copy(selectAll = true, selectedCollections = emptySet(), excludedCollections = emptySet())}
+        }else{
+            _state.update { it.copy(selectAll = selectAll, selectedCollections = emptySet(), excludedCollections = emptySet())}
+        }
+
+        _state.update { it.copy(selectedCount=getSelectedCount()) }
+    }
+
+    private suspend fun getSelectedCollections(): Set<MediaCollection>{
+        val currentState = state.value
+        return if(currentState.selectAll){
+            val items = if (currentState.groupBySimilarity ){
+               if(currentState.showAllCollections) {
+                   clusterCollections.value
+               } else {
+                   clusterManager.toCollections(clusterCrossRefRepository.getClustersWithCount().first() )
+               }
+            }else{
+                if(currentState.showAllCollections) {
+                    tagCollections.value
+                } else {
+                    tagManager.tagsToCollections(tagCrossRefRepository.getTagsWithCounts().first())
+                }
+            }.toMutableSet()
+            items.removeAll(currentState.excludedCollections)
+            items
+        }else{
+            currentState.selectedCollections
+        }
+    }
+
+    private fun getSelectedCount(): Int{
+        val currentState = _state.value
+        return if(currentState.selectAll){
+            if(currentState.excludedCollections.isEmpty()) currentState.totalCollections else currentState.totalCollections - currentState.excludedCollections.size
+        }else{
+            currentState.selectedCollections.size
+        }
     }
 }
