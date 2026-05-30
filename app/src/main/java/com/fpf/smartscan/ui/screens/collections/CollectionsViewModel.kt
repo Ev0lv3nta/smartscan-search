@@ -242,7 +242,10 @@ class CollectionsViewModel(
         }
     }
 
-    private fun setGroupingMode(groupBySimilarity: Boolean) = _state.update { it.copy(groupBySimilarity = groupBySimilarity) }
+    private fun setGroupingMode(groupBySimilarity: Boolean) {
+        clearSelectedCollections()
+        _state.update { it.copy(groupBySimilarity = groupBySimilarity) }
+    }
 
     private fun toggleViewAllCollections() = _state.update{ it.copy(showAllCollections = !it.showAllCollections)}
     private fun setCollectionToView(collection: MediaCollection?) = _state.update { it.copy(collectToView = collection) }
