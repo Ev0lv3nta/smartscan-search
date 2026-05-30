@@ -1,4 +1,4 @@
-package com.fpf.smartscan.ui.screens.collections
+package com.fpf.smartscan.ui.action
 
 import com.fpf.smartscan.media.MediaCollection
 

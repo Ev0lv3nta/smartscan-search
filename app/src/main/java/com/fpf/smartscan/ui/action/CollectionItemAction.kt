@@ -1,4 +1,4 @@
-package com.fpf.smartscan.ui.screens.collections
+package com.fpf.smartscan.ui.action
 
 import android.content.Context
 import androidx.compose.ui.platform.Clipboard

@@ -41,6 +41,7 @@ import com.fpf.smartscan.search.parseQuery
 import com.fpf.smartscan.services.rebuildIndex
 import com.fpf.smartscan.services.refreshIndex
 import com.fpf.smartscan.services.startIndexing
+import com.fpf.smartscan.ui.action.SearchAction
 import com.fpf.smartscan.ui.permissions.StorageAccess
 import com.fpf.smartscan.ui.permissions.getStorageAccess
 import com.fpf.smartscan.ui.state.SearchState

@@ -1,4 +1,4 @@
-package com.fpf.smartscan.ui.components.actions
+package com.fpf.smartscan.ui.action
 
 import androidx.compose.ui.graphics.vector.ImageVector
 

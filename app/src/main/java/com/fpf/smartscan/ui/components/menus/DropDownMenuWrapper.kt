@@ -17,10 +17,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import com.fpf.smartscan.ui.action.MenuActionConfig
 
 @Composable
 fun DropDownMenuWrapper(
-    actions: List<MenuItemConfig>,
+    actions: List<MenuActionConfig>,
     expanded: Boolean,
     onClose: () -> Unit,
     offset: DpOffset = DpOffset(x = 0.dp, y = (-40).dp),
@@ -35,7 +36,7 @@ fun DropDownMenuWrapper(
     ) {
         for (action in actions){
             when(action){
-                is MenuItemConfig.Button -> DropdownMenuItem(
+                is MenuActionConfig.Button -> DropdownMenuItem(
                     enabled = action.enabled,
                     text = { Text(action.label) },
                     onClick = {
@@ -43,7 +44,7 @@ fun DropDownMenuWrapper(
                         action.onClick()
                     }
                 )
-                is MenuItemConfig.Switch -> Row(
+                is MenuActionConfig.Switch -> Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier

@@ -1,11 +1,10 @@
-package com.fpf.smartscan.ui.screens.search
+package com.fpf.smartscan.ui.action
 
 import android.content.Context
 import android.net.Uri
 import androidx.compose.ui.platform.Clipboard
 import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.media.MediaType
-import com.fpf.smartscan.ui.screens.collections.CollectionItemAction
 
 sealed interface SearchAction {
     data class Search(val similarityThreshold: Float, val dedupeEnabled: Boolean, val dedupeThreshold: Float): SearchAction

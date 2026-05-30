@@ -46,7 +46,8 @@ import com.fpf.smartscan.search.IndexingStatus
 import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.settings.AppSettings
-import com.fpf.smartscan.ui.components.menus.MenuItemConfig
+import com.fpf.smartscan.ui.action.SearchAction
+import com.fpf.smartscan.ui.action.MenuActionConfig
 import com.fpf.smartscan.ui.components.menus.DropDownMenuWrapper
 import com.fpf.smartscan.ui.components.LoadingIndicator
 import com.fpf.smartscan.ui.components.media.MediaViewer
@@ -62,7 +63,7 @@ import com.fpf.smartscan.ui.components.search.SearchBar
 import com.fpf.smartscan.ui.components.search.SearchResults
 import com.fpf.smartscan.ui.components.TagAdder
 import com.fpf.smartscan.ui.components.actions.ActionBar
-import com.fpf.smartscan.ui.components.actions.ActionConfig
+import com.fpf.smartscan.ui.action.ActionConfig
 import com.fpf.smartscan.ui.permissions.RequestPermissions
 import com.fpf.smartscan.ui.screens.search.SearchViewModel.Companion.RESULTS_BATCH_SIZE
 import com.fpf.smartscan.utils.formatDate
@@ -168,9 +169,9 @@ fun SearchScreen(
     // Menu
     var showMenu by remember { mutableStateOf(false) }
 
-    val menuActions: List<MenuItemConfig> = listOf(
-        MenuItemConfig.Button(label = stringResource(R.string.scan_images_action), { showScanImagesDialog = true }, enabled = !isIndexing),
-        MenuItemConfig.Button(label = stringResource(R.string.scan_videos_action), { showScanVideosDialog = true }, enabled=!isIndexing)
+    val menuActions: List<MenuActionConfig> = listOf(
+        MenuActionConfig.Button(label = stringResource(R.string.scan_images_action), { showScanImagesDialog = true }, enabled = !isIndexing),
+        MenuActionConfig.Button(label = stringResource(R.string.scan_videos_action), { showScanVideosDialog = true }, enabled=!isIndexing)
     )
 
     RequestPermissions { _, storageGranted ->

@@ -17,6 +17,7 @@ import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.events.CollectionEvent
 import com.fpf.smartscan.events.CollectionEventType
 import com.fpf.smartscan.tag.TagManager
+import com.fpf.smartscan.ui.action.CollectionAction
 import com.fpf.smartscan.ui.state.CollectionsState
 import com.fpf.smartscan.ui.utils.SelectionUtils
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore

@@ -32,6 +32,7 @@ import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.media.onMediaLoadingError
 import com.fpf.smartscan.media.shareMediaMulti
 import com.fpf.smartscan.tag.TagManager
+import com.fpf.smartscan.ui.action.CollectionItemAction
 import com.fpf.smartscan.ui.state.CollectionItemsState
 import com.fpf.smartscan.ui.utils.SelectionUtils
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore

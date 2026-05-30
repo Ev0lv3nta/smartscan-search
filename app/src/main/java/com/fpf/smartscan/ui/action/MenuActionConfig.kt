@@ -1,8 +1,8 @@
-package com.fpf.smartscan.ui.components.menus
+package com.fpf.smartscan.ui.action
 
 import androidx.compose.ui.graphics.vector.ImageVector
 
-sealed interface MenuItemConfig {
+sealed interface MenuActionConfig {
     val enabled: Boolean
 
     data class Button(
@@ -10,12 +10,12 @@ sealed interface MenuItemConfig {
         val onClick: () -> Unit,
         override val enabled: Boolean = true,
         val icon: ImageVector? = null,
-    ) : MenuItemConfig
+    ) : MenuActionConfig
 
     data class Switch(
         val label: String,
         val checked: Boolean,
         val onCheckedChange: (Boolean) -> Unit,
         override val enabled: Boolean = true,
-    ) : MenuItemConfig
+    ) : MenuActionConfig
 }

@@ -13,7 +13,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -53,13 +52,14 @@ import com.fpf.smartscan.events.CollectionItemEventType
 import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.settings.AppSettings
+import com.fpf.smartscan.ui.action.CollectionItemAction
 import com.fpf.smartscan.ui.components.SelectionHeaderRow
-import com.fpf.smartscan.ui.components.menus.MenuItemConfig
+import com.fpf.smartscan.ui.action.MenuActionConfig
 import com.fpf.smartscan.ui.components.menus.DropDownMenuWrapper
 import com.fpf.smartscan.ui.components.SlideRevealBox
 import com.fpf.smartscan.ui.components.TagAdder
 import com.fpf.smartscan.ui.components.actions.ActionBar
-import com.fpf.smartscan.ui.components.actions.ActionConfig
+import com.fpf.smartscan.ui.action.ActionConfig
 import com.fpf.smartscan.ui.components.collections.CollectionItemsList
 import com.fpf.smartscan.ui.components.collections.CollectionPicker
 import com.fpf.smartscan.ui.components.media.MediaViewer
@@ -127,13 +127,13 @@ fun CollectionItemsScreen(
         ),
     )
 
-    val moreActions: List<MenuItemConfig> = listOf(
-         MenuItemConfig.Button(
+    val moreActions: List<MenuActionConfig> = listOf(
+         MenuActionConfig.Button(
              label = stringResource(R.string.copy_to_clipboard_action),
             { viewModel.onAction(CollectionItemAction.CopyMedia(clipboard, context)) },
         ),
 
-         MenuItemConfig.Button(
+         MenuActionConfig.Button(
              label = stringResource(R.string.add_tag_action),
            { isAddingTag = true },
         ),

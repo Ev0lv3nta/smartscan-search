@@ -26,11 +26,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
 import androidx.compose.material.icons.filled.Merge
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -50,7 +48,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import com.fpf.smartscan.navigation.Routes
 import com.fpf.smartscan.ui.components.modals.SelectorModal
 import com.fpf.smartscan.ui.components.SlideRevealBox
 import com.fpf.smartscan.ui.components.modals.TextInputModal
@@ -64,11 +61,10 @@ import com.fpf.smartscan.events.CollectionEventType
 import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
 import com.fpf.smartscan.navigation.TopBarState
+import com.fpf.smartscan.ui.action.CollectionAction
 import com.fpf.smartscan.ui.components.SelectionHeaderRow
 import com.fpf.smartscan.ui.components.actions.ActionBar
-import com.fpf.smartscan.ui.components.actions.ActionConfig
-import com.fpf.smartscan.ui.components.menus.MenuItemConfig
-import com.fpf.smartscan.ui.components.menus.DropDownMenuWrapper
+import com.fpf.smartscan.ui.action.ActionConfig
 import org.koin.compose.viewmodel.koinViewModel
 
 
@@ -109,7 +105,7 @@ fun CollectionsScreen(
 
     // Menu
     var showMenu by remember { mutableStateOf(false) }
-//    val menuActions: Map<String, MenuItemConfig> = mapOf(
+//    val menuActions: Map<String, MenuActionConfig> = mapOf(
 //    )
     val spaceNotAllowedMessage = stringResource(R.string.alert_space_not_allowed)
 
