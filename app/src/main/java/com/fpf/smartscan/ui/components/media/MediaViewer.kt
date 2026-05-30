@@ -160,16 +160,18 @@ fun ActionRow(
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
-                IconButton(onClick = {
-                    clipboard.nativeClipboard.setPrimaryClip(
-                        ClipData.newUri(context.contentResolver, "smartscan_media", uri)
-                    )
-                }) {
-                    Icon(
-                        Icons.Filled.ContentCopy,
-                        contentDescription = "Copy to clipboard",
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
+                if(type == MediaType.IMAGE) {
+                    IconButton(onClick = {
+                        clipboard.nativeClipboard.setPrimaryClip(
+                            ClipData.newUri(context.contentResolver, "smartscan_media", uri)
+                        )
+                    }) {
+                        Icon(
+                            Icons.Filled.ContentCopy,
+                            contentDescription = "Copy to clipboard",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
                 IconButton(onClick = {
                     if (type == MediaType.IMAGE) {
