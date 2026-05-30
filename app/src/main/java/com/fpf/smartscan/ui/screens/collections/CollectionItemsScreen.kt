@@ -49,7 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.fpf.smartscan.R
-import com.fpf.smartscan.events.MediaEventType
+import com.fpf.smartscan.events.CollectionItemEventType
 import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.settings.AppSettings
@@ -101,33 +101,39 @@ fun CollectionItemsScreen(
     var showMoreActions by remember { mutableStateOf(false) }
     val spaceNotAllowedMessage = stringResource(R.string.alert_space_not_allowed)
 
-    val mainActions:  Map<String, ActionConfig> = mapOf(
-        stringResource(R.string.share_action) to ActionConfig(
-            onClick = { viewModel.onAction(MediaItemAction.ShareMedia(context)) },
+    val mainActions: List<ActionConfig> = listOf(
+        ActionConfig(
+            label = stringResource(R.string.share_action),
+            onClick = { viewModel.onAction(CollectionItemAction.ShareMedia(context)) },
             icon=Icons.Filled.Share
         ),
-        stringResource(R.string.remove_action) to ActionConfig(
-            onClick = { viewModel.onAction(MediaItemAction.RemoveMedia) },
+        ActionConfig(
+            label = stringResource(R.string.remove_action),
+            onClick = { viewModel.onAction(CollectionItemAction.RemoveMedia) },
             enabled = isTagCollection,
             icon=Icons.Filled.RemoveCircle
         ),
-        stringResource(R.string.move_action) to ActionConfig(
+        ActionConfig(
+            label = stringResource(R.string.move_action),
             onClick={ isMoving = true },
             enabled = !state.loading,
             icon = Icons.Default.DriveFileMoveRtl
         ),
-        stringResource(R.string.more_action) to ActionConfig(
+        ActionConfig(
+            label = stringResource(R.string.more_action),
             onClick = { showMoreActions = true },
             icon = Icons.Filled.MoreVert
         ),
     )
 
-    val moreActions:  Map<String, MenuItemConfig> = mapOf(
-        stringResource(R.string.copy_to_clipboard_action) to MenuItemConfig.Button(
-            { viewModel.onAction(MediaItemAction.CopyMedia(clipboard, context)) },
+    val moreActions: List<MenuItemConfig> = listOf(
+         MenuItemConfig.Button(
+             label = stringResource(R.string.copy_to_clipboard_action),
+            { viewModel.onAction(CollectionItemAction.CopyMedia(clipboard, context)) },
         ),
 
-        stringResource(R.string.add_tag_action) to MenuItemConfig.Button(
+         MenuItemConfig.Button(
+             label = stringResource(R.string.add_tag_action),
            { isAddingTag = true },
         ),
     )
@@ -139,7 +145,7 @@ fun CollectionItemsScreen(
     val maxCollapsablePx = with(density) { 70.dp.toPx() }.toInt()
 
     LaunchedEffect(collectionName, clusterId) {
-        viewModel.onAction(MediaItemAction.SetCollectionToView(collectionName, clusterId))
+        viewModel.onAction(CollectionItemAction.SetCollectionToView(collectionName, clusterId))
     }
 
     val screenTitle = collectionName?: UNLABELLED_COLLECTION
@@ -163,7 +169,7 @@ fun CollectionItemsScreen(
     LaunchedEffect(Unit) {
         viewModel.event.collect { event ->
             when(event.type){
-                MediaEventType.MOVE -> {
+                CollectionItemEventType.MOVE -> {
                     if(event.success){
                         isSelecting = false
                         items.refresh()
@@ -172,7 +178,7 @@ fun CollectionItemsScreen(
                         event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                     }
                 }
-                MediaEventType.REMOVE -> {
+                CollectionItemEventType.REMOVE -> {
                     if(event.success){
                         isSelecting = false
                         items.refresh()
@@ -182,7 +188,7 @@ fun CollectionItemsScreen(
                     }
                 }
 
-                MediaEventType.COPY -> {
+                CollectionItemEventType.COPY -> {
                     if(event.success){
                         isSelecting = false
                     }
@@ -191,7 +197,7 @@ fun CollectionItemsScreen(
                     }
                 }
 
-                MediaEventType.SHARE -> {
+                CollectionItemEventType.SHARE -> {
                     if(event.success){
                         isSelecting = false
                     }
@@ -199,7 +205,7 @@ fun CollectionItemsScreen(
                         event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                     }
                 }
-                MediaEventType.TAG -> {
+                CollectionItemEventType.TAG -> {
                     if(event.success){
                         isSelecting = false
                         tagCollectionItems.refresh()
@@ -245,8 +251,8 @@ fun CollectionItemsScreen(
                 items = items,
                 isSelecting = isSelecting,
                 selectedItems = state.selectedMediaItems,
-                onViewItem = { uri -> viewModel.onAction(MediaItemAction.SetMediaToView(context, uri, appSettings.enableDirectGalleryOpen, isSelecting)) },
-                onToggleSelected = { viewModel.onAction(MediaItemAction.ToggleSelectedMedia(it)) },
+                onViewItem = { uri -> viewModel.onAction(CollectionItemAction.SetMediaToView(context, uri, appSettings.enableDirectGalleryOpen, isSelecting)) },
+                onToggleSelected = { viewModel.onAction(CollectionItemAction.ToggleSelectedMedia(it)) },
                 onToggleSelectionMode = {
                     isSelecting = !isSelecting
                     offset = 0
@@ -313,7 +319,7 @@ fun CollectionItemsScreen(
                 MediaViewer(
                     items = mediaItems,
                     initialIndex = mediaItems.indexOf(item),
-                    onClose = { viewModel.onAction(MediaItemAction.SetMediaToView(context, null))},
+                    onClose = { viewModel.onAction(CollectionItemAction.SetMediaToView(context, null))},
                     onUpdateSearchImage = null,
                     onLoadMore = { val lastIndex = (items.itemCount - 1).coerceAtLeast(0)
                         items[lastIndex]}
@@ -336,7 +342,7 @@ fun CollectionItemsScreen(
                 onClose = { isMoving = false },
                 onSelectCollection = {
                     val safeClusterId = if(isTagCollection) null else clusterId
-                    viewModel.onAction(MediaItemAction.MoveMedia( it, safeClusterId))
+                    viewModel.onAction(CollectionItemAction.MoveMedia( it, safeClusterId))
                     isMoving = false
                                      },
                 onCreateNewCollection = if(isTagCollection){
@@ -356,7 +362,7 @@ fun CollectionItemsScreen(
         onClose = {isCreatingCollectionAndMoving = false},
         onConfirm =  {
             // for tags only
-            viewModel.onAction(MediaItemAction.CreateNewTagCollectionAndMove(it))
+            viewModel.onAction(CollectionItemAction.CreateNewTagCollectionAndMove(it))
             isCreatingCollectionAndMoving = false
         },
         leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
@@ -373,7 +379,7 @@ fun CollectionItemsScreen(
     TagAdder(
         isVisible = isAddingTag,
         onAddTag = {
-            viewModel.onAction(MediaItemAction.Tag(it))
+            viewModel.onAction(CollectionItemAction.Tag(it))
             isAddingTag = false
         },
         onClose = {

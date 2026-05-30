@@ -97,11 +97,11 @@ fun CollectionsScreen(
     var isCreatingNewTagAndTaggingClusters by remember { mutableStateOf(false) }
     var isDeletingCollection by remember { mutableStateOf(false) }
 
-    val actionBarActions: Map<String, ActionConfig> = mapOf(
-        stringResource(R.string.merge_action) to ActionConfig({ isMergingCollections = true }, enabled = !state.loading, icon = Icons.Filled.Merge),
-        stringResource(R.string.rename_action) to ActionConfig( { isRenamingCollection = true }, enabled = state.selectedCollections.size == 1, icon = Icons.Filled.DriveFileRenameOutline),
-        stringResource(R.string.add_tag_action) to ActionConfig({ isTaggingClusters = true }, enabled = state.groupBySimilarity, icon = Icons.Filled.Tag),
-        stringResource(R.string.delete_action) to ActionConfig({ isDeletingCollection = true }, enabled = !state.groupBySimilarity, icon = Icons.Filled.Delete)
+    val actionBarActions: List<ActionConfig> = listOf(
+        ActionConfig(label = stringResource(R.string.merge_action), { isMergingCollections = true }, enabled = !state.loading, icon = Icons.Filled.Merge),
+        ActionConfig( label = stringResource(R.string.rename_action), { isRenamingCollection = true }, enabled = state.selectedCollections.size == 1, icon = Icons.Filled.DriveFileRenameOutline),
+        ActionConfig(label=stringResource(R.string.add_tag_action), { isTaggingClusters = true }, enabled = state.groupBySimilarity, icon = Icons.Filled.Tag),
+        ActionConfig(label = stringResource(R.string.delete_action), { isDeletingCollection = true }, enabled = !state.groupBySimilarity, icon = Icons.Filled.Delete)
     )
 
     // Menu

@@ -116,15 +116,17 @@ fun SearchScreen(
     var tagAutoCompleteTagResults by remember { mutableStateOf<List<String>>(emptyList()) }
 
     // action bar actions
-    val actionBarActions: Map<String, ActionConfig> = mapOf(
-        stringResource(R.string.share_action) to ActionConfig(
+    val actionBarActions: List<ActionConfig> = listOf(
+        ActionConfig(
+            label = stringResource(R.string.share_action),
             onClick = {
                 searchViewModel.onAction(SearchAction.ShareResults(context))
                 isSelecting = false
             },
             icon = Icons.Filled.Share
         ),
-        stringResource(R.string.search_action) to ActionConfig(
+        ActionConfig(
+            label = stringResource(R.string.search_action),
             onClick = {
                 isSelecting = false
                 searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(state.selectedResults.first().uri, appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
@@ -133,13 +135,15 @@ fun SearchScreen(
             enabled = state.selectedResults.size == 1 && state.mediaType == MediaType.IMAGE,
             icon = Icons.Filled.Search
         ),
-        stringResource(R.string.copy_action) to ActionConfig(
+        ActionConfig(
+            label = stringResource(R.string.copy_action),
             onClick = {
                 searchViewModel.onAction(SearchAction.CopyResult(clipboard, context))
                 isSelecting = false
             },
             icon = Icons.Filled.ContentCopy),
-        stringResource(R.string.add_tag_action) to ActionConfig(
+        ActionConfig(
+            label = stringResource(R.string.add_tag_action),
             onClick = {
                 isAddingTag = true
                 isSelecting = false
@@ -161,12 +165,10 @@ fun SearchScreen(
 
     // Menu
     var showMenu by remember { mutableStateOf(false) }
-    val scanImagesMenuLabel = stringResource(R.string.scan_images_action)
-    val scanVideosMenuLabel = stringResource(R.string.scan_videos_action)
 
-    val menuActions: Map<String, MenuItemConfig> = mapOf(
-        scanImagesMenuLabel to MenuItemConfig.Button({ showScanImagesDialog = true }, enabled = !isIndexing),
-        scanVideosMenuLabel to MenuItemConfig.Button({ showScanVideosDialog = true }, enabled=!isIndexing)
+    val menuActions: List<MenuItemConfig> = listOf(
+        MenuItemConfig.Button(label = stringResource(R.string.scan_images_action), { showScanImagesDialog = true }, enabled = !isIndexing),
+        MenuItemConfig.Button(label = stringResource(R.string.scan_videos_action), { showScanVideosDialog = true }, enabled=!isIndexing)
     )
 
     RequestPermissions { _, storageGranted ->
