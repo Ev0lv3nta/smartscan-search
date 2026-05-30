@@ -1,6 +1,7 @@
 package com.fpf.smartscan.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -20,13 +21,23 @@ fun SelectionHeaderRow(
 
     Row(
         modifier = Modifier.padding(bottom = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        CircularCheckbox(
-            checked = checked,
-            onCheckedChange = onSelectAllChange
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ){
+            CircularCheckbox(
+                checked = checked,
+                onCheckedChange = onSelectAllChange
+            )
+            Text(
+                text = "All",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
 
         Text(
             text = text,
