@@ -50,6 +50,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import com.fpf.smartscan.R
 import com.fpf.smartscan.events.CollectionItemEventType
 import com.fpf.smartscan.media.MediaCollection
+import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.settings.AppSettings
 import com.fpf.smartscan.ui.action.CollectionItemAction
@@ -131,7 +132,7 @@ fun CollectionItemsScreen(
          MenuActionConfig.Button(
              label = stringResource(R.string.copy_to_clipboard_action),
              onClick = { viewModel.onAction(CollectionItemAction.CopyMedia(clipboard, context)) },
-             enabled = state.selection.selectedItems.size == 1
+             enabled = state.selection.selectedItems.size == 1 && state.selection.selectedItems.first().type == MediaType.IMAGE
         ),
 
          MenuActionConfig.Button(

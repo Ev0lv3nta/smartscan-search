@@ -144,7 +144,7 @@ fun SearchScreen(
                 isSelecting = false
             },
             icon = Icons.Filled.ContentCopy,
-            enabled = state.selection.selectedItems.size == 1 && state.mediaType == MediaType.IMAGE,
+            enabled = state.selection.selectedItems.size == 1 && state.selection.selectedItems.first().type == MediaType.IMAGE
         ),
         ActionConfig(
             label = stringResource(R.string.add_tag_action),
