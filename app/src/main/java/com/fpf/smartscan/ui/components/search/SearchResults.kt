@@ -4,11 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -16,10 +12,8 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,10 +24,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import com.fpf.smartscan.ui.components.media.ImageDisplay
 import kotlinx.coroutines.launch
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -45,14 +36,16 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import coil3.compose.AsyncImagePainter
 import com.fpf.smartscan.media.MediaItem
-import com.fpf.smartscan.ui.components.CircularCheckbox
+import com.fpf.smartscan.ui.components.media.MediaItemCard
 import kotlin.math.roundToInt
 
 @Composable
 fun SearchResults(
     isVisible: Boolean,
+    selectAll: Boolean,
     searchResults: List<MediaItem>,
     selectedResults: Set<MediaItem>,
+    excludedResults: Set<MediaItem>,
     totalResults: Int,
     onLoadMore: () -> Unit,
     onItemClick: (MediaItem) -> Unit,
@@ -141,60 +134,15 @@ fun SearchResults(
             }
 
             items(searchResults, key = { it.id }) { item ->
-                Box(
-                    modifier = Modifier
-                        .aspectRatio(1f)
-                        .padding(2.dp)
-                        .border(1.dp, Color.Gray.copy(alpha = 0.2f))
-                        .combinedClickable(
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() },
-                            onClick = {
-                                if(isSelecting) onToggleSelected(item) else onItemClick(item)
-                            },
-                            onLongClick = {
-                                if(!isSelecting) {
-                                    onToggleSelectionMode()
-                                    onToggleSelected(item)
-                                }
-                            }
-                        )
-                ) {
-                    ImageDisplay(
-                        uri = item.uri,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                        mediaType = item.type,
-                        onError=onError
-                    )
-                    if(isSelecting) {
-                        CircularCheckbox(
-                            checked = item in selectedResults,
-                            onCheckedChange = { onToggleSelected(item) },
-                            modifier = Modifier
-                                .offset(x = 8.dp, y = 8.dp)
-                                .align(Alignment.TopStart),
-                        )
-                        Box(
-                            modifier = Modifier
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null
-                                ) {
-                                    onItemClick(item)
-                                }
-                                .offset((-8).dp, (-8).dp)
-                                .align(Alignment.BottomEnd)
-                        ) {
-                            Icon(Icons.Filled.OpenInFull, contentDescription = "Expand item", modifier = Modifier
-                                .size(20.dp)
-                                .padding(2.dp)
-                                .background(MaterialTheme.colorScheme.surfaceDim.copy(alpha = 0.5f), RoundedCornerShape(2.dp)
-                                )
-                            )
-                        }
-                    }
-                }
+                MediaItemCard(
+                    item=item,
+                    onItemClick=onItemClick,
+                    onToggleSelected = onToggleSelected,
+                    onToggleSelectionMode = onToggleSelectionMode,
+                    isSelecting = isSelecting,
+                    isChecked = { item in selectedResults || (selectAll && item !in excludedResults)},
+                    onError=onError
+                )
             }
         }
         AnimatedVisibility(

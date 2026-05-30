@@ -51,6 +51,7 @@ import com.fpf.smartscan.ui.components.menus.DropDownMenuWrapper
 import com.fpf.smartscan.ui.components.LoadingIndicator
 import com.fpf.smartscan.ui.components.media.MediaViewer
 import com.fpf.smartscan.ui.components.ProgressBar
+import com.fpf.smartscan.ui.components.SelectionHeaderRow
 import com.fpf.smartscan.ui.components.SelectorIconItem
 import com.fpf.smartscan.ui.components.SlideRevealBox
 import com.fpf.smartscan.ui.components.pickers.DatePickerModal
@@ -63,6 +64,7 @@ import com.fpf.smartscan.ui.components.TagAdder
 import com.fpf.smartscan.ui.components.actions.ActionBar
 import com.fpf.smartscan.ui.components.actions.ActionConfig
 import com.fpf.smartscan.ui.permissions.RequestPermissions
+import com.fpf.smartscan.ui.screens.collections.CollectionItemAction
 import com.fpf.smartscan.ui.screens.search.SearchViewModel.Companion.RESULTS_BATCH_SIZE
 import com.fpf.smartscan.utils.formatDate
 import com.fpf.smartscan.utils.toEpochSeconds
@@ -152,6 +154,7 @@ fun SearchScreen(
         )
 
     // Dynamic hide animation
+    var isActionBarVisible =  isSelecting && state.selectedCount > 0
     var offset by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val actionBarHeight = with(density) { 70.dp.toPx() }
@@ -281,8 +284,11 @@ fun SearchScreen(
                 ) {
                     Column {
                         if (isSelecting) {
-                            val text = if (state.selectedResults.isNotEmpty()) "${state.selectedResults.size} Selected" else "Select items"
-                            Text(text, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp), color = MaterialTheme.colorScheme.primary)
+                            SelectionHeaderRow (
+                                selectedCount = state.selectedCount,
+                                checked = state.selectAll && state.excludedResults.isEmpty(),
+                                onSelectAllChange = {searchViewModel.onAction(SearchAction.SetSelectAll(it))}
+                            )
                         }
 
                         ImageSearcher(
@@ -313,8 +319,11 @@ fun SearchScreen(
                 ) {
                     Column {
                         if (isSelecting) {
-                            val text = if (state.selectedResults.isNotEmpty()) "${state.selectedResults.size} Selected" else "Select items"
-                            Text(text, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp), color = MaterialTheme.colorScheme.primary)
+                            SelectionHeaderRow (
+                                selectedCount = state.selectedCount,
+                                checked = state.selectAll && state.excludedResults.isEmpty(),
+                                onSelectAllChange = {searchViewModel.onAction(SearchAction.SetSelectAll(it))}
+                            )
                         }
 
                         Row(
@@ -431,11 +440,13 @@ fun SearchScreen(
                                         },
                 onOffsetChange = {  offset = it },
                 maxCollapsePx = maxCollapsePx,
-                onError = searchViewModel::onErrorAsyncImage
+                onError = searchViewModel::onErrorAsyncImage,
+                selectAll = state.selectAll,
+                excludedResults = state.excludedResults
             )
         }
         SlideRevealBox(
-            isVisible = isSelecting && state.selectedResults.isNotEmpty(),
+            isVisible = isActionBarVisible,
             offsetPx = offset,
             modifier = Modifier
                 .align(Alignment.BottomCenter)

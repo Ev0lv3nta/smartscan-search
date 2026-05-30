@@ -16,11 +16,14 @@ data class SearchState(
     val loading: Boolean = false,
     val error: String? = null,
     val resultToView: MediaItem? = null,
-    val selectedResults: Set<MediaItem> = emptySet(),
     val imageEmbedderLastUsage: Long? = null,
     val textEmbedderLastUsage: Long? = null,
     val tagFilter: String? = null,
     val startDateFilter: Long? = null,
     val endDateFilter: Long? = null,
     val tagOnlySearch: Boolean = false,
+    val selectedResults: Set<MediaItem> = emptySet(),
+    val excludedResults: Set<MediaItem> = emptySet(),
+    val selectAll: Boolean = false,
+    val selectedCount: Int = 0
 )
