@@ -27,9 +27,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fpf.smartscan.R
 import androidx.core.net.toUri
 import com.fpf.smartscan.navigation.Routes
-import com.fpf.smartscan.settings.SettingTypes
 import com.fpf.smartscan.constants.colorSchemeDisplayNames
 import com.fpf.smartscan.constants.themeModeDisplayNames
+import com.fpf.smartscan.navigation.SettingsRoutes
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.ui.action.SettingActionConfig
 import com.fpf.smartscan.ui.components.pickers.OptionPicker
@@ -88,17 +88,12 @@ fun SettingsScreen(
     val searchSettingActions: List<SettingActionConfig> = listOf(
         SettingActionConfig.Button(
             label = stringResource(id = R.string.setting_similarity_threshold),
-            onClick = { onNavigate(Routes.settingsDetail(SettingTypes.THRESHOLD)) },
+            onClick = { onNavigate(Routes.settingsDetail(SettingsRoutes.THRESHOLD)) },
             description = stringResource(R.string.setting_similarity_threshold_description)
         ),
         SettingActionConfig.Button(
-            label = stringResource(id = R.string.setting_searchable_image_folders),
-            onClick = { onNavigate(Routes.settingsDetail(SettingTypes.SEARCHABLE_IMG_DIRS)) },
-            description = stringResource(R.string.setting_searchable_folders_description)
-        ),
-        SettingActionConfig.Button(
-            label = stringResource(id = R.string.setting_searchable_video_folders),
-            onClick = { onNavigate(Routes.settingsDetail(SettingTypes.SEARCHABLE_VID_DIRS)) },
+            label = stringResource(id = R.string.setting_allowed_folders),
+            onClick = { onNavigate(Routes.settingsDetail(SettingsRoutes.ALLOWED_FOLDERS)) },
             description = stringResource(R.string.setting_searchable_folders_description)
         ),
         SettingActionConfig.Button(
