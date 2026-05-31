@@ -2,6 +2,7 @@ package com.fpf.smartscan.ui.screens.settings
 
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -29,6 +30,7 @@ import androidx.core.net.toUri
 import com.fpf.smartscan.navigation.Routes
 import com.fpf.smartscan.constants.colorSchemeDisplayNames
 import com.fpf.smartscan.constants.themeModeDisplayNames
+import com.fpf.smartscan.events.BackupEventType
 import com.fpf.smartscan.navigation.SettingsRoutes
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.ui.action.SettingActionConfig
@@ -43,7 +45,8 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel(),
     onNavigate: (String) -> Unit,
     onTopBarChange: (TopBarState) -> Unit,
-    ) {
+    onRestartApp: () -> Unit
+) {
     val appSettings by viewModel.appSettings.collectAsState()
     val isBackupLoading by viewModel.isBackupLoading.collectAsState()
     val isRestoreLoading by viewModel.isRestoreLoading.collectAsState()
@@ -65,6 +68,16 @@ fun SettingsScreen(
         onTopBarChange(
             TopBarState(title = screenTitle)
         )
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.backupEvent.collect { event ->
+            Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+            when(event.type){
+                BackupEventType.RESTORE -> if(event.success) onRestartApp()
+                else -> {}
+            }
+        }
     }
 
     // Actions

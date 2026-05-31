@@ -51,22 +51,11 @@ fun SettingsDetailScreen(
     viewModel: SettingsViewModel,
     onTopBarChange: (TopBarState) -> Unit,
     onBack: () -> Unit,
-    onRestartApp: () -> Unit
 ) {
     val appSettings by viewModel.appSettings.collectAsState()
     val importedModelNames by viewModel.importedModels.collectAsState()
     val context = LocalContext.current
     val availableModels = ModelRegistry.filter {item -> item.key in listOf(ModelName.ALL_MINILM_L6_V2, ModelName.DINOV2_SMALL)}
-
-    LaunchedEffect(Unit) {
-        viewModel.backupEvent.collect { event ->
-            Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
-            when(event.type){
-                BackupEventType.RESTORE -> if(event.success) onRestartApp()
-                else -> {}
-            }
-        }
-    }
 
     LaunchedEffect(Unit) {
         viewModel.modelEvent.collect { event ->
