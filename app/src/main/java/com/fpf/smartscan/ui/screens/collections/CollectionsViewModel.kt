@@ -16,6 +16,7 @@ import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.events.CollectionEvent
 import com.fpf.smartscan.events.CollectionEventType
+import com.fpf.smartscan.media.CollectionType
 import com.fpf.smartscan.tag.TagManager
 import com.fpf.smartscan.ui.action.CollectionAction
 import com.fpf.smartscan.ui.state.CollectionsState
@@ -70,9 +71,9 @@ class CollectionsViewModel(
 
     val clusterCollections: StateFlow<List<MediaCollection>> = combine(
         clusterCrossRefRepository.getClustersWithCount(),
-        _state.map {  it.showAllCollections to  it.groupBySimilarity }.distinctUntilChanged()
-    ) { clusters, ( showAllCollections, viewAutoCollections) ->
-        if(viewAutoCollections){
+        _state.map {  it.showAllCollections to  it.collectionType }.distinctUntilChanged()
+    ) { clusters, ( showAllCollections, collectionType) ->
+        if(collectionType == CollectionType.CLUSTER){
             _state.update { it.copy(totalCollections = clusters.size) }
         }
         val filteredClusters = if (showAllCollections) clusters else clusters.take(TOP_N)
@@ -87,13 +88,13 @@ class CollectionsViewModel(
 
     val tagCollections: StateFlow<List<MediaCollection>> = combine(
         tagCrossRefRepository.getTagsWithCounts(),
-        _state.map {  it.showAllCollections to  it.groupBySimilarity }.distinctUntilChanged()
-    ) { tagsWithCount, ( showAllCollections, viewAutoCollections) ->
-        if(!viewAutoCollections){
+        _state.map {  it.showAllCollections to  it.collectionType }.distinctUntilChanged()
+    ) { tagsWithCount, ( showAllCollections, collectionType) ->
+        if(collectionType == CollectionType.TAG){
             _state.update { it.copy(totalCollections = tagsWithCount.size) }
         }
         val tags = if (showAllCollections) tagsWithCount else tagsWithCount.take(TOP_N)
-        tagManager.tagsToCollections(tags)
+        tagManager.toCollections(tags)
     }.flowOn(Dispatchers.IO)
         .stateIn(
             scope = viewModelScope,
@@ -111,7 +112,7 @@ class CollectionsViewModel(
             is CollectionAction.CreateNewTagAndTagClusters -> createNewTagAndTagClusters(action.newName)
             is CollectionAction.ToggleSelectedCollection -> toggleSelectedCollection(action.collection)
             is CollectionAction.SetCollectionToView -> setCollectionToView(action.collection)
-            is CollectionAction.SetGroupBySimilarity -> setGroupingMode(action.groupBySimilarity)
+            is CollectionAction.SetCollectionType -> setCollectionType(action.type)
             is CollectionAction.DeleteCollections -> deleteCollections()
             is CollectionAction.ToggleViewAllCollections -> toggleViewAllCollections()
             is CollectionAction.SetSelectAll -> setSelectAll(action.selectAll)
@@ -129,10 +130,9 @@ class CollectionsViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             try{
                 val collection = getSelectedCollections().first()
-                if(_state.value.groupBySimilarity){
-                    clusterManager.updateLabel(collection.id, newName)
-                }else{
-                    tagManager.renameTag(collection.name, newName)
+                when (collection.type) {
+                    CollectionType.CLUSTER -> clusterManager.updateLabel(collection.id, newName)
+                    CollectionType.TAG -> tagManager.renameTag(collection.name, newName)
                 }
                 resetSelection()
                 _event.emit(CollectionEvent(CollectionEventType.RENAME, success = true))
@@ -172,20 +172,18 @@ class CollectionsViewModel(
                 if(isNewMergedLabel) {
                     primaryCollection = selectedCollections.firstOrNull()
                     primaryCollection?.let { collection ->
-                        if (collection.isAutoCollection) {
-                            clusterManager.updateLabel(collection.id, primaryCollectionName)
-                        } else {
-                            tagManager.renameTag(collection.name, primaryCollectionName)
+                        when (collection.type) {
+                            CollectionType.CLUSTER -> clusterManager.updateLabel(collection.id, primaryCollectionName)
+                            CollectionType.TAG -> tagManager.renameTag(collection.name, primaryCollectionName)
                         }
                     }
                 }
 
                 primaryCollection?.let { collection ->
                     val otherCollections = selectedCollections.filter { selectedCollection -> selectedCollection.id != collection.id }
-                    if (collection.isAutoCollection) {
-                        clusterManager.mergeClusters(collection.id, otherCollections.map { it.id }, imageStore, videoStore)
-                    } else {
-                        tagManager.mergeTags(primaryCollectionName, otherCollections.map { it.name })
+                    when (collection.type) {
+                        CollectionType.CLUSTER -> clusterManager.mergeClusters(collection.id, otherCollections.map { it.id }, imageStore, videoStore)
+                        CollectionType.TAG -> tagManager.mergeTags(primaryCollectionName, otherCollections.map { it.name })
                     }
                 }
                 resetSelection()
@@ -230,9 +228,9 @@ class CollectionsViewModel(
         }
     }
 
-    private fun setGroupingMode(groupBySimilarity: Boolean) {
+    private fun setCollectionType(type: CollectionType) {
         resetSelection()
-        _state.update { it.copy(groupBySimilarity = groupBySimilarity) }
+        _state.update { it.copy(collectionType = type) }
     }
 
     private fun toggleViewAllCollections() = _state.update{ it.copy(showAllCollections = !it.showAllCollections)}
@@ -249,17 +247,20 @@ class CollectionsViewModel(
 
     private suspend fun getAllCollections(): MutableSet<MediaCollection>{
         val currentState = state.value
-        return if (currentState.groupBySimilarity ){
-            if(currentState.showAllCollections) {
-                clusterCollections.value
-            } else {
-                clusterManager.toCollections(clusterCrossRefRepository.getClustersWithCount().first() )
+        return when (currentState.collectionType ){
+            CollectionType.CLUSTER -> {
+                if(currentState.showAllCollections) {
+                    clusterCollections.value
+                } else {
+                    clusterManager.toCollections(clusterCrossRefRepository.getClustersWithCount().first() )
+                }
             }
-        }else{
-            if(currentState.showAllCollections) {
-                tagCollections.value
-            } else {
-                tagManager.tagsToCollections(tagCrossRefRepository.getTagsWithCounts().first())
+            CollectionType.TAG -> {
+                if(currentState.showAllCollections) {
+                    tagCollections.value
+                } else {
+                    tagManager.toCollections(tagCrossRefRepository.getTagsWithCounts().first())
+                }
             }
         }.toMutableSet()
     }

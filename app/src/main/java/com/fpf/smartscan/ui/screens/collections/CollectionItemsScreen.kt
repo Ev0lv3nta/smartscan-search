@@ -49,6 +49,7 @@ import androidx.compose.ui.zIndex
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.fpf.smartscan.R
 import com.fpf.smartscan.events.CollectionItemEventType
+import com.fpf.smartscan.media.CollectionType
 import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.navigation.TopBarState
@@ -92,7 +93,14 @@ fun CollectionItemsScreen(
     val clusterCollections by viewModel.clusterCollections.collectAsState()
     val tagCollectionItems = viewModel.tagItems.collectAsLazyPagingItems()
     val clusterCollectionItems = viewModel.clusterItems.collectAsLazyPagingItems()
-    val items = if(collection.isAutoCollection)  clusterCollectionItems else tagCollectionItems
+    val items = when(collection.type){
+        CollectionType.TAG -> tagCollectionItems
+        CollectionType.CLUSTER -> clusterCollectionItems
+    }
+    val pickerCollections = when(collection.type){
+        CollectionType.TAG -> tagCollections
+        CollectionType.CLUSTER -> clusterCollections
+    }
 
     // actions
     var isMoving by remember { mutableStateOf(false) }
@@ -110,7 +118,7 @@ fun CollectionItemsScreen(
         ActionConfig(
             label = stringResource(R.string.remove_action),
             onClick = { viewModel.onAction(CollectionItemAction.RemoveMedia) },
-            enabled = !collection.isAutoCollection,
+            enabled = collection.type == CollectionType.TAG,
             icon=Icons.Filled.RemoveCircle
         ),
         ActionConfig(
@@ -324,13 +332,13 @@ fun CollectionItemsScreen(
             )
         ) {
             CollectionPicker(
-                collections = if(collection.isAutoCollection) clusterCollections else tagCollections,
+                collections = pickerCollections,
                 onClose = { isMoving = false },
                 onSelectCollection = {
                     viewModel.onAction(CollectionItemAction.MoveMedia( it))
                     isMoving = false
                                      },
-                onCreateNewCollection = if(!collection.isAutoCollection){
+                onCreateNewCollection = if(collection.type == CollectionType.TAG){
                     {
                         isMoving = false
                         isCreatingCollectionAndMoving = true

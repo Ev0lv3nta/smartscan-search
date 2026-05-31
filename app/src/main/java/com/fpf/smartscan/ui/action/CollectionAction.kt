@@ -1,5 +1,6 @@
 package com.fpf.smartscan.ui.action
 
+import com.fpf.smartscan.media.CollectionType
 import com.fpf.smartscan.media.MediaCollection
 
 sealed interface CollectionAction {
@@ -8,7 +9,7 @@ sealed interface CollectionAction {
     data class CreateNewTagAndTagClusters(val newName: String): CollectionAction
     data class ToggleSelectedCollection(val collection: MediaCollection): CollectionAction
     data class SetCollectionToView(val collection: MediaCollection?): CollectionAction
-    data class SetGroupBySimilarity(val groupBySimilarity: Boolean) : CollectionAction
+    data class SetCollectionType(val type: CollectionType) : CollectionAction
     data class SetSelectAll(val selectAll: Boolean): CollectionAction
     data object DeleteCollections : CollectionAction
     data object ToggleViewAllCollections: CollectionAction

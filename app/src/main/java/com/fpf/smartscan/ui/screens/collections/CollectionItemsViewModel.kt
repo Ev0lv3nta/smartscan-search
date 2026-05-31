@@ -24,6 +24,7 @@ import com.fpf.smartscan.data.tags.TagCrossRefRepository
 import com.fpf.smartscan.data.tags.TagRepository
 import com.fpf.smartscan.events.CollectionItemEvent
 import com.fpf.smartscan.events.CollectionItemEventType
+import com.fpf.smartscan.media.CollectionType
 import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.mediaIdToUri
@@ -144,7 +145,7 @@ class CollectionItemsViewModel(
     val tagCollections: StateFlow<List<MediaCollection>> = combine(
         tagCrossRefRepository.getTagsWithCounts(),
         _state.map { it.mediaType }
-    ) { tagCounts, mediaType -> tagManager.tagsToCollections(tagCounts)
+    ) { tagCounts, mediaType -> tagManager.toCollections(tagCounts)
     }.flowOn(Dispatchers.IO).stateIn(
         scope = viewModelScope,
         started = SharingStarted.Lazily,
@@ -208,7 +209,7 @@ class CollectionItemsViewModel(
 
     private fun removeItems(){
         val currentCollection = _state.value.collection?: return
-        if(currentCollection.isAutoCollection) return // Only allowed for tag collections
+        if(currentCollection.type != CollectionType.TAG) return // Only allowed for tag collections
 
         viewModelScope.launch (Dispatchers.IO){
             try {
@@ -231,10 +232,9 @@ class CollectionItemsViewModel(
             try {
                 val items = getSelectedItems()
                 if (items.isEmpty()) return@launch
-                if(newCollection.isAutoCollection){
-                    clusterManager.moveItems(items.map{it.id}, newCollection.id, currentCollection.id, imageEmbedStore = imageStore, videoEmbedStore = videoStore)
-                }else{
-                    tagManager.moveItems(items, currentCollection.name, newCollection.name)
+                when(newCollection.type) {
+                    CollectionType.CLUSTER -> clusterManager.moveItems(items.map{it.id}, newCollection.id, currentCollection.id, imageEmbedStore = imageStore, videoEmbedStore = videoStore)
+                    CollectionType.TAG -> tagManager.moveItems(items, currentCollection.name, newCollection.name)
                 }
                 resetSelection()
                 _event.emit(CollectionItemEvent(CollectionItemEventType.MOVE, success = true, message = "Moved ${items.size} item(s)"))
@@ -302,27 +302,31 @@ class CollectionItemsViewModel(
 
     private suspend fun getSelectedItems(): Set<MediaItem> = SelectionUtils.getSelectedItems(_state.value.selection){getAllItemInCollection()}
 
-    private suspend fun getAllItemInCollection(): MutableSet<MediaItem>{
+    private suspend fun getAllItemInCollection(): MutableSet<MediaItem> {
         val currentState = state.value
-        val currentCollection = currentState.collection?: return mutableSetOf()
-        return if (currentCollection.isAutoCollection ){
-            val itemsMatchingCluster = mediaMetadataRepository.getByCluster(currentCollection.id)
-            itemsMatchingCluster.map {
-                MediaItem(
-                    id=it.id,
-                    uri=mediaIdToUri(it.id, it.type),
-                    type = it.type
-                )
-            }.toMutableSet()
-        }else{
-            val itemsMatchingTag = mediaMetadataRepository.getByTag(currentCollection.id)
-            itemsMatchingTag.map {
-                MediaItem(
-                    id=it.id,
-                    uri=mediaIdToUri(it.id, it.type),
-                    type = it.type
-                )
-            }.toMutableSet()
+        val currentCollection = currentState.collection ?: return mutableSetOf()
+        return when (currentCollection.type) {
+            CollectionType.CLUSTER -> {
+                val itemsMatchingCluster = mediaMetadataRepository.getByCluster(currentCollection.id)
+                itemsMatchingCluster.map {
+                    MediaItem(
+                        id = it.id,
+                        uri = mediaIdToUri(it.id, it.type),
+                        type = it.type
+                    )
+                }.toMutableSet()
+            }
+
+            CollectionType.TAG -> {
+                val itemsMatchingTag = mediaMetadataRepository.getByTag(currentCollection.id)
+                itemsMatchingTag.map {
+                    MediaItem(
+                        id = it.id,
+                        uri = mediaIdToUri(it.id, it.type),
+                        type = it.type
+                    )
+                }.toMutableSet()
+            }
         }
     }
 

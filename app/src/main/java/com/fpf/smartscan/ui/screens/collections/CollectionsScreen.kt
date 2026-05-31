@@ -2,12 +2,6 @@ package com.fpf.smartscan.ui.screens.collections
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -51,13 +45,13 @@ import androidx.compose.ui.zIndex
 import com.fpf.smartscan.ui.components.modals.SelectorModal
 import com.fpf.smartscan.ui.components.common.SlideRevealBox
 import com.fpf.smartscan.ui.components.modals.TextInputModal
-import com.fpf.smartscan.ui.components.collections.CollectionPicker
 import com.fpf.smartscan.ui.components.collections.MediaCollectionsList
 import com.fpf.smartscan.ui.screens.collections.CollectionsViewModel.Companion.TOP_N
 import kotlinx.coroutines.FlowPreview
 import com.fpf.smartscan.R
 import androidx.compose.ui.res.stringResource
 import com.fpf.smartscan.events.CollectionEventType
+import com.fpf.smartscan.media.CollectionType
 import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
 import com.fpf.smartscan.navigation.TopBarState
@@ -82,8 +76,11 @@ fun CollectionsScreen(
     val clusterCollections by viewModel.clusterCollections.collectAsState()
     val tagCollections by viewModel.tagCollections.collectAsState()
 
-    val collections = if(state.groupBySimilarity) clusterCollections else tagCollections
-    val isCollectionVisible = tagCollections.isNotEmpty() && !state.groupBySimilarity || clusterCollections.isNotEmpty() && state.groupBySimilarity
+    val collections = when(state.collectionType) {
+        CollectionType.CLUSTER -> clusterCollections
+        CollectionType.TAG -> tagCollections
+    }
+    val isCollectionVisible = (tagCollections.isNotEmpty() && state.collectionType == CollectionType.TAG) || (clusterCollections.isNotEmpty() && state.collectionType == CollectionType.CLUSTER)
 
     val context = LocalContext.current
 
@@ -97,7 +94,7 @@ fun CollectionsScreen(
     val actionBarActions: List<ActionConfig> = listOf(
         ActionConfig(label = stringResource(R.string.merge_action), { isMergingCollections = true }, enabled = !state.loading, icon = Icons.Filled.Merge),
         ActionConfig( label = stringResource(R.string.rename_action), { isRenamingCollection = true }, enabled = state.selection.selectedItems.size == 1, icon = Icons.Filled.DriveFileRenameOutline),
-        ActionConfig(label = stringResource(R.string.delete_action), { isDeletingCollection = true }, enabled = !state.groupBySimilarity, icon = Icons.Filled.Delete)
+        ActionConfig(label = stringResource(R.string.delete_action), { isDeletingCollection = true }, enabled = state.collectionType == CollectionType.TAG, icon = Icons.Filled.Delete)
     )
 
     // Menu
@@ -142,7 +139,7 @@ fun CollectionsScreen(
 
     val screenTitle = stringResource(R.string.title_collections)
 
-    LaunchedEffect(state.groupBySimilarity) {
+    LaunchedEffect(state.collectionType) {
         onTopBarChange(
             TopBarState(
                 title = screenTitle,
@@ -208,7 +205,7 @@ fun CollectionsScreen(
                         .weight(1f)
                         .clip(RoundedCornerShape(12.dp))
                         .background(
-                            if (state.groupBySimilarity)
+                            if (state.collectionType == CollectionType.CLUSTER)
                                 MaterialTheme.colorScheme.primaryContainer
                             else
                                 MaterialTheme.colorScheme.surfaceContainer
@@ -217,14 +214,14 @@ fun CollectionsScreen(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
                         ) {
-                            viewModel.onAction(CollectionAction.SetGroupBySimilarity(true))
+                            viewModel.onAction(CollectionAction.SetCollectionType(CollectionType.CLUSTER))
                         }
                         .padding(12.dp)
                 ) {
                     Text(
                         "Auto",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (state.groupBySimilarity)
+                        color = if (state.collectionType == CollectionType.CLUSTER)
                             MaterialTheme.colorScheme.onPrimaryContainer
                         else
                             MaterialTheme.colorScheme.onSurface
@@ -243,7 +240,7 @@ fun CollectionsScreen(
                         .weight(1f)
                         .clip(RoundedCornerShape(12.dp))
                         .background(
-                            if (!state.groupBySimilarity)
+                            if (state.collectionType == CollectionType.TAG)
                                 MaterialTheme.colorScheme.primaryContainer
                             else
                                 MaterialTheme.colorScheme.surfaceContainer
@@ -252,14 +249,14 @@ fun CollectionsScreen(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
                         ) {
-                            viewModel.onAction(CollectionAction.SetGroupBySimilarity(false))
+                            viewModel.onAction(CollectionAction.SetCollectionType(CollectionType.TAG))
                         }
                         .padding(12.dp)
                 ) {
                     Text(
                         "Tags",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (!state.groupBySimilarity)
+                        color = if (state.collectionType == CollectionType.TAG)
                             MaterialTheme.colorScheme.onPrimaryContainer
                         else
                             MaterialTheme.colorScheme.onSurface
