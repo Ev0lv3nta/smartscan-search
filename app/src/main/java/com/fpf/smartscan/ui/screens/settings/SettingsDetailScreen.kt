@@ -3,9 +3,7 @@ package com.fpf.smartscan.ui.screens.settings
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -26,10 +24,7 @@ import com.fpf.smartscan.ui.components.common.CustomSlider
 import com.fpf.smartscan.settings.SettingTypes
 import com.fpf.smartscan.events.BackupEventType
 import com.fpf.smartscan.navigation.TopBarState
-import com.fpf.smartscan.ui.components.BackupAndRestore
-import com.fpf.smartscan.ui.components.SwitchItem
 import com.fpf.smartscan.ui.components.models.ModelsList
-import com.fpf.smartscan.ui.screens.settings.SettingsViewModel.Companion.BACKUP_FILENAME
 import com.fpf.smartscansdk.ml.models.ModelManager
 import com.fpf.smartscansdk.ml.models.ModelName
 import com.fpf.smartscansdk.ml.models.ModelRegistry
@@ -46,8 +41,6 @@ fun SettingsDetailScreen(
 ) {
     val appSettings by viewModel.appSettings.collectAsState()
     val importedModelNames by viewModel.importedModels.collectAsState()
-    val isBackupLoading by viewModel.isBackupLoading.collectAsState()
-    val isRestoreLoading by viewModel.isRestoreLoading.collectAsState()
     val context = LocalContext.current
     val availableModels = ModelRegistry.filter {item -> item.key in listOf(ModelName.ALL_MINILM_L6_V2, ModelName.DINOV2_SMALL)}
 
@@ -73,8 +66,6 @@ fun SettingsDetailScreen(
         SettingTypes.MANAGE_MODELS -> stringResource(R.string.setting_manage_models)
         SettingTypes.SEARCHABLE_IMG_DIRS -> stringResource(R.string.setting_searchable_image_folders)
         SettingTypes.SEARCHABLE_VID_DIRS -> stringResource(R.string.setting_searchable_video_folders)
-        SettingTypes.BACKUP_RESTORE -> stringResource(R.string.setting_backup_restore)
-        SettingTypes.DUPLICATES -> stringResource(R.string.setting_hide_duplicates)
         else -> ""
     }
 
@@ -135,7 +126,6 @@ fun SettingsDetailScreen(
                         directories = appSettings.searchableImageDirectories,
                         addDirectory = { newDir -> viewModel.addSearchableImageDirectory(newDir) },
                         deleteDirectory = { newDir -> viewModel.deleteSearchableImageDirectory(newDir) },
-                        description = stringResource(R.string.setting_searchable_folders_description)
                     )
                 }
                 SettingTypes.SEARCHABLE_VID_DIRS -> {
@@ -143,35 +133,7 @@ fun SettingsDetailScreen(
                         directories = appSettings.searchableVideoDirectories,
                         addDirectory = { newDir -> viewModel.addSearchableVideoDirectory(newDir) },
                         deleteDirectory = { newDir -> viewModel.deleteSearchableVideoDirectory(newDir) },
-                        description = stringResource(R.string.setting_searchable_folders_description)
                     )
-                }
-                SettingTypes.BACKUP_RESTORE -> {
-                    BackupAndRestore(
-                        onBackup = viewModel::backup,
-                        onRestore = viewModel::restore,
-                        backupFilename = BACKUP_FILENAME,
-                        backupLoading = isBackupLoading,
-                        restoreLoading = isRestoreLoading
-                    )
-                }
-                SettingTypes.DUPLICATES -> {
-                    SwitchItem(
-                        text=stringResource(R.string.setting_hide_duplicates),
-                        checked = appSettings.enableDedupe,
-                        onCheckedChange = viewModel::updateEnableDedupe,
-                    )
-                    Spacer(modifier=Modifier.height(8.dp))
-                    CustomSlider(
-                        label = stringResource(R.string.setting_similarity_threshold),
-                        minValue = 0.95f,
-                        maxValue = 1f,
-                        initialValue = appSettings.duplicateThreshold,
-                        onValueChange = { value ->
-                            viewModel.updateDuplicateThreshold(value)
-                        },
-                    )
-
                 }
                 else -> {}
             }
