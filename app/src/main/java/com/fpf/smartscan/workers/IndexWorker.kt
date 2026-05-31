@@ -104,7 +104,7 @@ class IndexWorker(context: Context, workerParams: WorkerParameters) :
 
             if(videoStore.exists){
                 val videoIndexer = VideoIndexer(imageEmbedder, context=applicationContext, listener = null, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
-                indexMedia(applicationContext, MediaType.VIDEO, videoStore,videoIndexer, mediaMetadataRepository,appSettings.searchableImageDirectories.map{it.toUri()})
+                indexMedia(applicationContext, MediaType.VIDEO, videoStore,videoIndexer, mediaMetadataRepository,appSettings.searchableVideoDirectories.map{it.toUri()})
                 embedsToCluster.addAll(videoStore.get())
             }
             clusterManager.cluster(embedsToCluster)

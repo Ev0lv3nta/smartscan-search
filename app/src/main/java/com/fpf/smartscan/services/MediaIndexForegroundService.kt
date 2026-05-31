@@ -124,7 +124,7 @@ class MediaIndexForegroundService : Service(), KoinComponent {
                         }
                         MediaType.VIDEO -> {
                             val videoIndexer = VideoIndexer(imageEmbedder, context=application, listener = VideoIndexListener, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
-                            indexMedia(application, MediaType.VIDEO, videoStore, videoIndexer, metadataRepo,appSettings.searchableImageDirectories.map{it.toUri()})
+                            indexMedia(application, MediaType.VIDEO, videoStore, videoIndexer, metadataRepo,appSettings.searchableVideoDirectories.map{it.toUri()})
                             embedsToCluster.addAll(videoStore.get())
                         }
                     }
