@@ -131,7 +131,7 @@ fun SearchScreen(
         ),
         ActionConfig(
             label = stringResource(R.string.search_action),
-            onClick = { searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(state.selection.selectedItems.first().uri, appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold)) },
+            onClick = { searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(state.selection.selectedItems.first().uri, appSettings.imageSimilarityThreshold, appSettings.enableDedupe)) },
             enabled = state.selection.selectedItems.size == 1 && state.mediaType == MediaType.IMAGE,
             icon = Icons.Filled.Search
         ),
@@ -199,7 +199,7 @@ fun SearchScreen(
     }
 
     LaunchedEffect(Unit) {
-        searchViewModel.externalSearch(intentSearchQuery, appSettings.similarityThreshold, appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold)
+        searchViewModel.externalSearch(intentSearchQuery, appSettings.similarityThreshold, appSettings.imageSimilarityThreshold, appSettings.enableDedupe)
     }
 
     LaunchedEffect(isIndexing) {
@@ -300,7 +300,7 @@ fun SearchScreen(
                             imageSize = 140.dp,
                             mediaTypeSelectorEnabled = (videoIndexStatus != IndexingStatus.ACTIVE && imageIndexStatus != IndexingStatus.ACTIVE), // prevent switching modes when indexing in progress
                             onSearch = {
-                                searchViewModel.onAction(SearchAction.Search(appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
+                                searchViewModel.onAction(SearchAction.Search(appSettings.imageSimilarityThreshold, appSettings.enableDedupe))
                             },
                             onMediaTypeChange = { searchViewModel.onAction(SearchAction.SetMediaTypeFilter(it)) },
                             onRemoveImage = {
@@ -337,10 +337,10 @@ fun SearchScreen(
                                 searchFieldState = searchViewModel.searchFieldState,
                                 enabled = hasStoragePermission && !state.loading && !isIndexing ,
                                 onSearch = {
-                                    searchViewModel.onAction(SearchAction.Search(appSettings.similarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
+                                    searchViewModel.onAction(SearchAction.Search(appSettings.similarityThreshold, appSettings.enableDedupe))
                                 },
                                 onSearchImage = {
-                                    searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(it, appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
+                                    searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(it, appSettings.imageSimilarityThreshold, appSettings.enableDedupe))
                                 },
                                 onClearResults = {
                                     searchViewModel.onAction(SearchAction.Reset)
@@ -477,7 +477,7 @@ fun SearchScreen(
                 onClose = { searchViewModel.onAction(SearchAction.ClearResultView)},
                 onUpdateSearchImage = {
                     searchViewModel.onAction(SearchAction.ClearResultView)
-                    searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(item.uri, appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
+                    searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(item.uri, appSettings.imageSimilarityThreshold, appSettings.enableDedupe))
                 }
             )
         }

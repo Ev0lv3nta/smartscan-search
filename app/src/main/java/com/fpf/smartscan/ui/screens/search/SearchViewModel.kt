@@ -19,7 +19,6 @@ import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
 import com.fpf.smartscan.data.tags.TagRepository
 import com.fpf.smartscan.data.tags.Tag
-import com.fpf.smartscan.events.CollectionItemEvent
 import com.fpf.smartscan.events.SearchEvent
 import com.fpf.smartscan.events.SearchEventType
 import com.fpf.smartscan.media.MediaItem
@@ -81,6 +80,7 @@ class SearchViewModel(
         private const val TAG = "SearchViewModel"
         const val RESULTS_BATCH_SIZE = 36
         private const val MODEL_SHUTDOWN_DURATION_THRESHOLD = 60_000L
+        private const val DEDUPE_THRESHOLD = 0.95f
     }
 
     val imageIndexProgress = ImageIndexListener.progress
@@ -126,7 +126,7 @@ class SearchViewModel(
             is SearchAction.CopyResult -> copyItem(action.clipboard, action.context)
             is SearchAction.SetQueryImageAndSearch -> {
                 setQueryImage(action.image)
-                search(action.similarityThreshold, action.dedupeEnabled, action.dedupeThreshold)
+                search(action.similarityThreshold, action.dedupeEnabled)
             }
             is SearchAction.Index -> index()
             is SearchAction.RebuildIndex -> rebuildMediaIndex(action.mediaType)
@@ -137,7 +137,7 @@ class SearchViewModel(
             is SearchAction.SetStartDateFilter -> setStartDateFilter(action.date)
             is SearchAction.ShareResults -> shareItems(action.context)
             is SearchAction.TagItems -> tagItems(action.tag)
-            is SearchAction.Search -> search(action.similarityThreshold, action.dedupeEnabled, action.dedupeThreshold)
+            is SearchAction.Search -> search(action.similarityThreshold, action.dedupeEnabled)
             is SearchAction.ViewResult -> viewResult(action.context, action.item, action.autoOpenInGallery)
             is SearchAction.ToggleSelectedResult -> toggleSelectedResult(action.item)
             is SearchAction.Reset -> reset()
@@ -213,7 +213,7 @@ class SearchViewModel(
         ) }
     }
 
-    private fun search(threshold: Float, dedupeEnabled: Boolean, duplicateThreshold: Float = 0.95f){
+    private fun search(threshold: Float, dedupeEnabled: Boolean){
         reset()
         val store = getStore()
         if(!store.exists) {
@@ -239,7 +239,7 @@ class SearchViewModel(
                         result
                     }
                 }
-                handleSearchResult(queryResults, store, dedupeEnabled, duplicateThreshold)
+                handleSearchResult(queryResults, store, dedupeEnabled)
             }catch (e: Exception) {
                 Log.e(TAG, "$e")
                 _state.update{it.copy(error = getApplication<Application>().getString(R.string.search_error_unknown))}
@@ -295,8 +295,8 @@ class SearchViewModel(
         return queryResults
     }
 
-    private suspend fun handleSearchResult(queryResults: List<Long>, store: FileEmbeddingStore, dedupeEnabled: Boolean = false, duplicateThreshold: Float = 0.95f) {
-        val finalResults =  if (dedupeEnabled) dedupe(store, queryResults, duplicateThreshold) else queryResults
+    private suspend fun handleSearchResult(queryResults: List<Long>, store: FileEmbeddingStore, dedupeEnabled: Boolean = false) {
+        val finalResults =  if (dedupeEnabled) dedupe(store, queryResults, DEDUPE_THRESHOLD) else queryResults
         cachedIds.addAll(finalResults)
         val totalCount = finalResults.size
         val initialBatch = finalResults.take(RESULTS_BATCH_SIZE) // initial results the rest loaded dynamically
@@ -322,14 +322,14 @@ class SearchViewModel(
             is SearchQuery.ImageQuery -> {
                 setMediaType(intentSearchQuery.mediaType)
                 setQueryImage(intentSearchQuery.uri)
-                search(imageSimilarityThreshold, dedupeEnabled, duplicateThreshold)
+                search(imageSimilarityThreshold, dedupeEnabled)
                 hasHandledExternalSearch = true
             }
 
             is SearchQuery.TextQuery -> {
                 setMediaType(intentSearchQuery.mediaType)
                 searchFieldState.edit { replace(0, searchFieldState.text.length, intentSearchQuery.text) }
-                search( similarityThreshold, dedupeEnabled, duplicateThreshold)
+                search( similarityThreshold, dedupeEnabled)
                 hasHandledExternalSearch = true
             }
         }
