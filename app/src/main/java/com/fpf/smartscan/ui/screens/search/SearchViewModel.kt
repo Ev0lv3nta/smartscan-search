@@ -19,6 +19,9 @@ import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
 import com.fpf.smartscan.data.tags.TagRepository
 import com.fpf.smartscan.data.tags.Tag
+import com.fpf.smartscan.events.CollectionItemEvent
+import com.fpf.smartscan.events.SearchEvent
+import com.fpf.smartscan.events.SearchEventType
 import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.filterAccessibleMediaStoreIds
@@ -53,9 +56,11 @@ import com.fpf.smartscansdk.ml.models.ModelAssetSource
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_X
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
@@ -105,6 +110,10 @@ class SearchViewModel(
     private var hasHandledExternalSearch = false
 
     private var cachedIds= mutableListOf<Long>()
+
+    private val _event = MutableSharedFlow<SearchEvent>()
+    val event = _event.asSharedFlow()
+
 
 
     init {
@@ -436,9 +445,15 @@ class SearchViewModel(
 
     private fun tagItems(tag: String){
         viewModelScope.launch(Dispatchers.IO) {
-            val selected = getSelectedResults()
-            tagManager.tagItems(tag, selected)
-            resetSelection()
+            try {
+                val selected = getSelectedResults()
+                tagManager.tagItems(tag, selected)
+                resetSelection()
+                _event.emit(SearchEvent(SearchEventType.TAG, success = true, message = "Tagged ${selected.size} item(s)"))
+            }catch (e: Exception){
+                Log.e(TAG, "Error tagging results: $e")
+                _event.emit(SearchEvent(SearchEventType.TAG, success = false, message = "Error tagging results"))
+            }
         }
     }
 

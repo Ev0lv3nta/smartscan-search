@@ -1,5 +1,6 @@
 package com.fpf.smartscan.ui.screens.search
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -40,6 +41,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.zIndex
 import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.mediaTypeOptions
+import com.fpf.smartscan.events.CollectionItemEventType
+import com.fpf.smartscan.events.SearchEvent
+import com.fpf.smartscan.events.SearchEventType
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.search.IndexingStatus
@@ -234,6 +238,16 @@ fun SearchScreen(
                 val subStringEnd = searchViewModel.searchFieldState.selection.end
                 tagAutoCompleteTagResults = searchViewModel.handleAutoCompletionCheck(query, subStringEnd)
             }
+    }
+
+    LaunchedEffect(Unit) {
+        searchViewModel.event.collect { event ->
+            when (event.type) {
+                SearchEventType.TAG -> {
+                    event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+                }
+            }
+        }
     }
 
     BackHandler(enabled = state.selection.isSelecting) {
