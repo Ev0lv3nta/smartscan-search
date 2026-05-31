@@ -19,6 +19,8 @@ import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.data.tags.TagCrossRefRepository
 import com.fpf.smartscan.data.tags.TagRepository
 import com.fpf.smartscan.data.tags.Tag
+import com.fpf.smartscan.events.SearchEvent
+import com.fpf.smartscan.events.SearchEventType
 import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.filterAccessibleMediaStoreIds
@@ -53,9 +55,11 @@ import com.fpf.smartscansdk.ml.models.ModelAssetSource
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_X
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
@@ -76,6 +80,7 @@ class SearchViewModel(
         private const val TAG = "SearchViewModel"
         const val RESULTS_BATCH_SIZE = 36
         private const val MODEL_SHUTDOWN_DURATION_THRESHOLD = 60_000L
+        private const val DEDUPE_THRESHOLD = 0.95f
     }
 
     val imageIndexProgress = ImageIndexListener.progress
@@ -106,6 +111,10 @@ class SearchViewModel(
 
     private var cachedIds= mutableListOf<Long>()
 
+    private val _event = MutableSharedFlow<SearchEvent>()
+    val event = _event.asSharedFlow()
+
+
 
     init {
         loadImageIndex()
@@ -117,7 +126,7 @@ class SearchViewModel(
             is SearchAction.CopyResult -> copyItem(action.clipboard, action.context)
             is SearchAction.SetQueryImageAndSearch -> {
                 setQueryImage(action.image)
-                search(action.similarityThreshold, action.dedupeEnabled, action.dedupeThreshold)
+                search(action.similarityThreshold, action.dedupeEnabled)
             }
             is SearchAction.Index -> index()
             is SearchAction.RebuildIndex -> rebuildMediaIndex(action.mediaType)
@@ -128,14 +137,21 @@ class SearchViewModel(
             is SearchAction.SetStartDateFilter -> setStartDateFilter(action.date)
             is SearchAction.ShareResults -> shareItems(action.context)
             is SearchAction.TagItems -> tagItems(action.tag)
-            is SearchAction.Search -> search(action.similarityThreshold, action.dedupeEnabled, action.dedupeThreshold)
+            is SearchAction.Search -> search(action.similarityThreshold, action.dedupeEnabled)
             is SearchAction.ViewResult -> viewResult(action.context, action.item, action.autoOpenInGallery)
             is SearchAction.ToggleSelectedResult -> toggleSelectedResult(action.item)
             is SearchAction.Reset -> reset()
             is SearchAction.ClearResultView -> clearResultView()
             is SearchAction.SetSelectAll -> setSelectAll(action.selectAll)
+            is SearchAction.ToggleSelectionMode -> toggleSelectionMode()
+            is SearchAction.ResetSelection -> resetSelection()
+            is SearchAction.ClearSelection -> clearSelection()
         }
     }
+
+    private fun clearSelection() = _state.update{it.copy(selection = SelectionUtils.clearSelection(it.selection))}
+    private fun resetSelection() = _state.update{it.copy(selection = SelectionUtils.resetSelection(it.selection))}
+    private fun toggleSelectionMode() = _state.update { it.copy(selection = SelectionUtils.toggleSelectionMode(it.selection)) }
 
     private fun loadImageIndex(){
         loadIndex(imageStore)
@@ -197,7 +213,7 @@ class SearchViewModel(
         ) }
     }
 
-    private fun search(threshold: Float, dedupeEnabled: Boolean, duplicateThreshold: Float = 0.95f){
+    private fun search(threshold: Float, dedupeEnabled: Boolean){
         reset()
         val store = getStore()
         if(!store.exists) {
@@ -223,7 +239,7 @@ class SearchViewModel(
                         result
                     }
                 }
-                handleSearchResult(queryResults, store, dedupeEnabled, duplicateThreshold)
+                handleSearchResult(queryResults, store, dedupeEnabled)
             }catch (e: Exception) {
                 Log.e(TAG, "$e")
                 _state.update{it.copy(error = getApplication<Application>().getString(R.string.search_error_unknown))}
@@ -279,8 +295,8 @@ class SearchViewModel(
         return queryResults
     }
 
-    private suspend fun handleSearchResult(queryResults: List<Long>, store: FileEmbeddingStore, dedupeEnabled: Boolean = false, duplicateThreshold: Float = 0.95f) {
-        val finalResults =  if (dedupeEnabled) dedupe(store, queryResults, duplicateThreshold) else queryResults
+    private suspend fun handleSearchResult(queryResults: List<Long>, store: FileEmbeddingStore, dedupeEnabled: Boolean = false) {
+        val finalResults =  if (dedupeEnabled) dedupe(store, queryResults, DEDUPE_THRESHOLD) else queryResults
         cachedIds.addAll(finalResults)
         val totalCount = finalResults.size
         val initialBatch = finalResults.take(RESULTS_BATCH_SIZE) // initial results the rest loaded dynamically
@@ -306,14 +322,14 @@ class SearchViewModel(
             is SearchQuery.ImageQuery -> {
                 setMediaType(intentSearchQuery.mediaType)
                 setQueryImage(intentSearchQuery.uri)
-                search(imageSimilarityThreshold, dedupeEnabled, duplicateThreshold)
+                search(imageSimilarityThreshold, dedupeEnabled)
                 hasHandledExternalSearch = true
             }
 
             is SearchQuery.TextQuery -> {
                 setMediaType(intentSearchQuery.mediaType)
                 searchFieldState.edit { replace(0, searchFieldState.text.length, intentSearchQuery.text) }
-                search( similarityThreshold, dedupeEnabled, duplicateThreshold)
+                search( similarityThreshold, dedupeEnabled)
                 hasHandledExternalSearch = true
             }
         }
@@ -406,7 +422,7 @@ class SearchViewModel(
         viewModelScope.launch {
             val itemToCopy = getSelectedResults().first().uri
             clipboard.nativeClipboard.setPrimaryClip(ClipData.newUri(context.contentResolver, "smartscan_media", itemToCopy))
-            clearSelectedResults()
+            resetSelection()
         }
     }
 
@@ -414,7 +430,7 @@ class SearchViewModel(
         viewModelScope.launch {
             val selected = getSelectedResults()
             shareMediaMulti(context, selected.map{it.uri})
-            clearSelectedResults()
+            resetSelection()
         }
     }
 
@@ -427,15 +443,16 @@ class SearchViewModel(
         }
     }
 
-    fun clearSelectedResults() = _state.update{it.copy(selection = SelectionUtils.clearSelection(it.selection))}
-
     private fun tagItems(tag: String){
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val selected = getSelectedResults()
-              tagManager.tagItems(tag, selected)
-            }finally {
-                clearSelectedResults()
+                tagManager.tagItems(tag, selected)
+                resetSelection()
+                _event.emit(SearchEvent(SearchEventType.TAG, success = true, message = "Tagged ${selected.size} item(s)"))
+            }catch (e: Exception){
+                Log.e(TAG, "Error tagging results: $e")
+                _event.emit(SearchEvent(SearchEventType.TAG, success = false, message = "Error tagging results"))
             }
         }
     }

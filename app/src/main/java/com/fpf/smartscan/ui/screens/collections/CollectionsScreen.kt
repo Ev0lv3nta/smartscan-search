@@ -2,12 +2,6 @@ package com.fpf.smartscan.ui.screens.collections
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -51,13 +45,13 @@ import androidx.compose.ui.zIndex
 import com.fpf.smartscan.ui.components.modals.SelectorModal
 import com.fpf.smartscan.ui.components.common.SlideRevealBox
 import com.fpf.smartscan.ui.components.modals.TextInputModal
-import com.fpf.smartscan.ui.components.collections.CollectionPicker
 import com.fpf.smartscan.ui.components.collections.MediaCollectionsList
 import com.fpf.smartscan.ui.screens.collections.CollectionsViewModel.Companion.TOP_N
 import kotlinx.coroutines.FlowPreview
 import com.fpf.smartscan.R
 import androidx.compose.ui.res.stringResource
 import com.fpf.smartscan.events.CollectionEventType
+import com.fpf.smartscan.media.CollectionType
 import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
 import com.fpf.smartscan.navigation.TopBarState
@@ -82,23 +76,25 @@ fun CollectionsScreen(
     val clusterCollections by viewModel.clusterCollections.collectAsState()
     val tagCollections by viewModel.tagCollections.collectAsState()
 
-    val collections = if(state.groupBySimilarity) clusterCollections else tagCollections
-    val isCollectionVisible = tagCollections.isNotEmpty() && !state.groupBySimilarity || clusterCollections.isNotEmpty() && state.groupBySimilarity
+    val collections = when(state.collectionType) {
+        CollectionType.CLUSTER -> clusterCollections
+        CollectionType.TAG -> tagCollections
+    }
+    val isCollectionVisible = (tagCollections.isNotEmpty() && state.collectionType == CollectionType.TAG) || (clusterCollections.isNotEmpty() && state.collectionType == CollectionType.CLUSTER)
 
     val context = LocalContext.current
 
     // actions
-    var isSelecting by remember { mutableStateOf(false) }
     var isRenamingCollection by remember { mutableStateOf(false) }
     var isMergingCollections by remember { mutableStateOf(false) }
     var isCreatingNewTagAndTaggingClusters by remember { mutableStateOf(false) }
     var isDeletingCollection by remember { mutableStateOf(false) }
-    val isActionBarVisible = isSelecting && state.selection.selectedCount > 0
+    val isActionBarVisible = state.selection.isSelecting && state.selection.selectedCount > 0
 
     val actionBarActions: List<ActionConfig> = listOf(
         ActionConfig(label = stringResource(R.string.merge_action), { isMergingCollections = true }, enabled = !state.loading, icon = Icons.Filled.Merge),
         ActionConfig( label = stringResource(R.string.rename_action), { isRenamingCollection = true }, enabled = state.selection.selectedItems.size == 1, icon = Icons.Filled.DriveFileRenameOutline),
-        ActionConfig(label = stringResource(R.string.delete_action), { isDeletingCollection = true }, enabled = !state.groupBySimilarity, icon = Icons.Filled.Delete)
+        ActionConfig(label = stringResource(R.string.delete_action), { isDeletingCollection = true }, enabled = state.collectionType == CollectionType.TAG, icon = Icons.Filled.Delete)
     )
 
     // Menu
@@ -124,38 +120,18 @@ fun CollectionsScreen(
         viewModel.event.collect { event ->
             when(event.type){
                 CollectionEventType.MERGE -> {
-                    if(event.success){
-                        isSelecting = false
-                    }
-                    else {
-                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
-                    }
+                    event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                 }
                 CollectionEventType.COPY -> {
-                    if(event.success){
-                        isSelecting = false
-                    }
-                    else {
-                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
-                    }
+                    event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                 }
 
                 CollectionEventType.RENAME -> {
-                    if(event.success){
-                        isSelecting = false
-                    }
-                    else {
-                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
-                    }
+                    event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                 }
 
                 CollectionEventType.DELETE -> {
-                    if(event.success){
-                        isSelecting = false
-                    }
-                    else {
-                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
-                    }
+                    event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                 }
             }
         }
@@ -163,7 +139,7 @@ fun CollectionsScreen(
 
     val screenTitle = stringResource(R.string.title_collections)
 
-    LaunchedEffect(state.groupBySimilarity) {
+    LaunchedEffect(state.collectionType) {
         onTopBarChange(
             TopBarState(
                 title = screenTitle,
@@ -186,9 +162,8 @@ fun CollectionsScreen(
         )
     }
 
-    BackHandler(enabled = isSelecting) {
-        isSelecting = false
-        viewModel.clearSelectedCollections()
+    BackHandler(enabled = state.selection.isSelecting) {
+        viewModel.onAction(CollectionAction.ResetSelection)
     }
 
     Box(
@@ -201,7 +176,7 @@ fun CollectionsScreen(
             verticalArrangement = Arrangement.Top
         ) {
             SlideRevealBox(
-                isVisible = isSelecting,
+                isVisible = state.selection.isSelecting,
                 reverse = true,
                 offsetPx = offset,
                 modifier = Modifier
@@ -230,7 +205,7 @@ fun CollectionsScreen(
                         .weight(1f)
                         .clip(RoundedCornerShape(12.dp))
                         .background(
-                            if (state.groupBySimilarity)
+                            if (state.collectionType == CollectionType.CLUSTER)
                                 MaterialTheme.colorScheme.primaryContainer
                             else
                                 MaterialTheme.colorScheme.surfaceContainer
@@ -239,14 +214,14 @@ fun CollectionsScreen(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
                         ) {
-                            viewModel.onAction(CollectionAction.SetGroupBySimilarity(true))
+                            viewModel.onAction(CollectionAction.SetCollectionType(CollectionType.CLUSTER))
                         }
                         .padding(12.dp)
                 ) {
                     Text(
                         "Auto",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (state.groupBySimilarity)
+                        color = if (state.collectionType == CollectionType.CLUSTER)
                             MaterialTheme.colorScheme.onPrimaryContainer
                         else
                             MaterialTheme.colorScheme.onSurface
@@ -265,7 +240,7 @@ fun CollectionsScreen(
                         .weight(1f)
                         .clip(RoundedCornerShape(12.dp))
                         .background(
-                            if (!state.groupBySimilarity)
+                            if (state.collectionType == CollectionType.TAG)
                                 MaterialTheme.colorScheme.primaryContainer
                             else
                                 MaterialTheme.colorScheme.surfaceContainer
@@ -274,14 +249,14 @@ fun CollectionsScreen(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
                         ) {
-                            viewModel.onAction(CollectionAction.SetGroupBySimilarity(false))
+                            viewModel.onAction(CollectionAction.SetCollectionType(CollectionType.TAG))
                         }
                         .padding(12.dp)
                 ) {
                     Text(
                         "Tags",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (!state.groupBySimilarity)
+                        color = if (state.collectionType == CollectionType.TAG)
                             MaterialTheme.colorScheme.onPrimaryContainer
                         else
                             MaterialTheme.colorScheme.onSurface
@@ -305,14 +280,14 @@ fun CollectionsScreen(
                 isVisible = isCollectionVisible,
                 numGridColumns = 3,
                 items = collections,
-                isSelecting = isSelecting,
+                isSelecting = state.selection.isSelecting,
                 selectAll = state.selection.selectAll,
                 selectedItems = state.selection.selectedItems,
                 excludedItems = state.selection.excludedItems,
                 onItemClick = { viewModel.onAction(CollectionAction.SetCollectionToView(it)) },
                 onToggleSelected = { viewModel.onAction(CollectionAction.ToggleSelectedCollection(it)) },
                 onToggleSelectionMode = {
-                    isSelecting = !isSelecting
+                    viewModel.onAction(CollectionAction.ToggleSelectionMode)
                     offset = 0
                 },
                 onOffsetChange = {  offset = it },

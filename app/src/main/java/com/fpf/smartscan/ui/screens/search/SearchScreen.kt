@@ -1,5 +1,6 @@
 package com.fpf.smartscan.ui.screens.search
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.MoreVert
@@ -40,6 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.zIndex
 import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.mediaTypeOptions
+import com.fpf.smartscan.events.SearchEventType
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.search.IndexingStatus
@@ -53,7 +56,6 @@ import com.fpf.smartscan.ui.components.common.LoadingIndicator
 import com.fpf.smartscan.ui.components.media.MediaViewer
 import com.fpf.smartscan.ui.components.common.ProgressBar
 import com.fpf.smartscan.ui.components.common.SelectionHeaderRow
-import com.fpf.smartscan.ui.components.SelectorIconItem
 import com.fpf.smartscan.ui.components.common.SlideRevealBox
 import com.fpf.smartscan.ui.components.pickers.DatePickerModal
 import com.fpf.smartscan.ui.components.modals.BottomSheet
@@ -64,6 +66,7 @@ import com.fpf.smartscan.ui.components.search.SearchResults
 import com.fpf.smartscan.ui.components.TagAdder
 import com.fpf.smartscan.ui.components.common.ActionBar
 import com.fpf.smartscan.ui.action.ActionConfig
+import com.fpf.smartscan.ui.components.pickers.OptionPicker
 import com.fpf.smartscan.ui.permissions.RequestPermissions
 import com.fpf.smartscan.ui.screens.search.SearchViewModel.Companion.RESULTS_BATCH_SIZE
 import com.fpf.smartscan.utils.formatDate
@@ -114,8 +117,8 @@ fun SearchScreen(
 
     var hasStoragePermission by remember { mutableStateOf(false) }
     var isAddingTag by remember { mutableStateOf(false) }
-    var isSelecting by remember { mutableStateOf(false) }
     var tagAutoCompleteTagResults by remember { mutableStateOf<List<String>>(emptyList()) }
+    var isSelectingMediaType by remember { mutableStateOf(false) }
 
     // action bar actions
     val actionBarActions: List<ActionConfig> = listOf(
@@ -123,38 +126,29 @@ fun SearchScreen(
             label = stringResource(R.string.share_action),
             onClick = {
                 searchViewModel.onAction(SearchAction.ShareResults(context))
-                isSelecting = false
             },
             icon = Icons.Filled.Share
         ),
         ActionConfig(
             label = stringResource(R.string.search_action),
-            onClick = {
-                isSelecting = false
-                searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(state.selection.selectedItems.first().uri, appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
-                searchViewModel.clearSelectedResults()
-            },
+            onClick = { searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(state.selection.selectedItems.first().uri, appSettings.imageSimilarityThreshold, appSettings.enableDedupe)) },
             enabled = state.selection.selectedItems.size == 1 && state.mediaType == MediaType.IMAGE,
             icon = Icons.Filled.Search
         ),
         ActionConfig(
             label = stringResource(R.string.copy_action),
-            onClick = {
-                searchViewModel.onAction(SearchAction.CopyResult(clipboard, context))
-                isSelecting = false
-            },
-            icon = Icons.Filled.ContentCopy),
+            onClick = { searchViewModel.onAction(SearchAction.CopyResult(clipboard, context)) },
+            icon = Icons.Filled.ContentCopy,
+            enabled = state.selection.selectedItems.size == 1 && state.selection.selectedItems.first().type == MediaType.IMAGE
+        ),
         ActionConfig(
             label = stringResource(R.string.add_tag_action),
-            onClick = {
-                isAddingTag = true
-                isSelecting = false
-            },
+            onClick = { isAddingTag = true },
             icon = Icons.Filled.Tag),
         )
 
     // Dynamic hide animation
-    var isActionBarVisible =  isSelecting && state.selection.selectedCount > 0
+    val isActionBarVisible =  state.selection.isSelecting && state.selection.selectedCount > 0
     var offset by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val actionBarHeight = with(density) { 70.dp.toPx() }
@@ -205,7 +199,7 @@ fun SearchScreen(
     }
 
     LaunchedEffect(Unit) {
-        searchViewModel.externalSearch(intentSearchQuery, appSettings.similarityThreshold, appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold)
+        searchViewModel.externalSearch(intentSearchQuery, appSettings.similarityThreshold, appSettings.imageSimilarityThreshold, appSettings.enableDedupe)
     }
 
     LaunchedEffect(isIndexing) {
@@ -246,9 +240,18 @@ fun SearchScreen(
             }
     }
 
-    BackHandler(enabled = isSelecting) {
-        isSelecting = false
-        searchViewModel.clearSelectedResults()
+    LaunchedEffect(Unit) {
+        searchViewModel.event.collect { event ->
+            when (event.type) {
+                SearchEventType.TAG -> {
+                    event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+                }
+            }
+        }
+    }
+
+    BackHandler(enabled = state.selection.isSelecting) {
+        searchViewModel.onAction(SearchAction.ResetSelection)
     }
 
     Box(
@@ -283,7 +286,7 @@ fun SearchScreen(
                         .padding(bottom = 8.dp)
                 ) {
                     Column {
-                        if (isSelecting) {
+                        if (state.selection.isSelecting) {
                             SelectionHeaderRow (
                                 selectedCount = state.selection.selectedCount,
                                 checked = state.selection.selectAll && state.selection.excludedItems.isEmpty(),
@@ -297,12 +300,10 @@ fun SearchScreen(
                             imageSize = 140.dp,
                             mediaTypeSelectorEnabled = (videoIndexStatus != IndexingStatus.ACTIVE && imageIndexStatus != IndexingStatus.ACTIVE), // prevent switching modes when indexing in progress
                             onSearch = {
-                                searchViewModel.onAction(SearchAction.Search(appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
-                                isSelecting = false
+                                searchViewModel.onAction(SearchAction.Search(appSettings.imageSimilarityThreshold, appSettings.enableDedupe))
                             },
                             onMediaTypeChange = { searchViewModel.onAction(SearchAction.SetMediaTypeFilter(it)) },
                             onRemoveImage = {
-                                isSelecting = false
                                 searchViewModel.onAction(SearchAction.RemoveUploadedImage)
                             }
                         )
@@ -318,7 +319,7 @@ fun SearchScreen(
 
                 ) {
                     Column {
-                        if (isSelecting) {
+                        if (state.selection.isSelecting) {
                             SelectionHeaderRow (
                                 selectedCount = state.selection.selectedCount,
                                 checked = state.selection.selectAll && state.selection.excludedItems.isEmpty(),
@@ -336,31 +337,26 @@ fun SearchScreen(
                                 searchFieldState = searchViewModel.searchFieldState,
                                 enabled = hasStoragePermission && !state.loading && !isIndexing ,
                                 onSearch = {
-                                    searchViewModel.onAction(SearchAction.Search(appSettings.similarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
-                                    isSelecting = false
+                                    searchViewModel.onAction(SearchAction.Search(appSettings.similarityThreshold, appSettings.enableDedupe))
                                 },
                                 onSearchImage = {
-                                    searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(it, appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
-                                    isSelecting = false
+                                    searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(it, appSettings.imageSimilarityThreshold, appSettings.enableDedupe))
                                 },
                                 onClearResults = {
                                     searchViewModel.onAction(SearchAction.Reset)
-                                    isSelecting = false
                                 },
                                 placeholders = searchBarPlaceholders,
                                 trailingIcon = {
-                                    SelectorIconItem(
-                                        enabled = (videoIndexStatus != IndexingStatus.ACTIVE && imageIndexStatus != IndexingStatus.ACTIVE), // prevent switching modes when indexing in progress
-                                        label = "Media type",
-                                        options = mediaTypeOptions.values.toList(),
-                                        selectedOption = mediaTypeOptions[state.mediaType]!!,
-                                        onOptionSelected = { selected ->
-                                            val mediaType = mediaTypeOptions.entries
-                                                .find { it.value == selected }
-                                                ?.key ?: MediaType.IMAGE
-                                            searchViewModel.onAction(SearchAction.SetMediaTypeFilter(mediaType))
-                                        }
-                                    )
+                                    IconButton (
+                                        enabled = !isIndexing,
+                                        onClick = { isSelectingMediaType = true }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.ArrowDropDown,
+                                            contentDescription = "Dropdown",
+                                            tint = if (!isIndexing) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                        )
+                                    }
                                 }
                             )
 
@@ -428,7 +424,7 @@ fun SearchScreen(
                 numGridColumns = appSettings.resultsPerRow,
                 searchResults = state.searchResults,
                 totalResults=state.totalResults,
-                isSelecting = isSelecting,
+                isSelecting = state.selection.isSelecting,
                 selectAll = state.selection.selectAll,
                 selectedResults = state.selection.selectedItems,
                 excludedResults = state.selection.excludedItems,
@@ -437,7 +433,7 @@ fun SearchScreen(
                 onLoadMore = searchViewModel::onLoadMore,
                 onToggleSelected = { searchViewModel.onAction(SearchAction.ToggleSelectedResult(it)) },
                 onToggleSelectionMode = {
-                    isSelecting = !isSelecting
+                    searchViewModel.onAction(SearchAction.ToggleSelectionMode)
                     offset = 0
                                         },
                 onOffsetChange = {  offset = it },
@@ -481,7 +477,7 @@ fun SearchScreen(
                 onClose = { searchViewModel.onAction(SearchAction.ClearResultView)},
                 onUpdateSearchImage = {
                     searchViewModel.onAction(SearchAction.ClearResultView)
-                    searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(item.uri, appSettings.imageSimilarityThreshold, appSettings.enableDedupe, appSettings.duplicateThreshold))
+                    searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(item.uri, appSettings.imageSimilarityThreshold, appSettings.enableDedupe))
                 }
             )
         }
@@ -655,6 +651,19 @@ fun SearchScreen(
             isAddingTag = false
         },
         onCheckAutoCompletion = searchViewModel::handleAutoCompletionCheck
+    )
+
+    OptionPicker(
+        isVisible = isSelectingMediaType,
+        title = "Media type",
+        options = mediaTypeOptions.values.toList(),
+        selectedOption = mediaTypeOptions[state.mediaType]!!,
+        onSelect = { selected ->
+            val mediaType = mediaTypeOptions.entries.find { it.value == selected }?.key ?: MediaType.IMAGE
+            searchViewModel.onAction(SearchAction.SetMediaTypeFilter(mediaType))
+            isSelectingMediaType = false
+        },
+        onClose = { isSelectingMediaType = false }
     )
 }
 

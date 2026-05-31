@@ -15,5 +15,4 @@ data class AppSettings(
     val enableDirectGalleryOpen: Boolean = false,
     val resultsPerRow: Int = 4,
     val enableDedupe: Boolean = false,
-    val duplicateThreshold: Float = 0.95f
     )

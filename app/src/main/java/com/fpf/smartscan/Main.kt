@@ -114,7 +114,8 @@ fun Main(
                             viewModel = settingsViewModel,
                             onNavigate = { route: String ->
                                 navController.navigate(route)
-                            }
+                            },
+                            onRestartApp = onRestartApp
                         )
                     }
                     composable(
@@ -127,7 +128,6 @@ fun Main(
                             type = type,
                             viewModel = settingsViewModel,
                             onBack = {navController.popBackStack()},
-                            onRestartApp = onRestartApp
                         )
                     }
                     composable(Routes.DONATE) {

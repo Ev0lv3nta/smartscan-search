@@ -49,7 +49,9 @@ import androidx.compose.ui.zIndex
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.fpf.smartscan.R
 import com.fpf.smartscan.events.CollectionItemEventType
+import com.fpf.smartscan.media.CollectionType
 import com.fpf.smartscan.media.MediaCollection
+import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.settings.AppSettings
 import com.fpf.smartscan.ui.action.CollectionItemAction
@@ -91,11 +93,16 @@ fun CollectionItemsScreen(
     val clusterCollections by viewModel.clusterCollections.collectAsState()
     val tagCollectionItems = viewModel.tagItems.collectAsLazyPagingItems()
     val clusterCollectionItems = viewModel.clusterItems.collectAsLazyPagingItems()
-    val items = if(collection.isAutoCollection)  clusterCollectionItems else tagCollectionItems
-    val isTagCollection = collection.isAutoCollection
+    val items = when(collection.type){
+        CollectionType.TAG -> tagCollectionItems
+        CollectionType.CLUSTER -> clusterCollectionItems
+    }
+    val pickerCollections = when(collection.type){
+        CollectionType.TAG -> tagCollections
+        CollectionType.CLUSTER -> clusterCollections
+    }
 
     // actions
-    var isSelecting by remember { mutableStateOf(false) }
     var isMoving by remember { mutableStateOf(false) }
     var isCreatingCollectionAndMoving by remember { mutableStateOf(false) }
     var isAddingTag by remember { mutableStateOf(false) }
@@ -111,7 +118,7 @@ fun CollectionItemsScreen(
         ActionConfig(
             label = stringResource(R.string.remove_action),
             onClick = { viewModel.onAction(CollectionItemAction.RemoveMedia) },
-            enabled = isTagCollection,
+            enabled = collection.type == CollectionType.TAG,
             icon=Icons.Filled.RemoveCircle
         ),
         ActionConfig(
@@ -130,12 +137,13 @@ fun CollectionItemsScreen(
     val moreActions: List<MenuActionConfig> = listOf(
          MenuActionConfig.Button(
              label = stringResource(R.string.copy_to_clipboard_action),
-            { viewModel.onAction(CollectionItemAction.CopyMedia(clipboard, context)) },
+             onClick = { viewModel.onAction(CollectionItemAction.CopyMedia(clipboard, context)) },
+             enabled = state.selection.selectedItems.size == 1 && state.selection.selectedItems.first().type == MediaType.IMAGE
         ),
 
          MenuActionConfig.Button(
              label = stringResource(R.string.add_tag_action),
-           { isAddingTag = true },
+             onClick = { isAddingTag = true },
         ),
     )
 
@@ -170,48 +178,30 @@ fun CollectionItemsScreen(
         viewModel.event.collect { event ->
             when(event.type){
                 CollectionItemEventType.MOVE -> {
+                    event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                     if(event.success){
-                        isSelecting = false
                         items.refresh()
-                    }
-                    else {
-                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                     }
                 }
                 CollectionItemEventType.REMOVE -> {
+                    event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                     if(event.success){
-                        isSelecting = false
                         items.refresh()
-                    }
-                    else {
-                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                     }
                 }
 
                 CollectionItemEventType.COPY -> {
-                    if(event.success){
-                        isSelecting = false
-                    }
-                    else {
-                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
-                    }
+                    event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                 }
 
                 CollectionItemEventType.SHARE -> {
-                    if(event.success){
-                        isSelecting = false
-                    }
-                    else {
-                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
-                    }
+                    event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                 }
+
                 CollectionItemEventType.TAG -> {
+                    event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                     if(event.success){
-                        isSelecting = false
                         tagCollectionItems.refresh()
-                    }
-                    else {
-                        event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
                     }
                 }
             }
@@ -219,9 +209,8 @@ fun CollectionItemsScreen(
     }
 
 
-    BackHandler(enabled = isSelecting) {
-        isSelecting = false
-        viewModel.clearSelectedItems()
+    BackHandler(enabled = state.selection.isSelecting) {
+        viewModel.onAction(CollectionItemAction.ResetSelection)
     }
 
     Box(
@@ -234,7 +223,7 @@ fun CollectionItemsScreen(
             verticalArrangement = Arrangement.Top
         ) {
             SlideRevealBox(
-                isVisible = isSelecting,
+                isVisible = state.selection.isSelecting,
                 reverse = true,
                 offsetPx = offset,
                 modifier = Modifier
@@ -252,14 +241,14 @@ fun CollectionItemsScreen(
                 isVisible = tagCollectionItems.itemCount > 0 || clusterCollectionItems.itemCount> 0,
                 numGridColumns = appSettings.resultsPerRow,
                 items = items,
-                isSelecting = isSelecting,
+                isSelecting = state.selection.isSelecting,
                 selectAll = state.selection.selectAll,
                 excludedItems = state.selection.excludedItems,
                 selectedItems = state.selection.selectedItems,
-                onViewItem = { uri -> viewModel.onAction(CollectionItemAction.SetMediaToView(context, uri, appSettings.enableDirectGalleryOpen, isSelecting)) },
+                onViewItem = { uri -> viewModel.onAction(CollectionItemAction.SetMediaToView(context, uri, appSettings.enableDirectGalleryOpen)) },
                 onToggleSelected = { viewModel.onAction(CollectionItemAction.ToggleSelectedMedia(it)) },
                 onToggleSelectionMode = {
-                    isSelecting = !isSelecting
+                    viewModel.onAction(CollectionItemAction.ToggleSelectionMode)
                     offset = 0
                 },
                 onOffsetChange = {  offset = it },
@@ -269,7 +258,7 @@ fun CollectionItemsScreen(
         }
 
         SlideRevealBox(
-            isVisible = isSelecting && state.selection.selectedCount > 0,
+            isVisible = state.selection.isSelecting && state.selection.selectedCount > 0,
             offsetPx = offset,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -343,13 +332,13 @@ fun CollectionItemsScreen(
             )
         ) {
             CollectionPicker(
-                collections = if(isTagCollection) tagCollections else clusterCollections,
+                collections = pickerCollections,
                 onClose = { isMoving = false },
                 onSelectCollection = {
                     viewModel.onAction(CollectionItemAction.MoveMedia( it))
                     isMoving = false
                                      },
-                onCreateNewCollection = if(isTagCollection){
+                onCreateNewCollection = if(collection.type == CollectionType.TAG){
                     {
                         isMoving = false
                         isCreatingCollectionAndMoving = true

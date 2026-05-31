@@ -13,14 +13,19 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ImageSearch
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,14 +38,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.fpf.smartscan.constants.mediaTypeOptions
 import com.fpf.smartscan.media.MediaType
-import com.fpf.smartscan.ui.components.SelectorItem
 import com.fpf.smartscan.ui.components.media.ImageDisplay
-
+import com.fpf.smartscan.ui.components.pickers.OptionPicker
 
 @Composable
 fun ImageSearcher(
@@ -55,6 +61,7 @@ fun ImageSearcher(
     if(uri == null) return
 
     var currentMediaType by remember { mutableStateOf(mediaType) }
+    var showPicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(mediaType) {
         if(currentMediaType == mediaType) return@LaunchedEffect
@@ -113,19 +120,34 @@ fun ImageSearcher(
             horizontalAlignment = Alignment.End,
             modifier = Modifier.padding(horizontal = 4.dp)
         ) {
-            SelectorItem(
-                enabled = mediaTypeSelectorEnabled, // prevent switching modes when indexing in progress
-                label = "Media type",
-                showLabel = false,
-                options = mediaTypeOptions.values.toList(),
-                selectedOption = mediaTypeOptions[mediaType]!!,
-                onOptionSelected = { selected ->
-                    val newMode = mediaTypeOptions.entries
-                        .find { it.value == selected }
-                        ?.key ?: MediaType.IMAGE
-                    onMediaTypeChange(newMode)
+            OutlinedButton (
+                enabled = mediaTypeSelectorEnabled,
+                onClick = { showPicker = true },
+                modifier = Modifier.widthIn(max = 140.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                )
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = mediaTypeOptions[mediaType]!!,
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                        color = MaterialTheme.colorScheme.onSurface
+
+                    )
+                    Icon(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = "Dropdown",
+                        tint =MaterialTheme.colorScheme.onSurface
+                    )
                 }
-            )
+            }
             Icon(
                 imageVector = Icons.Filled.ImageSearch,
                 modifier = Modifier.fillMaxSize(),
@@ -134,4 +156,19 @@ fun ImageSearcher(
             )
         }
     }
+
+    OptionPicker(
+        isVisible = showPicker,
+        title = "Media type",
+        options = mediaTypeOptions.values.toList(),
+        selectedOption = mediaTypeOptions[mediaType]!!,
+        onSelect = { selected ->
+            val newMode = mediaTypeOptions.entries
+                .find { it.value == selected }
+                ?.key ?: MediaType.IMAGE
+            onMediaTypeChange(newMode)
+            showPicker = false
+        },
+        onClose = {showPicker = false}
+    )
 }
