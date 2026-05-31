@@ -67,36 +67,33 @@ fun SettingOption(config: SettingActionConfig, modifier: Modifier = Modifier) {
                         onClick = { config.onCheckedChange(!config.checked) }
                     )
             ) {
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = modifier.heightIn(min = minHeight.dp).fillMaxWidth()
+                ) {
                 Column(
                     verticalArrangement = Arrangement.Center,
-                    modifier = modifier
-                        .heightIn(min = minHeight.dp)
-                        .fillMaxWidth()
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = config.label,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = textColor
-                        )
-                        Switch(
-                            enabled = config.enabled,
-                            checked = config.checked,
-                            onCheckedChange = config.onCheckedChange,
-                        )
-                    }
+                    Text(
+                        text = config.label,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = textColor
+                    )
                     config.description?.let {
                         Text(
                             text = it,
                             style = MaterialTheme.typography.bodyMedium,
                             color = textColor,
                             modifier = Modifier.fillMaxWidth(0.8f).alpha(0.8f)
-                        )
+                            )
+                        }
                     }
+                    Switch(
+                        enabled = config.enabled,
+                        checked = config.checked,
+                        onCheckedChange = config.onCheckedChange,
+                    )
                 }
             }
         }
