@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.MoreVert
@@ -41,8 +42,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.zIndex
 import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.mediaTypeOptions
-import com.fpf.smartscan.events.CollectionItemEventType
-import com.fpf.smartscan.events.SearchEvent
 import com.fpf.smartscan.events.SearchEventType
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.navigation.TopBarState
@@ -57,7 +56,6 @@ import com.fpf.smartscan.ui.components.common.LoadingIndicator
 import com.fpf.smartscan.ui.components.media.MediaViewer
 import com.fpf.smartscan.ui.components.common.ProgressBar
 import com.fpf.smartscan.ui.components.common.SelectionHeaderRow
-import com.fpf.smartscan.ui.components.SelectorIconItem
 import com.fpf.smartscan.ui.components.common.SlideRevealBox
 import com.fpf.smartscan.ui.components.pickers.DatePickerModal
 import com.fpf.smartscan.ui.components.modals.BottomSheet
@@ -68,6 +66,7 @@ import com.fpf.smartscan.ui.components.search.SearchResults
 import com.fpf.smartscan.ui.components.TagAdder
 import com.fpf.smartscan.ui.components.common.ActionBar
 import com.fpf.smartscan.ui.action.ActionConfig
+import com.fpf.smartscan.ui.components.pickers.OptionPicker
 import com.fpf.smartscan.ui.permissions.RequestPermissions
 import com.fpf.smartscan.ui.screens.search.SearchViewModel.Companion.RESULTS_BATCH_SIZE
 import com.fpf.smartscan.utils.formatDate
@@ -119,6 +118,7 @@ fun SearchScreen(
     var hasStoragePermission by remember { mutableStateOf(false) }
     var isAddingTag by remember { mutableStateOf(false) }
     var tagAutoCompleteTagResults by remember { mutableStateOf<List<String>>(emptyList()) }
+    var isSelectingMediaType by remember { mutableStateOf(false) }
 
     // action bar actions
     val actionBarActions: List<ActionConfig> = listOf(
@@ -347,18 +347,16 @@ fun SearchScreen(
                                 },
                                 placeholders = searchBarPlaceholders,
                                 trailingIcon = {
-                                    SelectorIconItem(
-                                        enabled = (videoIndexStatus != IndexingStatus.ACTIVE && imageIndexStatus != IndexingStatus.ACTIVE), // prevent switching modes when indexing in progress
-                                        label = "Media type",
-                                        options = mediaTypeOptions.values.toList(),
-                                        selectedOption = mediaTypeOptions[state.mediaType]!!,
-                                        onOptionSelected = { selected ->
-                                            val mediaType = mediaTypeOptions.entries
-                                                .find { it.value == selected }
-                                                ?.key ?: MediaType.IMAGE
-                                            searchViewModel.onAction(SearchAction.SetMediaTypeFilter(mediaType))
-                                        }
-                                    )
+                                    IconButton (
+                                        enabled = !isIndexing,
+                                        onClick = { isSelectingMediaType = true }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.ArrowDropDown,
+                                            contentDescription = "Dropdown",
+                                            tint = if (!isIndexing) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                        )
+                                    }
                                 }
                             )
 
@@ -653,6 +651,19 @@ fun SearchScreen(
             isAddingTag = false
         },
         onCheckAutoCompletion = searchViewModel::handleAutoCompletionCheck
+    )
+
+    OptionPicker(
+        isVisible = isSelectingMediaType,
+        title = "Media type",
+        options = mediaTypeOptions.values.toList(),
+        selectedOption = mediaTypeOptions[state.mediaType]!!,
+        onSelect = { selected ->
+            val mediaType = mediaTypeOptions.entries.find { it.value == selected }?.key ?: MediaType.IMAGE
+            searchViewModel.onAction(SearchAction.SetMediaTypeFilter(mediaType))
+            isSelectingMediaType = false
+        },
+        onClose = { isSelectingMediaType = false }
     )
 }
 
