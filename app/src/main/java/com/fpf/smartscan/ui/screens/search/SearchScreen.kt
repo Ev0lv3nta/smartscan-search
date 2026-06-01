@@ -174,7 +174,7 @@ fun SearchScreen(
 
     val screenTitle = stringResource(R.string.title_search)
 
-    LaunchedEffect(state.hasIndexedImages, state.hasIndexedVideos, isIndexing, state.mediaType, hasStoragePermission) {
+    LaunchedEffect(state.hasIndexedImages, state.hasIndexedVideos, state.mediaType, hasStoragePermission) {
         val isFirstImageScanNeeded = hasStoragePermission && state.hasIndexedImages == false && (state.mediaType == MediaType.IMAGE)
         val isFirstVideoScanNeeded = hasStoragePermission && state.hasIndexedVideos == false && (state.mediaType == MediaType.VIDEO)
         if( !isIndexing && (isFirstImageScanNeeded || isFirstVideoScanNeeded)){
