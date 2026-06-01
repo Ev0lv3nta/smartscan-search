@@ -129,6 +129,54 @@ object DataSyncHelper {
         }
     }
 
+    suspend fun syncWithMediaStore(
+        context: Context,
+        imageStore: FileEmbeddingStore,
+        videoStore: FileEmbeddingStore,
+        allowedImageDirs: List<Uri> = emptyList(),
+        allowedVideoDirs: List<Uri> = emptyList(),
+        mediaMetadataRepository: MediaMetadataRepository,
+
+        ){
+        purgeIfNeeded(context,
+            store = imageStore,
+            allowedDirs = allowedImageDirs,
+            mediaMetadataRepository = mediaMetadataRepository,
+            mediaType = MediaType.IMAGE
+        )
+        purgeIfNeeded(context,
+            store = videoStore,
+            allowedDirs = allowedVideoDirs,
+            mediaMetadataRepository = mediaMetadataRepository,
+            mediaType = MediaType.VIDEO
+        )
+        Log.d(TAG, "MediaStore sync completed successfully")
+    }
+
+    suspend fun syncEmbedStoreDates(
+        context: Context,
+        imageStore: FileEmbeddingStore,
+        videoStore: FileEmbeddingStore
+    ) {
+        val sharedPrefs = context.applicationContext.getSharedPreferences(PrefsNames.APP_PREFS, MODE_PRIVATE)
+
+        updateStoreDates(
+            context=context,
+            embeds = imageStore.get(),
+            mediaTpe = MediaType.IMAGE
+        )
+        updateStoreDates(
+            context=context,
+            embeds = videoStore.get(),
+            mediaTpe = MediaType.VIDEO
+        )
+
+        sharedPrefs.edit {
+            putBoolean(PrefsKeys.EMBED_STORE_DATE_SYNC_COMPLETE, true)
+        }
+        Log.d(TAG, "Date sync completed successfully")
+    }
+
     private suspend fun transfer(application: Application, newDb: MediaDatabase) = withContext(Dispatchers.IO) {
         val newTagsRepository = TagRepository(newDb.tagDao())
         val newTagsCrossRefRepository = TagCrossRefRepository( newDb.tagCrossRefDao())
@@ -194,30 +242,6 @@ object DataSyncHelper {
         Log.d(TAG, "Video transfer complete. ${videoTagIds.size} tags transferred. ${updatedVideoCrossRefs.size} cross refs transferred.")
     }
 
-
-    suspend fun syncWithMediaStore(
-        context: Context,
-        imageStore: FileEmbeddingStore,
-        videoStore: FileEmbeddingStore,
-        allowedImageDirs: List<Uri> = emptyList(),
-        allowedVideoDirs: List<Uri> = emptyList(),
-        mediaMetadataRepository: MediaMetadataRepository,
-
-        ){
-        purgeIfNeeded(context,
-            store = imageStore,
-            allowedDirs = allowedImageDirs,
-            mediaMetadataRepository = mediaMetadataRepository,
-            mediaType = MediaType.IMAGE
-        )
-        purgeIfNeeded(context,
-            store = videoStore,
-            allowedDirs = allowedVideoDirs,
-            mediaMetadataRepository = mediaMetadataRepository,
-            mediaType = MediaType.VIDEO
-        )
-    }
-
     private suspend fun purgeIfNeeded(
         context: Context,
         store: FileEmbeddingStore,
@@ -226,6 +250,8 @@ object DataSyncHelper {
         mediaType: MediaType
     ){
         val mediaMetadataList = mediaMetadataRepository.getByType(mediaType)
+        if(mediaMetadataList.isEmpty()) return
+
         val accessibleMediaIds = when(mediaType){
             MediaType.IMAGE -> queryImageIds(context, allowedDirs).toSet()
             MediaType.VIDEO -> queryVideoIds(context, allowedDirs).toSet()
@@ -234,32 +260,8 @@ object DataSyncHelper {
 
         if(mediaToPurge.isNotEmpty()){
             removeStaleMedia(mediaToPurge, store = store, mediaMetadataRepository)
-            Log.d(TAG, "${mediaType.name}: Removed ${mediaToPurge.size} items")
+            Log.d(TAG, "${mediaType.name}: Removed ${mediaToPurge.size} stale items")
         }
-    }
-
-    suspend fun syncEmbedStoreDates(
-        context: Context,
-        imageStore: FileEmbeddingStore,
-        videoStore: FileEmbeddingStore
-    ) {
-        val sharedPrefs = context.applicationContext.getSharedPreferences(PrefsNames.APP_PREFS, MODE_PRIVATE)
-
-        updateStoreDates(
-            context=context,
-            embeds = imageStore.get(),
-            mediaTpe = MediaType.IMAGE
-        )
-        updateStoreDates(
-            context=context,
-            embeds = videoStore.get(),
-            mediaTpe = MediaType.VIDEO
-        )
-
-        sharedPrefs.edit {
-            putBoolean(PrefsKeys.EMBED_STORE_DATE_SYNC_COMPLETE, true)
-        }
-        Log.d(TAG, "Sync complete successfully")
     }
 
     private suspend fun updateStoreDates(
