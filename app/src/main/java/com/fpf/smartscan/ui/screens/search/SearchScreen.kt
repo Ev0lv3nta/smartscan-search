@@ -555,8 +555,8 @@ fun SearchScreen(
 
     if ( showIndexAlert) {
         val title = when(state.mediaType){
-            MediaType.IMAGE -> stringResource(R.string.search_start_indexing_alert, "images")
-            MediaType.VIDEO -> stringResource(R.string.search_start_indexing_alert, "videos")
+            MediaType.IMAGE -> stringResource(R.string.scan_images_action)
+            MediaType.VIDEO -> stringResource(R.string.scan_videos_action)
         }
         val description = when(state.mediaType){
             MediaType.IMAGE -> stringResource(R.string.first_indexing, "image")
@@ -585,14 +585,17 @@ fun SearchScreen(
     }
 
     if (showScanImagesDialog || showScanVideosDialog) {
-        val media = if (showScanImagesDialog) "images" else "videos"
+        val title = when(state.mediaType){
+            MediaType.IMAGE -> stringResource(R.string.scan_images_action)
+            MediaType.VIDEO -> stringResource(R.string.scan_videos_action)
+        }
 
         AlertDialog(
             onDismissRequest = {
                 if (showScanImagesDialog) showScanImagesDialog = false else showScanVideosDialog = false
             },
             title = {
-                Text(stringResource(R.string.alert_scan_index_title, media))
+                Text(title)
             },
             text = {
                 Column {
