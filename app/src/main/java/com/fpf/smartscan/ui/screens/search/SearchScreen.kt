@@ -266,13 +266,13 @@ fun SearchScreen(
         ) {
 
             ProgressBar(
-                label = "Indexing images ${"%.0f".format(imageIndexProgress * 100)}%",
+                label = "${stringResource(R.string.search_image_scan_progress_bar_label)} ${"%.0f".format(imageIndexProgress * 100)}%",
                 isVisible = imageIndexStatus == IndexingStatus.ACTIVE,
                 progress = imageIndexProgress
             )
 
             ProgressBar(
-                label = "Indexing videos ${"%.0f".format(videoIndexProgress * 100)}%",
+                label = "${stringResource(R.string.search_video_scan_progress_bar_label)} ${"%.0f".format(videoIndexProgress * 100)}%",
                 isVisible = videoIndexStatus == IndexingStatus.ACTIVE,
                 progress = videoIndexProgress
             )

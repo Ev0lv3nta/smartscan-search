@@ -37,8 +37,8 @@
     <string name="notif_title_media_index_service">Indexing media</string>
     <string name="notif_content_media_index_service">Indexing in progress, this can take a few minutes.</string>
     <string name="notif_title_index_error_service">%1$s indexing error</string>
-    <string name="notif_content_index_error_service">An error occurred during indexing. You can manually index from the menu by clicking the Refresh %1$s index option.</string>
-    <string name="notif_title_index_complete">Indexing complete</string>
+    <string name="notif_content_index_error_service">An error occurred during indexing. Try manually re-scanning.</string>
+    <string name="notif_title_index_complete">Scan complete</string>
 
     <!--Alerts-->
     <string name="alert_space_not_allowed">Spaces are not allowed</string>
@@ -52,6 +52,8 @@
     <string name="search_error_empty_query">Query cannot be empty.</string>
     <string name="search_error_unknown">An unknown error occurred.</string>
     <string name="search_error_index_loading">Error loading index.</string>
+    <string name="search_image_scan_progress_bar_label">Scanning images</string>
+    <string name="search_video_scan_progress_bar_label">Scanning videos</string>
 
     <!--Collections Screen-->
     <string name="collections_no_collections_title">No Collections</string>
@@ -87,10 +89,10 @@
     <string name="setting_backup">Backup</string>
     <string name="setting_restore">Restore</string>
     <string name="setting_backup_restore_description">%1$s index files and database</string>
+    <string name="setting_grid_columns">Items per row</string>
 
     <!--Search Settings-->
     <string name="setting_auto_open_gallery">Auto-open in gallery</string>
-    <string name="setting_search_result_columns">Results per row</string>
     <string name="setting_similarity_threshold">Similarity threshold</string>
     <string name="setting_similarity_threshold_label">Similarity threshold (%1$s)</string>
     <string name="setting_similarity_threshold_description">Higher values filter out less similar matches.</string>
