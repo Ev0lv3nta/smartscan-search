@@ -119,10 +119,13 @@
     <string name="download_model_alert_description">Press `OK` to download model. This will open your browser.</string>
 
     <!--Updates-->
-    <string name="update_copy_multiple_collections_to_tag">Added ability to copy multiple Auto Collections to a Tag Collection</string>
-    <string name="update_rebuild_index">Added ability to rebuild the index from scratch via the search screen menu</string>
-    <string name="update_date_filters_search">Added date filters for search</string>
-    <string name="update_tag_query_search_fix">Fixed tag-filtered queries missing results</string>
+    <string name="update_hide_duplicates">Added "Hide duplicates" setting to hide near-identical search results</string>
+    <string name="update_merge_auto_collections">Added ability to merge Auto Collections</string>
+    <string name="update_move_media_auto_collections">Added ability to move media in Auto Collections</string>
+    <string name="update_mixed_media_collections">Added support for mixed-media collections</string>
+    <string name="update_select_all_search_collections">Added Select All for search results and collections</string>
+    <string name="update_ui_improvements_bug_fixes">UI improvements and bug fixes</string>
+    <string name="update_notes">Use merge and move carefully, as they can affect Auto Collection accuracy. They should mainly be used to fix grouping mistakes, since adding visually unrelated items can distort a collection.</string>
 
     <!--Placeholders-->
     <string name ="placeholders_add_tag">Enter tag name</string>

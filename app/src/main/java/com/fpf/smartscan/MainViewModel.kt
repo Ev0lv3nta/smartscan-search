@@ -61,10 +61,12 @@ class MainViewModel(
 
     fun getUpdates(): List<String> {
         return listOf(
-            application.getString(R.string.update_copy_multiple_collections_to_tag),
-            application.getString(R.string.update_date_filters_search),
-            application.getString(R.string.update_rebuild_index),
-            application.getString(R.string.update_tag_query_search_fix),
+            application.getString(R.string.update_hide_duplicates),
+            application.getString(R.string.update_merge_auto_collections),
+            application.getString(R.string.update_move_media_auto_collections),
+            application.getString(R.string.update_mixed_media_collections),
+            application.getString(R.string.update_select_all_search_collections),
+            application.getString(R.string.update_ui_improvements_bug_fixes),
         )
     }
 
