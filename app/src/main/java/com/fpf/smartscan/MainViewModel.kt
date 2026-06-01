@@ -97,7 +97,7 @@ class MainViewModel(
             val appSettings = loadSettings(sharedPrefs)
 
             // Always run on app start to handle media that may have been deleted from the device
-            // May switch to Receiver
+            // May switch to ContentObserver
             DataSyncHelper.syncWithMediaStore(
                 application, imageStore = imageStore,
                 videoStore=videoStore,
