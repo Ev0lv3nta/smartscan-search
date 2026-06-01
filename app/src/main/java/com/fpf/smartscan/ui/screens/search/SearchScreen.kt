@@ -45,7 +45,7 @@ import com.fpf.smartscan.constants.mediaTypeOptions
 import com.fpf.smartscan.events.SearchEventType
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.navigation.TopBarState
-import com.fpf.smartscan.search.IndexingStatus
+import com.fpf.smartscan.index.IndexingStatus
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.settings.AppSettings
 import com.fpf.smartscan.ui.action.SearchAction
