@@ -46,7 +46,6 @@ import com.fpf.smartscan.events.SearchEventType
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.search.IndexingStatus
-import com.fpf.smartscan.search.QueryType
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.settings.AppSettings
 import com.fpf.smartscan.ui.action.SearchAction
@@ -152,7 +151,7 @@ fun SearchScreen(
     var offset by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val actionBarHeight = with(density) { 70.dp.toPx() }
-    val searchBarHeight = with(density) { (if(state.queryType == QueryType.IMAGE) 200 else 120).dp.toPx() }
+    val searchBarHeight = with(density) { (if(state.queryImage != null) 200 else 120).dp.toPx() }
     val maxCollapsePx = max(actionBarHeight, searchBarHeight).toInt()
 
     // Filters
@@ -276,7 +275,7 @@ fun SearchScreen(
                 isVisible = videoIndexStatus == IndexingStatus.ACTIVE,
                 progress = videoIndexProgress
             )
-            if (state.queryType == QueryType.IMAGE) {
+            if (state.queryImage != null) {
                 SlideRevealBox(
                     reverse = true,
                     offsetPx = offset,
