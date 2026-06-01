@@ -440,10 +440,12 @@ class SearchViewModel(
                 val selected = getSelectedResults()
                 tagManager.tagItems(tag, selected)
                 resetSelection()
-                _event.emit(SearchEvent(SearchEventType.TAG, success = true, message = "Tagged ${selected.size} item(s)"))
+                val message = if(selected.size == 1 ) "Tagged ${selected.size} item" else "Tagged ${selected.size} items"
+                _event.emit(SearchEvent(SearchEventType.TAG, success = true, message = message))
             }catch (e: Exception){
-                Log.e(TAG, "Error tagging results: $e")
-                _event.emit(SearchEvent(SearchEventType.TAG, success = false, message = "Error tagging results"))
+                val message = "Error tagging results"
+                Log.e(TAG, "$message: $e")
+                _event.emit(SearchEvent(SearchEventType.TAG, success = false, message = message))
             }
         }
     }
