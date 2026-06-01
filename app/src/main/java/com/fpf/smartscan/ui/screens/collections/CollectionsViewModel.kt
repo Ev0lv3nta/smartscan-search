@@ -167,6 +167,7 @@ class CollectionsViewModel(
         viewModelScope.launch (Dispatchers.IO) {
             try {
                 val selectedCollections = getSelectedCollections()
+                if(selectedCollections.size < 2 ) return@launch
                 var primaryCollection = selectedCollections.firstOrNull{it.name == primaryCollectionName}
 
                 if(isNewMergedLabel) {
