@@ -209,6 +209,8 @@ object DataSyncHelper {
     ){
         val existingIdsFromMetadata = mediaMetadataRepository.getByType(mediaType).map { it.id }.toMutableSet()
         val existingIdsFromEmbedStore = store.get().map{it.id}.toMutableSet()
+        if(existingIdsFromEmbedStore.isEmpty()) return
+
         val accessibleMediaIds = when(mediaType){
             MediaType.IMAGE -> queryImageIds(context, allowedDirs).toSet()
             MediaType.VIDEO -> queryVideoIds(context, allowedDirs).toSet()
