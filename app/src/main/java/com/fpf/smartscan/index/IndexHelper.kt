@@ -42,15 +42,14 @@ suspend fun rebuildIndex(context: Context, mediaEmbeddingStores: List<Pair<Media
             MediaType.IMAGE -> {
                 typeToStore.second.clear()
                 File(context.filesDir, EmbeddingStoresFiles.IMAGE).delete()
-                File(context.filesDir, EmbeddingStoresFiles.IMAGE_CLUSTER).delete()
             }
             MediaType.VIDEO -> {
                 typeToStore.second.clear()
                 File(context.filesDir, EmbeddingStoresFiles.VIDEO).delete()
-                File(context.filesDir, EmbeddingStoresFiles.VIDEO_CLUSTER).delete()
             }
         }
     }
+    File(context.filesDir, EmbeddingStoresFiles.MEDIA_CLUSTER).delete()
     clusterCrossRefRepository.clear()
     clusterMetadataRepository.clear()
     refreshIndex(context.applicationContext, mediaEmbeddingStores.map{it.first})
