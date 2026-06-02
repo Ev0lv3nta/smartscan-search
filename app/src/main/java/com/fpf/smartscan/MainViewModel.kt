@@ -82,12 +82,6 @@ class MainViewModel(
                 DataSyncHelper.transferOldDbToNew(application, oldImageCachedDb, oldVideoCachedDb, db)
             }
 
-            if (!hasSyncedDates) {
-                DataSyncHelper.syncEmbedStoreDates(getApplication(), imageStore, videoStore)
-            }
-
-            if(!isWorkScheduled(context = application, workName = IndexWorker.TAG)) scheduleIndexWorker()
-
             val appSettings = loadSettings(sharedPrefs)
 
             // Always run on app start to handle media that may have been deleted from the device
@@ -98,6 +92,9 @@ class MainViewModel(
                 allowedVideoDirs = appSettings.searchableVideoDirectories.map{it.toUri()},
                 mediaMetadataRepository = MediaMetadataRepository(db.metadataDao())
             )
+
+            if(!isWorkScheduled(context = application, workName = IndexWorker.TAG)) scheduleIndexWorker()
+
 
             val mediaTypes = mutableListOf<MediaType>()
             val clusterCrossRefRepository = ClusterCrossRefRepository(db.clusterCrossRefDao())

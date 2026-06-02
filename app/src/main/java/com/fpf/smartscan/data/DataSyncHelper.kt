@@ -113,30 +113,6 @@ object DataSyncHelper {
         Log.d(TAG, "Data sync completed successfully")
     }
 
-    suspend fun syncEmbedStoreDates(
-        context: Context,
-        imageStore: FileEmbeddingStore,
-        videoStore: FileEmbeddingStore
-    ) {
-        val sharedPrefs = context.applicationContext.getSharedPreferences(PrefsNames.APP_PREFS, MODE_PRIVATE)
-
-        updateStoreDates(
-            context=context,
-            embeds = imageStore.get(),
-            mediaTpe = MediaType.IMAGE
-        )
-        updateStoreDates(
-            context=context,
-            embeds = videoStore.get(),
-            mediaTpe = MediaType.VIDEO
-        )
-
-        sharedPrefs.edit {
-            putBoolean(PrefsKeys.EMBED_STORE_DATE_SYNC_COMPLETE, true)
-        }
-        Log.d(TAG, "Date sync completed successfully")
-    }
-
     private suspend fun transfer(application: Application, newDb: MediaDatabase) = withContext(Dispatchers.IO) {
         val newTagsRepository = TagRepository(newDb.tagDao())
         val newTagsCrossRefRepository = TagCrossRefRepository( newDb.tagCrossRefDao())
@@ -231,12 +207,8 @@ object DataSyncHelper {
         mediaMetadataRepository: MediaMetadataRepository,
         mediaType: MediaType
     ){
-        val existingIdsFromMetadata = mediaMetadataRepository.getByType(mediaType).map { it.id }
-        val existingIdsFromEmbedStore = store.get().map{it.id}.toSet()
-        if(existingIdsFromEmbedStore.any{it !in existingIdsFromMetadata}) {
-            syncMediaMetadataFromEmbedStore(context.applicationContext as Application, mediaMetadataRepository, existingIdsFromEmbedStore, mediaType )
-        }
-
+        val existingIdsFromMetadata = mediaMetadataRepository.getByType(mediaType).map { it.id }.toMutableSet()
+        val existingIdsFromEmbedStore = store.get().map{it.id}.toMutableSet()
         val accessibleMediaIds = when(mediaType){
             MediaType.IMAGE -> queryImageIds(context, allowedDirs).toSet()
             MediaType.VIDEO -> queryVideoIds(context, allowedDirs).toSet()
@@ -247,7 +219,29 @@ object DataSyncHelper {
 
         if(mediaToPurge.isNotEmpty()){
             removeStaleMedia(mediaToPurge, store = store, mediaMetadataRepository)
+            existingIdsFromEmbedStore.removeAll(mediaToPurge)
+            existingIdsFromMetadata.removeAll(mediaToPurge)
             Log.d(TAG, "${mediaType.name}: Removed ${mediaToPurge.size} stale items")
+        }
+
+        val storedEmbed = store.get(listOf(existingIdsFromEmbedStore.first())).first()
+        val mediaIdToDateMap = when(mediaType){
+            MediaType.IMAGE -> queryImageIdDateMap(context.applicationContext)
+            MediaType.VIDEO -> queryVideoIdDateMap(context.applicationContext)
+        }
+
+        // Check if store date need syncing
+        if(storedEmbed.date != mediaIdToDateMap[storedEmbed.id] ){
+            updateStoreDates(
+                context=context,
+                embeds = store.get(),
+                mediaTpe = mediaType
+            )
+            store.clear() // ensure internal consistency as precaution
+        }
+
+        if(existingIdsFromEmbedStore.any{it !in existingIdsFromMetadata}) {
+            syncMediaMetadataFromEmbedStore(context.applicationContext as Application, mediaMetadataRepository, existingIdsFromEmbedStore, mediaType )
         }
     }
 
@@ -281,6 +275,9 @@ object DataSyncHelper {
         val finalFile = File(context.applicationContext.filesDir, outputFileName)
         if (finalFile.exists()) finalFile.delete()
         tempFile.renameTo(finalFile)
+
+        Log.d(TAG, "${mediaTpe.name}: Date sync completed successfully")
+
     }
 
 }
