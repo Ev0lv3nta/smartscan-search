@@ -2,13 +2,9 @@ package com.fpf.smartscan.data
 
 import android.app.Application
 import android.content.Context
-import android.content.Context.MODE_PRIVATE
 import android.net.Uri
 import android.util.Log
-import androidx.core.content.edit
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
-import com.fpf.smartscan.constants.PrefsKeys
-import com.fpf.smartscan.constants.PrefsNames
 import com.fpf.smartscan.data.MediaDatabase.Companion.DB_NAME
 import com.fpf.smartscan.data.MediaDatabase.Companion.OLD_DB_IMAGE_NAME
 import com.fpf.smartscan.data.MediaDatabase.Companion.OLD_DB_VIDEO_NAME
@@ -179,22 +175,14 @@ object DataSyncHelper {
     }
 
     private suspend fun syncMediaMetadataFromEmbedStore(
-        application: Application,
         mediaMetadataRepository: MediaMetadataRepository,
-        existingIdsFromEmbedStore: Set<Long>,
+        store: FileEmbeddingStore,
         mediaType: MediaType
     ){
-        if(existingIdsFromEmbedStore.isEmpty()) return
-        val mediaIdToDateMap = when(mediaType){
-            MediaType.IMAGE -> queryImageIdDateMap(application)
-            MediaType.VIDEO -> queryVideoIdDateMap(application)
-        }
-        val newMetadataList = mediaIdToDateMap.entries.mapNotNull{
-            // Ensure embed store and media table are in sync
-            // Filtered out items will be naturally added to index based on schedule
-            if (it.key !in existingIdsFromEmbedStore) return@mapNotNull null
-            MediaMetadata(id=it.key, dateAdded = it.value, type = mediaType)
-        }
+        val storedEmbeds = store.get()
+        if(storedEmbeds.isEmpty()) return
+
+        val newMetadataList = storedEmbeds.map{ MediaMetadata(id=it.id, dateAdded = it.date, type = mediaType) }
         mediaMetadataRepository.insert(newMetadataList)
         Log.d(TAG, "${mediaType.name} metadata sync complete. ${newMetadataList.size} synced.")
 
@@ -243,7 +231,7 @@ object DataSyncHelper {
         }
 
         if(existingIdsFromEmbedStore.any{it !in existingIdsFromMetadata}) {
-            syncMediaMetadataFromEmbedStore(context.applicationContext as Application, mediaMetadataRepository, existingIdsFromEmbedStore, mediaType )
+            syncMediaMetadataFromEmbedStore( mediaMetadataRepository, store, mediaType )
         }
     }
 
