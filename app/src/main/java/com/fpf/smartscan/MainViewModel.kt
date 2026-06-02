@@ -75,12 +75,6 @@ class MainViewModel(
 
     fun prepareApp(onAppReady: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
-            val oldImageCachedDb = DataSyncHelper.checkOldCachedImageDb(application)
-            val oldVideoCachedDb = DataSyncHelper.checkOldCachedVideoDb(application)
-            val transferNeeded = oldImageCachedDb != null && oldVideoCachedDb != null
-            if (transferNeeded) {
-                DataSyncHelper.transferOldDbToNew(application, oldImageCachedDb, oldVideoCachedDb, db)
-            }
 
             val appSettings = loadSettings(sharedPrefs)
 
@@ -93,19 +87,16 @@ class MainViewModel(
                 mediaMetadataRepository = MediaMetadataRepository(db.metadataDao())
             )
 
+            val oldImageCachedDb = DataSyncHelper.checkOldCachedImageDb(application)
+            val oldVideoCachedDb = DataSyncHelper.checkOldCachedVideoDb(application)
+            val transferNeeded = oldImageCachedDb != null && oldVideoCachedDb != null
+            if (transferNeeded) {
+                DataSyncHelper.transferOldDbToNew(application, oldImageCachedDb, oldVideoCachedDb, db)
+            }
+
+
             if(!isWorkScheduled(context = application, workName = IndexWorker.TAG)) scheduleIndexWorker()
 
-
-            val mediaTypes = mutableListOf<MediaType>()
-            val clusterCrossRefRepository = ClusterCrossRefRepository(db.clusterCrossRefDao())
-            if(!clusterStore.exists || clusterCrossRefRepository.count() == 0) {
-                if (imageStore.exists) mediaTypes.add(MediaType.IMAGE)
-                if (videoStore.exists) mediaTypes.add(MediaType.VIDEO)
-            }
-
-            if(mediaTypes.isNotEmpty()){
-                refreshIndex(getApplication(), mediaTypes)
-            }
             onAppReady()
         }
     }
