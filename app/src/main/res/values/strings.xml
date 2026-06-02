@@ -54,6 +54,7 @@
     <string name="search_error_index_loading">Error loading index.</string>
     <string name="search_image_scan_progress_bar_label">Scanning images</string>
     <string name="search_video_scan_progress_bar_label">Scanning videos</string>
+    <string name="search_scan_in_progress_message">Search will be enabled once the scan is complete.</string>
 
     <!--Collections Screen-->
     <string name="collections_no_collections_title">No Collections</string>
