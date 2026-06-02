@@ -113,23 +113,24 @@ class MediaIndexForegroundService : Service(), KoinComponent {
                     mediaMetadataRepository = metadataRepo,
                 )
 
-                val embedsToCluster = mutableListOf<StoredEmbedding>()
 
                 mediaTypes.forEach { mediaType ->
                     when(mediaType){
                         MediaType.IMAGE -> {
                             val imageIndexer = ImageIndexer(imageEmbedder, context=application, listener = ImageIndexListener, store = imageStore)
                             indexMedia(application, MediaType.IMAGE, imageStore, imageIndexer, metadataRepo,appSettings.searchableImageDirectories.map{it.toUri()})
-                            embedsToCluster.addAll(imageStore.get())
                         }
                         MediaType.VIDEO -> {
                             val videoIndexer = VideoIndexer(imageEmbedder, context=application, listener = VideoIndexListener, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
                             indexMedia(application, MediaType.VIDEO, videoStore, videoIndexer, metadataRepo,appSettings.searchableVideoDirectories.map{it.toUri()})
-                            embedsToCluster.addAll(videoStore.get())
                         }
                     }
-                    clusterManager.cluster(embedsToCluster)
                 }
+                // Always cluster all existing media
+                val embedsToCluster = mutableListOf<StoredEmbedding>()
+                embedsToCluster.addAll(imageStore.get())
+                embedsToCluster.addAll(videoStore.get())
+                clusterManager.cluster(embedsToCluster)
             } catch (e: CancellationException) {
                 // cancelled
             } catch (e: Exception) {

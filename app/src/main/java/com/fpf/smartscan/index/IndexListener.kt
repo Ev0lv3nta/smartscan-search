@@ -50,7 +50,7 @@ abstract class BaseIndexListener(private val notificationId: Int, private val ta
             _indexingStatus.value = IndexingStatus.FAILED
             _progress.value = 0f
             val title = context.getString(R.string.notif_title_index_error_service, itemName)
-            val content = context.getString(R.string.notif_content_index_error_service, itemName.lowercase())
+            val content = context.getString(R.string.notif_content_index_error_service)
             showNotification(context, title, content, notificationId)
         } catch (e: Exception) {
             Log.e(tag, "Error in onFail: ${e.message}", e)

@@ -53,7 +53,6 @@ import com.fpf.smartscan.ui.action.MenuActionConfig
 import com.fpf.smartscan.ui.components.common.DropDownMenuWrapper
 import com.fpf.smartscan.ui.components.common.LoadingIndicator
 import com.fpf.smartscan.ui.components.media.MediaViewer
-import com.fpf.smartscan.ui.components.common.ProgressBar
 import com.fpf.smartscan.ui.components.common.SelectionHeaderRow
 import com.fpf.smartscan.ui.components.common.SlideRevealBox
 import com.fpf.smartscan.ui.components.pickers.DatePickerModal
@@ -84,23 +83,18 @@ fun SearchScreen(
     searchViewModel: SearchViewModel = koinViewModel(),
     appSettings:  StateFlow<AppSettings>,
     onTopBarChange: (TopBarState) -> Unit,
+    imageIndexStatus: IndexingStatus,
+    videoIndexStatus: IndexingStatus,
     intentSearchQuery: SearchQuery? = null
 ) {
     val appSettings by appSettings.collectAsState()
     val context = LocalContext.current
     val clipboard = LocalClipboard.current
 
-
-    // Index state
-    val imageIndexProgress by searchViewModel.imageIndexProgress.collectAsState(initial = 0f)
-    val videoIndexProgress by searchViewModel.videoIndexProgress.collectAsState(initial = 0f)
-    val imageIndexStatus by searchViewModel.imageIndexStatus.collectAsState()
-    val videoIndexStatus by searchViewModel.videoIndexStatus.collectAsState()
-    val isIndexing = imageIndexStatus == IndexingStatus.ACTIVE || videoIndexStatus == IndexingStatus.ACTIVE
     var showScanImagesDialog by remember { mutableStateOf(false) }
     var showScanVideosDialog by remember { mutableStateOf(false) }
     var showIndexAlert by remember { mutableStateOf(false) }
-
+    val isIndexing = imageIndexStatus == IndexingStatus.ACTIVE || videoIndexStatus == IndexingStatus.ACTIVE
 
     // Search state
     val state by searchViewModel.state.collectAsState()
@@ -264,17 +258,6 @@ fun SearchScreen(
             verticalArrangement = Arrangement.Top
         ) {
 
-            ProgressBar(
-                label = "${stringResource(R.string.search_image_scan_progress_bar_label)} ${"%.0f".format(imageIndexProgress * 100)}%",
-                isVisible = imageIndexStatus == IndexingStatus.ACTIVE,
-                progress = imageIndexProgress
-            )
-
-            ProgressBar(
-                label = "${stringResource(R.string.search_video_scan_progress_bar_label)} ${"%.0f".format(videoIndexProgress * 100)}%",
-                isVisible = videoIndexStatus == IndexingStatus.ACTIVE,
-                progress = videoIndexProgress
-            )
             if (state.queryImage != null) {
                 SlideRevealBox(
                     reverse = true,
@@ -584,10 +567,7 @@ fun SearchScreen(
     }
 
     if (showScanImagesDialog || showScanVideosDialog) {
-        val title = when(state.mediaType){
-            MediaType.IMAGE -> stringResource(R.string.scan_images_action)
-            MediaType.VIDEO -> stringResource(R.string.scan_videos_action)
-        }
+        val title = if(showScanImagesDialog) stringResource(R.string.scan_images_action) else stringResource(R.string.scan_videos_action)
 
         AlertDialog(
             onDismissRequest = {

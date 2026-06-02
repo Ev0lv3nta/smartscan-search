@@ -44,4 +44,10 @@ interface ClusterCrossRefDao {
 
     @Query("DELETE FROM media_cluster_crossref")
     suspend fun clear()
+
+    @Query("SELECT COUNT(*) FROM media_cluster_crossref")
+    suspend fun count(): Int
+
+    @Query("SELECT COUNT(*) FROM media_cluster_crossref WHERE clusterId = :clusterId")
+    suspend fun countByClusterId(clusterId: Long): Int
 }

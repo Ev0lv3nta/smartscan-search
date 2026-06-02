@@ -15,6 +15,8 @@ import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.events.CollectionEvent
 import com.fpf.smartscan.events.CollectionEventType
 import com.fpf.smartscan.media.CollectionType
+import com.fpf.smartscan.media.MediaType
+import com.fpf.smartscan.index.refreshIndex
 import com.fpf.smartscan.tag.TagManager
 import com.fpf.smartscan.ui.action.CollectionAction
 import com.fpf.smartscan.ui.state.CollectionsState
@@ -44,7 +46,7 @@ class CollectionsViewModel(
     private val mediaMetadataRepository: MediaMetadataRepository,
     private val imageStore: FileEmbeddingStore,
     private val videoStore: FileEmbeddingStore,
-    clusterStore: FileEmbeddingStore,
+    private val clusterStore: FileEmbeddingStore,
     ) : AndroidViewModel(application) {
     companion object {
         private const val TAG = "CollectionsViewModel"
@@ -236,5 +238,18 @@ class CollectionsViewModel(
                 }
             }
         }.toMutableSet()
+    }
+
+    fun clusterIfNeeded() {
+        val mediaTypes = mutableListOf<MediaType>()
+        viewModelScope.launch(Dispatchers.IO) {
+            if(!clusterStore.exists || clusterCrossRefRepository.count() == 0) {
+                if (imageStore.exists) mediaTypes.add(MediaType.IMAGE)
+                if (videoStore.exists) mediaTypes.add(MediaType.VIDEO)
+            }
+            if(mediaTypes.isNotEmpty()){
+                refreshIndex(getApplication(), mediaTypes)
+            }
+        }
     }
 }
