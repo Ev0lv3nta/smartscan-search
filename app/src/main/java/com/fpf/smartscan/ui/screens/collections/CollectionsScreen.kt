@@ -60,6 +60,7 @@ import com.fpf.smartscan.ui.action.CollectionAction
 import com.fpf.smartscan.ui.components.common.SelectionHeaderRow
 import com.fpf.smartscan.ui.components.common.ActionBar
 import com.fpf.smartscan.ui.action.ActionConfig
+import com.fpf.smartscan.ui.components.ScanLoadingView
 import org.koin.compose.viewmodel.koinViewModel
 
 
@@ -83,8 +84,8 @@ fun CollectionsScreen(
         CollectionType.CLUSTER -> clusterCollections
         CollectionType.TAG -> tagCollections
     }
-    val isCollectionVisible = (tagCollections.isNotEmpty() && state.collectionType == CollectionType.TAG) || (clusterCollections.isNotEmpty() && state.collectionType == CollectionType.CLUSTER)
     val isIndexing = imageIndexStatus == IndexingStatus.ACTIVE || videoIndexStatus == IndexingStatus.ACTIVE
+    val isCollectionVisible = (tagCollections.isNotEmpty() && state.collectionType == CollectionType.TAG) || (clusterCollections.isNotEmpty() && state.collectionType == CollectionType.CLUSTER)
 
     val context = LocalContext.current
 
@@ -169,6 +170,10 @@ fun CollectionsScreen(
         if(!state.loading && !isIndexing){
             viewModel.clusterIfNeeded()
         }
+    }
+
+    if(isIndexing){
+        return ScanLoadingView(true)
     }
 
     BackHandler(enabled = state.selection.isSelecting) {
@@ -285,6 +290,7 @@ fun CollectionsScreen(
                     )
                 }
             }
+
             MediaCollectionsList(
                 isVisible = isCollectionVisible,
                 numGridColumns = 3,
@@ -303,11 +309,7 @@ fun CollectionsScreen(
                 maxCollapsePx = maxCollapsablePx,
             )
 
-            EmptyCollectionScreen(
-                isVisible = !isCollectionVisible,
-                isIndexing = isIndexing,
-                collectionType = state.collectionType
-            )
+            EmptyCollectionScreen(isVisible = !isCollectionVisible)
         }
 
 
