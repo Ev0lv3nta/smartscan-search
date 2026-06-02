@@ -233,7 +233,7 @@ object DataSyncHelper {
     ){
         val existingIdsFromMetadata = mediaMetadataRepository.getByType(mediaType).map { it.id }
         val existingIdsFromEmbedStore = store.get().map{it.id}.toSet()
-        if(existingIdsFromEmbedStore != existingIdsFromMetadata.toSet()) {
+        if(existingIdsFromEmbedStore.any{it !in existingIdsFromMetadata}) {
             syncMediaMetadataFromEmbedStore(context.applicationContext as Application, mediaMetadataRepository, existingIdsFromEmbedStore, mediaType )
         }
 
