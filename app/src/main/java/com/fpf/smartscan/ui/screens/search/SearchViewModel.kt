@@ -37,9 +37,9 @@ import com.fpf.smartscan.media.shareMediaMulti
 import com.fpf.smartscan.search.dedupe
 import com.fpf.smartscan.search.getPaginatedResult
 import com.fpf.smartscan.search.parseQuery
-import com.fpf.smartscan.services.rebuildIndex
-import com.fpf.smartscan.services.refreshIndex
-import com.fpf.smartscan.services.startIndexing
+import com.fpf.smartscan.index.rebuildIndex
+import com.fpf.smartscan.index.refreshIndex
+import com.fpf.smartscan.index.startIndexing
 import com.fpf.smartscan.ui.action.SearchAction
 import com.fpf.smartscan.ui.permissions.StorageAccess
 import com.fpf.smartscan.ui.permissions.getStorageAccess

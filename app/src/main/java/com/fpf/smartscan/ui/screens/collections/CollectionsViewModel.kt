@@ -16,7 +16,7 @@ import com.fpf.smartscan.events.CollectionEvent
 import com.fpf.smartscan.events.CollectionEventType
 import com.fpf.smartscan.media.CollectionType
 import com.fpf.smartscan.media.MediaType
-import com.fpf.smartscan.services.refreshIndex
+import com.fpf.smartscan.index.refreshIndex
 import com.fpf.smartscan.tag.TagManager
 import com.fpf.smartscan.ui.action.CollectionAction
 import com.fpf.smartscan.ui.state.CollectionsState
