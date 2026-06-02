@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.fpf.smartscan.constants.PrefsNames
+import com.fpf.smartscan.data.DataSyncHelper
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.settings.loadSettings
@@ -87,7 +88,13 @@ class MainActivity : ComponentActivity() {
     }
 
     fun restartApp() {
-        App.resetKoin(this.application)
+        val cachedDb = DataSyncHelper.checkCachedDb(application)
+        val isRestoreRequired = cachedDb != null
+        if (isRestoreRequired) {
+            DataSyncHelper.restoreDbFromCache(application, cachedDb)
+        }
+
+        App.resetKoin(application)
 
         val intent = Intent(this, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)

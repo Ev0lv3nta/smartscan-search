@@ -2,6 +2,7 @@ package com.fpf.smartscan
 
 import android.app.Application
 import android.content.Context
+import android.util.Log
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
@@ -11,6 +12,7 @@ import com.fpf.smartscan.constants.PrefsKeys
 import com.fpf.smartscan.constants.PrefsNames
 import com.fpf.smartscan.data.DataSyncHelper
 import com.fpf.smartscan.data.MediaDatabase
+import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.services.refreshIndex
@@ -31,11 +33,12 @@ class MainViewModel(
     private val imageStore: FileEmbeddingStore,
     private val videoStore: FileEmbeddingStore,
     private val clusterStore: FileEmbeddingStore,
-    private  val mediaMetadataRepository: MediaMetadataRepository
 ) : AndroidViewModel(application) {
 
     companion object {
+        private const val TAG = "MainViewModel"
     }
+
     private val sharedPrefs = application.getSharedPreferences(PrefsNames.APP_PREFS, Context.MODE_PRIVATE)
     private val hasSyncedDates by lazy { sharedPrefs.getBoolean(PrefsKeys.EMBED_STORE_DATE_SYNC_COMPLETE, false)}
     private val hasSyncedMediaMetadata by lazy { sharedPrefs.getBoolean(PrefsKeys.MEDIA_METADATA_SYNC_COMPLETE, false)}
@@ -72,21 +75,6 @@ class MainViewModel(
 
     fun prepareApp(onAppReady: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
-            val cachedDb = DataSyncHelper.checkCachedDb(application)
-            val isRestoreRequired = cachedDb != null
-            if (isRestoreRequired) {
-                DataSyncHelper.restoreDbFromCache(application, cachedDb)
-            }
-
-            if (!hasSyncedDates) {
-                DataSyncHelper.syncEmbedStoreDates(getApplication(), imageStore, videoStore)
-            }
-
-            val mediaSyncNeeded = !hasSyncedMediaMetadata && (imageStore.exists || videoStore.exists)
-            if (mediaSyncNeeded) {
-                DataSyncHelper.syncMediaMetadataFromEmbedStores(application, db, imageStore=imageStore, videoStore=videoStore)
-            }
-
             val oldImageCachedDb = DataSyncHelper.checkOldCachedImageDb(application)
             val oldVideoCachedDb = DataSyncHelper.checkOldCachedVideoDb(application)
             val transferNeeded = oldImageCachedDb != null && oldVideoCachedDb != null
@@ -94,31 +82,33 @@ class MainViewModel(
                 DataSyncHelper.transferOldDbToNew(application, oldImageCachedDb, oldVideoCachedDb, db)
             }
 
+            if (!hasSyncedDates) {
+                DataSyncHelper.syncEmbedStoreDates(getApplication(), imageStore, videoStore)
+            }
+
             if(!isWorkScheduled(context = application, workName = IndexWorker.TAG)) scheduleIndexWorker()
 
             val appSettings = loadSettings(sharedPrefs)
 
             // Always run on app start to handle media that may have been deleted from the device
-            // May switch to ContentObserver
-            DataSyncHelper.syncWithMediaStore(
+            DataSyncHelper.sync(
                 application, imageStore = imageStore,
                 videoStore=videoStore,
                 allowedImageDirs = appSettings.searchableImageDirectories.map{it.toUri()},
                 allowedVideoDirs = appSettings.searchableVideoDirectories.map{it.toUri()},
-                mediaMetadataRepository = mediaMetadataRepository
+                mediaMetadataRepository = MediaMetadataRepository(db.metadataDao())
             )
 
-            val hasIndexedImagesButNotClustered = imageStore.exists && !clusterStore.exists
-            val hasIndexedVideosButNotClustered =  videoStore.exists && !clusterStore.exists
-            if(hasIndexedVideosButNotClustered && hasIndexedImagesButNotClustered){
-                refreshIndex(getApplication(), MediaType.entries)
-            }else{
-                when{
-                    hasIndexedVideosButNotClustered -> refreshIndex(getApplication(), mediaTypes = listOf(MediaType.VIDEO))
-                    hasIndexedImagesButNotClustered ->  refreshIndex(getApplication(), mediaTypes = listOf(MediaType.IMAGE))
-                }
+            val mediaTypes = mutableListOf<MediaType>()
+            val clusterCrossRefRepository = ClusterCrossRefRepository(db.clusterCrossRefDao())
+            if(!clusterStore.exists || clusterCrossRefRepository.count() == 0) {
+                if (imageStore.exists) mediaTypes.add(MediaType.IMAGE)
+                if (videoStore.exists) mediaTypes.add(MediaType.VIDEO)
             }
 
+            if(mediaTypes.isNotEmpty()){
+                refreshIndex(getApplication(), mediaTypes)
+            }
             onAppReady()
         }
     }
