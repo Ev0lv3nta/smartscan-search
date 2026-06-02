@@ -161,6 +161,12 @@ fun CollectionsScreen(
         )
     }
 
+    LaunchedEffect(Unit) {
+        if(!state.loading){
+            viewModel.clusterIfNeeded()
+        }
+    }
+
     BackHandler(enabled = state.selection.isSelecting) {
         viewModel.onAction(CollectionAction.ResetSelection)
     }
