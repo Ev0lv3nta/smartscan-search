@@ -173,7 +173,10 @@ fun CollectionsScreen(
     }
 
     if(isIndexing){
-        return ScanLoadingView(true)
+        return ScanLoadingView(
+            isIndexing=true,
+            message = stringResource(R.string.collections_scan_in_progress_description)
+        )
     }
 
     BackHandler(enabled = state.selection.isSelecting) {

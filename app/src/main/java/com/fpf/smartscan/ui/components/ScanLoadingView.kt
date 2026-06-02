@@ -28,6 +28,7 @@ import com.fpf.smartscan.R
 @Composable
 fun ScanLoadingView(
     isIndexing: Boolean,
+    message: String? = null
 ) {
     if (!isIndexing) return
 
@@ -69,12 +70,14 @@ fun ScanLoadingView(
                 style = MaterialTheme.typography.displayMedium
             )
 
-            Text(
-                text = stringResource(R.string.collections_scan_in_progress_description),
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(top = 8.dp)
-            )
+            message?.let {
+                Text(
+                    text = it,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
         }
     }
 }
