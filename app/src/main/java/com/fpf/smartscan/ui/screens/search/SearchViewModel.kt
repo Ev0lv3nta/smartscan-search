@@ -30,10 +30,8 @@ import com.fpf.smartscan.media.openImageInGallery
 import com.fpf.smartscan.media.openVideoInGallery
 import com.fpf.smartscan.media.removeStaleMedia
 import com.fpf.smartscan.media.toMediaItem
-import com.fpf.smartscan.index.ImageIndexListener
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.tag.TagManager
-import com.fpf.smartscan.index.VideoIndexListener
 import com.fpf.smartscan.media.mediaIdToUri
 import com.fpf.smartscan.media.shareMediaMulti
 import com.fpf.smartscan.search.dedupe
@@ -81,11 +79,6 @@ class SearchViewModel(
         private const val MODEL_SHUTDOWN_DURATION_THRESHOLD = 60_000L
         private const val DEDUPE_THRESHOLD = 0.95f
     }
-
-    val imageIndexProgress = ImageIndexListener.progress
-    val imageIndexStatus = ImageIndexListener.indexingStatus
-    val videoIndexProgress = VideoIndexListener.progress
-    val videoIndexStatus = VideoIndexListener.indexingStatus
 
     private val textEmbedder  = ClipTextEmbedder(application, ModelAssetSource.Resource(R.raw.clip_text_encoder_quant), vocabSource = ModelAssetSource.Resource(R.raw.vocab), mergesSource = ModelAssetSource.Resource(R.raw.merges))
 
@@ -309,7 +302,7 @@ class SearchViewModel(
         }
     }
 
-    fun externalSearch(intentSearchQuery: SearchQuery?, similarityThreshold: Float, imageSimilarityThreshold: Float, dedupeEnabled: Boolean, duplicateThreshold: Float = 0.95f){
+    fun externalSearch(intentSearchQuery: SearchQuery?, similarityThreshold: Float, imageSimilarityThreshold: Float, dedupeEnabled: Boolean){
         if(intentSearchQuery == null || hasHandledExternalSearch) return
 
         when(intentSearchQuery) {

@@ -51,6 +51,7 @@ import kotlinx.coroutines.FlowPreview
 import com.fpf.smartscan.R
 import androidx.compose.ui.res.stringResource
 import com.fpf.smartscan.events.CollectionEventType
+import com.fpf.smartscan.index.IndexingStatus
 import com.fpf.smartscan.media.CollectionType
 import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
@@ -67,6 +68,8 @@ import org.koin.compose.viewmodel.koinViewModel
 fun CollectionsScreen(
     onTopBarChange: (TopBarState) -> Unit,
     onViewCollection: (MediaCollection) -> Unit,
+    imageIndexStatus: IndexingStatus,
+    videoIndexStatus: IndexingStatus,
     viewModel: CollectionsViewModel = koinViewModel(),
     ) {
 
@@ -81,6 +84,7 @@ fun CollectionsScreen(
         CollectionType.TAG -> tagCollections
     }
     val isCollectionVisible = (tagCollections.isNotEmpty() && state.collectionType == CollectionType.TAG) || (clusterCollections.isNotEmpty() && state.collectionType == CollectionType.CLUSTER)
+    val isIndexing = imageIndexStatus == IndexingStatus.ACTIVE || videoIndexStatus == IndexingStatus.ACTIVE
 
     val context = LocalContext.current
 
@@ -162,7 +166,7 @@ fun CollectionsScreen(
     }
 
     LaunchedEffect(Unit) {
-        if(!state.loading){
+        if(!state.loading && !isIndexing){
             viewModel.clusterIfNeeded()
         }
     }
@@ -299,7 +303,11 @@ fun CollectionsScreen(
                 maxCollapsePx = maxCollapsablePx,
             )
 
-            EmptyCollectionScreen(!isCollectionVisible)
+            EmptyCollectionScreen(
+                isVisible = !isCollectionVisible,
+                isIndexing = isIndexing,
+                collectionType = state.collectionType
+            )
         }
 
 

@@ -2,7 +2,6 @@ package com.fpf.smartscan
 
 import android.app.Application
 import android.content.Context
-import android.util.Log
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
@@ -12,10 +11,9 @@ import com.fpf.smartscan.constants.PrefsKeys
 import com.fpf.smartscan.constants.PrefsNames
 import com.fpf.smartscan.data.DataSyncHelper
 import com.fpf.smartscan.data.MediaDatabase
-import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
-import com.fpf.smartscan.media.MediaType
-import com.fpf.smartscan.services.refreshIndex
+import com.fpf.smartscan.index.ImageIndexListener
+import com.fpf.smartscan.index.VideoIndexListener
 import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscan.utils.isWorkScheduled
 import com.fpf.smartscan.workers.IndexWorker
@@ -32,7 +30,6 @@ class MainViewModel(
     private val db: MediaDatabase,
     private val imageStore: FileEmbeddingStore,
     private val videoStore: FileEmbeddingStore,
-    private val clusterStore: FileEmbeddingStore,
 ) : AndroidViewModel(application) {
 
     companion object {
@@ -40,9 +37,12 @@ class MainViewModel(
     }
 
     private val sharedPrefs = application.getSharedPreferences(PrefsNames.APP_PREFS, Context.MODE_PRIVATE)
-    private val hasSyncedDates by lazy { sharedPrefs.getBoolean(PrefsKeys.EMBED_STORE_DATE_SYNC_COMPLETE, false)}
-    private val hasSyncedMediaMetadata by lazy { sharedPrefs.getBoolean(PrefsKeys.MEDIA_METADATA_SYNC_COMPLETE, false)}
 
+    // Global indexing state
+    val imageIndexProgress = ImageIndexListener.progress
+    val imageIndexStatus = ImageIndexListener.indexingStatus
+    val videoIndexProgress = VideoIndexListener.progress
+    val videoIndexStatus = VideoIndexListener.indexingStatus
 
     val versionName: String? = try {
         val packageInfo = application.packageManager.getPackageInfo(application.packageName, 0)
