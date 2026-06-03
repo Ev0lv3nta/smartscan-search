@@ -1,0 +1,84 @@
+package com.fpf.smartscan.ui.components
+
+import android.widget.Space
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import com.fpf.smartscan.R
+import com.fpf.smartscan.index.IndexingStatus
+import com.fpf.smartscan.ui.components.common.ProgressBar
+
+@Composable
+fun ScanLoadingView(
+    title: String,
+    isIndexing: Boolean,
+    imageIndexStatus: IndexingStatus,
+    videoIndexStatus: IndexingStatus,
+    imageIndexProgress: Float,
+    videoIndexProgress: Float,
+    message: String? = null
+) {
+    if (!isIndexing) return
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+
+            Text(
+                text = title,
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.displayMedium
+            )
+
+            message?.let {
+                Text(
+                    text = it,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            ProgressBar(
+                label = "${stringResource(R.string.search_image_scan_progress_bar_label)} ${
+                    "%.0f".format(
+                        imageIndexProgress * 100
+                    )
+                }%",
+                isVisible = imageIndexStatus == IndexingStatus.ACTIVE,
+                progress = imageIndexProgress
+            )
+
+            ProgressBar(
+                label = "${stringResource(R.string.search_video_scan_progress_bar_label)} ${
+                    "%.0f".format(
+                        videoIndexProgress * 100
+                    )
+                }%",
+                isVisible = videoIndexStatus == IndexingStatus.ACTIVE,
+                progress = videoIndexProgress
+            )
+        }
+    }
+}

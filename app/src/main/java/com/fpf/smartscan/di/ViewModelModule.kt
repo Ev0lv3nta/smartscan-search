@@ -15,6 +15,8 @@ val viewModelModule = module {
             db = get(),
             imageStore = get(IMAGE_STORE),
             videoStore = get(VIDEO_STORE),
+            clusterCrossRefRepository = get(),
+            clusterMetadataRepository = get()
             )
     }
     viewModel {

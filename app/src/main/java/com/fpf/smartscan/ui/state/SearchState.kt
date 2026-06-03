@@ -11,8 +11,6 @@ data class SearchState(
     val totalResults: Int = 0,
     val mediaType: MediaType = MediaType.IMAGE,
     val queryImage: Uri? = null,
-    val hasIndexedImages: Boolean? = null,
-    val hasIndexedVideos: Boolean? = null,
     val loading: Boolean = false,
     val error: String? = null,
     val resultToView: MediaItem? = null,

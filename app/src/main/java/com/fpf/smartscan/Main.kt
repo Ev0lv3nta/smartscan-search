@@ -1,8 +1,6 @@
 package com.fpf.smartscan
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.ui.Modifier
@@ -15,20 +13,27 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.fpf.smartscan.index.IndexingStatus
 import com.fpf.smartscan.media.MediaCollection
+import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.navigation.Routes
 import com.fpf.smartscan.navigation.BottomNavigationBar
 import com.fpf.smartscan.navigation.NavDataKeys
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.search.SearchQuery
+import com.fpf.smartscan.ui.components.ScanLoadingView
+import com.fpf.smartscan.ui.components.ScanModal
 import com.fpf.smartscan.ui.components.UpdatePopUp
-import com.fpf.smartscan.ui.components.common.ProgressBar
+import com.fpf.smartscan.ui.permissions.RequestPermissions
+import com.fpf.smartscan.ui.permissions.StorageAccess
+import com.fpf.smartscan.ui.permissions.getStorageAccess
 import com.fpf.smartscan.ui.screens.collections.CollectionItemsScreen
 import com.fpf.smartscan.ui.screens.collections.CollectionsScreen
 import com.fpf.smartscan.ui.screens.donate.DonateScreen
@@ -45,8 +50,10 @@ fun Main(
     onAppReady: () -> Unit,
     onRestartApp: () -> Unit
 ) {
+    val context = LocalContext.current
     val topBarState = remember { mutableStateOf(TopBarState()) }
     val navController = rememberNavController()
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
     val mainViewModel: MainViewModel = koinViewModel()
     val settingsViewModel: SettingsViewModel = viewModel()
     val isUpdatePopUpVisible by mainViewModel.isUpdatePopUpVisible.collectAsState()
@@ -55,51 +62,75 @@ fun Main(
     val videoIndexProgress by mainViewModel.videoIndexProgress.collectAsState()
     val imageIndexStatus by mainViewModel.imageIndexStatus.collectAsState()
     val videoIndexStatus by mainViewModel.videoIndexStatus.collectAsState()
+    val hasIndexedImages by mainViewModel.hasIndexedImages.collectAsState()
+    val hasIndexedVideos by mainViewModel.hasIndexedVideos.collectAsState()
+    val isIndexing = imageIndexStatus == IndexingStatus.ACTIVE || videoIndexStatus == IndexingStatus.ACTIVE
+
+    var hasStoragePermission by remember { mutableStateOf(false) }
+    var showFirstScanModal by remember { mutableStateOf(false) }
+    var showScanAndRebuildModal by remember { mutableStateOf(false) }
+    var showRefreshScanModel by remember { mutableStateOf(false) }
+    var mediaTypeToIndex by remember { mutableStateOf<MediaType?>(null) }
 
     LaunchedEffect(Unit) {
-        mainViewModel.prepareApp{onAppReady() }
+        hasStoragePermission = getStorageAccess(context) != StorageAccess.Denied
+        mainViewModel.prepareApp { onAppReady() }
     }
 
-        if (isUpdatePopUpVisible) {
-            UpdatePopUp(
-                isVisible = true,
-                updates = mainViewModel.getUpdates(),
-                onClose = { mainViewModel.closeUpdatePopUp() },
-                notes = stringResource(R.string.update_notes)
-            )
-        } else {
-            Scaffold(
-                topBar = {
-                    TopAppBar(
-                        title = {
-                            Text(topBarState.value.title)
-                        },
-                        navigationIcon = {
-                            topBarState.value.navigationIcon?.invoke()
-                        },
-                        actions = {
-                            topBarState.value.actions?.invoke(this)
-                        }
-                    )
-                },
-                bottomBar = { BottomNavigationBar(navController) }
-            ) { paddingValues ->
-                Column(
-                    modifier = Modifier.padding(paddingValues)
-                ) {
-                   Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)){
-                       ProgressBar(
-                           label = "${stringResource(R.string.search_image_scan_progress_bar_label)} ${"%.0f".format(imageIndexProgress * 100)}%",
-                           isVisible = imageIndexStatus == IndexingStatus.ACTIVE,
-                           progress = imageIndexProgress
-                       )
+    LaunchedEffect(imageIndexStatus) {
+        if (imageIndexStatus == IndexingStatus.COMPLETE) {
+            mainViewModel.setHasIndexed(true, MediaType.IMAGE)
+        }
+    }
 
-                       ProgressBar(
-                           label = "${stringResource(R.string.search_video_scan_progress_bar_label)} ${"%.0f".format(videoIndexProgress * 100)}%",
-                           isVisible = videoIndexStatus == IndexingStatus.ACTIVE,
-                           progress = videoIndexProgress
-                       )
-                   }
+    LaunchedEffect(videoIndexStatus) {
+        if (videoIndexStatus == IndexingStatus.COMPLETE) {
+            mainViewModel.setHasIndexed(true, MediaType.VIDEO)
+        }
+    }
+
+    if (currentRoute in listOf(Routes.SEARCH, Routes.COLLECTIONS)) {
+        RequestPermissions { _, storageGranted -> hasStoragePermission = storageGranted }
+    }
+
+    if (isUpdatePopUpVisible) {
+        UpdatePopUp(
+            isVisible = true,
+            updates = mainViewModel.getUpdates(),
+            onClose = { mainViewModel.closeUpdatePopUp() },
+            notes = stringResource(R.string.update_notes)
+        )
+    } else {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(topBarState.value.title)
+                    },
+                    navigationIcon = {
+                        topBarState.value.navigationIcon?.invoke()
+                    },
+                    actions = {
+                        topBarState.value.actions?.invoke(this)
+                    }
+                )
+            },
+            bottomBar = { if (!isIndexing) BottomNavigationBar(navController) }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier.padding(paddingValues)
+            ) {
+                if(isIndexing) {
+                    ScanLoadingView(
+                        isIndexing = true,
+                        imageIndexStatus = imageIndexStatus,
+                        videoIndexStatus = videoIndexStatus,
+                        videoIndexProgress = videoIndexProgress,
+                        imageIndexProgress = imageIndexProgress,
+                        title = stringResource(R.string.scan_in_progress_title),
+                        message = stringResource(R.string.scan_in_progress_content)
+                    )
+                }else {
                     NavHost(
                         navController = navController,
                         startDestination = Routes.SEARCH,
@@ -109,14 +140,23 @@ fun Main(
                                 appSettings = settingsViewModel.appSettings,
                                 onTopBarChange = { topBarState.value = it },
                                 intentSearchQuery = intentSearchQuery,
-                                imageIndexStatus = imageIndexStatus,
-                                videoIndexStatus = videoIndexStatus
-                            )
+                                isIndexing = isIndexing,
+                                hasIndexedImages = hasIndexedImages,
+                                hasIndexedVideos = hasIndexedVideos,
+                                hasStoragePermission = hasStoragePermission,
+                                onIndex = {
+                                    mediaTypeToIndex = it
+                                    showFirstScanModal = true
+                                },
+                                )
                         }
                         composable(Routes.COLLECTIONS) {
                             CollectionsScreen(
-                                imageIndexStatus = imageIndexStatus,
-                                videoIndexStatus = videoIndexStatus,
+                                isIndexing = isIndexing,
+                                hasIndexedImages = hasIndexedImages,
+                                hasIndexedVideos = hasIndexedVideos,
+                                hasStoragePermission = hasStoragePermission,
+                                onIndex = { showFirstScanModal = true },
                                 onTopBarChange = { topBarState.value = it },
                                 onViewCollection = { collection ->
                                     navController.currentBackStackEntry
@@ -149,7 +189,9 @@ fun Main(
                                 onNavigate = { route: String ->
                                     navController.navigate(route)
                                 },
-                                onRestartApp = onRestartApp
+                                onRestartApp = onRestartApp,
+                                onScanRebuild = { showScanAndRebuildModal = true },
+                                onScanRefresh = { showRefreshScanModel = true }
                             )
                         }
                         composable(
@@ -175,3 +217,56 @@ fun Main(
             }
         }
     }
+
+    ScanModal(
+        showFirstScanModal,
+        onClose = {
+            showFirstScanModal = false
+            mediaTypeToIndex = null
+        },
+        onConfirm = {
+            mainViewModel.refreshMediaIndex(it)
+            showFirstScanModal = false
+            mediaTypeToIndex = null
+        },
+        title = mediaTypeToIndex?.let {
+            stringResource(
+                R.string.scan_media_action,
+                it.name.lowercase() + "s"
+            )
+        } ?: stringResource(R.string.scan_action),
+        description = mediaTypeToIndex?.let {
+            stringResource(
+                R.string.alert_first_media_scan_content,
+                it.name.lowercase()
+            )
+        } ?: stringResource(R.string.alert_first_scan_content),
+        mediaType = mediaTypeToIndex
+    )
+
+    ScanModal(
+        showRefreshScanModel,
+        onClose = {
+            showRefreshScanModel = false
+        },
+        onConfirm = {
+            mainViewModel.refreshMediaIndex(it)
+            showRefreshScanModel = false
+        },
+        title = stringResource(R.string.scan_action),
+        description = stringResource(R.string.alert_scan_refresh_description),
+    )
+
+    ScanModal(
+        showScanAndRebuildModal,
+        onClose = {
+            showScanAndRebuildModal = false
+        },
+        onConfirm = {
+            mainViewModel.rebuildMediaIndex(it)
+            showScanAndRebuildModal = false
+        },
+        title = stringResource(R.string.scan_rebuild_action),
+        description = stringResource(R.string.alert_scan_rebuild_description),
+    )
+}

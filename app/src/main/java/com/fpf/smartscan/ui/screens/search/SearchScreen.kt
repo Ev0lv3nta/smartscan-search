@@ -18,11 +18,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Tag
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.*
@@ -45,12 +43,9 @@ import com.fpf.smartscan.constants.mediaTypeOptions
 import com.fpf.smartscan.events.SearchEventType
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.navigation.TopBarState
-import com.fpf.smartscan.index.IndexingStatus
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.settings.AppSettings
 import com.fpf.smartscan.ui.action.SearchAction
-import com.fpf.smartscan.ui.action.MenuActionConfig
-import com.fpf.smartscan.ui.components.common.DropDownMenuWrapper
 import com.fpf.smartscan.ui.components.common.LoadingIndicator
 import com.fpf.smartscan.ui.components.media.MediaViewer
 import com.fpf.smartscan.ui.components.common.SelectionHeaderRow
@@ -65,7 +60,6 @@ import com.fpf.smartscan.ui.components.TagAdder
 import com.fpf.smartscan.ui.components.common.ActionBar
 import com.fpf.smartscan.ui.action.ActionConfig
 import com.fpf.smartscan.ui.components.pickers.OptionPicker
-import com.fpf.smartscan.ui.permissions.RequestPermissions
 import com.fpf.smartscan.ui.screens.search.SearchViewModel.Companion.RESULTS_BATCH_SIZE
 import com.fpf.smartscan.utils.formatDate
 import com.fpf.smartscan.utils.toEpochSeconds
@@ -83,18 +77,16 @@ fun SearchScreen(
     searchViewModel: SearchViewModel = koinViewModel(),
     appSettings:  StateFlow<AppSettings>,
     onTopBarChange: (TopBarState) -> Unit,
-    imageIndexStatus: IndexingStatus,
-    videoIndexStatus: IndexingStatus,
+    isIndexing: Boolean,
+    hasIndexedImages: Boolean,
+    hasIndexedVideos: Boolean,
+    hasStoragePermission: Boolean,
+    onIndex: (mediaType: MediaType?) -> Unit,
     intentSearchQuery: SearchQuery? = null
 ) {
     val appSettings by appSettings.collectAsState()
     val context = LocalContext.current
     val clipboard = LocalClipboard.current
-
-    var showScanImagesDialog by remember { mutableStateOf(false) }
-    var showScanVideosDialog by remember { mutableStateOf(false) }
-    var showIndexAlert by remember { mutableStateOf(false) }
-    val isIndexing = imageIndexStatus == IndexingStatus.ACTIVE || videoIndexStatus == IndexingStatus.ACTIVE
 
     // Search state
     val state by searchViewModel.state.collectAsState()
@@ -108,7 +100,6 @@ fun SearchScreen(
         stringResource(R.string.placeholders_search_by_tag_query),
     )
 
-    var hasStoragePermission by remember { mutableStateOf(false) }
     var isAddingTag by remember { mutableStateOf(false) }
     var tagAutoCompleteTagResults by remember { mutableStateOf<List<String>>(emptyList()) }
     var isSelectingMediaType by remember { mutableStateOf(false) }
@@ -153,37 +144,18 @@ fun SearchScreen(
     var showStartDatePicker by remember { mutableStateOf(false) }
     var showEndDatePicker by remember { mutableStateOf(false) }
 
-    // Menu
-    var showMenu by remember { mutableStateOf(false) }
-
-    val menuActions: List<MenuActionConfig> = listOf(
-        MenuActionConfig.Button(label = stringResource(R.string.scan_images_action), { showScanImagesDialog = true }, enabled = !isIndexing),
-        MenuActionConfig.Button(label = stringResource(R.string.scan_videos_action), { showScanVideosDialog = true }, enabled=!isIndexing)
-    )
-
-    RequestPermissions { _, storageGranted ->
-        hasStoragePermission = storageGranted
-    }
-
     val screenTitle = stringResource(R.string.title_search)
 
-    LaunchedEffect(state.hasIndexedImages, state.hasIndexedVideos, state.mediaType, hasStoragePermission) {
-        val isFirstImageScanNeeded = hasStoragePermission && state.hasIndexedImages == false && (state.mediaType == MediaType.IMAGE)
-        val isFirstVideoScanNeeded = hasStoragePermission && state.hasIndexedVideos == false && (state.mediaType == MediaType.VIDEO)
-        if( !isIndexing && (isFirstImageScanNeeded || isFirstVideoScanNeeded)){
-            showIndexAlert = true
-        }
-    }
+    LaunchedEffect(hasIndexedVideos, hasIndexedImages, state.mediaType, hasStoragePermission) {
+        if (isIndexing || !hasStoragePermission) return@LaunchedEffect
 
-    LaunchedEffect(imageIndexStatus) {
-        if (imageIndexStatus == IndexingStatus.COMPLETE) {
-            searchViewModel.reloadIndex(MediaType.IMAGE)
-        }
-    }
+        val firstImageIndexRequired = state.mediaType == MediaType.IMAGE && !hasIndexedImages
+        val firstVideoIndexRequired = state.mediaType == MediaType.VIDEO && !hasIndexedVideos
+        val bothRequired = !hasIndexedImages && !hasIndexedVideos
 
-    LaunchedEffect(videoIndexStatus) {
-        if (videoIndexStatus == IndexingStatus.COMPLETE) {
-            searchViewModel.reloadIndex(MediaType.VIDEO)
+        when {
+            bothRequired -> onIndex(null)
+            firstImageIndexRequired || firstVideoIndexRequired -> onIndex(state.mediaType)
         }
     }
 
@@ -199,21 +171,6 @@ fun SearchScreen(
         onTopBarChange(
             TopBarState(
                 title = screenTitle,
-                actions = {
-                    Box{
-                        IconButton(onClick = { showMenu = true }) {
-                            Icon(
-                                imageVector = Icons.Filled.MoreVert,
-                                contentDescription = "menu"
-                            )
-                        }
-                        DropDownMenuWrapper(
-                            expanded = showMenu,
-                            actions = menuActions,
-                            onClose = {showMenu = false}
-                        )
-                    }
-                }
             )
         )
     }
@@ -257,7 +214,9 @@ fun SearchScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
-
+            if(!hasStoragePermission && !state.loading){
+                Text(text = stringResource(R.string.search_storage_permissions), color = Color.Red, modifier = Modifier.padding(vertical=8.dp))
+            }
             if (state.queryImage != null) {
                 SlideRevealBox(
                     reverse = true,
@@ -280,7 +239,7 @@ fun SearchScreen(
                             uri = state.queryImage,
                             mediaType = state.mediaType,
                             imageSize = 140.dp,
-                            mediaTypeSelectorEnabled = (videoIndexStatus != IndexingStatus.ACTIVE && imageIndexStatus != IndexingStatus.ACTIVE), // prevent switching modes when indexing in progress
+                            mediaTypeSelectorEnabled = !isIndexing,
                             onSearch = {
                                 searchViewModel.onAction(SearchAction.Search(appSettings.imageSimilarityThreshold, appSettings.enableDedupe))
                             },
@@ -393,10 +352,6 @@ fun SearchScreen(
 
             state.error?.let {
                 Text(text = it, color = Color.Red, modifier = Modifier.padding(vertical=8.dp))
-            }
-
-            if(!hasStoragePermission && !state.loading){
-                Text(text = stringResource(R.string.storage_permissions), color = Color.Red, modifier = Modifier.padding(vertical=8.dp))
             }
 
             SearchPlaceholderDisplay(isVisible = state.searchResults.isEmpty())
@@ -533,94 +488,6 @@ fun SearchScreen(
                 Text("Clear")
             }
         }
-    }
-
-    if ( showIndexAlert) {
-        val title = when(state.mediaType){
-            MediaType.IMAGE -> stringResource(R.string.scan_images_action)
-            MediaType.VIDEO -> stringResource(R.string.scan_videos_action)
-        }
-        val description = when(state.mediaType){
-            MediaType.IMAGE -> stringResource(R.string.first_indexing, "image")
-            MediaType.VIDEO -> stringResource(R.string.first_indexing, "video")
-        }
-        AlertDialog(
-            onDismissRequest = { },
-            title = { Text(title) },
-            text = { Text(description) },
-            dismissButton = {
-                TextButton(onClick = {
-                    showIndexAlert = false
-                }) {
-                    Text("Cancel")
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    showIndexAlert = false
-                    searchViewModel.onAction(SearchAction.Index)
-                }) {
-                    Text("Confirm")
-                }
-            }
-        )
-    }
-
-    if (showScanImagesDialog || showScanVideosDialog) {
-        val title = if(showScanImagesDialog) stringResource(R.string.scan_images_action) else stringResource(R.string.scan_videos_action)
-
-        AlertDialog(
-            onDismissRequest = {
-                if (showScanImagesDialog) showScanImagesDialog = false else showScanVideosDialog = false
-            },
-            title = {
-                Text(title)
-            },
-            text = {
-                Column {
-                    Text(stringResource(R.string.alert_scan_index_description))
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    TextButton(
-                        onClick = {
-                            if (showScanImagesDialog) {
-                                showScanImagesDialog = false
-                                searchViewModel.onAction(SearchAction.RefreshIndex(MediaType.IMAGE))
-                            } else {
-                                showScanVideosDialog = false
-                                searchViewModel.onAction(SearchAction.RefreshIndex(MediaType.VIDEO))
-                            }
-                        }
-                    ) {
-                        Text("Refresh")
-                    }
-
-                    TextButton(
-                        onClick = {
-                            if (showScanImagesDialog) {
-                                showScanImagesDialog = false
-                                searchViewModel.onAction(SearchAction.RebuildIndex(MediaType.IMAGE))
-                            } else {
-                                showScanVideosDialog = false
-                                searchViewModel.onAction(SearchAction.RebuildIndex(MediaType.VIDEO))
-                            }
-                        }
-                    ) {
-                        Text("Rebuild")
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (showScanImagesDialog) showScanImagesDialog = false else showScanVideosDialog = false
-                    }
-                ) {
-                    Text("Cancel")
-                }
-            }
-        )
     }
 
     TagAdder(

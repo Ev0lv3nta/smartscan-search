@@ -12,8 +12,6 @@ sealed interface SearchAction {
     data class ViewResult(val context: Context, val item: MediaItem, val autoOpenInGallery: Boolean? = null): SearchAction
     data class ToggleSelectedResult(val item: MediaItem): SearchAction
     data class TagItems(val tag: String): SearchAction
-    data class RefreshIndex(val mediaType: MediaType): SearchAction
-    data class RebuildIndex(val mediaType: MediaType): SearchAction
     data class SetStartDateFilter(val date: Long?): SearchAction
     data class SetEndDateFilter(val date: Long?): SearchAction
     data class SetMediaTypeFilter(val mediaType: MediaType): SearchAction
@@ -23,7 +21,6 @@ sealed interface SearchAction {
     data class SetSelectAll(val selectAll: Boolean): SearchAction
     data object RemoveUploadedImage: SearchAction
     data object ClearDateFilters: SearchAction
-    data object Index: SearchAction
     data object Reset: SearchAction
     data object ClearResultView: SearchAction
     data object ToggleSelectionMode: SearchAction

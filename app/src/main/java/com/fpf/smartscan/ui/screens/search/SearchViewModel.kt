@@ -37,12 +37,7 @@ import com.fpf.smartscan.media.shareMediaMulti
 import com.fpf.smartscan.search.dedupe
 import com.fpf.smartscan.search.getPaginatedResult
 import com.fpf.smartscan.search.parseQuery
-import com.fpf.smartscan.index.rebuildIndex
-import com.fpf.smartscan.index.refreshIndex
-import com.fpf.smartscan.index.startIndexing
 import com.fpf.smartscan.ui.action.SearchAction
-import com.fpf.smartscan.ui.permissions.StorageAccess
-import com.fpf.smartscan.ui.permissions.getStorageAccess
 import com.fpf.smartscan.ui.state.SearchState
 import com.fpf.smartscan.ui.state.common.SelectionState
 import com.fpf.smartscan.ui.utils.SelectionUtils
@@ -94,9 +89,6 @@ class SearchViewModel(
     private val _state = MutableStateFlow(SearchState())
     val state: StateFlow<SearchState> = _state
     val searchFieldState: TextFieldState = TextFieldState()
-    private val _hasRefreshedImageIndex = MutableStateFlow(false)
-    private val _hasRefreshedVideoIndex = MutableStateFlow(false)
-
     private val isLoadingMoreSearchResults = AtomicBoolean(false)
 
     private var hasHandledExternalSearch = false
@@ -106,12 +98,6 @@ class SearchViewModel(
     private val _event = MutableSharedFlow<SearchEvent>()
     val event = _event.asSharedFlow()
 
-
-
-    init {
-        loadImageIndex()
-    }
-
     fun onAction(action: SearchAction){
         when(action){
             is SearchAction.ClearDateFilters -> clearDateFilters()
@@ -120,9 +106,6 @@ class SearchViewModel(
                 setQueryImage(action.image)
                 search(action.similarityThreshold, action.dedupeEnabled)
             }
-            is SearchAction.Index -> index()
-            is SearchAction.RebuildIndex -> rebuildMediaIndex(action.mediaType)
-            is SearchAction.RefreshIndex -> refreshMediaIndex(action.mediaType)
             is SearchAction.RemoveUploadedImage -> removeUploadedImage()
             is SearchAction.SetEndDateFilter -> setEndDateFilter(action.date)
             is SearchAction.SetMediaTypeFilter -> setMediaType(action.mediaType)
@@ -145,51 +128,9 @@ class SearchViewModel(
     private fun resetSelection() = _state.update{it.copy(selection = SelectionUtils.resetSelection(it.selection))}
     private fun toggleSelectionMode() = _state.update { it.copy(selection = SelectionUtils.toggleSelectionMode(it.selection)) }
 
-    private fun loadImageIndex(){
-        loadIndex(imageStore)
-    }
-
-    private fun loadVideoIndex(){
-        loadIndex(videoStore)
-    }
-
-    private fun loadIndex(store: FileEmbeddingStore){
-        viewModelScope.launch(Dispatchers.IO){
-            try {
-                _state.emit(_state.value.copy(error = null, loading = true))
-                val embeddings = store.get()
-                val hasIndexed = embeddings.isNotEmpty()
-                when(_state.value.mediaType){
-                    MediaType.VIDEO -> _state.emit(_state.value.copy(hasIndexedVideos = hasIndexed))
-                    MediaType.IMAGE -> _state.emit(_state.value.copy(hasIndexedImages = hasIndexed))
-                }
-            }catch (e: Exception){
-                _state.emit(_state.value.copy(error = getApplication<Application>().getString(R.string.search_error_index_loading)))
-                Log.e(TAG, "Error loading index: $e")
-            }finally {
-                _state.emit(_state.value.copy(loading = false))
-            }
-        }
-    }
-
-    fun reloadIndex(mode : MediaType){
-        if(mode == MediaType.IMAGE && !_hasRefreshedImageIndex.value){
-            loadImageIndex()
-            _hasRefreshedImageIndex.value = true
-        }else if (mode == MediaType.VIDEO && !_hasRefreshedVideoIndex.value){
-            loadVideoIndex()
-            _hasRefreshedVideoIndex.value = true
-        }
-    }
-
     private fun setMediaType(type: MediaType) {
         _state.update { it.copy(mediaType = type) }
         reset()
-
-        // saves memory by lazy loading video index
-        if(type == MediaType.VIDEO && _state.value.hasIndexedVideos == null){
-            viewModelScope.launch(Dispatchers.IO){loadVideoIndex()}
-        }
     }
 
     private fun reset(){
@@ -372,23 +313,6 @@ class SearchViewModel(
 
     private fun clearResultView() = _state.update {it.copy(resultToView = null)}
 
-    private fun refreshMediaIndex(mediaType: MediaType){
-        val storageAccess = getStorageAccess(getApplication())
-        if (storageAccess != StorageAccess.Denied) {
-            refreshIndex(getApplication(), listOf(mediaType))
-        }
-    }
-
-    private fun rebuildMediaIndex(mediaType: MediaType){
-        val storageAccess = getStorageAccess(getApplication())
-        if (storageAccess != StorageAccess.Denied) {
-            val store = getStore()
-            viewModelScope.launch {
-                rebuildIndex(getApplication(), listOf(mediaType to store), clusterCrossRefRepository, clusterMetadataRepository)
-            }
-        }
-    }
-
     private fun setQueryImage(uri: Uri?) = _state.update{it.copy(queryImage = uri)}
 
     private fun setStartDateFilter(date: Long?) = _state.update {it.copy(startDateFilter = date)}
@@ -419,14 +343,6 @@ class SearchViewModel(
     }
 
     private fun shouldShutdownModel(lastUsage: Long?) = lastUsage != null && System.currentTimeMillis() - lastUsage >= MODEL_SHUTDOWN_DURATION_THRESHOLD
-
-    private fun index(){
-        when(_state.value.mediaType){
-            MediaType.IMAGE -> startIndexing(getApplication(), listOf(MediaType.IMAGE))
-            MediaType.VIDEO -> startIndexing(getApplication(), listOf(MediaType.VIDEO))
-        }
-    }
-
     private fun tagItems(tag: String){
         viewModelScope.launch(Dispatchers.IO) {
             try {

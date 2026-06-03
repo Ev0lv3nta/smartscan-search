@@ -37,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
@@ -51,7 +52,6 @@ import kotlinx.coroutines.FlowPreview
 import com.fpf.smartscan.R
 import androidx.compose.ui.res.stringResource
 import com.fpf.smartscan.events.CollectionEventType
-import com.fpf.smartscan.index.IndexingStatus
 import com.fpf.smartscan.media.CollectionType
 import com.fpf.smartscan.media.MediaCollection
 import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
@@ -68,8 +68,11 @@ import org.koin.compose.viewmodel.koinViewModel
 fun CollectionsScreen(
     onTopBarChange: (TopBarState) -> Unit,
     onViewCollection: (MediaCollection) -> Unit,
-    imageIndexStatus: IndexingStatus,
-    videoIndexStatus: IndexingStatus,
+    isIndexing: Boolean,
+    hasIndexedImages: Boolean,
+    hasIndexedVideos: Boolean,
+    hasStoragePermission: Boolean,
+    onIndex: () -> Unit,
     viewModel: CollectionsViewModel = koinViewModel(),
     ) {
 
@@ -84,7 +87,6 @@ fun CollectionsScreen(
         CollectionType.TAG -> tagCollections
     }
     val isCollectionVisible = (tagCollections.isNotEmpty() && state.collectionType == CollectionType.TAG) || (clusterCollections.isNotEmpty() && state.collectionType == CollectionType.CLUSTER)
-    val isIndexing = imageIndexStatus == IndexingStatus.ACTIVE || videoIndexStatus == IndexingStatus.ACTIVE
 
     val context = LocalContext.current
 
@@ -100,12 +102,7 @@ fun CollectionsScreen(
         ActionConfig(label = stringResource(R.string.delete_action), { isDeletingCollection = true }, enabled = state.collectionType == CollectionType.TAG, icon = Icons.Filled.Delete)
     )
 
-    // Menu
-    var showMenu by remember { mutableStateOf(false) }
-//    val menuActions: Map<String, MenuActionConfig> = mapOf(
-//    )
     val spaceNotAllowedMessage = stringResource(R.string.alert_space_not_allowed)
-
 
     var offset by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
@@ -165,9 +162,17 @@ fun CollectionsScreen(
         )
     }
 
+
     LaunchedEffect(Unit) {
         if(!state.loading && !isIndexing){
             viewModel.clusterIfNeeded()
+        }
+    }
+
+    LaunchedEffect(hasIndexedVideos, hasIndexedImages, hasStoragePermission) {
+        val firstIndexRequired = !isIndexing && !hasIndexedImages && !hasIndexedVideos
+        if( firstIndexRequired && hasStoragePermission){
+            onIndex()
         }
     }
 
@@ -184,6 +189,14 @@ fun CollectionsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.Top
         ) {
+            if(!hasStoragePermission && !state.loading){
+                Text(
+                    text = stringResource(R.string.collections_storage_permissions),
+                    color = Color.Red,
+                    modifier = Modifier.padding(vertical=8.dp).align(Alignment.CenterHorizontally),
+                )
+            }
+
             SlideRevealBox(
                 isVisible = state.selection.isSelecting,
                 reverse = true,
@@ -285,6 +298,7 @@ fun CollectionsScreen(
                     )
                 }
             }
+
             MediaCollectionsList(
                 isVisible = isCollectionVisible,
                 numGridColumns = 3,
@@ -303,11 +317,7 @@ fun CollectionsScreen(
                 maxCollapsePx = maxCollapsablePx,
             )
 
-            EmptyCollectionScreen(
-                isVisible = !isCollectionVisible,
-                isIndexing = isIndexing,
-                collectionType = state.collectionType
-            )
+            EmptyCollectionScreen(isVisible = !isCollectionVisible)
         }
 
 
