@@ -79,8 +79,8 @@ class ClusterManager(
         val updatedClusterCrossRefs = otherClustersCrossRefs.map { it.copy(clusterId = primaryClusterId) }
         clusterCrossRefRepository.insertClusterCrossRefs(updatedClusterCrossRefs)
 
-        // Delete clusters which are being merged
-        clusterMetadataRepository.deleteMetadatas(otherClusters) // cascades all related crossrefs
+        // Delete clusters which are being merged (cascades all related crossrefs)
+        clusterMetadataRepository.deleteMetadatas(otherClusters)
         clusterStore.remove(otherClusters)
         sync(primaryClusterId, imageEmbedStore, videoEmbedStore)
     }
@@ -225,6 +225,8 @@ class ClusterManager(
 
     private suspend fun sync(clusterId: Long, imageEmbedStore: FileEmbeddingStore, videoEmbedStore: FileEmbeddingStore){
         val clusterCrossRefs = clusterCrossRefRepository.getByClusterIds(listOf(clusterId))
+        if(clusterCrossRefs.isEmpty()) return
+
         val mediaIds = clusterCrossRefs.map{it.mediaId}
         val embeddings = mutableListOf<FloatArray>()
 
@@ -233,6 +235,7 @@ class ClusterManager(
         // This is quicker than checking type via db
         embeddings.addAll(imageEmbedStore.get(mediaIds).map{it.embedding})
         embeddings.addAll(videoEmbedStore.get(mediaIds).map{it.embedding})
+
         val (prototypeEmbedding, meanSim, stdSim) = computeClusterMetrics(embeddings)
 
         // Update primary cluster
