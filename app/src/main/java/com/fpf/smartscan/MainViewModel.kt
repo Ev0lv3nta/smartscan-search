@@ -11,10 +11,17 @@ import com.fpf.smartscan.constants.PrefsKeys
 import com.fpf.smartscan.constants.PrefsNames
 import com.fpf.smartscan.data.DataSyncHelper
 import com.fpf.smartscan.data.MediaDatabase
+import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
+import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
 import com.fpf.smartscan.index.ImageIndexListener
 import com.fpf.smartscan.index.VideoIndexListener
+import com.fpf.smartscan.index.rebuildIndex
+import com.fpf.smartscan.index.refreshIndex
+import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.settings.loadSettings
+import com.fpf.smartscan.ui.permissions.StorageAccess
+import com.fpf.smartscan.ui.permissions.getStorageAccess
 import com.fpf.smartscan.utils.isWorkScheduled
 import com.fpf.smartscan.workers.IndexWorker
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
@@ -30,6 +37,8 @@ class MainViewModel(
     private val db: MediaDatabase,
     private val imageStore: FileEmbeddingStore,
     private val videoStore: FileEmbeddingStore,
+    private val clusterCrossRefRepository: ClusterCrossRefRepository,
+    private val clusterMetadataRepository: ClusterMetadataRepository,
 ) : AndroidViewModel(application) {
 
     companion object {
@@ -43,6 +52,13 @@ class MainViewModel(
     val imageIndexStatus = ImageIndexListener.indexingStatus
     val videoIndexProgress = VideoIndexListener.progress
     val videoIndexStatus = VideoIndexListener.indexingStatus
+
+    private val _hasIndexedImages = MutableStateFlow(imageStore.exists)
+    private val _hasIndexedVideos = MutableStateFlow(videoStore.exists)
+    val hasIndexedImages: StateFlow<Boolean> = _hasIndexedImages
+    val hasIndexedVideos: StateFlow<Boolean> = _hasIndexedVideos
+
+
 
     val versionName: String? = try {
         val packageInfo = application.packageManager.getPackageInfo(application.packageName, 0)
@@ -98,6 +114,35 @@ class MainViewModel(
             if(!isWorkScheduled(context = application, workName = IndexWorker.TAG)) scheduleIndexWorker()
 
             onAppReady()
+        }
+    }
+
+    fun refreshMediaIndex(mediaTypes: List<MediaType>){
+        val storageAccess = getStorageAccess(getApplication())
+        if (storageAccess != StorageAccess.Denied) {
+            refreshIndex(getApplication(), mediaTypes)
+        }
+    }
+
+    fun rebuildMediaIndex(mediaTypes: List<MediaType>){
+        val storageAccess = getStorageAccess(getApplication())
+        if (storageAccess != StorageAccess.Denied) {
+            val mediaTypeToEmbedStore = mediaTypes.map{
+                when(it) {
+                    MediaType.IMAGE -> it to imageStore
+                    MediaType.VIDEO -> it to videoStore
+                }
+            }
+            viewModelScope.launch {
+                rebuildIndex(getApplication(), mediaTypeToEmbedStore, clusterCrossRefRepository, clusterMetadataRepository)
+            }
+        }
+    }
+
+    fun setHasIndexed(hasIndexed: Boolean, mediaType: MediaType) {
+        when(mediaType){
+            MediaType.IMAGE -> _hasIndexedImages.value = hasIndexed
+            MediaType.VIDEO -> _hasIndexedVideos.value = hasIndexed
         }
     }
 

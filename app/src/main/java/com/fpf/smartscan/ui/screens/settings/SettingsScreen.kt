@@ -45,7 +45,9 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel(),
     onNavigate: (String) -> Unit,
     onTopBarChange: (TopBarState) -> Unit,
-    onRestartApp: () -> Unit
+    onRestartApp: () -> Unit,
+    onScanRefresh: () -> Unit,
+    onScanRebuild: () -> Unit
 ) {
     val appSettings by viewModel.appSettings.collectAsState()
     val isBackupLoading by viewModel.isBackupLoading.collectAsState()
@@ -188,6 +190,19 @@ fun SettingsScreen(
         )
     )
 
+    val scanSettingActions: List<SettingActionConfig> = listOf(
+        SettingActionConfig.Button(
+            label = stringResource(id = R.string.scan_action),
+            onClick = { onScanRefresh() },
+            description = stringResource(R.string.alert_scan_refresh_description)
+        ),
+        SettingActionConfig.Button(
+            label = stringResource(id = R.string.scan_rebuild_action),
+            onClick = { onScanRebuild() },
+            description = stringResource(R.string.alert_scan_rebuild_description)
+        ),
+    )
+
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -207,6 +222,11 @@ fun SettingsScreen(
                 SettingSection(
                     stringResource(id = R.string.search_settings),
                     settingActionConfigs = searchSettingActions
+                )
+
+                SettingSection(
+                    stringResource(id = R.string.scan_action),
+                    settingActionConfigs = scanSettingActions
                 )
 
                 SettingSection(

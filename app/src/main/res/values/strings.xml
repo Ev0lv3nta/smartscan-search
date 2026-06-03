@@ -21,6 +21,9 @@
     <string name="search_action">Search</string>
     <string name="rename_action">Rename</string>
     <string name="merge_action">Merge</string>
+    <string name="scan_action">Scan</string>
+    <string name="scan_media_action">Scan %1$s</string>
+    <string name="scan_rebuild_action">Scan (Rebuild)</string>
 
     <!-- Screen titles-->
     <string name="title_search">Search</string>
@@ -42,10 +45,14 @@
 
     <!--Alerts-->
     <string name="alert_space_not_allowed">Spaces are not allowed</string>
-    <string name="alert_scan_index_description">Refresh updates the index with new media only. Rebuild deletes and recreates the entire index.</string>
+    <string name="alert_scan_refresh_description">Update the index with new media.</string>
+    <string name="alert_scan_rebuild_description">Delete and re-create the entire index.</string>
+    <string name="alert_first_media_scan_content">Start the first %1$s scan. You can run it manually anytime from settings and optionally select which folders are allowed to be scanned.</string>
+    <string name="alert_first_scan_content">Start the first media scan. You can run it manually anytime from settings and optionally select which folders are allowed to be scanned.</string>
+    <string name="media_types_to_scan">Select media types</string>
+
     <!-- Search screen -->
-    <string name="first_indexing">Start the first %1$s scan to enable search. You can run it manually anytime from the menu and optionally select which folders are allowed to be scanned in settings.</string>
-    <string name="storage_permissions">Storage permission required to search.</string>
+    <string name="search_storage_permissions">Storage permission required to search.</string>
     <string name="search_error_not_indexed">Index is empty.</string>
     <string name="search_error_no_results">No matching results found.</string>
     <string name="search_error_missing_permissions_for_results">Missing storage permissions for 1 or more images.</string>
@@ -57,6 +64,7 @@
     <string name="search_scan_in_progress_message">Search will be enabled once the scan is complete.</string>
 
     <!--Collections Screen-->
+    <string name="collections_storage_permissions">Storage permission required to create collections.</string>
     <string name="collections_no_collections_title">No Collections</string>
     <string name="collections_scan_in_progress_title">Scan In Progress</string>
     <string name="collections_scan_in_progress_description">Auto collections will be updated after scan completes.</string>
