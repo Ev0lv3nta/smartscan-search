@@ -60,7 +60,6 @@ import com.fpf.smartscan.ui.action.CollectionAction
 import com.fpf.smartscan.ui.components.common.SelectionHeaderRow
 import com.fpf.smartscan.ui.components.common.ActionBar
 import com.fpf.smartscan.ui.action.ActionConfig
-import com.fpf.smartscan.ui.components.ScanLoadingView
 import org.koin.compose.viewmodel.koinViewModel
 
 
@@ -175,13 +174,6 @@ fun CollectionsScreen(
         if( firstIndexRequired && hasStoragePermission){
             onIndex()
         }
-    }
-
-    if(isIndexing){
-        return ScanLoadingView(
-            isIndexing=true,
-            message = stringResource(R.string.collections_scan_in_progress_description)
-        )
     }
 
     BackHandler(enabled = state.selection.isSelecting) {

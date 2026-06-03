@@ -59,7 +59,6 @@ import com.fpf.smartscan.ui.components.search.SearchResults
 import com.fpf.smartscan.ui.components.TagAdder
 import com.fpf.smartscan.ui.components.common.ActionBar
 import com.fpf.smartscan.ui.action.ActionConfig
-import com.fpf.smartscan.ui.components.ScanLoadingView
 import com.fpf.smartscan.ui.components.pickers.OptionPicker
 import com.fpf.smartscan.ui.screens.search.SearchViewModel.Companion.RESULTS_BATCH_SIZE
 import com.fpf.smartscan.utils.formatDate
@@ -199,13 +198,6 @@ fun SearchScreen(
                 }
             }
         }
-    }
-
-    if(isIndexing){
-        return ScanLoadingView(
-            isIndexing=true,
-            message = stringResource(R.string.search_scan_in_progress_message)
-        )
     }
 
     BackHandler(enabled = state.selection.isSelecting) {
