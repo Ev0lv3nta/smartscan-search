@@ -189,7 +189,13 @@ class ClusterManager(
 
     private suspend fun sync(clusterId: Long, imageEmbedStore: FileEmbeddingStore, videoEmbedStore: FileEmbeddingStore){
         val clusterCrossRefs = clusterCrossRefRepository.getByClusterIds(listOf(clusterId))
-        if(clusterCrossRefs.isEmpty()) return
+
+        // Delete cluster from embed store if there is no items in cluster
+        if(clusterCrossRefs.isEmpty()) {
+            val clusterEmbed = clusterStore.get(listOf(clusterId)).firstOrNull()
+            clusterEmbed?.let{ clusterStore.remove(listOf(it.id)) }
+            return
+        }
 
         val mediaIds = clusterCrossRefs.map{it.mediaId}
         val embeddings = mutableListOf<FloatArray>()
