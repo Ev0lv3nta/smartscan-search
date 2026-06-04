@@ -87,6 +87,7 @@ class MainViewModel(
             application.getString(R.string.update_move_media_auto_collections),
             application.getString(R.string.update_mixed_media_collections),
             application.getString(R.string.update_select_all_search_collections),
+            application.getString(R.string.update_scan),
             application.getString(R.string.update_ui_improvements_bug_fixes),
         )
     }

@@ -136,6 +136,7 @@
     <string name="update_mixed_media_collections">Added support for mixed-media collections</string>
     <string name="update_select_all_search_collections">Added Select All for search results and collections</string>
     <string name="update_ui_improvements_bug_fixes">UI improvements and bug fixes</string>
+    <string name="update_scan">Moved scan handling to settings</string>
     <string name="update_notes">Use merge and move carefully, as they can affect Auto Collection accuracy. They should mainly be used to fix grouping mistakes, since adding visually unrelated items can distort a collection.</string>
 
     <!--Placeholders-->
