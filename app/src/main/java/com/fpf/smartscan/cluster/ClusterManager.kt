@@ -12,6 +12,7 @@ import com.fpf.smartscan.media.MediaCollection.Companion.UNLABELLED_COLLECTION
 import com.fpf.smartscan.media.mediaIdToUri
 import com.fpf.smartscan.utils.reservoirSample
 import com.fpf.smartscansdk.core.cluster.Cluster
+import com.fpf.smartscansdk.core.cluster.ClusterMetadata
 import com.fpf.smartscansdk.core.cluster.ClusterResult
 import com.fpf.smartscansdk.core.cluster.IncrementalClusterer
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
@@ -77,7 +78,7 @@ class ClusterManager(
         clusterCrossRefRepository.insertClusterCrossRefs(updatedClusterCrossRefs)
 
         // Delete clusters which are being merged (cascades all related crossrefs)
-        clusterMetadataRepository.deleteMetadatas(otherClusters)
+        clusterMetadataRepository.deleteMetadata(otherClusters)
         clusterStore.remove(otherClusters)
         sync(primaryClusterId, imageEmbedStore, videoEmbedStore)
     }
@@ -88,8 +89,8 @@ class ClusterManager(
     }
 
     suspend fun updateLabel(clusterId: Long, newLabel: String){
-        val cluster = clusterMetadataRepository.getMetadatas(listOf(clusterId)).firstOrNull()
-        cluster?.let { clusterMetadataRepository.updateMetadatas(listOf(it.copy(label = newLabel))) }
+        val cluster = clusterMetadataRepository.getMetadata(clusterId)
+        cluster?.let { clusterMetadataRepository.updateMetadata(it.copy(label = newLabel)) }
     }
 
     suspend fun toCollections(clusters: List<ClusterMetadataWithCount>): List<MediaCollection> {
@@ -131,8 +132,8 @@ class ClusterManager(
             )
         }
 
-        clusterMetadataRepository.updateMetadatas(existingMetadata)
-        clusterMetadataRepository.insertMetadatas(newMetadata)
+        clusterMetadataRepository.updateMetadata(existingMetadata)
+        clusterMetadataRepository.insertMetadata(newMetadata)
 
         val existingEmbeds = existingClusters.map {
             StoredEmbedding(
@@ -211,10 +212,13 @@ class ClusterManager(
         // Update primary cluster
         val oldStoredEmbed = clusterStore.get(listOf(clusterId)).firstOrNull()?: error("Cluster embedding not found")
         val updatedStoredEmbed = oldStoredEmbed.copy(embedding = prototypeEmbedding)
-        clusterStore.update(listOf(updatedStoredEmbed))
-
-        val clusterMetadata = clusterMetadataRepository.getMetadatas(listOf(clusterId)).firstOrNull()?: return
+        val clusterMetadata = clusterMetadataRepository.getMetadata(clusterId)?: return
         val updatedMetadata = clusterMetadata.copy(meanSimilarity = meanSim, stdSimilarity = stdSim, prototypeSize = mediaIds.size)
-        clusterMetadataRepository.updateMetadatas(listOf(updatedMetadata))
+        updateCluster(updatedStoredEmbed, updatedMetadata)
+    }
+
+    private suspend fun updateCluster(embed: StoredEmbedding, metadata:  MediaClusterMetadata){
+        clusterStore.update(listOf(embed))
+        clusterMetadataRepository.updateMetadata(metadata)
     }
 }
