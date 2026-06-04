@@ -24,6 +24,7 @@ val viewModelModule = module {
             application = get(),
             imageStore = get(IMAGE_STORE),
             videoStore = get(VIDEO_STORE),
+            clusterStore = get(CLUSTER_STORE),
             mediaMetadataRepository = get(),
             tagRepository = get(),
             tagCrossRefRepository = get(),

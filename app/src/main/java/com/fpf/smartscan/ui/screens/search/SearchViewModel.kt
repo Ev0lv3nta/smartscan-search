@@ -13,6 +13,7 @@ import androidx.lifecycle.viewModelScope
 import coil3.compose.AsyncImagePainter
 import kotlinx.coroutines.Dispatchers
 import com.fpf.smartscan.R
+import com.fpf.smartscan.cluster.ClusterManager
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
@@ -37,6 +38,7 @@ import com.fpf.smartscan.media.shareMediaMulti
 import com.fpf.smartscan.search.dedupe
 import com.fpf.smartscan.search.getPaginatedResult
 import com.fpf.smartscan.search.parseQuery
+import com.fpf.smartscan.search.rerankItems
 import com.fpf.smartscan.ui.action.SearchAction
 import com.fpf.smartscan.ui.state.SearchState
 import com.fpf.smartscan.ui.state.common.SelectionState
@@ -62,6 +64,7 @@ class SearchViewModel(
     application: Application,
     private val imageStore: FileEmbeddingStore,
     private val videoStore: FileEmbeddingStore,
+    private val clusterStore: FileEmbeddingStore,
     private val tagRepository: TagRepository,
     private val tagCrossRefRepository: TagCrossRefRepository,
     private val clusterCrossRefRepository: ClusterCrossRefRepository,
@@ -84,6 +87,13 @@ class SearchViewModel(
         tagCrossRefRepository=tagCrossRefRepository,
         mediaMetadataRepository = mediaMetadataRepository,
         )
+
+    val clusterManager = ClusterManager(
+        clusterStore = clusterStore,
+        clusterCrossRefRepository = clusterCrossRefRepository,
+        clusterMetadataRepository = clusterMetadataRepository,
+        mediaMetadataRepository = mediaMetadataRepository,
+    )
     val allTags: StateFlow<List<Tag>> = tagRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     private val _state = MutableStateFlow(SearchState())
@@ -200,11 +210,14 @@ class SearchViewModel(
         val embedding = textEmbedder.embed(actualQuery)
         val filterIds = idsMatchingTag.toSet()
         val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, filterIds,  startDate = startDate, endDate = endDate)
+        val clusterResults = clusterStore.query(embedding, Int.MAX_VALUE, threshold)
+        val reranked = rerankItems(queryResults, clusterResults, clusterCrossRefRepository.getClusterToMediaIdsMap())
+
         // prevent keeping both models open
         if(shouldShutdownModel(_state.value.imageEmbedderLastUsage)) imageEmbedder.closeSession()
         _state.update{it.copy(textEmbedderLastUsage = System.currentTimeMillis())}
 
-        return queryResults
+        return reranked
     }
 
     private suspend fun imageSearch(store: FileEmbeddingStore, threshold: Float, startDate: Long? = null, endDate: Long? = null): List<Long> {
@@ -215,12 +228,14 @@ class SearchViewModel(
         val bitmap = getBitmapFromUri(getApplication(), queryImage, IMAGE_SIZE_X)
         val embedding = imageEmbedder.embed(bitmap)
         val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, startDate = startDate, endDate = endDate)
+        val clusterResults = clusterStore.query(embedding, Int.MAX_VALUE, threshold)
+        val reranked = rerankItems(queryResults, clusterResults, clusterCrossRefRepository.getClusterToMediaIdsMap())
 
         // prevent keeping both models open
         if(shouldShutdownModel(_state.value.textEmbedderLastUsage)) textEmbedder.closeSession()
         _state.update { it.copy(imageEmbedderLastUsage = System.currentTimeMillis()) }
 
-        return queryResults
+        return reranked
     }
 
     private suspend fun handleSearchResult(queryResults: List<Long>, store: FileEmbeddingStore, dedupeEnabled: Boolean = false) {
