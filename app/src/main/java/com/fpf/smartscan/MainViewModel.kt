@@ -2,6 +2,7 @@ package com.fpf.smartscan
 
 import android.app.Application
 import android.content.Context
+import androidx.collection.MutableIntSet
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
@@ -28,6 +29,7 @@ import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.TimeUnit
@@ -57,8 +59,8 @@ class MainViewModel(
     private val _hasIndexedVideos = MutableStateFlow(videoStore.exists)
     val hasIndexedImages: StateFlow<Boolean> = _hasIndexedImages
     val hasIndexedVideos: StateFlow<Boolean> = _hasIndexedVideos
-
-
+    private val _runningMediaTypes = MutableStateFlow<Set<MediaType>>(setOf())
+    val runningMediaTypes: StateFlow<Set<MediaType>> = _runningMediaTypes
 
     val versionName: String? = try {
         val packageInfo = application.packageManager.getPackageInfo(application.packageName, 0)
@@ -91,7 +93,6 @@ class MainViewModel(
 
     fun prepareApp(onAppReady: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
-
             val appSettings = loadSettings(sharedPrefs)
 
             // Always run on app start to handle media that may have been deleted from the device
@@ -110,9 +111,7 @@ class MainViewModel(
                 DataSyncHelper.transferOldDbToNew(application, oldImageCachedDb, oldVideoCachedDb, db)
             }
 
-
             if(!isWorkScheduled(context = application, workName = IndexWorker.TAG)) scheduleIndexWorker()
-
             onAppReady()
         }
     }
@@ -120,6 +119,7 @@ class MainViewModel(
     fun refreshMediaIndex(mediaTypes: List<MediaType>){
         val storageAccess = getStorageAccess(getApplication())
         if (storageAccess != StorageAccess.Denied) {
+            _runningMediaTypes.update { mediaTypes.toSet()}
             refreshIndex(getApplication(), mediaTypes)
         }
     }
@@ -134,15 +134,25 @@ class MainViewModel(
                 }
             }
             viewModelScope.launch {
+                _runningMediaTypes.update { mediaTypes.toSet()}
                 rebuildIndex(getApplication(), mediaTypeToEmbedStore, clusterCrossRefRepository, clusterMetadataRepository)
             }
         }
     }
 
-    fun setHasIndexed(hasIndexed: Boolean, mediaType: MediaType) {
+    fun onIndexingFinished(mediaType: MediaType) {
         when(mediaType){
-            MediaType.IMAGE -> _hasIndexedImages.value = hasIndexed
-            MediaType.VIDEO -> _hasIndexedVideos.value = hasIndexed
+            MediaType.IMAGE -> _hasIndexedImages.value = imageStore.exists
+            MediaType.VIDEO -> _hasIndexedVideos.value = videoStore.exists
+        }
+        resetIndexingState(mediaType)
+        _runningMediaTypes.update { it - mediaType}
+    }
+
+    private fun resetIndexingState(mediaType: MediaType){
+        when(mediaType){
+            MediaType.IMAGE -> ImageIndexListener.reset()
+            MediaType.VIDEO -> VideoIndexListener.reset()
         }
     }
 
@@ -159,5 +169,4 @@ class MainViewModel(
         }
         super.onCleared()
     }
-
 }

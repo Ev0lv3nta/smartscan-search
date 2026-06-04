@@ -56,6 +56,11 @@ abstract class BaseIndexListener(private val notificationId: Int, private val ta
             Log.e(tag, "Error in onFail: ${e.message}", e)
         }
     }
+
+    fun reset(){
+        _indexingStatus.value = IndexingStatus.IDLE
+        _progress.value = 0f
+    }
 }
 
 object ImageIndexListener : BaseIndexListener(

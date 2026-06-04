@@ -64,13 +64,14 @@ fun Main(
     val videoIndexStatus by mainViewModel.videoIndexStatus.collectAsState()
     val hasIndexedImages by mainViewModel.hasIndexedImages.collectAsState()
     val hasIndexedVideos by mainViewModel.hasIndexedVideos.collectAsState()
-    val isIndexing = imageIndexStatus == IndexingStatus.ACTIVE || videoIndexStatus == IndexingStatus.ACTIVE
+    val runningMediaTypes by mainViewModel.runningMediaTypes.collectAsState()
+    val isIndexing = imageIndexStatus == IndexingStatus.ACTIVE || videoIndexStatus == IndexingStatus.ACTIVE || runningMediaTypes.isNotEmpty()
 
     var hasStoragePermission by remember { mutableStateOf(false) }
     var showFirstScanModal by remember { mutableStateOf(false) }
     var showScanAndRebuildModal by remember { mutableStateOf(false) }
     var showRefreshScanModel by remember { mutableStateOf(false) }
-    var mediaTypeToIndex by remember { mutableStateOf<MediaType?>(null) }
+    var requiredMediaTypeToIndex by remember { mutableStateOf<MediaType?>(null) }
 
     LaunchedEffect(Unit) {
         hasStoragePermission = getStorageAccess(context) != StorageAccess.Denied
@@ -78,14 +79,14 @@ fun Main(
     }
 
     LaunchedEffect(imageIndexStatus) {
-        if (imageIndexStatus == IndexingStatus.COMPLETE) {
-            mainViewModel.setHasIndexed(true, MediaType.IMAGE)
+        if (imageIndexStatus in listOf(IndexingStatus.COMPLETE, IndexingStatus.FAILED)) {
+            mainViewModel.onIndexingFinished(MediaType.IMAGE)
         }
     }
 
     LaunchedEffect(videoIndexStatus) {
-        if (videoIndexStatus == IndexingStatus.COMPLETE) {
-            mainViewModel.setHasIndexed(true, MediaType.VIDEO)
+        if (videoIndexStatus in listOf(IndexingStatus.COMPLETE, IndexingStatus.FAILED)) {
+            mainViewModel.onIndexingFinished(MediaType.VIDEO)
         }
     }
 
@@ -145,7 +146,7 @@ fun Main(
                                 hasIndexedVideos = hasIndexedVideos,
                                 hasStoragePermission = hasStoragePermission,
                                 onIndex = {
-                                    mediaTypeToIndex = it
+                                    requiredMediaTypeToIndex = it
                                     showFirstScanModal = true
                                 },
                                 )
@@ -222,26 +223,26 @@ fun Main(
         showFirstScanModal,
         onClose = {
             showFirstScanModal = false
-            mediaTypeToIndex = null
+            requiredMediaTypeToIndex = null
         },
         onConfirm = {
             mainViewModel.refreshMediaIndex(it)
             showFirstScanModal = false
-            mediaTypeToIndex = null
+            requiredMediaTypeToIndex = null
         },
-        title = mediaTypeToIndex?.let {
+        title = requiredMediaTypeToIndex?.let {
             stringResource(
                 R.string.scan_media_action,
                 it.name.lowercase() + "s"
             )
         } ?: stringResource(R.string.scan_action),
-        description = mediaTypeToIndex?.let {
+        description = requiredMediaTypeToIndex?.let {
             stringResource(
                 R.string.alert_first_media_scan_content,
                 it.name.lowercase()
             )
         } ?: stringResource(R.string.alert_first_scan_content),
-        mediaType = mediaTypeToIndex
+        mediaType = requiredMediaTypeToIndex
     )
 
     ScanModal(
