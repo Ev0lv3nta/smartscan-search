@@ -18,7 +18,6 @@ import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
 import com.fpf.smartscansdk.core.embeddings.generatePrototypeEmbedding
 import com.fpf.smartscansdk.core.embeddings.getSimilarities
-import kotlin.collections.iterator
 import kotlin.math.sqrt
 
 class ClusterManager(
@@ -32,11 +31,9 @@ class ClusterManager(
         private const val MIN_SAMPLE_SIZE: Int = 500
         private const val MAX_SAMPLE_SIZE: Int = 5000
     }
-    private var clusterToMediaIdsMap: MutableMap<Long, MutableSet<Long>> = mutableMapOf()
-    private var assignments: MutableMap<Long, Long> = mutableMapOf()
 
     suspend fun cluster(itemEmbeds: List<StoredEmbedding>) {
-        val existingAssignments = getAssignments()
+        val existingAssignments = clusterCrossRefRepository.getAssignments()
         val validIds = mediaMetadataRepository.getAllIds().toSet()
         val existingClusters: Map<Long, Cluster> = getExistingClusters()
 
@@ -86,35 +83,8 @@ class ClusterManager(
     }
 
     suspend fun moveItems(itemIds: List<Long>,newClusterId: Long, oldClusterId: Long, imageEmbedStore: FileEmbeddingStore, videoEmbedStore: FileEmbeddingStore){
-        updateAssignments(itemIds, newClusterId)
+        clusterCrossRefRepository.updateAssignments(itemIds, newClusterId)
         listOf(oldClusterId, newClusterId).forEach { sync(it, imageEmbedStore, videoEmbedStore) }
-    }
-
-    suspend fun getClusterToMediaIdsMap(): Map<Long, MutableSet<Long>> {
-        if (clusterToMediaIdsMap.isNotEmpty()) return clusterToMediaIdsMap
-
-        for(ref in clusterCrossRefRepository.getAllCrossRefs()){
-            clusterToMediaIdsMap.computeIfAbsent(ref.clusterId) { HashSet() }.add(ref.mediaId)
-        }
-        return clusterToMediaIdsMap
-    }
-
-    suspend fun getAssignments(): Map<Long, Long> {
-        if (assignments.isNotEmpty()) return assignments
-
-        val map = getClusterToMediaIdsMap()
-
-        for ((clusterId, mediaIds) in map) {
-            for (mediaId in mediaIds) {
-                assignments[mediaId] = clusterId
-            }
-        }
-        return assignments
-    }
-
-    fun clear() {
-        clusterToMediaIdsMap.clear()
-        assignments.clear()
     }
 
     suspend fun updateLabel(clusterId: Long, newLabel: String){
@@ -206,12 +176,6 @@ class ClusterManager(
             if (it.key !in validIds) return@mapNotNull null
             ClusterCrossRef(clusterId = it.value, mediaId = it.key)
         }
-        clusterCrossRefRepository.insertClusterCrossRefs(crossRefs)
-    }
-
-    private suspend fun updateAssignments(itemIds: List<Long>, newClusterId: Long) {
-        val crossRefs = itemIds.map { ClusterCrossRef(clusterId = newClusterId, mediaId = it) }
-        clusterCrossRefRepository.deleteByMediaIds(itemIds) // clear old
         clusterCrossRefRepository.insertClusterCrossRefs(crossRefs)
     }
 
