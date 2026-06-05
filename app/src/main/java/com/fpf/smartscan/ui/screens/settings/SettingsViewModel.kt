@@ -148,18 +148,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val indexZipFile = File(getApplication<Application>().cacheDir, BACKUP_FILENAME)
         val imageEmbeddingStoreFile = File(getApplication<Application>().filesDir, EmbeddingStoresFiles.IMAGE)
         val videoEmbeddingStoreFile = File(getApplication<Application>().filesDir,  EmbeddingStoresFiles.VIDEO)
-        val imageClusterEmbeddingStoreFile = File(getApplication<Application>().filesDir, EmbeddingStoresFiles.IMAGE_CLUSTER)
-        val videoClusterEmbeddingStoreFile = File(getApplication<Application>().filesDir,  EmbeddingStoresFiles.VIDEO_CLUSTER)
+        val clusterEmbeddingStoreFile = File(getApplication<Application>().filesDir, EmbeddingStoresFiles.MEDIA_CLUSTER)
         val hashFile = File(getApplication<Application>().cacheDir, HASH_FILENAME)
         val dbPath = getApplication<Application>().getDatabasePath(MediaDatabase.DB_NAME)
 
-        val embedStoreFiles = listOf(imageEmbeddingStoreFile, videoEmbeddingStoreFile, imageClusterEmbeddingStoreFile, videoClusterEmbeddingStoreFile)
+        val embedStoreFiles = listOf(imageEmbeddingStoreFile, videoEmbeddingStoreFile, clusterEmbeddingStoreFile)
         val filesToZip = listOf( hashFile, dbPath) + embedStoreFiles
         _isBackupLoading.value = true
 
         viewModelScope.launch(Dispatchers.IO){
             try {
-                if(embedStoreFiles.any{!it.exists()}) error("Missing index file(s)")
+                if(embedStoreFiles.none{it.exists()}) error("Missing index file(s)")
                 val hashes: List<String> = filesToZip.filter { it.exists() && it != hashFile }.map{hashFile(it)}
                 hashFile.writeText(hashes.joinToString("\n") )
 
