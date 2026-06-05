@@ -40,7 +40,7 @@ fun SelectorModal(
 ) {
     if (!isVisible) return
 
-    var selectedOption by remember { mutableStateOf(initialOption?: "") }
+    var selectedOption by remember { mutableStateOf(initialOption) }
     var showPicker by remember { mutableStateOf(false) }
 
     AlertDialog(
@@ -65,7 +65,7 @@ fun SelectorModal(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = selectedOption.ifEmpty { "Select option" },
+                            text = selectedOption?: "Select option" ,
                             fontSize = 12.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -85,7 +85,9 @@ fun SelectorModal(
             TextButton(onClick = onClose) { Text("Cancel") }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(selectedOption) }) {
+            TextButton(
+                enabled = !selectedOption.isNullOrBlank(),
+                onClick = { selectedOption?.let{onConfirm(it) }}) {
                 Text("Confirm")
             }
         }

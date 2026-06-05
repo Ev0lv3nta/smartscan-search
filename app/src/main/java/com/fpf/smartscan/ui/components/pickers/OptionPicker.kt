@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 fun OptionPicker(
     isVisible: Boolean,
     title: String,
-    selectedOption: String,
+    selectedOption: String?,
     options: List<String>,
     onClose: () -> Unit,
     onSelect: (String) -> Unit,

@@ -98,7 +98,9 @@ fun TagAdder(
             }
         },
         confirmButton = {
-            TextButton(onClick = {
+            TextButton(
+                enabled = newTag.text.isNotBlank(),
+                onClick = {
                 onAddTag(newTag.text)
             }) {
                 Text("Confirm")
