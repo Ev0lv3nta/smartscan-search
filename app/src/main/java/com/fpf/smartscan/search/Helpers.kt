@@ -1,7 +1,10 @@
 package com.fpf.smartscan.search
 
+import android.util.Log
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.dot
+import kotlin.math.ln1p
+import kotlin.math.sqrt
 
 suspend fun dedupe(store: FileEmbeddingStore, searchResults: List<Long>, duplicateThreshold: Float): List<Long>{
     val validEmbeds = mutableListOf<FloatArray>()
@@ -42,35 +45,33 @@ fun getPaginatedResult(currentItemsCount: Int, batchSize: Int, cachedIds:  Mutab
 }
 
 fun rerankItems(
-    queryResults: List<Long>,
-    clusterResults: List<Long>,
-    clusterToMediaIdsMap: Map<Long, Set<Long>>
+    itemToSimMap: Map<Long, Float>,
+    clusterToSimMap: Map<Long, Float>,
+    clusterToMediaIdsMap: Map<Long, Set<Long>>,
+    minSpread: Float =  1e-2f,
+    maxK: Int = 10
 ): List<Long> {
 
-    val itemRank = queryResults.withIndex().associate { it.value to it.index + 1 }
-    val clusterRank = clusterResults.withIndex().associate { it.value to it.index + 1 }
-
     val itemToCluster = buildMap {
-        clusterToMediaIdsMap.forEach { (c, items) ->
-            items.forEach { put(it, c) }
+        clusterToMediaIdsMap.forEach { (clusterId, items) ->
+            items.forEach { itemId -> put(itemId, clusterId) }
         }
     }
 
-    return queryResults.sortedWith(
-        compareByDescending<Long> { id ->
-            val clusterId = itemToCluster[id]
-            val clusterPosition = clusterId?.let { clusterRank[it] }
-            val clusterScore = clusterPosition?.let { 1.0 / it } ?: -1.0
-            clusterScore
-        }.thenByDescending { id ->
-            val itemPosition = itemRank[id] ?: queryResults.size
-            val itemScore = 1.0 / itemPosition
-            itemScore
-        }
-    )
+    val clusterScores = itemToSimMap.keys
+        .mapNotNull { itemId -> itemToCluster[itemId]?.let(clusterToSimMap::get)?.toDouble() }
+        .sorted()
+
+    val p10 = clusterScores.getOrNull((clusterScores.size * 0.1).toInt()) ?: 0.0
+    val p90 = clusterScores.getOrNull((clusterScores.size * 0.9).toInt()) ?: 0.0
+    val spread = p90 - p10
+    val k = (if (minSpread <= spread) 1.0 / ln1p(spread) else 1.0).coerceAtMost(maxK.toDouble())
+
+//    Log.d("rerankItems", "k: $k")
+
+    return itemToSimMap.keys.sortedByDescending { itemId ->
+        val itemScore = itemToSimMap[itemId]?.toDouble() ?: 0.0
+        val clusterScore = itemToCluster[itemId]?.let(clusterToSimMap::get)?.toDouble() ?: 0.0
+        itemScore * (1 + k * clusterScore)
+    }
 }
-
-
-
-
-

@@ -44,6 +44,7 @@ import com.fpf.smartscan.ui.state.SearchState
 import com.fpf.smartscan.ui.state.common.SelectionState
 import com.fpf.smartscan.ui.utils.SelectionUtils
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
+import com.fpf.smartscansdk.core.embeddings.QueryResult
 import com.fpf.smartscansdk.core.media.getBitmapFromUri
 import com.fpf.smartscansdk.ml.models.ModelAssetSource
 import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
@@ -209,9 +210,11 @@ class SearchViewModel(
 
         val embedding = textEmbedder.embed(actualQuery)
         val filterIds = idsMatchingTag.toSet()
-        val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, filterIds,  startDate = startDate, endDate = endDate)
-        val clusterResults = clusterStore.query(embedding, Int.MAX_VALUE, threshold)
-        val reranked = rerankItems(queryResults, clusterResults, clusterCrossRefRepository.getClusterToMediaIdsMap())
+        val queryResult = store.query(embedding, Int.MAX_VALUE, threshold, filterIds,  startDate = startDate, endDate = endDate, includeSims = true)
+        val clusterResult = clusterStore.query(embedding, Int.MAX_VALUE, threshold, includeSims = true)
+        val itemToSimMap = queryResultToMap(queryResult)
+        val clusterToSimMap = queryResultToMap(clusterResult)
+        val reranked = rerankItems(itemToSimMap, clusterToSimMap, clusterCrossRefRepository.getClusterToMediaIdsMap())
 
         // prevent keeping both models open
         if(shouldShutdownModel(_state.value.imageEmbedderLastUsage)) imageEmbedder.closeSession()
@@ -227,9 +230,11 @@ class SearchViewModel(
 
         val bitmap = getBitmapFromUri(getApplication(), queryImage, IMAGE_SIZE_X)
         val embedding = imageEmbedder.embed(bitmap)
-        val queryResults = store.query(embedding, Int.MAX_VALUE, threshold, startDate = startDate, endDate = endDate)
-        val clusterResults = clusterStore.query(embedding, Int.MAX_VALUE, threshold)
-        val reranked = rerankItems(queryResults, clusterResults, clusterCrossRefRepository.getClusterToMediaIdsMap())
+        val queryResult = store.query(embedding, Int.MAX_VALUE, threshold, startDate = startDate, endDate = endDate, includeSims = true)
+        val clusterResult = clusterStore.query(embedding, Int.MAX_VALUE, threshold, includeSims = true)
+        val itemToSimMap = queryResultToMap(queryResult)
+        val clusterToSimMap = queryResultToMap(clusterResult)
+        val reranked = rerankItems(itemToSimMap, clusterToSimMap, clusterCrossRefRepository.getClusterToMediaIdsMap())
 
         // prevent keeping both models open
         if(shouldShutdownModel(_state.value.textEmbedderLastUsage)) textEmbedder.closeSession()
@@ -415,6 +420,8 @@ class SearchViewModel(
             }.toMutableSet()
         }
     }
+
+    private fun queryResultToMap(result: QueryResult): Map<Long, Float> = result.sims?.let(result.ids::zip)?.toMap() ?: emptyMap()
 
     override fun onCleared() {
         textEmbedder.closeSession()
