@@ -180,13 +180,13 @@ class CollectionsViewModel(
                     }
                 }
 
-                primaryCollection?.let { collection ->
-                    val otherCollections = selectedCollections.filter { selectedCollection -> selectedCollection.id != collection.id }
-                    when (collection.type) {
-                        CollectionType.CLUSTER -> clusterManager.mergeClusters(collection.id, otherCollections.map { it.id }, imageStore, videoStore)
-                        CollectionType.TAG -> tagManager.mergeTags(primaryCollectionName, otherCollections.map { it.name })
-                    }
+                val newMergedCollection = primaryCollection?: error("No primary collection selected")
+                val otherCollections = selectedCollections.filter { selectedCollection -> selectedCollection.id != newMergedCollection.id }
+                when (newMergedCollection.type) {
+                    CollectionType.CLUSTER -> clusterManager.mergeClusters(newMergedCollection.id, otherCollections.map { it.id }, imageStore, videoStore)
+                    CollectionType.TAG -> tagManager.mergeTags(primaryCollectionName, otherCollections.map { it.name })
                 }
+
                 resetSelection()
                 _event.emit(CollectionEvent(CollectionEventType.MERGE, success = true, "Merged ${selectedCollections.size} collections"))
             }

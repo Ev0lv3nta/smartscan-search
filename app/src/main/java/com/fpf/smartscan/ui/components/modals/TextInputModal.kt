@@ -62,6 +62,7 @@ fun TextInputModal(
             Row(
                 verticalAlignment = Alignment.CenterVertically) {
                 TextButton(
+                    enabled = value.text.isNotBlank(),
                     onClick = {
                     onConfirm(value.text)
                 }) {
