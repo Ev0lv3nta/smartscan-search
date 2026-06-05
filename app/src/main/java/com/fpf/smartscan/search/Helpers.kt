@@ -4,6 +4,7 @@ import android.util.Log
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.dot
 import kotlin.math.ln1p
+import kotlin.math.pow
 import kotlin.math.sqrt
 
 suspend fun dedupe(store: FileEmbeddingStore, searchResults: List<Long>, duplicateThreshold: Float): List<Long>{
@@ -48,8 +49,6 @@ fun rerankItems(
     itemToSimMap: Map<Long, Float>,
     clusterToSimMap: Map<Long, Float>,
     clusterToMediaIdsMap: Map<Long, Set<Long>>,
-    minSpread: Float =  1e-2f,
-    maxK: Int = 10
 ): List<Long> {
 
     val itemToCluster = buildMap {
@@ -62,12 +61,20 @@ fun rerankItems(
         .mapNotNull { itemId -> itemToCluster[itemId]?.let(clusterToSimMap::get)?.toDouble() }
         .sorted()
 
+
+    val itemScores = itemToSimMap.values.map { it.toDouble() }.sorted()
+    val iP10 = itemScores.getOrNull((itemScores.size * 0.1).toInt()) ?: 0.0
+    val iP90 = itemScores.getOrNull((itemScores.size * 0.9).toInt()) ?: 0.0
+    val itemSpread = iP90 - iP10
+
     val p10 = clusterScores.getOrNull((clusterScores.size * 0.1).toInt()) ?: 0.0
     val p90 = clusterScores.getOrNull((clusterScores.size * 0.9).toInt()) ?: 0.0
-    val spread = p90 - p10
-    val k = (if (minSpread <= spread) 1.0 / ln1p(spread) else 1.0).coerceAtMost(maxK.toDouble())
+    val clusterSpread = p90 - p10
+    val eps = 1e-3
+    val ratio = clusterSpread / itemSpread.coerceAtLeast(eps)
+    val k = ratio.pow(3).coerceAtLeast(1.0)
 
-//    Log.d("rerankItems", "k: $k")
+//    Log.d("rerankItems", "k: $k | cluster spread: $clusterSpread | item spread: $itemSpread")
 
     return itemToSimMap.keys.sortedByDescending { itemId ->
         val itemScore = itemToSimMap[itemId]?.toDouble() ?: 0.0
