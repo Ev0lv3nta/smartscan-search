@@ -241,17 +241,4 @@ class CollectionsViewModel(
             }
         }.toMutableSet()
     }
-
-    fun clusterIfNeeded() {
-        val mediaTypes = mutableListOf<MediaType>()
-        viewModelScope.launch(Dispatchers.IO) {
-            if(!clusterStore.exists || clusterCrossRefRepository.count() == 0) {
-                if (imageStore.exists) mediaTypes.add(MediaType.IMAGE)
-                if (videoStore.exists) mediaTypes.add(MediaType.VIDEO)
-            }
-            if(mediaTypes.isNotEmpty()){
-                refreshIndex(getApplication(), mediaTypes)
-            }
-        }
-    }
 }

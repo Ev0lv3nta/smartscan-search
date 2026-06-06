@@ -162,13 +162,6 @@ fun CollectionsScreen(
         )
     }
 
-
-    LaunchedEffect(Unit) {
-        if(!state.loading && !isIndexing){
-            viewModel.clusterIfNeeded()
-        }
-    }
-
     LaunchedEffect(hasIndexedVideos, hasIndexedImages, hasStoragePermission) {
         val firstIndexRequired = !isIndexing && !hasIndexedImages && !hasIndexedVideos
         if( firstIndexRequired && hasStoragePermission){

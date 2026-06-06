@@ -39,6 +39,7 @@ class MainViewModel(
     private val db: MediaDatabase,
     private val imageStore: FileEmbeddingStore,
     private val videoStore: FileEmbeddingStore,
+    private val clusterStore: FileEmbeddingStore,
     private val clusterCrossRefRepository: ClusterCrossRefRepository,
     private val clusterMetadataRepository: ClusterMetadataRepository,
 ) : AndroidViewModel(application) {
@@ -113,6 +114,16 @@ class MainViewModel(
             }
 
             if(!isWorkScheduled(context = application, workName = IndexWorker.TAG)) scheduleIndexWorker()
+
+            // Create clusters if required
+            val mediaTypes = mutableListOf<MediaType>()
+            if(!clusterStore.exists || clusterCrossRefRepository.count() == 0) {
+                if (imageStore.exists) mediaTypes.add(MediaType.IMAGE)
+                if (videoStore.exists) mediaTypes.add(MediaType.VIDEO)
+            }
+            if(mediaTypes.isNotEmpty()){
+                refreshIndex(getApplication(), mediaTypes)
+            }
             onAppReady()
         }
     }
