@@ -347,7 +347,7 @@ fun CollectionsScreen(
     TextInputModal(
         isVisible = isRenamingCollection,
         title=stringResource(R.string.rename_action),
-        placeholder = stringResource(R.string.placeholders_rename),
+        placeholder = stringResource(R.string.placeholders_collection_name),
         onClose = { isRenamingCollection = false },
         onConfirm = {
                 newName -> viewModel.onAction(CollectionAction.RenameCollection(newName))
@@ -385,7 +385,7 @@ fun CollectionsScreen(
             TextInputModal(
                 isVisible = true,
                 title = stringResource(R.string.merge_action),
-                placeholder = stringResource(R.string.placeholders_rename),
+                placeholder = stringResource(R.string.placeholders_collection_name),
                 onClose = { isMergingCollections = false },
                 onConfirm =  { newName ->
                     viewModel.onAction(CollectionAction.MergeCollections(newName, isNewMergedLabel = true))

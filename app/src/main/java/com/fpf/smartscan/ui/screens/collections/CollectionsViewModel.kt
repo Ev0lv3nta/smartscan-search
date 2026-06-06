@@ -59,7 +59,9 @@ class CollectionsViewModel(
         mediaMetadataRepository = mediaMetadataRepository,
     )
     val clusterManager = ClusterManager(
-        clusterStore = clusterStore,
+        clusterEmbedStore = clusterStore,
+        imageEmbedStore = imageStore,
+        videoEmbedStore = videoStore,
         clusterCrossRefRepository = clusterCrossRefRepository,
         clusterMetadataRepository = clusterMetadataRepository,
         mediaMetadataRepository = mediaMetadataRepository,
