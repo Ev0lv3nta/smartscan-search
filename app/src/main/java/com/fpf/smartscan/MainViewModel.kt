@@ -84,8 +84,7 @@ class MainViewModel(
     fun getUpdates(): List<String> {
         return listOf(
             application.getString(R.string.update_hide_duplicates),
-            application.getString(R.string.update_merge_auto_collections),
-            application.getString(R.string.update_move_media_auto_collections),
+            application.getString(R.string.update_auto_collections_merge_move_media),
             application.getString(R.string.update_mixed_media_collections),
             application.getString(R.string.update_select_all_search_collections),
             application.getString(R.string.update_scan),
