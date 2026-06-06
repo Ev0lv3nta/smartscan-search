@@ -75,7 +75,7 @@ class ClusterManager(
         } else emptyMap()
     }
 
-    suspend fun mergeClusters(primaryClusterId: Long, otherClusters: List<Long>, imageEmbedStore: FileEmbeddingStore, videoEmbedStore: FileEmbeddingStore){
+    suspend fun mergeClusters(primaryClusterId: Long, otherClusters: List<Long>){
         val otherClustersCrossRefs = clusterCrossRefRepository.getByClusterIds(otherClusters)
         val updatedClusterCrossRefs = otherClustersCrossRefs.map { it.copy(clusterId = primaryClusterId) }
         clusterCrossRefRepository.insertClusterCrossRefs(updatedClusterCrossRefs)

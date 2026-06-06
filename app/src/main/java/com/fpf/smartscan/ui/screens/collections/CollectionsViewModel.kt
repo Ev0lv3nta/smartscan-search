@@ -185,7 +185,7 @@ class CollectionsViewModel(
                 val newMergedCollection = primaryCollection?: error("No primary collection selected")
                 val otherCollections = selectedCollections.filter { selectedCollection -> selectedCollection.id != newMergedCollection.id }
                 when (newMergedCollection.type) {
-                    CollectionType.CLUSTER -> clusterManager.mergeClusters(newMergedCollection.id, otherCollections.map { it.id }, imageStore, videoStore)
+                    CollectionType.CLUSTER -> clusterManager.mergeClusters(newMergedCollection.id, otherCollections.map { it.id })
                     CollectionType.TAG -> tagManager.mergeTags(primaryCollectionName, otherCollections.map { it.name })
                 }
 
