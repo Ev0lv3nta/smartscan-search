@@ -13,7 +13,6 @@ import androidx.lifecycle.viewModelScope
 import coil3.compose.AsyncImagePainter
 import kotlinx.coroutines.Dispatchers
 import com.fpf.smartscan.R
-import com.fpf.smartscan.cluster.ClusterManager
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
@@ -89,12 +88,6 @@ class SearchViewModel(
         mediaMetadataRepository = mediaMetadataRepository,
         )
 
-    val clusterManager = ClusterManager(
-        clusterStore = clusterStore,
-        clusterCrossRefRepository = clusterCrossRefRepository,
-        clusterMetadataRepository = clusterMetadataRepository,
-        mediaMetadataRepository = mediaMetadataRepository,
-    )
     val allTags: StateFlow<List<Tag>> = tagRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     private val _state = MutableStateFlow(SearchState())
