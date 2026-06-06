@@ -40,7 +40,11 @@ class ClusterCrossRefRepository(private val dao: ClusterCrossRefDao) {
     suspend fun count(clusterId: Long) = dao.countByClusterId(clusterId)
 
     suspend fun getClusterToMediaIdsMap(): Map<Long, MutableSet<Long>> {
-        if (clusterToMediaIdsMap.isNotEmpty() && !refreshCache) return clusterToMediaIdsMap
+        if(refreshCache){
+            clusterToMediaIdsMap.clear()
+            refreshCache = false
+        }
+        if (clusterToMediaIdsMap.isNotEmpty()) return clusterToMediaIdsMap
 
         for(ref in getAllCrossRefs()){
             clusterToMediaIdsMap.computeIfAbsent(ref.clusterId) { HashSet() }.add(ref.mediaId)
