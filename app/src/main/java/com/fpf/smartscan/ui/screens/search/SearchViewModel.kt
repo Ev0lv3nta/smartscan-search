@@ -90,7 +90,12 @@ class SearchViewModel(
 
     val allTags: StateFlow<List<Tag>> = tagRepository.allTags.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    private val _state = MutableStateFlow(SearchState())
+    private val defaultMediaType = when{
+        imageStore.exists && !videoStore.exists -> MediaType.IMAGE
+        videoStore.exists && !imageStore.exists -> MediaType.VIDEO
+        else -> MediaType.IMAGE
+    }
+    private val _state = MutableStateFlow(SearchState(mediaType = defaultMediaType))
     val state: StateFlow<SearchState> = _state
     val searchFieldState: TextFieldState = TextFieldState()
     private val isLoadingMoreSearchResults = AtomicBoolean(false)

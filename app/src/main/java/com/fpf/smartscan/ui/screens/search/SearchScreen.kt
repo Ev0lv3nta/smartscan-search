@@ -146,6 +146,16 @@ fun SearchScreen(
 
     val screenTitle = stringResource(R.string.title_search)
 
+    DisposableEffect(Unit) {
+        when {
+            hasIndexedImages && !hasIndexedVideos -> searchViewModel.onAction(SearchAction.SetMediaTypeFilter(MediaType.IMAGE))
+            hasIndexedVideos && !hasIndexedImages -> searchViewModel.onAction(SearchAction.SetMediaTypeFilter(MediaType.VIDEO))
+        }
+        onDispose {
+            searchViewModel.onAction(SearchAction.Reset)
+        }
+    }
+
     LaunchedEffect(hasIndexedVideos, hasIndexedImages, state.mediaType, hasStoragePermission) {
         if (isIndexing || !hasStoragePermission) return@LaunchedEffect
 
@@ -173,12 +183,6 @@ fun SearchScreen(
                 title = screenTitle,
             )
         )
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            searchViewModel.onAction(SearchAction.Reset)
-        }
     }
 
     LaunchedEffect(Unit) {
