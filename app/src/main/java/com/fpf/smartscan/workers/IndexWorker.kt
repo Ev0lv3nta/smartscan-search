@@ -86,7 +86,9 @@ class IndexWorker(context: Context, workerParams: WorkerParameters) :
             }
 
             val clusterManager = ClusterManager(
-                clusterStore = clusterStore,
+                clusterEmbedStore = clusterStore,
+                imageEmbedStore = imageStore,
+                videoEmbedStore = videoStore,
                 clusterCrossRefRepository = clusterCrossRefRepository,
                 clusterMetadataRepository = clusterMetadataRepository,
                 mediaMetadataRepository = mediaMetadataRepository,

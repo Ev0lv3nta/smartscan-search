@@ -107,7 +107,9 @@ class MediaIndexForegroundService : Service(), KoinComponent {
                 imageEmbedder.initialize()
 
                 val clusterManager = ClusterManager(
-                    clusterStore = clusterStore,
+                    clusterEmbedStore = clusterStore,
+                    imageEmbedStore = imageStore,
+                    videoEmbedStore = videoStore,
                     clusterCrossRefRepository = clusterCrossRefRepository,
                     clusterMetadataRepository = clusterMetadataRepository,
                     mediaMetadataRepository = metadataRepo,

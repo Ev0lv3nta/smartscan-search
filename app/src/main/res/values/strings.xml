@@ -13,6 +13,7 @@
     <string name="more_action">More</string>
     <string name="copy_action">Copy</string>
     <string name="add_tag_action">Add tag</string>
+    <string name="add_collection_action">Add collection</string>
     <string name="copy_to_clipboard_action">Copy to clipboard</string>
     <string name="cancel_action">Cancel</string>
     <string name="confirm_action">Confirm</string>
@@ -141,7 +142,7 @@
 
     <!--Placeholders-->
     <string name ="placeholders_add_tag">Enter tag name</string>
-    <string name="placeholders_rename">Enter collection name</string>
+    <string name="placeholders_collection_name">Enter collection name</string>
     <string name="placeholders_search_images">Search images</string>
     <string name="placeholders_search_videos">Search videos</string>
     <string name="placeholders_search_by_tag">Search by tag: #tag</string>

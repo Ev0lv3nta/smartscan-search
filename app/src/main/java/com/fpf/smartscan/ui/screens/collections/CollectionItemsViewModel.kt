@@ -77,7 +77,9 @@ class CollectionItemsViewModel(
     )
 
     val clusterManager = ClusterManager(
-        clusterStore = clusterStore,
+        clusterEmbedStore = clusterStore,
+        imageEmbedStore = imageStore,
+        videoEmbedStore = videoStore,
         clusterCrossRefRepository = clusterCrossRefRepository,
         clusterMetadataRepository = clusterMetadataRepository,
         mediaMetadataRepository = mediaMetadataRepository,
@@ -169,7 +171,7 @@ class CollectionItemsViewModel(
     fun onAction(action: CollectionItemAction){
         when(action){
             is CollectionItemAction.CopyMedia -> copyItem(action.clipboard, action.context)
-            is CollectionItemAction.CreateNewTagCollectionAndMove -> createNewCollectionAndMove(action.newName)
+            is CollectionItemAction.CreateNewCollectionAndMove -> createNewCollectionAndMove(action.newName)
             CollectionItemAction.RemoveMedia -> removeItems()
             is CollectionItemAction.SetMediaToView -> setMediaToView(action.context, action.item, autoOpenInGallery = action.autoOpenInGallery)
             is CollectionItemAction.ShareMedia -> shareItems(action.context)
@@ -237,7 +239,7 @@ class CollectionItemsViewModel(
                 val selectedItems = getSelectedItems()
                 if (selectedItems.isEmpty()) return@launch
                 when(newCollection.type) {
-                    CollectionType.CLUSTER -> clusterManager.moveItems(selectedItems.map{it.id}, newCollection.id, currentCollection.id, imageEmbedStore = imageStore, videoEmbedStore = videoStore)
+                    CollectionType.CLUSTER -> clusterManager.moveItems(selectedItems.map{it.id}, newCollection.id, currentCollection.id)
                     CollectionType.TAG -> tagManager.moveItems(selectedItems, currentCollection.name, newCollection.name)
                 }
                 resetSelection()
@@ -280,7 +282,10 @@ class CollectionItemsViewModel(
             try {
                 val selectedItems = getSelectedItems()
                 if (selectedItems.isEmpty()) return@launch
-                tagManager.createNewTagAndMoveItems(selectedItems, currentCollection.name, newCollectionName)
+                when(currentCollection.type){
+                    CollectionType.TAG -> tagManager.createNewTagAndMoveItems(selectedItems, currentCollection.name, newCollectionName)
+                    CollectionType.CLUSTER -> clusterManager.createNewClusterAndMoveItems(selectedItems, newCollectionName, currentCollection.id)
+                }
                 resetSelection()
                 val message = if(selectedItems.size == 1 ) "Moved ${selectedItems.size} item" else "Moved ${selectedItems.size} items"
                 _event.emit(CollectionItemEvent(CollectionItemEventType.MOVE, success = true, message = message))

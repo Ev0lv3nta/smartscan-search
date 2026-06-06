@@ -338,24 +338,21 @@ fun CollectionItemsScreen(
                     viewModel.onAction(CollectionItemAction.MoveMedia( it))
                     isMoving = false
                                      },
-                onCreateNewCollection = if(collection.type == CollectionType.TAG){
-                    {
-                        isMoving = false
-                        isCreatingCollectionAndMoving = true
-                    }
-                } else null
+                onCreateNewCollection =  {
+                    isMoving = false
+                    isCreatingCollectionAndMoving = true
+                }
             )
         }
     }
 
     TextInputModal(
         isVisible = isCreatingCollectionAndMoving,
-        title=stringResource(R.string.add_tag_action),
-        placeholder = stringResource(R.string.placeholders_add_tag),
+        title=stringResource(R.string.add_collection_action),
+        placeholder = stringResource(R.string.placeholders_collection_name),
         onClose = {isCreatingCollectionAndMoving = false},
         onConfirm =  {
-            // for tags only
-            viewModel.onAction(CollectionItemAction.CreateNewTagCollectionAndMove(it))
+            viewModel.onAction(CollectionItemAction.CreateNewCollectionAndMove(it))
             isCreatingCollectionAndMoving = false
         },
         leadingIcon = { Icon(Icons.Filled.Tag, contentDescription = "Tag", tint = MaterialTheme.colorScheme.primary) },
