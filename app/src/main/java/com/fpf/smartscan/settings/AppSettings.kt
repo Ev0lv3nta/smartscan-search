@@ -14,4 +14,5 @@ data class AppSettings(
     val color: ColorSchemeType = ColorSchemeType.SMARTSCAN,
     val enableDirectGalleryOpen: Boolean = false,
     val resultsPerRow: Int = 4,
+    val enableDedupe: Boolean = false,
     )

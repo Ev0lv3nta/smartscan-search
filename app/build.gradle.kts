@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.compose.compiler)
     kotlin("plugin.serialization") version "2.0.21"
+    kotlin("plugin.parcelize")
     id("com.google.devtools.ksp")
 }
 
@@ -14,8 +15,8 @@ android {
         applicationId = "com.fpf.smartscan"
         minSdk = 30
         targetSdk = 34
-        versionCode = 20
-        versionName = "1.3.1"
+        versionCode = 21
+        versionName = "1.3.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

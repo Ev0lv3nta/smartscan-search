@@ -14,18 +14,11 @@ interface ClusterMetadataDao {
     @Query("SELECT * FROM cluster_metadata")
     fun getAllFlow(): Flow<List<MediaClusterMetadata>>
 
-
-    @Query("SELECT * FROM cluster_metadata WHERE type = :type AND (prototypeSize >= :minSize) ORDER BY prototypeSize DESC")
-    fun getByTypeFlow(type: MediaType, minSize: Int = 1): Flow<List<MediaClusterMetadata>>
-
     @Query("SELECT * FROM cluster_metadata")
     suspend fun getAll(): List<MediaClusterMetadata>
 
     @Query("SELECT * FROM cluster_metadata WHERE clusterId IN (:ids)")
     suspend fun get(ids: List<Long>): List<MediaClusterMetadata>
-
-    @Query("SELECT * FROM cluster_metadata WHERE type = :type")
-    suspend fun getByType(type: MediaType): List<MediaClusterMetadata>
 
     @Query("SELECT clusterId FROM cluster_metadata WHERE label = :label")
     suspend fun getIdFromLabel(label: String): Long?

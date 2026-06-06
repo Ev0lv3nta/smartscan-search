@@ -1,4 +1,4 @@
-package com.fpf.smartscan.ui.components
+package com.fpf.smartscan.ui.components.common
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 
 @Composable
 fun CircularCheckbox(
@@ -69,7 +70,7 @@ fun CircularCheckbox(
             modifier = Modifier
                 .size((size.value * 0.6f).dp)
                 .scale(iconScale)
-                .align(androidx.compose.ui.Alignment.Center)
+                .align(Alignment.Center)
         )
     }
 }

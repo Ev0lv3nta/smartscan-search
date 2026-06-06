@@ -13,8 +13,28 @@ interface ClusterCrossRefDao {
     @Query("SELECT * FROM media_cluster_crossref")
     suspend fun getAll(): List<ClusterCrossRef>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(crossRefs: List<ClusterCrossRef>)
+    @Query("""
+        SELECT metadata.*, COUNT(crossRef.mediaId) AS count
+        FROM media_cluster_crossref crossRef
+        JOIN cluster_metadata metadata ON metadata.clusterId = crossRef.clusterId
+        GROUP BY crossRef.clusterId
+        ORDER BY count DESC
+    """)
+    fun getClustersWithCount(): Flow<List<ClusterMetadataWithCount>>
+
+    @Query("""
+    SELECT crossRef.*
+    FROM media_cluster_crossref crossRef
+    JOIN media_metadata metadata ON metadata.id = crossRef.mediaId
+    WHERE metadata.type = :type
+    """)
+    suspend fun getByType(type: MediaType): List<ClusterCrossRef>
+
+    @Query("SELECT * FROM media_cluster_crossref WHERE clusterId in (:ids)")
+    suspend fun getByClusterIds(ids: List<Long>): List<ClusterCrossRef>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(crossRefs: List<ClusterCrossRef>)
 
     @Query("DELETE FROM media_cluster_crossref WHERE clusterId IN (:clusterIds)")
     suspend fun deleteByClusterIds(clusterIds: List<Long>)
@@ -25,20 +45,9 @@ interface ClusterCrossRefDao {
     @Query("DELETE FROM media_cluster_crossref")
     suspend fun clear()
 
-    @Query("""
-        SELECT m.*, COUNT(c.mediaId) AS count
-        FROM media_cluster_crossref c
-        JOIN cluster_metadata m ON m.clusterId = c.clusterId
-        GROUP BY c.clusterId
-        ORDER BY count DESC
-    """)
-    fun getClustersWithCount(): Flow<List<ClusterMetadataWithCount>>
+    @Query("SELECT COUNT(*) FROM media_cluster_crossref")
+    suspend fun count(): Int
 
-    @Query("""
-    SELECT c.*
-    FROM media_cluster_crossref c
-    JOIN cluster_metadata m ON m.clusterId = c.clusterId
-    WHERE m.type = :type
-""")
-    suspend fun getByType(type: MediaType): List<ClusterCrossRef>
+    @Query("SELECT COUNT(*) FROM media_cluster_crossref WHERE clusterId = :clusterId")
+    suspend fun countByClusterId(clusterId: Long): Int
 }

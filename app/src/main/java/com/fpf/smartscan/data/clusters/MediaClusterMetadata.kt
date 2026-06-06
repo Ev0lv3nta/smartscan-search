@@ -12,7 +12,6 @@ import com.fpf.smartscansdk.core.cluster.ClusterMetadata
     tableName = "cluster_metadata",
     indices = [
         Index(value = ["label"], unique = true),
-        Index(value = ["type"])
     ])
 @TypeConverters(MediaTypeConverter::class)
 data class MediaClusterMetadata (
@@ -22,7 +21,6 @@ data class MediaClusterMetadata (
     val meanSimilarity: Float = 0f,
     val stdSimilarity: Float = 0f,
     val label: String? = null,
-    val type: MediaType
     )
 
 

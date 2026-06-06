@@ -10,9 +10,8 @@ import com.fpf.smartscan.constants.PrefsNames
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
-import com.fpf.smartscan.di.IMAGE_CLUSTER_STORE
+import com.fpf.smartscan.di.CLUSTER_STORE
 import com.fpf.smartscan.di.IMAGE_STORE
-import com.fpf.smartscan.di.VIDEO_CLUSTER_STORE
 import com.fpf.smartscan.di.VIDEO_STORE
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +23,7 @@ import com.fpf.smartscan.index.indexMedia
 import com.fpf.smartscan.services.MediaIndexForegroundService
 import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscan.utils.isServiceRunning
+import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer
 import com.fpf.smartscansdk.ml.models.ModelAssetSource
@@ -72,8 +72,7 @@ class IndexWorker(context: Context, workerParams: WorkerParameters) :
     private val imageStore: FileEmbeddingStore by inject(IMAGE_STORE)
     private val videoStore: FileEmbeddingStore by inject(VIDEO_STORE)
 
-    private val imageClusterStore: FileEmbeddingStore by inject(IMAGE_CLUSTER_STORE)
-    private val videoClusterStore: FileEmbeddingStore by inject(VIDEO_CLUSTER_STORE)
+    private val clusterStore: FileEmbeddingStore by inject(CLUSTER_STORE)
 
 
 
@@ -86,36 +85,32 @@ class IndexWorker(context: Context, workerParams: WorkerParameters) :
                 return@withContext Result.success()
             }
 
-            // Prevents doing full indexes. That responsibility should be left to the foreground service
+            val clusterManager = ClusterManager(
+                clusterEmbedStore = clusterStore,
+                imageEmbedStore = imageStore,
+                videoEmbedStore = videoStore,
+                clusterCrossRefRepository = clusterCrossRefRepository,
+                clusterMetadataRepository = clusterMetadataRepository,
+                mediaMetadataRepository = mediaMetadataRepository,
+            )
+            val embedsToCluster = mutableListOf<StoredEmbedding>()
+
+
+            // Prevents doing full indexes by checking if embedding stores already exist. That responsibility should be left to the foreground service
             // No listener used (may change to avoid silent errors)
             if(imageStore.exists){
                 val imageIndexer = ImageIndexer(imageEmbedder, context=applicationContext, listener = null, store = imageStore)
                 indexMedia(applicationContext, MediaType.IMAGE, imageStore, imageIndexer, mediaMetadataRepository,appSettings.searchableImageDirectories.map{it.toUri()})
-
-                val imageClusterManager = ClusterManager(
-                    clusterStore = imageClusterStore,
-                    clusterCrossRefRepository = clusterCrossRefRepository,
-                    clusterMetadataRepository = clusterMetadataRepository,
-                    mediaMetadataRepository = mediaMetadataRepository,
-                    mediaType = MediaType.IMAGE
-                )
-                imageClusterManager.clusterMedia(imageStore.get())
+                embedsToCluster.addAll(imageStore.get())
             }
 
-            // Prevents doing full indexes. That responsibility should be left to the foreground service
             if(videoStore.exists){
                 val videoIndexer = VideoIndexer(imageEmbedder, context=applicationContext, listener = null, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
-                indexMedia(applicationContext, MediaType.VIDEO, videoStore,videoIndexer, mediaMetadataRepository,appSettings.searchableImageDirectories.map{it.toUri()})
-
-                val videoClusterManager = ClusterManager(
-                    clusterStore = videoClusterStore,
-                    clusterCrossRefRepository = clusterCrossRefRepository,
-                    clusterMetadataRepository = clusterMetadataRepository,
-                    mediaMetadataRepository = mediaMetadataRepository,
-                    mediaType = MediaType.VIDEO
-                )
-                videoClusterManager.clusterMedia(videoStore.get())
+                indexMedia(applicationContext, MediaType.VIDEO, videoStore,videoIndexer, mediaMetadataRepository,appSettings.searchableVideoDirectories.map{it.toUri()})
+                embedsToCluster.addAll(videoStore.get())
             }
+            clusterManager.cluster(embedsToCluster)
+
 
             return@withContext Result.success()
         } catch (e: Exception) {

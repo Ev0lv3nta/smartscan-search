@@ -1,28 +1,24 @@
-package com.fpf.smartscan.ui.screens.search
+package com.fpf.smartscan.ui.state
 
 import android.net.Uri
 import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.media.MediaType
-import com.fpf.smartscan.search.QueryType
+import com.fpf.smartscan.ui.state.common.Selectable
+import com.fpf.smartscan.ui.state.common.SelectionState
 
 data class SearchState(
     val searchResults: List<MediaItem> = emptyList(),
     val totalResults: Int = 0,
     val mediaType: MediaType = MediaType.IMAGE,
-    val queryType: QueryType = QueryType.TEXT,
     val queryImage: Uri? = null,
-    val hasIndexedImages: Boolean? = null,
-    val hasIndexedVideos: Boolean? = null,
-    val isRescanning: Boolean = false,
     val loading: Boolean = false,
     val error: String? = null,
     val resultToView: MediaItem? = null,
-    val selectedResults: Set<MediaItem> = emptySet(),
     val imageEmbedderLastUsage: Long? = null,
     val textEmbedderLastUsage: Long? = null,
-    val autoCompleteTagResults: List<String> = emptyList(),
     val tagFilter: String? = null,
     val startDateFilter: Long? = null,
     val endDateFilter: Long? = null,
     val tagOnlySearch: Boolean = false,
-)
+    override val selection: SelectionState<MediaItem> = SelectionState()
+): Selectable<MediaItem>

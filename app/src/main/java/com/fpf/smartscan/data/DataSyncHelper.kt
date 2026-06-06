@@ -1,11 +1,10 @@
 package com.fpf.smartscan.data
 
 import android.app.Application
-import android.content.Context.MODE_PRIVATE
+import android.content.Context
+import android.net.Uri
 import android.util.Log
-import androidx.core.content.edit
-import com.fpf.smartscan.constants.PrefsKeys
-import com.fpf.smartscan.constants.PrefsNames
+import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.data.MediaDatabase.Companion.DB_NAME
 import com.fpf.smartscan.data.MediaDatabase.Companion.OLD_DB_IMAGE_NAME
 import com.fpf.smartscan.data.MediaDatabase.Companion.OLD_DB_VIDEO_NAME
@@ -22,16 +21,24 @@ import com.fpf.smartscan.data.old.videos.VideoTagRepository
 import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.media.MediaType
+import com.fpf.smartscan.media.getImageToDateMap
+import com.fpf.smartscan.media.getVideoToDateMap
 import com.fpf.smartscan.media.queryImageIdDateMap
+import com.fpf.smartscan.media.queryImageIds
 import com.fpf.smartscan.media.queryVideoIdDateMap
+import com.fpf.smartscan.media.queryVideoIds
+import com.fpf.smartscan.media.removeStaleMedia
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
+import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
 
-object DbManager {
-    const val TAG = "DbManager"
+object DataSyncHelper {
+    const val TAG = "DataSyncHelper"
+    private const val EMBED_DIM: Int = 512
+
 
     fun checkCachedDb(application: Application): File?{
         val cachedDB = File(application.filesDir, DB_NAME)
@@ -63,7 +70,7 @@ object DbManager {
         val oldImageTagDbPath = application.getDatabasePath(OLD_DB_IMAGE_NAME)
         val oldVideoTagDbPath = application.getDatabasePath(OLD_DB_VIDEO_NAME)
 
-        Log.d(MediaDatabase.TAG, "Old DB detected, transferring...")
+        Log.d(TAG, "Old DB detected, transferring...")
 
         oldImageTagDbCachedFile.copyTo(oldImageTagDbPath, overwrite = true)
         oldVideoTagDbCachedFile.copyTo(oldVideoTagDbPath, overwrite = true)
@@ -78,44 +85,28 @@ object DbManager {
         oldVideoTagDbPath.delete()
     }
 
-    suspend fun syncMediaMetadataFromEmbedStores(
-        application: Application,
-        db: MediaDatabase,
+    suspend fun sync(
+        context: Context,
         imageStore: FileEmbeddingStore,
-        videoStore: FileEmbeddingStore
-    ){
-        val sharedPrefs = application.getSharedPreferences(PrefsNames.APP_PREFS, MODE_PRIVATE)
-        val metadataRepo = MediaMetadataRepository(db.metadataDao())
-        val storedImageIds = (if(imageStore.exists) imageStore.get() else emptyList()).map { it.id }.toSet()
+        videoStore: FileEmbeddingStore,
+        allowedImageDirs: List<Uri> = emptyList(),
+        allowedVideoDirs: List<Uri> = emptyList(),
+        mediaMetadataRepository: MediaMetadataRepository,
 
-        if(storedImageIds.isNotEmpty()) {
-            val imageToDateMap = queryImageIdDateMap(application)
-            val imageMetadataList = imageToDateMap.entries.mapNotNull{
-                // Ensure embed store and media table are in sync
-                // Filtered out items will be naturally added to index based on schedule
-                if (it.key !in storedImageIds) return@mapNotNull null
-                MediaMetadata(id=it.key, dateAdded = it.value, type = MediaType.IMAGE)
-            }
-            metadataRepo.insert(imageMetadataList)
-            Log.d(TAG, "Image metadata sync complete. ${imageMetadataList.size} synced.")
-        }
-
-        val storedVideoIds =( if(videoStore.exists) videoStore.get() else emptyList()).map{it.id}.toSet()
-        if(storedVideoIds.isNotEmpty()){
-            val videoToDateMap = queryVideoIdDateMap(application)
-            val videoMetadataList = videoToDateMap.mapNotNull{
-                if (it.key !in storedVideoIds) return@mapNotNull null
-                MediaMetadata(id=it.key, dateAdded = it.value, type = MediaType.VIDEO)
-            }
-            metadataRepo.insert(videoMetadataList)
-            Log.d(TAG, "Video metadata sync complete. ${videoMetadataList.size} synced.")
-
-        }
-
-
-        sharedPrefs.edit {
-            putBoolean(PrefsKeys.MEDIA_METADATA_SYNC_COMPLETE, true)
-        }
+        ){
+        syncEmbedStoreAndMetadata(context,
+            store = imageStore,
+            allowedDirs = allowedImageDirs,
+            mediaMetadataRepository = mediaMetadataRepository,
+            mediaType = MediaType.IMAGE
+        )
+        syncEmbedStoreAndMetadata(context,
+            store = videoStore,
+            allowedDirs = allowedVideoDirs,
+            mediaMetadataRepository = mediaMetadataRepository,
+            mediaType = MediaType.VIDEO
+        )
+        Log.d(TAG, "Data sync completed successfully")
     }
 
     private suspend fun transfer(application: Application, newDb: MediaDatabase) = withContext(Dispatchers.IO) {
@@ -147,7 +138,7 @@ object DbManager {
             )
         }
 
-        newTagsCrossRefRepository.upsertTagCrossRefs(updatedImageCrossRefs)
+        newTagsCrossRefRepository.insertTagCrossRefs(updatedImageCrossRefs)
         oldImageDb.close()
 
         Log.d(TAG, "Image transfer complete. ${imageTagIds.size} tags transferred. ${updatedImageCrossRefs.size} cross refs transferred.")
@@ -177,9 +168,106 @@ object DbManager {
             )
         }
 
-        newTagsCrossRefRepository.upsertTagCrossRefs(updatedVideoCrossRefs)
+        newTagsCrossRefRepository.insertTagCrossRefs(updatedVideoCrossRefs)
         oldVideoDb.close()
 
         Log.d(TAG, "Video transfer complete. ${videoTagIds.size} tags transferred. ${updatedVideoCrossRefs.size} cross refs transferred.")
     }
+
+    private suspend fun syncMediaMetadataFromEmbedStore(
+        mediaMetadataRepository: MediaMetadataRepository,
+        store: FileEmbeddingStore,
+        mediaType: MediaType
+    ){
+        val storedEmbeds = store.get()
+        if(storedEmbeds.isEmpty()) return
+
+        val newMetadataList = storedEmbeds.map{ MediaMetadata(id=it.id, dateAdded = it.date, type = mediaType) }
+        mediaMetadataRepository.insert(newMetadataList)
+        Log.d(TAG, "${mediaType.name} metadata sync complete. ${newMetadataList.size} synced.")
+
+    }
+
+    private suspend fun syncEmbedStoreAndMetadata(
+        context: Context,
+        store: FileEmbeddingStore,
+        allowedDirs: List<Uri> = emptyList(),
+        mediaMetadataRepository: MediaMetadataRepository,
+        mediaType: MediaType
+    ){
+        val existingIdsFromMetadata = mediaMetadataRepository.getByType(mediaType).map { it.id }.toMutableSet()
+        val existingIdsFromEmbedStore = store.get().map{it.id}.toMutableSet()
+        if(existingIdsFromEmbedStore.isEmpty()) return
+
+        val accessibleMediaIds = when(mediaType){
+            MediaType.IMAGE -> queryImageIds(context, allowedDirs).toSet()
+            MediaType.VIDEO -> queryVideoIds(context, allowedDirs).toSet()
+        }
+
+        // Embed store used as source of truth
+        val mediaToPurge = existingIdsFromEmbedStore.filterNot {it in accessibleMediaIds}
+
+        if(mediaToPurge.isNotEmpty()){
+            removeStaleMedia(mediaToPurge, store = store, mediaMetadataRepository)
+            existingIdsFromEmbedStore.removeAll(mediaToPurge)
+            existingIdsFromMetadata.removeAll(mediaToPurge)
+            Log.d(TAG, "${mediaType.name}: Removed ${mediaToPurge.size} stale items")
+        }
+
+        val storedEmbed = store.get(listOf(existingIdsFromEmbedStore.first())).first()
+        val mediaIdToDateMap = when(mediaType){
+            MediaType.IMAGE -> queryImageIdDateMap(context.applicationContext)
+            MediaType.VIDEO -> queryVideoIdDateMap(context.applicationContext)
+        }
+
+        // Check if store date need syncing
+        if(storedEmbed.date != mediaIdToDateMap[storedEmbed.id] ){
+            updateStoreDates(
+                context=context,
+                embeds = store.get(),
+                mediaTpe = mediaType
+            )
+            store.clear() // ensure internal consistency as precaution
+        }
+
+        if(existingIdsFromEmbedStore.any{it !in existingIdsFromMetadata}) {
+            syncMediaMetadataFromEmbedStore( mediaMetadataRepository, store, mediaType )
+        }
+    }
+
+    private suspend fun updateStoreDates(
+        context: Context,
+        embeds: List<StoredEmbedding>,
+        mediaTpe: MediaType
+    ) {
+        val tempFileName = when(mediaTpe){
+            MediaType.IMAGE -> "${EmbeddingStoresFiles.IMAGE}.tmp"
+            MediaType.VIDEO -> "${EmbeddingStoresFiles.VIDEO}.tmp"
+        }
+        val outputFileName =  when(mediaTpe){
+            MediaType.IMAGE -> EmbeddingStoresFiles.IMAGE
+            MediaType.VIDEO -> EmbeddingStoresFiles.VIDEO
+        }
+
+        val tempFile = File(context.applicationContext.cacheDir, tempFileName)
+        val tempStore = FileEmbeddingStore(tempFile, EMBED_DIM)
+
+        val dateMap = when(mediaTpe){
+            MediaType.IMAGE -> getImageToDateMap(context.applicationContext, embeds.map { it.id })
+            MediaType.VIDEO -> getVideoToDateMap(context.applicationContext, embeds.map { it.id })
+        }
+        val updated = embeds.mapNotNull {
+            val date = dateMap[it.id] ?: return@mapNotNull null
+            it.copy(date = date)
+        }
+        tempStore.add(updated)
+
+        val finalFile = File(context.applicationContext.filesDir, outputFileName)
+        if (finalFile.exists()) finalFile.delete()
+        tempFile.renameTo(finalFile)
+
+        Log.d(TAG, "${mediaTpe.name}: Date sync completed successfully")
+
+    }
+
 }

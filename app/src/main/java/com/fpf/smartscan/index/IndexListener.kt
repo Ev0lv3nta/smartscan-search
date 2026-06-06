@@ -5,7 +5,6 @@ import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import com.fpf.smartscan.R
-import com.fpf.smartscan.search.IndexingStatus
 import com.fpf.smartscan.utils.getTimeInMinutesAndSeconds
 import com.fpf.smartscan.utils.showNotification
 import com.fpf.smartscansdk.core.processors.Metrics
@@ -51,11 +50,16 @@ abstract class BaseIndexListener(private val notificationId: Int, private val ta
             _indexingStatus.value = IndexingStatus.FAILED
             _progress.value = 0f
             val title = context.getString(R.string.notif_title_index_error_service, itemName)
-            val content = context.getString(R.string.notif_content_index_error_service, itemName.lowercase())
+            val content = context.getString(R.string.notif_content_index_error_service)
             showNotification(context, title, content, notificationId)
         } catch (e: Exception) {
             Log.e(tag, "Error in onFail: ${e.message}", e)
         }
+    }
+
+    fun reset(){
+        _indexingStatus.value = IndexingStatus.IDLE
+        _progress.value = 0f
     }
 }
 

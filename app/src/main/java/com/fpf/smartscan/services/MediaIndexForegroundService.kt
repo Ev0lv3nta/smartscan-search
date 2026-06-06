@@ -15,10 +15,9 @@ import com.fpf.smartscan.constants.PrefsNames
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
 import com.fpf.smartscan.data.metadata.MediaMetadataRepository
-import com.fpf.smartscan.di.IMAGE_CLUSTER_STORE
 import com.fpf.smartscan.di.IMAGE_STORE
-import com.fpf.smartscan.di.VIDEO_CLUSTER_STORE
 import com.fpf.smartscan.di.VIDEO_STORE
+import com.fpf.smartscan.di.CLUSTER_STORE
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.cluster.ClusterManager
 import com.fpf.smartscan.index.ImageIndexListener
@@ -26,6 +25,7 @@ import com.fpf.smartscan.index.VideoIndexListener
 import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscan.index.indexMedia
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
+import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer
 import com.fpf.smartscansdk.ml.models.ModelAssetSource
@@ -59,9 +59,7 @@ class MediaIndexForegroundService : Service(), KoinComponent {
 
     private val imageStore: FileEmbeddingStore by inject(IMAGE_STORE)
     private val videoStore: FileEmbeddingStore by inject(VIDEO_STORE)
-
-    private val imageClusterStore: FileEmbeddingStore by inject(IMAGE_CLUSTER_STORE)
-    private val videoClusterStore: FileEmbeddingStore by inject(VIDEO_CLUSTER_STORE)
+    private val clusterStore: FileEmbeddingStore by inject(CLUSTER_STORE)
 
 
     override fun onCreate() {
@@ -108,36 +106,33 @@ class MediaIndexForegroundService : Service(), KoinComponent {
                 val appSettings = loadSettings(sharedPrefs)
                 imageEmbedder.initialize()
 
+                val clusterManager = ClusterManager(
+                    clusterEmbedStore = clusterStore,
+                    imageEmbedStore = imageStore,
+                    videoEmbedStore = videoStore,
+                    clusterCrossRefRepository = clusterCrossRefRepository,
+                    clusterMetadataRepository = clusterMetadataRepository,
+                    mediaMetadataRepository = metadataRepo,
+                )
+
+
                 mediaTypes.forEach { mediaType ->
                     when(mediaType){
                         MediaType.IMAGE -> {
                             val imageIndexer = ImageIndexer(imageEmbedder, context=application, listener = ImageIndexListener, store = imageStore)
                             indexMedia(application, MediaType.IMAGE, imageStore, imageIndexer, metadataRepo,appSettings.searchableImageDirectories.map{it.toUri()})
-
-                            val clusterManager = ClusterManager(
-                                clusterStore = imageClusterStore,
-                                clusterCrossRefRepository = clusterCrossRefRepository,
-                                clusterMetadataRepository = clusterMetadataRepository,
-                                mediaMetadataRepository = metadataRepo,
-                                mediaType = MediaType.IMAGE
-                            )
-                            clusterManager.clusterMedia(imageStore.get())
                         }
                         MediaType.VIDEO -> {
                             val videoIndexer = VideoIndexer(imageEmbedder, context=application, listener = VideoIndexListener, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
-                            indexMedia(application, MediaType.VIDEO, videoStore, videoIndexer, metadataRepo,appSettings.searchableImageDirectories.map{it.toUri()})
-
-                            val clusterManager = ClusterManager(
-                                clusterStore = videoClusterStore,
-                                clusterCrossRefRepository = clusterCrossRefRepository,
-                                clusterMetadataRepository = clusterMetadataRepository,
-                                mediaMetadataRepository = metadataRepo,
-                                mediaType = MediaType.VIDEO
-                            )
-                            clusterManager.clusterMedia(videoStore.get())
+                            indexMedia(application, MediaType.VIDEO, videoStore, videoIndexer, metadataRepo,appSettings.searchableVideoDirectories.map{it.toUri()})
                         }
                     }
                 }
+                // Always cluster all existing media
+                val embedsToCluster = mutableListOf<StoredEmbedding>()
+                embedsToCluster.addAll(imageStore.get())
+                embedsToCluster.addAll(videoStore.get())
+                clusterManager.cluster(embedsToCluster)
             } catch (e: CancellationException) {
                 // cancelled
             } catch (e: Exception) {

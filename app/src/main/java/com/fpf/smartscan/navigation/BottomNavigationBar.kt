@@ -9,7 +9,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.fpf.smartscan.R
-import com.fpf.smartscan.constants.Routes
 
 @Composable
 fun BottomNavigationBar(navController: NavController) {
