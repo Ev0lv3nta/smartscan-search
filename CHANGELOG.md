@@ -1,3 +1,21 @@
+## v1.3.2 - 07/06/2026
+
+### Added
+* Added "Hide duplicates" setting to hide near-identical search results
+* Added ability to merge Auto Collections
+* Added ability to move media in Auto Collections
+* Added support for mixed-media collections
+* Added Select All for search results and collections
+* Added re-ranked search results
+
+### Changed
+* Re-designed settings screen
+
+### Fixed
+* Fixed allowed folders bug caused by using allowed image folders instead of video folders when querying videos
+
+___
+
 ## v1.3.1 - 01/05/2026
 * Added ability to copy from multiple collections to a tag collection
 * Added date filters for search
