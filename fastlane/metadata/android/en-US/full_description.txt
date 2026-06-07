@@ -9,6 +9,7 @@ Search images and videos offline using text or by reverse image search and organ
 <li><b>Search Options:</b> Search using text or images, including pasting images into the search bar.</li>
 <li><b>Tag + Text Search:</b> Combine tags with text queries.</li>
 <li><b>Tag Search:</b> Search directly by tags.</li>
+<li><b>Hide duplicates:</b> Hides near identical search results.</li>
 <li><b>Cross-App Search:</b> Search from other apps via Share/Intent.</li>
 <li><b>Auto-Refresh Index:</b> Automatically refresh image and video indexes for new content.</li>
 <li><b>Folder Selection:</b> Optionally configure which image and video folders are indexed.</li>
