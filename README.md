@@ -43,7 +43,7 @@ All processing is handled entirely on-device, ensuring privacy, speed, and offli
 * Search by tag + text query
 * Search from other apps via share/intent
 * Search by pasting image in search bar
-* Cluster-based search
+* Hide duplicate results (near identical search results)
 * Automatically refresh image and video indexes for new content
 * Optionally configure searchable image and video folders
 * Optionally open search results in default gallery
@@ -55,8 +55,7 @@ All processing is handled entirely on-device, ensuring privacy, speed, and offli
 ### Collections:
 * Auto Collections: automatically groups similar media
 * Tag Collections: manually curate collections using tags
-* Merge Tag Collections
-* Bulk copy from Auto Collections to Tag Collections
+* Manage Collections: Merge, move, delete, add tags.
 
 ---
 
