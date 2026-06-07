@@ -27,8 +27,7 @@ Search images and videos offline using text or by reverse image search and organ
 <ul>
 <li><b>Auto Collections:</b> Automatically groups similar media.</li>
 <li><b>Tag Collections:</b> Manually curate collections using tags.</li>
-<li><b>Merge Collections:</b> Merge tag collections.</li>
-<li><b>Bulk Copy:</b> Copy media from auto collections to tag collections.</li>
+<li><b>Manage Collections:</b> Merge, move, delete, add tags.</li>
 </ul>
 
 <b>Fully On-Device</b>
