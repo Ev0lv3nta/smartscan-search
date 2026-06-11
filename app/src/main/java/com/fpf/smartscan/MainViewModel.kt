@@ -172,12 +172,4 @@ class MainViewModel(
         // Delay is required to prevent race condition issues on first index
         IndexWorker.scheduleWorker(getApplication(), Pair(1L, TimeUnit.DAYS), Pair(1L, TimeUnit.DAYS))
     }
-
-    override fun onCleared() {
-        runBlocking {
-            imageStore.save()
-            videoStore.save()
-        }
-        super.onCleared()
-    }
 }

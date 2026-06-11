@@ -211,7 +211,8 @@ object DataSyncHelper {
             removeStaleMedia(mediaToPurge, store = store, mediaMetadataRepository)
             existingIdsFromEmbedStore.removeAll(mediaToPurge)
             existingIdsFromMetadata.removeAll(mediaToPurge)
-            Log.d(TAG, "${mediaType.name}: Removed ${mediaToPurge.size} stale items")
+            store.save()
+            Log.d(TAG, "${mediaType.name}: Removed ${mediaToPurge.size} stale items and save index file")
         }
 
         val storedEmbed = store.get(listOf(existingIdsFromEmbedStore.first())).first()
