@@ -508,7 +508,7 @@ fun SearchScreen(
 
     OptionPicker(
         isVisible = isSelectingMediaType,
-        title = "Media type",
+        title = stringResource(R.string.media_type_title),
         options = mediaTypeOptions.values.toList(),
         selectedOption = mediaTypeOptions[state.mediaType]!!,
         onSelect = { selected ->

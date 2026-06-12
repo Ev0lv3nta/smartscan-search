@@ -53,6 +53,7 @@
     <string name="media_types_to_scan">Select media types</string>
     <string name="scan_in_progress_title">Scan In Progress</string>
     <string name="scan_in_progress_content">This may take a moment. You can continue using the app once the scan completes.</string>
+    <string name="media_type_title">Media type</string>
 
     <!-- Search screen -->
     <string name="search_storage_permissions">Storage permission required to search.</string>

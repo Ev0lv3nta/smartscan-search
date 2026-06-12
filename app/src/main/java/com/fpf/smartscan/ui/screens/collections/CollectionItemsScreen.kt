@@ -394,7 +394,7 @@ fun CollectionItemsScreen(
 
     OptionPicker(
         isVisible = showMediaTypeFilter,
-        title = "Media type",
+        title = stringResource(R.string.media_type_title),
         options =  listOf("All") + mediaTypeOptions.values.toList(),
         selectedOption  = mediaTypeOptions[state.mediaType]?: "All",
         onSelect = { selected ->

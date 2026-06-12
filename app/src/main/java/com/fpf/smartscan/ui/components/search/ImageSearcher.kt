@@ -38,11 +38,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.fpf.smartscan.R
 import com.fpf.smartscan.constants.mediaTypeOptions
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.ui.components.media.ImageDisplay
@@ -159,7 +161,7 @@ fun ImageSearcher(
 
     OptionPicker(
         isVisible = showPicker,
-        title = "Media type",
+        title = stringResource(R.string.media_type_title),
         options = mediaTypeOptions.values.toList(),
         selectedOption = mediaTypeOptions[mediaType]!!,
         onSelect = { selected ->
