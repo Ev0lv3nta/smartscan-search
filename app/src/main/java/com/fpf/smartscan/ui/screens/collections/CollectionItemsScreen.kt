@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DriveFileMoveRtl
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.RemoveCircle
 import androidx.compose.material.icons.filled.Share
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.fpf.smartscan.R
+import com.fpf.smartscan.constants.mediaTypeOptions
 import com.fpf.smartscan.events.CollectionItemEventType
 import com.fpf.smartscan.media.CollectionType
 import com.fpf.smartscan.media.MediaCollection
@@ -62,10 +64,12 @@ import com.fpf.smartscan.ui.components.common.SlideRevealBox
 import com.fpf.smartscan.ui.components.TagAdder
 import com.fpf.smartscan.ui.components.common.ActionBar
 import com.fpf.smartscan.ui.action.ActionConfig
+import com.fpf.smartscan.ui.action.SearchAction
 import com.fpf.smartscan.ui.components.collections.CollectionItemsList
 import com.fpf.smartscan.ui.components.collections.CollectionPicker
 import com.fpf.smartscan.ui.components.media.MediaViewer
 import com.fpf.smartscan.ui.components.modals.TextInputModal
+import com.fpf.smartscan.ui.components.pickers.OptionPicker
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.StateFlow
 import org.koin.compose.viewmodel.koinViewModel
@@ -107,6 +111,7 @@ fun CollectionItemsScreen(
     var isCreatingCollectionAndMoving by remember { mutableStateOf(false) }
     var isAddingTag by remember { mutableStateOf(false) }
     var showMoreActions by remember { mutableStateOf(false) }
+    var showMediaTypeFilter by remember { mutableStateOf(false) }
     val spaceNotAllowedMessage = stringResource(R.string.alert_space_not_allowed)
 
     val mainActions: List<ActionConfig> = listOf(
@@ -147,7 +152,6 @@ fun CollectionItemsScreen(
         ),
     )
 
-
     // For dynamic smooth hiding effect of action bars and other components
     var offset by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
@@ -166,6 +170,16 @@ fun CollectionItemsScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = {showMediaTypeFilter = true}
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.FilterList,
                             contentDescription = null
                         )
                     }
@@ -376,6 +390,19 @@ fun CollectionItemsScreen(
             isAddingTag = false
         },
         onCheckAutoCompletion = viewModel::handleAutoCompletionCheck
+    )
+
+    OptionPicker(
+        isVisible = showMediaTypeFilter,
+        title = "Media type",
+        options =  listOf("All") + mediaTypeOptions.values.toList(),
+        selectedOption  = mediaTypeOptions[state.mediaType]?: "All",
+        onSelect = { selected ->
+            val mediaType = mediaTypeOptions.entries.find { it.value == selected }?.key
+            viewModel.onAction(CollectionItemAction.SetMediaTypeFilter(mediaType))
+            showMediaTypeFilter = false
+        },
+        onClose = {showMediaTypeFilter = false}
     )
 
 }

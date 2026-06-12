@@ -144,26 +144,23 @@ class CollectionItemsViewModel(
         }
         .cachedIn(viewModelScope)
 
-    val tagCollections: StateFlow<List<MediaCollection>> = combine(
-        tagCrossRefRepository.getTagsWithCounts(),
-        _state.map { it.mediaType }
-    ) { tagCounts, mediaType -> tagManager.toCollections(tagCounts)
-    }.flowOn(Dispatchers.IO).stateIn(
+    val tagCollections: StateFlow<List<MediaCollection>> = tagCrossRefRepository.getTagsWithCounts()
+        .map (tagManager::toCollections)
+        .flowOn(Dispatchers.IO)
+        .stateIn(
         scope = viewModelScope,
         started = SharingStarted.Lazily,
         initialValue = emptyList()
     )
 
-    val clusterCollections: StateFlow<List<MediaCollection>> = combine(
-        clusterCrossRefRepository.getClustersWithCount(),
-        _state.map { it.mediaType }
-    ) { clusters, mediaType -> clusterManager.toCollections(clusters)
-    }.flowOn(Dispatchers.IO)
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.Lazily,
-            initialValue = emptyList()
-        )
+    val clusterCollections: StateFlow<List<MediaCollection>> = clusterCrossRefRepository.getClustersWithCount()
+            .map(clusterManager::toCollections)
+            .flowOn(Dispatchers.IO)
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.Lazily,
+                initialValue = emptyList()
+            )
 
     private val _event = MutableSharedFlow<CollectionItemEvent>()
     val event = _event.asSharedFlow()
@@ -183,7 +180,8 @@ class CollectionItemsViewModel(
             is CollectionItemAction.ToggleSelectionMode -> toggleSelectionMode()
             is CollectionItemAction.ResetSelection -> resetSelection()
             is CollectionItemAction.ClearSelection -> clearSelection()
-        }
+            is CollectionItemAction.SetMediaTypeFilter -> setMediaTypeFilter(action.mediaType)
+            }
     }
 
     private fun clearSelection() = _state.update{it.copy(selection = SelectionUtils.clearSelection(it.selection))}
@@ -356,6 +354,8 @@ class CollectionItemsViewModel(
             _state.update { it.copy(mediaToView =item) }
         }
     }
+
+    private fun setMediaTypeFilter(mediaType: MediaType?) = _state.update { it.copy(mediaType=mediaType) }
 
     fun onErrorAsyncImage(error: AsyncImagePainter.State.Error){
         viewModelScope.launch (Dispatchers.IO){
