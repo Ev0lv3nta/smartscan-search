@@ -252,7 +252,7 @@ fun CollectionItemsScreen(
                 )
             }
             CollectionItemsList(
-                isVisible = tagCollectionItems.itemCount > 0 || clusterCollectionItems.itemCount> 0,
+                isVisible = items.itemCount > 0,
                 numGridColumns = appSettings.resultsPerRow,
                 items = items,
                 isSelecting = state.selection.isSelecting,
@@ -268,6 +268,10 @@ fun CollectionItemsScreen(
                 onOffsetChange = {  offset = it },
                 maxCollapsePx = maxCollapsablePx,
                 onError = viewModel::onErrorAsyncImage
+            )
+
+            EmptyCollectionItemsScreen(
+                isVisible = items.itemCount == 0
             )
         }
 
