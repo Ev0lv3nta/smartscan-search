@@ -181,6 +181,16 @@ fun SearchScreen(
         onTopBarChange(
             TopBarState(
                 title = screenTitle,
+                actions = {
+                    IconButton(
+                        onClick = {showFilters = true}
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.FilterList,
+                            contentDescription = null
+                        )
+                    }
+                }
             )
         )
     }
@@ -304,32 +314,6 @@ fun SearchScreen(
                                     }
                                 }
                             )
-
-                            Box(
-                                modifier = Modifier
-                                    .heightIn(min = 56.dp)
-                                    .widthIn(min = 42.dp)
-                                    .background(
-                                        color = MaterialTheme.colorScheme.surfaceContainer,
-                                        shape = RoundedCornerShape(8.dp)
-                                    )
-                                    .clickable(
-                                        indication = null,
-                                        interactionSource = remember { MutableInteractionSource() }
-                                    ) {
-                                        showFilters = true
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.FilterList,
-                                    contentDescription = "Filters",
-                                    tint = if (state.startDateFilter != null || state.endDateFilter != null)
-                                        MaterialTheme.colorScheme.primary
-                                    else
-                                        MaterialTheme.colorScheme.onSurface
-                                )
-                            }
                         }
                         if(state.startDateFilter != null || state.endDateFilter != null){
                             TextButton(
