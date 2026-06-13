@@ -22,7 +22,7 @@ class TagPagingSource(
         // over-fetch by 1 item to detect end of data without using count()
         return try {
             val mediaMetadataList = if(mediaType != null){
-                mediaMetadataRepository.getByTagAndType(tagId = tagId, mediaType, limit = pageSize + 1, offset = offset)
+                mediaMetadataRepository.getByTag(tagId = tagId, mediaType, limit = pageSize + 1, offset = offset)
             }else{
                 mediaMetadataRepository.getByTag(tagId = tagId, limit = pageSize + 1, offset = offset)
             }
