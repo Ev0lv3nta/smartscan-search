@@ -131,15 +131,6 @@
     <string name="download_model_alert_title">Download model</string>
     <string name="download_model_alert_description">Press `OK` to download model. This will open your browser.</string>
 
-    <!--Updates-->
-    <string name="update_hide_duplicates">Added Hide Duplicates setting to hide near-identical search results</string>
-    <string name="update_auto_collections_merge_move_media">Added ability to merge Auto Collections and move media within them</string>
-    <string name="update_mixed_media_collections">Added support for mixed-media collections</string>
-    <string name="update_select_all_search_collections">Added Select All for search results and collections</string>
-    <string name="update_ui_improvements_bug_fixes">UI improvements and bug fixes</string>
-    <string name="update_scan">Moved scan handling to settings</string>
-    <string name="update_notes">Use merge and move carefully, as they can affect Auto Collection accuracy. They should mainly be used to fix grouping mistakes, since adding visually unrelated items can distort a collection.</string>
-
     <!--Placeholders-->
     <string name ="placeholders_add_tag">Enter tag name</string>
     <string name="placeholders_collection_name">Enter collection name</string>
@@ -147,4 +138,11 @@
     <string name="placeholders_search_videos">Search videos</string>
     <string name="placeholders_search_by_tag">Search by tag: #tag</string>
     <string name="placeholders_search_by_tag_query">Search by tag: #tag query</string>
+
+    <!--Updates-->
+    <string name="update_filter_media_types_collections">Added filter for media types in collections</string>
+    <string name="update_fixed_allowed_folders_bug">Fixed allowed folders related bugs</string>
+    <string name="update_similarity_threshold_to_strictness">Replaced similarity threshold with strictness setting as results are no longer ranked purely by similarity</string>
+    <string name="update_sync_startup_only">Other minor UI improvements and bug fixes</string>
+
 </resources>

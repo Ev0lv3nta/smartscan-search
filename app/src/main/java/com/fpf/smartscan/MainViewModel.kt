@@ -83,12 +83,10 @@ class MainViewModel(
 
     fun getUpdates(): List<String> {
         return listOf(
-            application.getString(R.string.update_hide_duplicates),
-            application.getString(R.string.update_auto_collections_merge_move_media),
-            application.getString(R.string.update_mixed_media_collections),
-            application.getString(R.string.update_select_all_search_collections),
-            application.getString(R.string.update_scan),
-            application.getString(R.string.update_ui_improvements_bug_fixes),
+            application.getString(R.string.update_filter_media_types_collections),
+            application.getString(R.string.update_fixed_allowed_folders_bug),
+            application.getString(R.string.update_similarity_threshold_to_strictness),
+            application.getString(R.string.update_sync_startup_only),
         )
     }
 
