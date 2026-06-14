@@ -58,7 +58,8 @@ fun queryImageIdDateMap(
 
     val sortOrder = "${MediaStore.Images.Media.DATE_MODIFIED} DESC"
 
-    val selectionParts = mutableListOf<String>()
+    val dirParts = mutableListOf<String>()
+    val dateParts = mutableListOf<String>()
     val selectionArgs = mutableListOf<String>()
     val envRoot = Environment.getExternalStorageDirectory().absolutePath.trimEnd('/')
 
@@ -72,7 +73,7 @@ fun queryImageIdDateMap(
                     val afterColon = docId.substringAfter(':', "")
                     if (afterColon.isNotEmpty()) {
                         val rel = afterColon.trim('/') + "/"
-                        selectionParts.add("${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?")
+                        dirParts.add("${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?")
                         selectionArgs.add("$rel%")
                         continue
                     }
@@ -85,7 +86,7 @@ fun queryImageIdDateMap(
                         val rel = absPath.removePrefix(envRoot)
                             .trimStart('/')
                             .trimEnd('/') + "/"
-                        selectionParts.add("${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?")
+                        dirParts.add("${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?")
                         selectionArgs.add("$rel%")
                     }
                     continue
@@ -94,7 +95,7 @@ fun queryImageIdDateMap(
                 val seg = uri.path?.trim('/') ?: uri.lastPathSegment ?: continue
                 if (seg.isNotEmpty()) {
                     val folderLike = if (seg.endsWith("/")) seg else "$seg/"
-                    selectionParts.add("${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?")
+                    dirParts.add("${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?")
                     selectionArgs.add("%$folderLike%")
                 }
             } catch (_: Exception) {
@@ -103,21 +104,22 @@ fun queryImageIdDateMap(
     }
 
     if (startDate != null) {
-        selectionParts.add("${MediaStore.Images.Media.DATE_ADDED} >= ?")
+        dateParts.add("${MediaStore.Images.Media.DATE_ADDED} >= ?")
         selectionArgs.add(startDate.toString())
     }
     if (endDate != null) {
-        selectionParts.add("${MediaStore.Images.Media.DATE_ADDED} <= ?")
+        dateParts.add("${MediaStore.Images.Media.DATE_ADDED} <= ?")
         selectionArgs.add(endDate.toString())
     }
 
-    val selection =
-        if (selectionParts.isEmpty()) null
-        else selectionParts.joinToString(" AND ", "(", ")")
+    val selectionParts = mutableListOf<String>()
+    if (dirParts.isNotEmpty()) {
+        selectionParts.add("(${dirParts.joinToString(" OR ")})")
+    }
+    selectionParts.addAll(dateParts)
 
-    val args =
-        if (selectionArgs.isEmpty()) null
-        else selectionArgs.toTypedArray()
+    val selection = if (selectionParts.isEmpty()) null else selectionParts.joinToString(" AND ")
+    val args = if (selectionArgs.isEmpty()) null else selectionArgs.toTypedArray()
 
     context.applicationContext.contentResolver.query(
         MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
@@ -126,7 +128,6 @@ fun queryImageIdDateMap(
         args,
         sortOrder
     )?.use { cursor ->
-
         val idIdx = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
         val dateIdx = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED)
 
@@ -143,8 +144,7 @@ fun queryImageIds(
     dirUris: List<Uri> = emptyList(),
     startDate: Long? = null,
     endDate: Long? = null
-): List<Long> =
-    queryImageIdDateMap(context, dirUris, startDate, endDate).keys.toList()
+): List<Long> = queryImageIdDateMap(context, dirUris, startDate, endDate).keys.toList()
 
 fun queryVideoIdDateMap(
     context: Context,
@@ -162,7 +162,8 @@ fun queryVideoIdDateMap(
 
     val sortOrder = "${MediaStore.Video.Media.DATE_MODIFIED} DESC"
 
-    val selectionParts = mutableListOf<String>()
+    val dirParts = mutableListOf<String>()
+    val dateParts = mutableListOf<String>()
     val selectionArgs = mutableListOf<String>()
     val envRoot = Environment.getExternalStorageDirectory().absolutePath.trimEnd('/')
 
@@ -176,7 +177,7 @@ fun queryVideoIdDateMap(
                     val afterColon = docId.substringAfter(':', "")
                     if (afterColon.isNotEmpty()) {
                         val rel = afterColon.trim('/') + "/"
-                        selectionParts.add("${MediaStore.Video.Media.RELATIVE_PATH} LIKE ?")
+                        dirParts.add("${MediaStore.Video.Media.RELATIVE_PATH} LIKE ?")
                         selectionArgs.add("$rel%")
                         continue
                     }
@@ -189,7 +190,7 @@ fun queryVideoIdDateMap(
                         val rel = absPath.removePrefix(envRoot)
                             .trimStart('/')
                             .trimEnd('/') + "/"
-                        selectionParts.add("${MediaStore.Video.Media.RELATIVE_PATH} LIKE ?")
+                        dirParts.add("${MediaStore.Video.Media.RELATIVE_PATH} LIKE ?")
                         selectionArgs.add("$rel%")
                     }
                     continue
@@ -198,7 +199,7 @@ fun queryVideoIdDateMap(
                 val seg = uri.path?.trim('/') ?: uri.lastPathSegment ?: continue
                 if (seg.isNotEmpty()) {
                     val folderLike = if (seg.endsWith("/")) seg else "$seg/"
-                    selectionParts.add("${MediaStore.Video.Media.RELATIVE_PATH} LIKE ?")
+                    dirParts.add("${MediaStore.Video.Media.RELATIVE_PATH} LIKE ?")
                     selectionArgs.add("%$folderLike%")
                 }
             } catch (_: Exception) {
@@ -207,22 +208,23 @@ fun queryVideoIdDateMap(
     }
 
     if (startDate != null) {
-        selectionParts.add("${MediaStore.Video.Media.DATE_ADDED} >= ?")
+        dateParts.add("${MediaStore.Video.Media.DATE_ADDED} >= ?")
         selectionArgs.add(startDate.toString())
     }
 
     if (endDate != null) {
-        selectionParts.add("${MediaStore.Video.Media.DATE_ADDED} <= ?")
+        dateParts.add("${MediaStore.Video.Media.DATE_ADDED} <= ?")
         selectionArgs.add(endDate.toString())
     }
 
-    val selection =
-        if (selectionParts.isEmpty()) null
-        else selectionParts.joinToString(" AND ", "(", ")")
+    val selectionParts = mutableListOf<String>()
+    if (dirParts.isNotEmpty()) {
+        selectionParts.add("(${dirParts.joinToString(" OR ")})")
+    }
+    selectionParts.addAll(dateParts)
 
-    val args =
-        if (selectionArgs.isEmpty()) null
-        else selectionArgs.toTypedArray()
+    val selection = if (selectionParts.isEmpty()) null else selectionParts.joinToString(" AND ")
+    val args = if (selectionArgs.isEmpty()) null else selectionArgs.toTypedArray()
 
     context.applicationContext.contentResolver.query(
         MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
@@ -231,7 +233,6 @@ fun queryVideoIdDateMap(
         args,
         sortOrder
     )?.use { cursor ->
-
         val idIdx = cursor.getColumnIndexOrThrow(MediaStore.Video.Media._ID)
         val dateIdx = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATE_ADDED)
 
