@@ -1,12 +1,16 @@
 package com.fpf.smartscan.search
 
+import android.util.Log
+import kotlin.math.max
 import kotlin.math.pow
+import kotlin.math.sqrt
 
 fun rerankItems(
     itemToSimMap: Map<Long, Float>,
     clusterToSimMap: Map<Long, Float>,
     clusterToMediaIdsMap: Map<Long, Set<Long>>,
-    strictness: Float = 0f
+    strictness: Float = 0f,
+    baseCutOffPercent: Float = 0.6f
 ): List<Long> {
 
     val itemToCluster = buildMap {
@@ -40,14 +44,23 @@ fun rerankItems(
         itemId to (itemScore * (1 + k * clusterScore))
     }.sortedByDescending { it.second }
 
+    // Early return if only a single or no result
     if (scoredItems.size <= 1) {
         return scoredItems.map { it.first }
     }
 
     val scores = scoredItems.map { it.second }.sorted()
+    val maxScore = scores.max()
     val minScore = scores.min()
     val medianScore = scores[scores.size / 2]
-    val minAllowedScore = minScore + strictness.coerceIn(0f, 1f).toDouble() * (medianScore - minScore)
+    val meanScore = scores.average()
+    val stdScore = sqrt(scores.map{(it - meanScore).pow(2)}.average())
+    val centrality = medianScore - minScore
+    val safeStrictness = strictness.coerceIn(0f, 1f)
+    val baseCutOff = baseCutOffPercent * maxScore
+    val dynamicCutOff = medianScore - stdScore - (1 - safeStrictness) * centrality.pow(1.0 + safeStrictness)
+    val minAllowedScore = max(baseCutOff, dynamicCutOff)
+//    Log.d("rankitems", "max:${scores.max()}\n min: $minScore\n std: $stdScore \n median: $medianScore \n baseCutOff: $baseCutOff \nminAllowedScore: $minAllowedScore")
 
     return scoredItems
         .filter { it.second >= minAllowedScore }
