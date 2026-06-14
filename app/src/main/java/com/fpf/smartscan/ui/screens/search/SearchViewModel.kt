@@ -22,8 +22,8 @@ import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscan.events.SearchEvent
 import com.fpf.smartscan.events.SearchEventType
 import com.fpf.smartscan.media.MediaItem
+import com.fpf.smartscan.media.MediaStoreHelper
 import com.fpf.smartscan.media.MediaType
-import com.fpf.smartscan.media.filterAccessibleMediaStoreIds
 import com.fpf.smartscan.utils.canOpenUri
 import com.fpf.smartscan.media.onMediaLoadingError
 import com.fpf.smartscan.media.openImageInGallery
@@ -249,7 +249,7 @@ class SearchViewModel(
         cachedIds.addAll(finalResults)
         val totalCount = finalResults.size
         val initialBatch = finalResults.take(RESULTS_BATCH_SIZE) // initial results the rest loaded dynamically
-        val (validIds, idsToPurge) = filterAccessibleMediaStoreIds(getApplication(), initialBatch, _state.value.mediaType)
+        val (validIds, idsToPurge) = MediaStoreHelper.filterAccessibleMedia(getApplication(), initialBatch, _state.value.mediaType)
         val filteredSearchResults = validIds.map { toMediaItem(it, _state.value.mediaType) }
 
         _state.emit( _state.value.copy(totalResults = totalCount - idsToPurge.size, searchResults = filteredSearchResults))
@@ -293,7 +293,7 @@ class SearchViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val batch = getPaginatedResult(currentItemsCount, RESULTS_BATCH_SIZE, cachedIds)
-                val (filteredResults, idsToPurge) = filterAccessibleMediaStoreIds(getApplication(), batch, _state.value.mediaType)
+                val (filteredResults, idsToPurge) = MediaStoreHelper.filterAccessibleMedia(getApplication(), batch, _state.value.mediaType)
 
                 if (filteredResults.isNotEmpty()) {
                     val filteredSearchResults = _state.value.searchResults + filteredResults.map { toMediaItem(it, _state.value.mediaType) }
