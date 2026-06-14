@@ -204,9 +204,8 @@ object DataSyncHelper {
             MediaType.VIDEO -> queryVideoIds(context, allowedDirs).toSet()
         }
 
-        // Embed store used as source of truth
+        // Purge stale media - Embed store used as source of truth
         val mediaToPurge = existingIdsFromEmbedStore.filterNot {it in accessibleMediaIds}
-
         if(mediaToPurge.isNotEmpty()){
             removeStaleMedia(mediaToPurge, store = store, mediaMetadataRepository)
             existingIdsFromEmbedStore.removeAll(mediaToPurge)
@@ -215,20 +214,22 @@ object DataSyncHelper {
             Log.d(TAG, "${mediaType.name}: Removed ${mediaToPurge.size} stale items and save index file")
         }
 
-        val storedEmbed = store.get(listOf(existingIdsFromEmbedStore.first())).first()
-        val mediaIdToDateMap = when(mediaType){
-            MediaType.IMAGE -> queryImageIdDateMap(context.applicationContext)
-            MediaType.VIDEO -> queryVideoIdDateMap(context.applicationContext)
-        }
-
         // Check if store date need syncing
-        if(storedEmbed.date != mediaIdToDateMap[storedEmbed.id] ){
-            updateStoreDates(
-                context=context,
-                embeds = store.get(),
-                mediaTpe = mediaType
-            )
-            store.clear() // ensure internal consistency as precaution
+        val storedEmbed = existingIdsFromEmbedStore.firstOrNull()?.let {store.get(listOf(it)).firstOrNull()}
+        storedEmbed?.let {
+            val mediaIdToDateMap = when(mediaType){
+                MediaType.IMAGE -> queryImageIdDateMap(context.applicationContext)
+                MediaType.VIDEO -> queryVideoIdDateMap(context.applicationContext)
+            }
+
+            if(it.date != mediaIdToDateMap[it.id] ){
+                updateStoreDates(
+                    context=context,
+                    embeds = store.get(),
+                    mediaTpe = mediaType
+                )
+                store.clear() // ensure internal consistency as precaution
+            }
         }
 
         if(existingIdsFromEmbedStore.any{it !in existingIdsFromMetadata}) {
