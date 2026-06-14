@@ -106,9 +106,9 @@
 
     <!--Search Settings-->
     <string name="setting_auto_open_gallery">Auto-open in gallery</string>
-    <string name="setting_similarity_threshold">Similarity threshold</string>
-    <string name="setting_similarity_threshold_label">Similarity threshold (%1$s)</string>
-    <string name="setting_similarity_threshold_description">Higher values filter out less similar matches.</string>
+    <string name="setting_strictness">Strictness</string>
+    <string name="setting_strictness_threshold_label">Strictness (%1$s)</string>
+    <string name="setting_strictness_description">Higher values filter out less similar matches.</string>
     <string name="setting_max_search_results">Max search results</string>
     <string name="setting_hide_duplicates">Hide duplicates</string>
     <string name="setting_hide_duplicates_description">Hide near identical search results.</string>

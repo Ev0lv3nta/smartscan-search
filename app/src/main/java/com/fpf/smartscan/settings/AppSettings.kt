@@ -6,8 +6,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class AppSettings(
-    val similarityThreshold: Float = 0.20f,
-    val imageSimilarityThreshold: Float = 0.6f,
+    val textQueryStrictness: Float = 0f,
+    val imageQueryStrictness: Float = 0f,
     val searchableImageDirectories: List<String> = emptyList(),
     val searchableVideoDirectories: List<String> = emptyList(),
     val theme: ThemeMode = ThemeMode.SYSTEM,
