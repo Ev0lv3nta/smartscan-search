@@ -53,6 +53,7 @@
     <string name="media_types_to_scan">Select media types</string>
     <string name="scan_in_progress_title">Scan In Progress</string>
     <string name="scan_in_progress_content">This may take a moment. You can continue using the app once the scan completes.</string>
+    <string name="media_type_title">Media type</string>
 
     <!-- Search screen -->
     <string name="search_storage_permissions">Storage permission required to search.</string>
@@ -68,7 +69,7 @@
     <!--Collections Screen-->
     <string name="collections_storage_permissions">Storage permission required to create collections.</string>
     <string name="collections_no_collections_title">No Collections</string>
-
+    <string name="collections_no_collections_items_title">No items</string>
     <string name="collections_no_collections_description">Collections are created by automatically grouping similar items or when you tag items.</string>
     <string name="collections_delete_collections_alert_title">Delete collections</string>
     <string name="collections_delete_collections_alert_description">Delete %1$d %2$s, removing all related tags?</string>
@@ -105,9 +106,9 @@
 
     <!--Search Settings-->
     <string name="setting_auto_open_gallery">Auto-open in gallery</string>
-    <string name="setting_similarity_threshold">Similarity threshold</string>
-    <string name="setting_similarity_threshold_label">Similarity threshold (%1$s)</string>
-    <string name="setting_similarity_threshold_description">Higher values filter out less similar matches.</string>
+    <string name="setting_strictness">Strictness</string>
+    <string name="setting_strictness_threshold_label">Strictness (%1$s)</string>
+    <string name="setting_strictness_description">Higher values filter out less similar matches.</string>
     <string name="setting_max_search_results">Max search results</string>
     <string name="setting_hide_duplicates">Hide duplicates</string>
     <string name="setting_hide_duplicates_description">Hide near identical search results.</string>
@@ -130,15 +131,6 @@
     <string name="download_model_alert_title">Download model</string>
     <string name="download_model_alert_description">Press `OK` to download model. This will open your browser.</string>
 
-    <!--Updates-->
-    <string name="update_hide_duplicates">Added Hide Duplicates setting to hide near-identical search results</string>
-    <string name="update_auto_collections_merge_move_media">Added ability to merge Auto Collections and move media within them</string>
-    <string name="update_mixed_media_collections">Added support for mixed-media collections</string>
-    <string name="update_select_all_search_collections">Added Select All for search results and collections</string>
-    <string name="update_ui_improvements_bug_fixes">UI improvements and bug fixes</string>
-    <string name="update_scan">Moved scan handling to settings</string>
-    <string name="update_notes">Use merge and move carefully, as they can affect Auto Collection accuracy. They should mainly be used to fix grouping mistakes, since adding visually unrelated items can distort a collection.</string>
-
     <!--Placeholders-->
     <string name ="placeholders_add_tag">Enter tag name</string>
     <string name="placeholders_collection_name">Enter collection name</string>
@@ -146,4 +138,11 @@
     <string name="placeholders_search_videos">Search videos</string>
     <string name="placeholders_search_by_tag">Search by tag: #tag</string>
     <string name="placeholders_search_by_tag_query">Search by tag: #tag query</string>
+
+    <!--Updates-->
+    <string name="update_filter_media_types_collections">Added media type filter for collections</string>
+    <string name="update_fixed_allowed_folders_bug">Fixed bugs related to allowed folders</string>
+    <string name="update_similarity_threshold_to_strictness">Replaced similarity threshold with strictness setting as results are no longer ranked purely by similarity</string>
+    <string name="update_sync_startup_only">Other minor UI improvements and bug fixes</string>
+
 </resources>

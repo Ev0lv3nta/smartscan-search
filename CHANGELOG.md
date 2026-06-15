@@ -1,3 +1,17 @@
+## v1.3.3 - 15/06/2026
+
+### Added
+* Added media type filter for collections
+
+### Changed
+* Replaced similarity threshold with strictness setting as results are no longer ranked purely by similarity
+
+### Fixed
+* Fixed bugs related to allowed folders
+* Fixed potential index file corruption bugs by using staged writes and only saving during sync if required
+
+___
+
 ## v1.3.2 - 07/06/2026
 
 ### Added

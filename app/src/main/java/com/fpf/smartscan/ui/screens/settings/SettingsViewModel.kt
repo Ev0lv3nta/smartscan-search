@@ -68,15 +68,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _appSettings.value = loadSettings(sharedPrefs)
     }
 
-    fun updateSimilarityThreshold(threshold: Float) {
+    fun updateTextQueryStrictness(strictness: Float) {
         val currentSettings = _appSettings.value
-        _appSettings.value = currentSettings.copy(similarityThreshold = threshold)
+        _appSettings.value = currentSettings.copy(textQueryStrictness = strictness)
         saveSettings(sharedPrefs, _appSettings.value)
     }
 
-    fun updateImageSimilarityThreshold(threshold: Float) {
+    fun updateImageQueryStrictness(strictness: Float) {
         val currentSettings = _appSettings.value
-        _appSettings.value = currentSettings.copy(imageSimilarityThreshold = threshold)
+        _appSettings.value = currentSettings.copy(imageQueryStrictness = strictness)
         saveSettings(sharedPrefs, _appSettings.value)
     }
 

@@ -107,9 +107,9 @@ fun SettingsScreen(
 
     val searchSettingActions: List<SettingActionConfig> = listOf(
         SettingActionConfig.Button(
-            label = stringResource(id = R.string.setting_similarity_threshold),
+            label = stringResource(id = R.string.setting_strictness),
             onClick = { onNavigate(Routes.settingsDetail(SettingsRoutes.THRESHOLD)) },
-            description = stringResource(R.string.setting_similarity_threshold_description)
+            description = stringResource(R.string.setting_strictness_description)
         ),
         SettingActionConfig.Button(
             label = stringResource(id = R.string.setting_allowed_folders),

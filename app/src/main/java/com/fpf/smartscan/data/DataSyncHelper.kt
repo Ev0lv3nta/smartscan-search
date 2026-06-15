@@ -20,20 +20,14 @@ import com.fpf.smartscan.data.old.videos.VideoTagDatabase
 import com.fpf.smartscan.data.old.videos.VideoTagRepository
 import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscan.data.tags.TagCrossRef
+import com.fpf.smartscan.media.MediaStoreHelper
 import com.fpf.smartscan.media.MediaType
-import com.fpf.smartscan.media.getImageToDateMap
-import com.fpf.smartscan.media.getVideoToDateMap
-import com.fpf.smartscan.media.queryImageIdDateMap
-import com.fpf.smartscan.media.queryImageIds
-import com.fpf.smartscan.media.queryVideoIdDateMap
-import com.fpf.smartscan.media.queryVideoIds
 import com.fpf.smartscan.media.removeStaleMedia
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-
 
 object DataSyncHelper {
     const val TAG = "DataSyncHelper"
@@ -200,34 +194,36 @@ object DataSyncHelper {
         if(existingIdsFromEmbedStore.isEmpty()) return
 
         val accessibleMediaIds = when(mediaType){
-            MediaType.IMAGE -> queryImageIds(context, allowedDirs).toSet()
-            MediaType.VIDEO -> queryVideoIds(context, allowedDirs).toSet()
+            MediaType.IMAGE -> MediaStoreHelper.queryImageIds(context, allowedDirs).toSet()
+            MediaType.VIDEO -> MediaStoreHelper.queryVideoIds(context, allowedDirs).toSet()
         }
 
-        // Embed store used as source of truth
+        // Purge stale media - Embed store used as source of truth
         val mediaToPurge = existingIdsFromEmbedStore.filterNot {it in accessibleMediaIds}
-
         if(mediaToPurge.isNotEmpty()){
             removeStaleMedia(mediaToPurge, store = store, mediaMetadataRepository)
             existingIdsFromEmbedStore.removeAll(mediaToPurge)
             existingIdsFromMetadata.removeAll(mediaToPurge)
-            Log.d(TAG, "${mediaType.name}: Removed ${mediaToPurge.size} stale items")
-        }
-
-        val storedEmbed = store.get(listOf(existingIdsFromEmbedStore.first())).first()
-        val mediaIdToDateMap = when(mediaType){
-            MediaType.IMAGE -> queryImageIdDateMap(context.applicationContext)
-            MediaType.VIDEO -> queryVideoIdDateMap(context.applicationContext)
+            store.save()
+            Log.d(TAG, "${mediaType.name}: Removed ${mediaToPurge.size} stale items and save index file")
         }
 
         // Check if store date need syncing
-        if(storedEmbed.date != mediaIdToDateMap[storedEmbed.id] ){
-            updateStoreDates(
-                context=context,
-                embeds = store.get(),
-                mediaTpe = mediaType
-            )
-            store.clear() // ensure internal consistency as precaution
+        val storedEmbed = existingIdsFromEmbedStore.firstOrNull()?.let {store.get(listOf(it)).firstOrNull()}
+        storedEmbed?.let {
+            val mediaIdToDateMap = when(mediaType){
+                MediaType.IMAGE -> MediaStoreHelper.queryImageIdDateMap(context.applicationContext)
+                MediaType.VIDEO -> MediaStoreHelper.queryVideoIdDateMap(context.applicationContext)
+            }
+
+            if(it.date != mediaIdToDateMap[it.id] ){
+                updateStoreDates(
+                    context=context,
+                    embeds = store.get(),
+                    mediaTpe = mediaType
+                )
+                store.clear() // ensure internal consistency as precaution
+            }
         }
 
         if(existingIdsFromEmbedStore.any{it !in existingIdsFromMetadata}) {
@@ -253,8 +249,8 @@ object DataSyncHelper {
         val tempStore = FileEmbeddingStore(tempFile, EMBED_DIM)
 
         val dateMap = when(mediaTpe){
-            MediaType.IMAGE -> getImageToDateMap(context.applicationContext, embeds.map { it.id })
-            MediaType.VIDEO -> getVideoToDateMap(context.applicationContext, embeds.map { it.id })
+            MediaType.IMAGE -> MediaStoreHelper.getImageToDateMap(context.applicationContext, embeds.map { it.id })
+            MediaType.VIDEO -> MediaStoreHelper.getVideoToDateMap(context.applicationContext, embeds.map { it.id })
         }
         val updated = embeds.mapNotNull {
             val date = dateMap[it.id] ?: return@mapNotNull null

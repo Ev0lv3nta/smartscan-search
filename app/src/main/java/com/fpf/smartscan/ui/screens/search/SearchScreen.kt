@@ -8,12 +8,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ContentCopy
@@ -115,7 +113,7 @@ fun SearchScreen(
         ),
         ActionConfig(
             label = stringResource(R.string.search_action),
-            onClick = { searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(state.selection.selectedItems.first().uri, appSettings.imageSimilarityThreshold, appSettings.enableDedupe)) },
+            onClick = { searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(state.selection.selectedItems.first().uri, appSettings.imageQueryStrictness, appSettings.enableDedupe)) },
             enabled = state.selection.selectedItems.size == 1 && state.mediaType == MediaType.IMAGE,
             icon = Icons.Filled.Search
         ),
@@ -174,13 +172,23 @@ fun SearchScreen(
     }
 
     LaunchedEffect(Unit) {
-        searchViewModel.externalSearch(intentSearchQuery, appSettings.similarityThreshold, appSettings.imageSimilarityThreshold, appSettings.enableDedupe)
+        searchViewModel.externalSearch(intentSearchQuery, appSettings.textQueryStrictness, appSettings.imageQueryStrictness, appSettings.enableDedupe)
     }
 
     LaunchedEffect(isIndexing) {
         onTopBarChange(
             TopBarState(
                 title = screenTitle,
+                actions = {
+                    IconButton(
+                        onClick = {showFilters = true}
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.FilterList,
+                            contentDescription = null
+                        )
+                    }
+                }
             )
         )
     }
@@ -245,7 +253,7 @@ fun SearchScreen(
                             imageSize = 140.dp,
                             mediaTypeSelectorEnabled = !isIndexing,
                             onSearch = {
-                                searchViewModel.onAction(SearchAction.Search(appSettings.imageSimilarityThreshold, appSettings.enableDedupe))
+                                searchViewModel.onAction(SearchAction.Search(appSettings.imageQueryStrictness, appSettings.enableDedupe))
                             },
                             onMediaTypeChange = { searchViewModel.onAction(SearchAction.SetMediaTypeFilter(it)) },
                             onRemoveImage = {
@@ -282,10 +290,10 @@ fun SearchScreen(
                                 searchFieldState = searchViewModel.searchFieldState,
                                 enabled = hasStoragePermission && !state.loading && !isIndexing ,
                                 onSearch = {
-                                    searchViewModel.onAction(SearchAction.Search(appSettings.similarityThreshold, appSettings.enableDedupe))
+                                    searchViewModel.onAction(SearchAction.Search(appSettings.textQueryStrictness, appSettings.enableDedupe))
                                 },
                                 onSearchImage = {
-                                    searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(it, appSettings.imageSimilarityThreshold, appSettings.enableDedupe))
+                                    searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(it, appSettings.imageQueryStrictness, appSettings.enableDedupe))
                                 },
                                 onClearResults = {
                                     searchViewModel.onAction(SearchAction.Reset)
@@ -304,32 +312,6 @@ fun SearchScreen(
                                     }
                                 }
                             )
-
-                            Box(
-                                modifier = Modifier
-                                    .heightIn(min = 56.dp)
-                                    .widthIn(min = 42.dp)
-                                    .background(
-                                        color = MaterialTheme.colorScheme.surfaceContainer,
-                                        shape = RoundedCornerShape(8.dp)
-                                    )
-                                    .clickable(
-                                        indication = null,
-                                        interactionSource = remember { MutableInteractionSource() }
-                                    ) {
-                                        showFilters = true
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.FilterList,
-                                    contentDescription = "Filters",
-                                    tint = if (state.startDateFilter != null || state.endDateFilter != null)
-                                        MaterialTheme.colorScheme.primary
-                                    else
-                                        MaterialTheme.colorScheme.onSurface
-                                )
-                            }
                         }
                         if(state.startDateFilter != null || state.endDateFilter != null){
                             TextButton(
@@ -418,7 +400,7 @@ fun SearchScreen(
                 onClose = { searchViewModel.onAction(SearchAction.ClearResultView)},
                 onUpdateSearchImage = {
                     searchViewModel.onAction(SearchAction.ClearResultView)
-                    searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(item.uri, appSettings.imageSimilarityThreshold, appSettings.enableDedupe))
+                    searchViewModel.onAction(SearchAction.SetQueryImageAndSearch(item.uri, appSettings.imageQueryStrictness, appSettings.enableDedupe))
                 }
             )
         }
@@ -508,7 +490,7 @@ fun SearchScreen(
 
     OptionPicker(
         isVisible = isSelectingMediaType,
-        title = "Media type",
+        title = stringResource(R.string.media_type_title),
         options = mediaTypeOptions.values.toList(),
         selectedOption = mediaTypeOptions[state.mediaType]!!,
         onSelect = { selected ->

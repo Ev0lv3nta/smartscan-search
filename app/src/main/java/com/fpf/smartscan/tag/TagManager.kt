@@ -47,9 +47,9 @@ class TagManager(
         tagName?: return emptyList()
         val tag = tagRepository.getTagsByName(listOf(tagName)).firstOrNull()
         return if(endDateFilter != null || startDateFilter != null){
-            tag?.let { tag-> mediaMetadataRepository.getByTagTypeAndDateRange(tag.id, mediaType,startDateFilter, endDateFilter).map{it.id}  }?: emptyList()
+            tag?.let { tag-> mediaMetadataRepository.getByTag(tag.id, mediaType,startDateFilter, endDateFilter).map{it.id}  }?: emptyList()
         }else{
-            tag?.let { tag-> mediaMetadataRepository.getByTagAndType(tag.id, mediaType).map{it.id}  }?: emptyList()
+            tag?.let { tag-> mediaMetadataRepository.getByTag(tag.id, mediaType).map{it.id}  }?: emptyList()
         }
     }
 

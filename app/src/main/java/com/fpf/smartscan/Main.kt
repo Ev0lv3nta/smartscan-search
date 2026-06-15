@@ -99,7 +99,6 @@ fun Main(
             isVisible = true,
             updates = mainViewModel.getUpdates(),
             onClose = { mainViewModel.closeUpdatePopUp() },
-            notes = stringResource(R.string.update_notes)
         )
     } else {
         Scaffold(

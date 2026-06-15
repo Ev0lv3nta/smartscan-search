@@ -22,7 +22,7 @@ class ClusterPagingSource(
         // over-fetch by 1 item to detect end of data without using count()
         return try {
             val mediaMetadataList = if(mediaType != null){
-                mediaMetadataRepository.getByClusterAndType(clusterId = clusterId, mediaType, limit = pageSize + 1, offset = offset)
+                mediaMetadataRepository.getByCluster(clusterId = clusterId, mediaType, limit = pageSize + 1, offset = offset)
             }else{
                 mediaMetadataRepository.getByCluster(clusterId = clusterId, limit = pageSize + 1, offset = offset)
             }

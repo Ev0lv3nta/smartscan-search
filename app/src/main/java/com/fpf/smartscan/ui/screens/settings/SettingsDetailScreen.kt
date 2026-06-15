@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import com.fpf.smartscan.ui.components.pickers.DirectoryPicker
 import com.fpf.smartscan.R
 import com.fpf.smartscan.ui.components.common.CustomSlider
-import com.fpf.smartscan.events.BackupEventType
 import com.fpf.smartscan.navigation.SettingsRoutes
 import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.ui.components.models.ModelsList
@@ -64,7 +63,7 @@ fun SettingsDetailScreen(
     }
 
     val screenTitle = when (type) {
-        SettingsRoutes.THRESHOLD -> stringResource(R.string.setting_similarity_threshold)
+        SettingsRoutes.THRESHOLD -> stringResource(R.string.setting_strictness)
         SettingsRoutes.MODELS -> stringResource(R.string.setting_models)
         SettingsRoutes.MANAGE_MODELS -> stringResource(R.string.setting_manage_models)
         SettingsRoutes.ALLOWED_FOLDERS -> stringResource(R.string.setting_allowed_folders)
@@ -95,21 +94,21 @@ fun SettingsDetailScreen(
             when (type) {
                 SettingsRoutes.THRESHOLD -> {
                     CustomSlider(
-                        label = stringResource(R.string.setting_similarity_threshold_label, "text queries"),
-                        minValue = 0.18f,
-                        maxValue = 0.28f,
-                        initialValue = appSettings.similarityThreshold,
+                        label = stringResource(R.string.setting_strictness_threshold_label, "text queries"),
+                        minValue = 0.0f,
+                        maxValue = 1f,
+                        initialValue = appSettings.textQueryStrictness,
                         onValueChange = { value ->
-                            viewModel.updateSimilarityThreshold(value)
+                            viewModel.updateTextQueryStrictness(value)
                         },
                     )
                     CustomSlider(
-                        label = stringResource(R.string.setting_similarity_threshold_label, "image queries"),
-                        minValue = 0.4f,
-                        maxValue = 0.8f,
-                        initialValue = appSettings.imageSimilarityThreshold,
+                        label = stringResource(R.string.setting_strictness_threshold_label, "image queries"),
+                        minValue = 0.0f,
+                        maxValue = 1f,
+                        initialValue = appSettings.imageQueryStrictness,
                         onValueChange = { value ->
-                            viewModel.updateImageSimilarityThreshold(value)
+                            viewModel.updateImageQueryStrictness(value)
                         },
                     )
                 }

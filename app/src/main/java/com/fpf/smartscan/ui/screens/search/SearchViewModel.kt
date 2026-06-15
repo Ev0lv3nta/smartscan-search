@@ -22,8 +22,8 @@ import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscan.events.SearchEvent
 import com.fpf.smartscan.events.SearchEventType
 import com.fpf.smartscan.media.MediaItem
+import com.fpf.smartscan.media.MediaStoreHelper
 import com.fpf.smartscan.media.MediaType
-import com.fpf.smartscan.media.filterAccessibleMediaStoreIds
 import com.fpf.smartscan.utils.canOpenUri
 import com.fpf.smartscan.media.onMediaLoadingError
 import com.fpf.smartscan.media.openImageInGallery
@@ -76,6 +76,9 @@ class SearchViewModel(
         const val RESULTS_BATCH_SIZE = 36
         private const val MODEL_SHUTDOWN_DURATION_THRESHOLD = 60_000L
         private const val DEDUPE_THRESHOLD = 0.95f
+        private const val TEXT_QUERY_THRESHOLD = 0.2f
+        private const val IMAGE_QUERY_THRESHOLD = 0.5f
+
     }
 
     private val textEmbedder  = ClipTextEmbedder(application, ModelAssetSource.Resource(R.raw.clip_text_encoder_quant), vocabSource = ModelAssetSource.Resource(R.raw.vocab), mergesSource = ModelAssetSource.Resource(R.raw.merges))
@@ -113,7 +116,7 @@ class SearchViewModel(
             is SearchAction.CopyResult -> copyItem(action.clipboard, action.context)
             is SearchAction.SetQueryImageAndSearch -> {
                 setQueryImage(action.image)
-                search(action.similarityThreshold, action.dedupeEnabled)
+                search(action.strictness, action.dedupeEnabled)
             }
             is SearchAction.RemoveUploadedImage -> removeUploadedImage()
             is SearchAction.SetEndDateFilter -> setEndDateFilter(action.date)
@@ -121,7 +124,7 @@ class SearchViewModel(
             is SearchAction.SetStartDateFilter -> setStartDateFilter(action.date)
             is SearchAction.ShareResults -> shareItems(action.context)
             is SearchAction.TagItems -> tagItems(action.tag)
-            is SearchAction.Search -> search(action.similarityThreshold, action.dedupeEnabled)
+            is SearchAction.Search -> search(action.strictness, action.dedupeEnabled)
             is SearchAction.ViewResult -> viewResult(action.context, action.item, action.autoOpenInGallery)
             is SearchAction.ToggleSelectedResult -> toggleSelectedResult(action.item)
             is SearchAction.Reset -> reset()
@@ -155,7 +158,7 @@ class SearchViewModel(
         ) }
     }
 
-    private fun search(threshold: Float, dedupeEnabled: Boolean){
+    private fun search(strictness: Float, dedupeEnabled: Boolean){
         reset()
         val store = getStore()
         if(!store.exists) {
@@ -168,9 +171,9 @@ class SearchViewModel(
             try {
                 val state = _state.value
                 val queryResults = if (state.queryImage != null) {
-                   imageSearch(store, threshold, startDate = state.startDateFilter, endDate = state.endDateFilter)
+                   imageSearch(store, strictness, startDate = state.startDateFilter, endDate = state.endDateFilter)
                 } else {
-                    textSearch(store, threshold, startDate = state.startDateFilter, endDate = state.endDateFilter)
+                    textSearch(store, strictness, startDate = state.startDateFilter, endDate = state.endDateFilter)
                 }
                 handleSearchResult(queryResults, store, dedupeEnabled)
             }catch (e: Exception) {
@@ -182,7 +185,7 @@ class SearchViewModel(
         }
     }
 
-    private suspend fun textSearch(store: FileEmbeddingStore, threshold: Float, startDate: Long? = null, endDate: Long? = null): List<Long> {
+    private suspend fun textSearch(store: FileEmbeddingStore, strictness: Float, startDate: Long? = null, endDate: Long? = null): List<Long> {
         val query = searchFieldState.text.toString()
         if (query.isBlank()) {
             _state.update{currentState -> currentState.copy(error = getApplication<Application>().getString(R.string.search_error_empty_query))}
@@ -208,11 +211,11 @@ class SearchViewModel(
 
         val embedding = textEmbedder.embed(actualQuery)
         val filterIds = idsMatchingTag.toSet()
-        val queryResult = store.query(embedding, Int.MAX_VALUE, threshold, filterIds,  startDate = startDate, endDate = endDate, includeSims = true)
-        val clusterResult = clusterStore.query(embedding, Int.MAX_VALUE, threshold, includeSims = true)
+        val queryResult = store.query(embedding, Int.MAX_VALUE, TEXT_QUERY_THRESHOLD, filterIds,  startDate = startDate, endDate = endDate, includeSims = true)
+        val clusterResult = clusterStore.query(embedding, Int.MAX_VALUE, TEXT_QUERY_THRESHOLD, includeSims = true)
         val itemToSimMap = queryResultToMap(queryResult)
         val clusterToSimMap = queryResultToMap(clusterResult)
-        val reranked = rerankItems(itemToSimMap, clusterToSimMap, clusterCrossRefRepository.getClusterToMediaIdsMap())
+        val reranked = rerankItems(itemToSimMap, clusterToSimMap, clusterCrossRefRepository.getClusterToMediaIdsMap(), strictness)
 
         // prevent keeping both models open
         if(shouldShutdownModel(_state.value.imageEmbedderLastUsage)) imageEmbedder.closeSession()
@@ -221,18 +224,18 @@ class SearchViewModel(
         return reranked
     }
 
-    private suspend fun imageSearch(store: FileEmbeddingStore, threshold: Float, startDate: Long? = null, endDate: Long? = null): List<Long> {
+    private suspend fun imageSearch(store: FileEmbeddingStore, strictness: Float, startDate: Long? = null, endDate: Long? = null): List<Long> {
         val queryImage = _state.value.queryImage?: return  emptyList()
 
         if(!imageEmbedder.isInitialized()) imageEmbedder.initialize()
 
         val bitmap = getBitmapFromUri(getApplication(), queryImage, IMAGE_SIZE_X)
         val embedding = imageEmbedder.embed(bitmap)
-        val queryResult = store.query(embedding, Int.MAX_VALUE, threshold, startDate = startDate, endDate = endDate, includeSims = true)
-        val clusterResult = clusterStore.query(embedding, Int.MAX_VALUE, threshold, includeSims = true)
+        val queryResult = store.query(embedding, Int.MAX_VALUE, IMAGE_QUERY_THRESHOLD, startDate = startDate, endDate = endDate, includeSims = true)
+        val clusterResult = clusterStore.query(embedding, Int.MAX_VALUE, IMAGE_QUERY_THRESHOLD, includeSims = true)
         val itemToSimMap = queryResultToMap(queryResult)
         val clusterToSimMap = queryResultToMap(clusterResult)
-        val reranked = rerankItems(itemToSimMap, clusterToSimMap, clusterCrossRefRepository.getClusterToMediaIdsMap())
+        val reranked = rerankItems(itemToSimMap, clusterToSimMap, clusterCrossRefRepository.getClusterToMediaIdsMap(), strictness)
 
         // prevent keeping both models open
         if(shouldShutdownModel(_state.value.textEmbedderLastUsage)) textEmbedder.closeSession()
@@ -246,7 +249,7 @@ class SearchViewModel(
         cachedIds.addAll(finalResults)
         val totalCount = finalResults.size
         val initialBatch = finalResults.take(RESULTS_BATCH_SIZE) // initial results the rest loaded dynamically
-        val (validIds, idsToPurge) = filterAccessibleMediaStoreIds(getApplication(), initialBatch, _state.value.mediaType)
+        val (validIds, idsToPurge) = MediaStoreHelper.filterAccessibleMedia(getApplication(), initialBatch, _state.value.mediaType)
         val filteredSearchResults = validIds.map { toMediaItem(it, _state.value.mediaType) }
 
         _state.emit( _state.value.copy(totalResults = totalCount - idsToPurge.size, searchResults = filteredSearchResults))
@@ -290,7 +293,7 @@ class SearchViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val batch = getPaginatedResult(currentItemsCount, RESULTS_BATCH_SIZE, cachedIds)
-                val (filteredResults, idsToPurge) = filterAccessibleMediaStoreIds(getApplication(), batch, _state.value.mediaType)
+                val (filteredResults, idsToPurge) = MediaStoreHelper.filterAccessibleMedia(getApplication(), batch, _state.value.mediaType)
 
                 if (filteredResults.isNotEmpty()) {
                     val filteredSearchResults = _state.value.searchResults + filteredResults.map { toMediaItem(it, _state.value.mediaType) }
