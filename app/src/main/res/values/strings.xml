@@ -140,8 +140,8 @@
     <string name="placeholders_search_by_tag_query">Search by tag: #tag query</string>
 
     <!--Updates-->
-    <string name="update_filter_media_types_collections">Added filter for media types in collections</string>
-    <string name="update_fixed_allowed_folders_bug">Fixed allowed folders related bugs</string>
+    <string name="update_filter_media_types_collections">Added media type filter for collections</string>
+    <string name="update_fixed_allowed_folders_bug">Fixed bugs related to allowed folders</string>
     <string name="update_similarity_threshold_to_strictness">Replaced similarity threshold with strictness setting as results are no longer ranked purely by similarity</string>
     <string name="update_sync_startup_only">Other minor UI improvements and bug fixes</string>
 
