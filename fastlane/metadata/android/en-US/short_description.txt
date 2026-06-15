@@ -1,1 +1,1 @@
-Private offline AI search for your media.
+Search and organise images and videos offline with on-device AI.
