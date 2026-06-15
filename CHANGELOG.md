@@ -7,8 +7,8 @@
 * Replaced similarity threshold with strictness setting as results are no longer ranked purely by similarity
 
 ### Fixed
-* Fixed bugs related to allowed folders (#223)
-* Fixed potential index file corruption bugs by using staged writes and only saving during sync if required (#194)
+* Fixed bugs related to allowed folders
+* Fixed potential index file corruption bugs by using staged writes and only saving during sync if required
 
 ___
 
