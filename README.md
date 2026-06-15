@@ -1,6 +1,6 @@
-# SmartScan -  Private offline AI search for your media
+# SmartScan
 
-Search images and videos offline using text or by reverse image search and organise media with on-device AI.
+Search and organise images and videos offline with on-device AI.
 
 <div align="center">
   <img src="fastlane/metadata/android/en-US/images/featureGraphic.png" alt="Banner" style="border-radius: 20px;">
