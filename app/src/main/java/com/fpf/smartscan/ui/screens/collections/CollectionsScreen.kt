@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -279,7 +280,7 @@ fun CollectionsScreen(
                 }
             }
 
-            if(state.totalCollections >= TOP_N) {
+            if(state.totalCollections > TOP_N) {
                 TextButton(
                     modifier = Modifier.align(Alignment.End),
                     onClick = {viewModel.onAction(CollectionAction.ToggleViewAllCollections)}
@@ -290,6 +291,8 @@ fun CollectionsScreen(
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
+            }else{
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
             MediaCollectionsList(
