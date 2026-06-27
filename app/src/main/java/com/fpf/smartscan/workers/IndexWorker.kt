@@ -27,9 +27,9 @@ import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer
 import com.fpf.smartscansdk.ml.models.ModelAssetSource
-import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
-import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_X
-import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_Y
+import com.fpf.smartscansdk.ml.embeddings.clip.ClipImageEmbedder
+import com.fpf.smartscansdk.ml.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_X
+import com.fpf.smartscansdk.ml.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_Y
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.getValue

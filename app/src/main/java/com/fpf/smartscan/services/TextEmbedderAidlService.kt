@@ -11,12 +11,9 @@ import com.fpf.smartscansdk.core.embeddings.flattenEmbeddings
 import com.fpf.smartscansdk.ml.models.ModelAssetSource
 import com.fpf.smartscansdk.ml.models.ModelManager
 import com.fpf.smartscansdk.ml.models.ModelName
-import com.fpf.smartscansdk.ml.models.ModelRegistry
 import com.fpf.smartscansdk.ml.models.ModelType
-import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
-import com.fpf.smartscansdk.ml.providers.embeddings.minilm.MiniLMTextEmbedder
+import com.fpf.smartscansdk.ml.embeddings.clip.ClipTextEmbedder
 import kotlinx.coroutines.runBlocking
-import java.io.File
 import com.fpf.smartscansdk.core.embeddings.embedBatch
 
 class TextEmbedderAidlService: Service() {

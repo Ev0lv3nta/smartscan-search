@@ -46,9 +46,9 @@ import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.QueryResult
 import com.fpf.smartscansdk.core.media.getBitmapFromUri
 import com.fpf.smartscansdk.ml.models.ModelAssetSource
-import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
-import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_X
-import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
+import com.fpf.smartscansdk.ml.embeddings.clip.ClipImageEmbedder
+import com.fpf.smartscansdk.ml.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_X
+import com.fpf.smartscansdk.ml.embeddings.clip.ClipTextEmbedder
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
