@@ -27,6 +27,7 @@ import com.fpf.smartscansdk.core.embeddings.Embedding
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
 import com.fpf.smartscansdk.core.embeddings.toQInt8
+import com.fpf.smartscansdk.core.embeddings.toQInt8Embed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -102,7 +103,7 @@ object DataSyncHelper {
 
     private suspend fun quantizeEmbedStore( oldEmbedStoreFile: File, quantStore: FileEmbeddingStore){
         val oldEmbedStore = FileEmbeddingStore(oldEmbedStoreFile, EMBED_DIM)
-        val embeds = oldEmbedStore.get().map { it.copy(embedding = (it.embedding as Embedding.F32).toQInt8()) }
+        val embeds = oldEmbedStore.get().map { it.copy(embedding = it.embedding.toQInt8Embed()) }
         quantStore.add(embeds)
         oldEmbedStore.clear()
         oldEmbedStoreFile.delete()
