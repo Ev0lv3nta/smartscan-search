@@ -23,6 +23,8 @@ import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
 import com.fpf.smartscansdk.core.embeddings.generatePrototypeEmbedding
 import com.fpf.smartscansdk.core.embeddings.getSimilarities
 import com.fpf.smartscansdk.core.embeddings.toF32
+import com.fpf.smartscansdk.core.embeddings.toF32Embed
+import com.fpf.smartscansdk.core.embeddings.toQInt8Embed
 import kotlin.math.sqrt
 
 class ClusterManager(
@@ -154,7 +156,7 @@ class ClusterManager(
         val existingEmbeds = existingClusters.map {
             StoredEmbedding(
                 id = it.clusterId,
-                embedding = it.embedding,
+                embedding = it.embedding.toQInt8Embed(),
                 date = System.currentTimeMillis()
             )
         }
@@ -162,7 +164,7 @@ class ClusterManager(
         val newEmbeds = newClusters.map {
             StoredEmbedding(
                 id = it.clusterId,
-                embedding = it.embedding,
+                embedding = it.embedding.toQInt8Embed(),
                 date = System.currentTimeMillis()
             )
         }
@@ -197,7 +199,7 @@ class ClusterManager(
 
         val clusterEmbed =  StoredEmbedding(
             id = metadata.clusterId,
-            embedding = prototype,
+            embedding = prototype.toQInt8Embed(),
             date = System.currentTimeMillis()
         )
         clusterEmbedStore.add(listOf(clusterEmbed))
@@ -274,10 +276,7 @@ class ClusterManager(
     }
 
     private fun List<StoredEmbedding>.toF32Map(): Map<Long, Embedding.F32>{
-        return when(this.first().embedding){
-            is Embedding.F32 -> this.associate { it.id to (it.embedding as Embedding.F32) }
-            is Embedding.QInt8 -> this.associate { it.id to (it.embedding as Embedding.QInt8).toF32() }
-        }
+        return this.associate { it.id to it.embedding.toF32Embed() }
     }
 
 }
