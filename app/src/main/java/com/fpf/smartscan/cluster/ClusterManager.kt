@@ -16,10 +16,13 @@ import com.fpf.smartscan.utils.reservoirSample
 import com.fpf.smartscansdk.core.cluster.Cluster
 import com.fpf.smartscansdk.core.cluster.ClusterResult
 import com.fpf.smartscansdk.core.cluster.IncrementalClusterer
+import com.fpf.smartscansdk.core.cluster.ItemId
+import com.fpf.smartscansdk.core.embeddings.Embedding
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
 import com.fpf.smartscansdk.core.embeddings.generatePrototypeEmbedding
 import com.fpf.smartscansdk.core.embeddings.getSimilarities
+import com.fpf.smartscansdk.core.embeddings.toF32
 import kotlin.math.sqrt
 
 class ClusterManager(
@@ -37,6 +40,7 @@ class ClusterManager(
     }
 
     suspend fun cluster(itemEmbeds: List<StoredEmbedding>) {
+        if(itemEmbeds.isEmpty()) return
         val existingAssignments = clusterCrossRefRepository.getAssignments()
         val validIds = mediaMetadataRepository.getAllIds().toSet()
         val existingClusters: Map<Long, Cluster> = getExistingClusters()
@@ -56,7 +60,7 @@ class ClusterManager(
             defaultThreshold = defaultThreshold
         )
 
-        val result = clusterer.cluster(filteredItems)
+        val result = clusterer.cluster(filteredItems.toF32Map())
 
         // Must update clusters first
         updateClustersFromResult(result, existingClusters)
@@ -122,11 +126,11 @@ class ClusterManager(
     }
 
     private suspend fun updateClustersFromResult(clusterResult: ClusterResult, existingClustersMap: Map<Long, Cluster>) {
-        val (existingClusters, newClusters) = clusterResult.clusters.values.partition { it.prototypeId in existingClustersMap }
+        val (existingClusters, newClusters) = clusterResult.clusters.values.partition { it.clusterId in existingClustersMap }
 
         val existingMetadata = existingClusters.map {
             MediaClusterMetadata(
-                clusterId = it.prototypeId,
+                clusterId = it.clusterId,
                 prototypeSize = it.metadata.prototypeSize,
                 meanSimilarity = it.metadata.meanSimilarity,
                 stdSimilarity = it.metadata.stdSimilarity,
@@ -136,7 +140,7 @@ class ClusterManager(
 
         val newMetadata = newClusters.map {
             MediaClusterMetadata(
-                clusterId = it.prototypeId,
+                clusterId = it.clusterId,
                 prototypeSize = it.metadata.prototypeSize,
                 meanSimilarity = it.metadata.meanSimilarity,
                 stdSimilarity = it.metadata.stdSimilarity,
@@ -149,7 +153,7 @@ class ClusterManager(
 
         val existingEmbeds = existingClusters.map {
             StoredEmbedding(
-                id = it.prototypeId,
+                id = it.clusterId,
                 embedding = it.embedding,
                 date = System.currentTimeMillis()
             )
@@ -157,7 +161,7 @@ class ClusterManager(
 
         val newEmbeds = newClusters.map {
             StoredEmbedding(
-                id = it.prototypeId,
+                id = it.clusterId,
                 embedding = it.embedding,
                 date = System.currentTimeMillis()
             )
@@ -206,7 +210,7 @@ class ClusterManager(
         val clusterer = IncrementalClusterer(
             defaultThreshold = 0.6f
         )
-        val result = clusterer.cluster(sample)
+        val result = clusterer.cluster(sample.toF32Map())
         return getDefaultThreshold(result.clusters)
     }
 
@@ -227,7 +231,7 @@ class ClusterManager(
         clusterCrossRefRepository.insertClusterCrossRefs(crossRefs)
     }
 
-    private fun computeClusterMetrics(embeddings: List<FloatArray> ): Triple<FloatArray, Float, Float>{
+    fun computeClusterMetrics(embeddings: List<Embedding> ): Triple<Embedding, Float, Float>{
         val prototypeEmbedding = generatePrototypeEmbedding(embeddings)
         val sims = getSimilarities(prototypeEmbedding, embeddings)
         val meanSim = sims.average().toFloat()
@@ -246,7 +250,7 @@ class ClusterManager(
         }
 
         val mediaIds = clusterCrossRefs.map{it.mediaId}
-        val embeddings = mutableListOf<FloatArray>()
+        val embeddings = mutableListOf<Embedding>()
 
         // Note: mediaIds may contain both image and video ids so get calls are required to both stores
         // In the event that it only contains 1 media type, then an empty list will be returned if that media type doesnt match the embed store
@@ -268,4 +272,12 @@ class ClusterManager(
         clusterEmbedStore.update(listOf(embed))
         clusterMetadataRepository.updateMetadata(metadata)
     }
+
+    private fun List<StoredEmbedding>.toF32Map(): Map<Long, Embedding.F32>{
+        return when(this.first().embedding){
+            is Embedding.F32 -> this.associate { it.id to (it.embedding as Embedding.F32) }
+            is Embedding.QInt8 -> this.associate { it.id to (it.embedding as Embedding.QInt8).toF32() }
+        }
+    }
+
 }

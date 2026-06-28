@@ -99,13 +99,25 @@ class IndexWorker(context: Context, workerParams: WorkerParameters) :
             // Prevents doing full indexes by checking if embedding stores already exist. That responsibility should be left to the foreground service
             // No listener used (may change to avoid silent errors)
             if(imageStore.exists){
-                val imageIndexer = ImageIndexer(imageEmbedder, context=applicationContext, listener = null, store = imageStore)
+                val imageIndexer = ImageIndexer(imageEmbedder,
+                    context=applicationContext,
+                    listener = null,
+                    store = imageStore,
+                    quantize = true
+                )
                 indexMedia(applicationContext, MediaType.IMAGE, imageStore, imageIndexer, mediaMetadataRepository,appSettings.searchableImageDirectories.map{it.toUri()})
                 embedsToCluster.addAll(imageStore.get())
             }
 
             if(videoStore.exists){
-                val videoIndexer = VideoIndexer(imageEmbedder, context=applicationContext, listener = null, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
+                val videoIndexer = VideoIndexer(imageEmbedder,
+                    context=applicationContext,
+                    listener = null,
+                    store = videoStore,
+                    quantize = true,
+                    width = IMAGE_SIZE_X,
+                    height = IMAGE_SIZE_Y
+                )
                 indexMedia(applicationContext, MediaType.VIDEO, videoStore,videoIndexer, mediaMetadataRepository,appSettings.searchableVideoDirectories.map{it.toUri()})
                 embedsToCluster.addAll(videoStore.get())
             }

@@ -119,11 +119,23 @@ class MediaIndexForegroundService : Service(), KoinComponent {
                 mediaTypes.forEach { mediaType ->
                     when(mediaType){
                         MediaType.IMAGE -> {
-                            val imageIndexer = ImageIndexer(imageEmbedder, context=application, listener = ImageIndexListener, store = imageStore)
+                            val imageIndexer = ImageIndexer(imageEmbedder,
+                                context=application,
+                                listener = ImageIndexListener,
+                                store = imageStore,
+                                quantize = true
+                            )
                             indexMedia(application, MediaType.IMAGE, imageStore, imageIndexer, metadataRepo,appSettings.searchableImageDirectories.map{it.toUri()})
                         }
                         MediaType.VIDEO -> {
-                            val videoIndexer = VideoIndexer(imageEmbedder, context=application, listener = VideoIndexListener, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
+                            val videoIndexer = VideoIndexer(imageEmbedder,
+                                context=application,
+                                listener = VideoIndexListener,
+                                store = videoStore,
+                                quantize = true,
+                                width = IMAGE_SIZE_X,
+                                height = IMAGE_SIZE_Y
+                            )
                             indexMedia(application, MediaType.VIDEO, videoStore, videoIndexer, metadataRepo,appSettings.searchableVideoDirectories.map{it.toUri()})
                         }
                     }

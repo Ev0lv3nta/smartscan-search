@@ -76,8 +76,8 @@ fun SearchScreen(
     appSettings:  StateFlow<AppSettings>,
     onTopBarChange: (TopBarState) -> Unit,
     isIndexing: Boolean,
-    hasIndexedImages: Boolean,
-    hasIndexedVideos: Boolean,
+    hasIndexedImages: Boolean?,
+    hasIndexedVideos: Boolean?,
     hasStoragePermission: Boolean,
     onIndex: (mediaType: MediaType?) -> Unit,
     intentSearchQuery: SearchQuery? = null
@@ -146,8 +146,8 @@ fun SearchScreen(
 
     DisposableEffect(Unit) {
         when {
-            hasIndexedImages && !hasIndexedVideos -> searchViewModel.onAction(SearchAction.SetMediaTypeFilter(MediaType.IMAGE))
-            hasIndexedVideos && !hasIndexedImages -> searchViewModel.onAction(SearchAction.SetMediaTypeFilter(MediaType.VIDEO))
+            hasIndexedImages ==true && hasIndexedVideos==false -> searchViewModel.onAction(SearchAction.SetMediaTypeFilter(MediaType.IMAGE))
+            hasIndexedVideos == true && hasIndexedImages==false -> searchViewModel.onAction(SearchAction.SetMediaTypeFilter(MediaType.VIDEO))
         }
         onDispose {
             searchViewModel.onAction(SearchAction.Reset)
@@ -157,9 +157,9 @@ fun SearchScreen(
     LaunchedEffect(hasIndexedVideos, hasIndexedImages, state.mediaType, hasStoragePermission) {
         if (isIndexing || !hasStoragePermission) return@LaunchedEffect
 
-        val firstImageIndexRequired = state.mediaType == MediaType.IMAGE && !hasIndexedImages
-        val firstVideoIndexRequired = state.mediaType == MediaType.VIDEO && !hasIndexedVideos
-        val bothRequired = !hasIndexedImages && !hasIndexedVideos
+        val firstImageIndexRequired = state.mediaType == MediaType.IMAGE && hasIndexedImages ==false
+        val firstVideoIndexRequired = state.mediaType == MediaType.VIDEO && hasIndexedVideos==false
+        val bothRequired = hasIndexedImages ==false && hasIndexedVideos==false
 
         when {
             bothRequired -> onIndex(null)
