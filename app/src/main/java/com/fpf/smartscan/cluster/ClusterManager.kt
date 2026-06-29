@@ -16,14 +16,11 @@ import com.fpf.smartscan.utils.reservoirSample
 import com.fpf.smartscansdk.core.cluster.Cluster
 import com.fpf.smartscansdk.core.cluster.ClusterResult
 import com.fpf.smartscansdk.core.cluster.IncrementalClusterer
-import com.fpf.smartscansdk.core.cluster.ItemId
 import com.fpf.smartscansdk.core.embeddings.Embedding
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
 import com.fpf.smartscansdk.core.embeddings.generatePrototypeEmbedding
 import com.fpf.smartscansdk.core.embeddings.getSimilarities
-import com.fpf.smartscansdk.core.embeddings.toF32
-import com.fpf.smartscansdk.core.embeddings.toF32Embed
 import com.fpf.smartscansdk.core.embeddings.toQInt8Embed
 import kotlin.math.sqrt
 
@@ -57,12 +54,8 @@ class ClusterManager(
         } else {
             getDefaultThreshold(existingClusters)
         }
-        val clusterer = IncrementalClusterer(
-            existingClusters = existingClusters,
-            defaultThreshold = defaultThreshold
-        )
-
-        val result = clusterer.cluster(filteredItems.toF32Map())
+        val clusterer = IncrementalClusterer(existingClusters = existingClusters, defaultThreshold = defaultThreshold)
+        val result = clusterer.cluster(filteredItems.associate { it.id to it.embedding})
 
         // Must update clusters first
         updateClustersFromResult(result, existingClusters)
@@ -209,10 +202,8 @@ class ClusterManager(
     }
     private fun getDefaultThresholdFromSample(items: List<StoredEmbedding>, n: Int): Float{
         val sample = getSample(items, n)
-        val clusterer = IncrementalClusterer(
-            defaultThreshold = 0.6f
-        )
-        val result = clusterer.cluster(sample.toF32Map())
+        val clusterer = IncrementalClusterer(defaultThreshold = 0.6f)
+        val result = clusterer.cluster(sample.associate { it.id to it.embedding})
         return getDefaultThreshold(result.clusters)
     }
 
@@ -273,10 +264,6 @@ class ClusterManager(
     private suspend fun updateCluster(embed: StoredEmbedding, metadata:  MediaClusterMetadata){
         clusterEmbedStore.update(listOf(embed))
         clusterMetadataRepository.updateMetadata(metadata)
-    }
-
-    private fun List<StoredEmbedding>.toF32Map(): Map<Long, Embedding.F32>{
-        return this.associate { it.id to it.embedding.toF32Embed() }
     }
 
 }
