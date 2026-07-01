@@ -6,7 +6,6 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.constants.PrefsNames
 import com.fpf.smartscan.data.MediaDatabase
 import com.fpf.smartscan.events.BackupEvent
@@ -17,16 +16,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import com.fpf.smartscan.settings.AppSettings
-import com.fpf.smartscan.utils.copyFromUri
-import com.fpf.smartscan.utils.copyToUri
-import com.fpf.smartscan.utils.hashFile
 import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscan.settings.saveSettings
-import com.fpf.smartscan.utils.unzipFiles
-import com.fpf.smartscan.utils.zipFiles
 import com.fpf.smartscan.ui.theme.ColorSchemeType
 import com.fpf.smartscan.ui.theme.ThemeManager
 import com.fpf.smartscan.ui.theme.ThemeMode
+import com.fpf.smartscan.utils.BackupUtils
 import com.fpf.smartscansdk.core.SmartScanException
 import com.fpf.smartscansdk.ml.models.ModelInfo
 import com.fpf.smartscansdk.ml.models.ModelManager
@@ -35,7 +30,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
-import java.io.File
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val sharedPrefs = application.getSharedPreferences(PrefsNames.APP_PREFS, Context.MODE_PRIVATE)
@@ -60,8 +54,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     companion object {
         private const val TAG = "SettingsViewModel"
-        const val BACKUP_FILENAME = "smartscan_backup.zip"
-        private const val HASH_FILENAME = "hash.txt"
     }
 
     init {
@@ -145,73 +137,35 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun backup(uri: Uri){
-        val indexZipFile = File(getApplication<Application>().cacheDir, BACKUP_FILENAME)
-        val imageEmbeddingStoreFile = File(getApplication<Application>().filesDir, EmbeddingStoresFiles.IMAGE)
-        val videoEmbeddingStoreFile = File(getApplication<Application>().filesDir,  EmbeddingStoresFiles.VIDEO)
-        val clusterEmbeddingStoreFile = File(getApplication<Application>().filesDir, EmbeddingStoresFiles.MEDIA_CLUSTER)
-        val hashFile = File(getApplication<Application>().cacheDir, HASH_FILENAME)
-        val dbPath = getApplication<Application>().getDatabasePath(MediaDatabase.DB_NAME)
-
-        val embedStoreFiles = listOf(imageEmbeddingStoreFile, videoEmbeddingStoreFile, clusterEmbeddingStoreFile)
-        val filesToZip = listOf( hashFile, dbPath) + embedStoreFiles
         _isBackupLoading.value = true
-
         viewModelScope.launch(Dispatchers.IO){
             try {
-                if(embedStoreFiles.none{it.exists()}) error("Missing index file(s)")
-                val hashes: List<String> = filesToZip.filter { it.exists() && it != hashFile }.map{hashFile(it)}
-                hashFile.writeText(hashes.joinToString("\n") )
-
-                zipFiles(indexZipFile, filesToZip)
-                copyToUri(getApplication(), uri, indexZipFile)
+                BackupUtils.backup(getApplication(), uri)
                 _backupEvent.emit(BackupEvent(BackupEventType.BACKUP, success = true, "Backup successful"))
             }catch (e: Exception){
                 Log.e(TAG, "Error backing up: ${e.message}")
                 val appEventMessage = if(e.message == "Missing index file(s)")  "Missing index file(s)" else "Backup failed"
                 _backupEvent.emit(BackupEvent(BackupEventType.BACKUP, success = false, appEventMessage))
             }finally {
-                indexZipFile.delete()
-                hashFile.delete()
                 _isBackupLoading.emit(false)
             }
         }
     }
 
     fun restore(uri: Uri){
-        val indexZipFile = File(getApplication<Application>().cacheDir, BACKUP_FILENAME)
         _isRestoreLoading.value = true
-
         MediaDatabase.close()
-
         viewModelScope.launch(Dispatchers.IO){
             try {
-                copyFromUri(getApplication(), uri, indexZipFile)
-                val extractedFiles = unzipFiles(indexZipFile, getApplication<Application>().filesDir)
-//                val expectedFileNames = setOf(EmbeddingStoresFiles.IMAGE,EmbeddingStoresFiles.VIDEO, EmbeddingStoresFiles.IMAGE_CLUSTER, EmbeddingStoresFiles.VIDEO_CLUSTER, MediaDatabase.DB_NAME )
-
-                if(!isValidBackupFile(extractedFiles)){
-                    extractedFiles.forEach { it.delete() }
-                    error("Invalid backup file")
-                }
+                BackupUtils.restore(getApplication(), uri)
                 _backupEvent.emit(BackupEvent(BackupEventType.RESTORE, success = true, "Restore successful"))
             }catch (e: Exception){
                 Log.e(TAG, "Error restoring: ${e.message}")
                 _backupEvent.emit(BackupEvent(BackupEventType.RESTORE, success = false, "Invalid backup file"))
             }finally {
-                indexZipFile.delete()
                 _isRestoreLoading.emit(false)
             }
         }
-    }
-
-    private suspend fun isValidBackupFile(extractedFiles: List<File>): Boolean{
-        val hashFile = extractedFiles.find { it.name == HASH_FILENAME }?: return false
-        val hashesFromFile: List<String> = hashFile.readLines()
-        if(hashesFromFile.isEmpty()) return false
-
-        val otherFiles = extractedFiles.filterNot{it.name == HASH_FILENAME}
-        val otherFileHashes = otherFiles.map{hashFile(it)}
-        return hashesFromFile.toSet() == otherFileHashes.toSet()
     }
 
     fun updateEnableDirectionGalleryOpen(enable: Boolean){

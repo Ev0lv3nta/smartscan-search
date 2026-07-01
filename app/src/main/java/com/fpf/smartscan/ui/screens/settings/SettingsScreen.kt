@@ -36,9 +36,9 @@ import com.fpf.smartscan.navigation.TopBarState
 import com.fpf.smartscan.ui.action.SettingActionConfig
 import com.fpf.smartscan.ui.components.pickers.OptionPicker
 import com.fpf.smartscan.ui.components.settings.SettingSection
-import com.fpf.smartscan.ui.screens.settings.SettingsViewModel.Companion.BACKUP_FILENAME
 import com.fpf.smartscan.ui.theme.ColorSchemeType
 import com.fpf.smartscan.ui.theme.ThemeMode
+import com.fpf.smartscan.utils.BackupUtils.BACKUP_FILENAME
 
 @Composable
 fun SettingsScreen(
