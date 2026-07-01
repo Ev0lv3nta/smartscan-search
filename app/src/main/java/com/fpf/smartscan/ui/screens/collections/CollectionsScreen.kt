@@ -70,8 +70,8 @@ fun CollectionsScreen(
     onTopBarChange: (TopBarState) -> Unit,
     onViewCollection: (MediaCollection) -> Unit,
     isIndexing: Boolean,
-    hasIndexedImages: Boolean,
-    hasIndexedVideos: Boolean,
+    hasIndexedImages: Boolean?,
+    hasIndexedVideos: Boolean?,
     hasStoragePermission: Boolean,
     onIndex: () -> Unit,
     viewModel: CollectionsViewModel = koinViewModel(),
@@ -164,7 +164,7 @@ fun CollectionsScreen(
     }
 
     LaunchedEffect(hasIndexedVideos, hasIndexedImages, hasStoragePermission) {
-        val firstIndexRequired = !isIndexing && !hasIndexedImages && !hasIndexedVideos
+        val firstIndexRequired = !isIndexing && hasIndexedImages == false && hasIndexedVideos == false
         if( firstIndexRequired && hasStoragePermission){
             onIndex()
         }

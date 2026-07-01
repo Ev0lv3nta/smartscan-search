@@ -12,6 +12,7 @@ import com.fpf.smartscan.media.MediaStoreHelper
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.services.MediaIndexForegroundService
 import com.fpf.smartscan.utils.isServiceRunning
+import com.fpf.smartscansdk.core.embeddings.Embedding
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.processors.BatchProcessor
 import java.io.File
@@ -53,7 +54,7 @@ suspend fun rebuildIndex(context: Context, mediaEmbeddingStores: List<Pair<Media
     clusterMetadataRepository.clear()
     refreshIndex(context.applicationContext, mediaEmbeddingStores.map{it.first})
 }
-suspend fun indexMedia(context: Context,  mediaType: MediaType, store: FileEmbeddingStore, indexer: BatchProcessor<Long, Pair<Long, FloatArray>>, metadataRepo: MediaMetadataRepository, allowedDirs: List<Uri> = emptyList()){
+suspend fun indexMedia(context: Context,  mediaType: MediaType, store: FileEmbeddingStore, indexer: BatchProcessor<Long, Pair<Long, Embedding>>, metadataRepo: MediaMetadataRepository, allowedDirs: List<Uri> = emptyList()){
     val idToDateMap = when(mediaType){
         MediaType.IMAGE -> MediaStoreHelper.queryImageIdDateMap(context, allowedDirs)
         MediaType.VIDEO ->  MediaStoreHelper.queryVideoIdDateMap(context, allowedDirs)

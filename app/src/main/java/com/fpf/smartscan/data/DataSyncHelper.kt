@@ -23,8 +23,11 @@ import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.media.MediaStoreHelper
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.removeStaleMedia
+import com.fpf.smartscansdk.core.embeddings.Embedding
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
+import com.fpf.smartscansdk.core.embeddings.toQInt8
+import com.fpf.smartscansdk.core.embeddings.toQInt8Embed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -33,19 +36,15 @@ object DataSyncHelper {
     const val TAG = "DataSyncHelper"
     private const val EMBED_DIM: Int = 512
 
+    suspend fun migrateToQuantEmbedStoreIfNeeded(oldFileToQuantStoreMap: Map<File, FileEmbeddingStore>){
+        oldFileToQuantStoreMap.entries.forEach {
+            if (!it.key.exists()) return@forEach
+            quantizeEmbedStore(it.key, it.value)
+        }
+    }
 
     fun checkCachedDb(application: Application): File?{
         val cachedDB = File(application.filesDir, DB_NAME)
-        return if(cachedDB.exists()) cachedDB else null
-    }
-
-    fun checkOldCachedImageDb(application: Application): File?{
-        val cachedDB = File(application.filesDir, OLD_DB_IMAGE_NAME)
-        return if(cachedDB.exists()) cachedDB else null
-    }
-
-    fun checkOldCachedVideoDb(application: Application): File?{
-        val cachedDB = File(application.filesDir, OLD_DB_VIDEO_NAME)
         return if(cachedDB.exists()) cachedDB else null
     }
 
@@ -57,36 +56,13 @@ object DataSyncHelper {
         cachedDbFile.delete()
     }
 
-    suspend fun transferOldDbToNew(application: Application, oldImageTagDbCachedFile: File, oldVideoTagDbCachedFile: File, newDb: MediaDatabase){
-        val isTransferNeeded = oldImageTagDbCachedFile.exists() && oldVideoTagDbCachedFile.exists()
-        if (!isTransferNeeded) return
-
-        val oldImageTagDbPath = application.getDatabasePath(OLD_DB_IMAGE_NAME)
-        val oldVideoTagDbPath = application.getDatabasePath(OLD_DB_VIDEO_NAME)
-
-        Log.d(TAG, "Old DB detected, transferring...")
-
-        oldImageTagDbCachedFile.copyTo(oldImageTagDbPath, overwrite = true)
-        oldVideoTagDbCachedFile.copyTo(oldVideoTagDbPath, overwrite = true)
-
-        transfer(
-            application = application,
-            newDb = newDb
-        )
-        oldImageTagDbCachedFile.delete()
-        oldVideoTagDbCachedFile.delete()
-        oldImageTagDbPath.delete()
-        oldVideoTagDbPath.delete()
-    }
-
     suspend fun sync(
         context: Context,
         imageStore: FileEmbeddingStore,
         videoStore: FileEmbeddingStore,
         allowedImageDirs: List<Uri> = emptyList(),
         allowedVideoDirs: List<Uri> = emptyList(),
-        mediaMetadataRepository: MediaMetadataRepository,
-
+        mediaMetadataRepository: MediaMetadataRepository
         ){
         syncEmbedStoreAndMetadata(context,
             store = imageStore,
@@ -101,6 +77,47 @@ object DataSyncHelper {
             mediaType = MediaType.VIDEO
         )
         Log.d(TAG, "Data sync completed successfully")
+    }
+
+    suspend fun transferOldDbIfNeeded(application: Application, newDb: MediaDatabase){
+        val oldImageTagDbCachedFile = checkOldCachedImageDb(application)
+        val oldVideoTagDbCachedFile = checkOldCachedVideoDb(application)
+        val transferNeeded = oldImageTagDbCachedFile != null && oldVideoTagDbCachedFile != null
+        if (!transferNeeded) return
+
+        val oldImageTagDbPath = application.getDatabasePath(OLD_DB_IMAGE_NAME)
+        val oldVideoTagDbPath = application.getDatabasePath(OLD_DB_VIDEO_NAME)
+
+        Log.d(TAG, "Old DB detected, transferring...")
+
+        oldImageTagDbCachedFile.copyTo(oldImageTagDbPath, overwrite = true)
+        oldVideoTagDbCachedFile.copyTo(oldVideoTagDbPath, overwrite = true)
+
+        transfer(application = application, newDb = newDb)
+
+        oldImageTagDbCachedFile.delete()
+        oldVideoTagDbCachedFile.delete()
+        oldImageTagDbPath.delete()
+        oldVideoTagDbPath.delete()
+    }
+
+    private suspend fun quantizeEmbedStore( oldEmbedStoreFile: File, quantStore: FileEmbeddingStore){
+        val oldEmbedStore = FileEmbeddingStore(oldEmbedStoreFile, EMBED_DIM)
+        val embeds = oldEmbedStore.get().map { it.copy(embedding = it.embedding.toQInt8Embed()) }
+        quantStore.add(embeds)
+        oldEmbedStore.clear()
+        oldEmbedStoreFile.delete()
+        Log.d(TAG, "Successfully added quantized embeddings from: ${oldEmbedStoreFile.name}")
+    }
+
+    private fun checkOldCachedImageDb(application: Application): File?{
+        val cachedDB = File(application.filesDir, OLD_DB_IMAGE_NAME)
+        return if(cachedDB.exists()) cachedDB else null
+    }
+
+    private fun checkOldCachedVideoDb(application: Application): File?{
+        val cachedDB = File(application.filesDir, OLD_DB_VIDEO_NAME)
+        return if(cachedDB.exists()) cachedDB else null
     }
 
     private suspend fun transfer(application: Application, newDb: MediaDatabase) = withContext(Dispatchers.IO) {
@@ -263,7 +280,5 @@ object DataSyncHelper {
         tempFile.renameTo(finalFile)
 
         Log.d(TAG, "${mediaTpe.name}: Date sync completed successfully")
-
     }
-
 }
