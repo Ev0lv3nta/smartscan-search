@@ -15,6 +15,8 @@ class MediaMetadataRepository(
 
     suspend fun getAllIds(): List<Long> = dao.getAllIds()
 
+    suspend fun getUnclusteredItemIds(): List<Long> = dao.getUnclusteredItemIds()
+
     suspend fun getByIds(mediaIds: List<Long>): List<MediaMetadata> = dao.getByIds(mediaIds)
     suspend fun getByType(type: MediaType): List<MediaMetadata> = dao.getByType(type)
 

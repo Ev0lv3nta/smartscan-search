@@ -1,5 +1,6 @@
 package com.fpf.smartscan.cluster
 
+import android.util.Log
 import com.fpf.smartscan.data.clusters.ClusterCrossRef
 import com.fpf.smartscan.data.clusters.ClusterCrossRefRepository
 import com.fpf.smartscan.data.clusters.ClusterMetadataRepository
@@ -36,30 +37,32 @@ class ClusterManager(
         private const val LARGE_DATASET_SIZE: Int = 10000
         private const val MIN_SAMPLE_SIZE: Int = 500
         private const val MAX_SAMPLE_SIZE: Int = 5000
+
+        const val TAG = "ClusterManager"
     }
 
-    suspend fun cluster(itemEmbeds: List<StoredEmbedding>) {
-        if(itemEmbeds.isEmpty()) return
-        val existingAssignments = clusterCrossRefRepository.getAssignments()
-        val validIds = mediaMetadataRepository.getAllIds().toSet()
+    suspend fun cluster() {
+        val unclusteredItemIds = mediaMetadataRepository.getUnclusteredItemIds()
+        val unclusterItemEmbeds = mutableListOf<StoredEmbedding>()
+        // unclusteredItemIds includes video and image ids, each store will only return the ones that exist
+        // this is simpler than making 2 separate queries that filter by media type
+        unclusterItemEmbeds.addAll(imageEmbedStore.get(unclusteredItemIds))
+        unclusterItemEmbeds.addAll(videoEmbedStore.get(unclusteredItemIds))
+        if(unclusterItemEmbeds.isEmpty()) return
+
         val existingClusters: Map<Long, Cluster> = getExistingClusters()
-
-        val filteredItems = itemEmbeds
-            .filterNot { it.id in existingAssignments }
-            .filter { it.id in validIds }
-
         val defaultThreshold = if(existingClusters.isEmpty()) {
-            val sampleSize = (filteredItems.size * 0.01).toInt().coerceIn(MIN_SAMPLE_SIZE, MAX_SAMPLE_SIZE)
-            getDefaultThresholdFromSample(filteredItems, sampleSize)
+            val sampleSize = (unclusterItemEmbeds.size * 0.01).toInt().coerceIn(MIN_SAMPLE_SIZE, MAX_SAMPLE_SIZE)
+            getDefaultThresholdFromSample(unclusterItemEmbeds, sampleSize)
         } else {
             getDefaultThreshold(existingClusters)
         }
         val clusterer = IncrementalClusterer(existingClusters = existingClusters, defaultThreshold = defaultThreshold)
-        val result = clusterer.cluster(filteredItems.associate { it.id to it.embedding})
+        val result = clusterer.cluster(unclusterItemEmbeds.associate { it.id to it.embedding})
 
         // Must update clusters first
         updateClustersFromResult(result, existingClusters)
-        updateAssignmentsFromResult(result, validIds)
+        updateAssignmentsFromResult(result)
     }
 
     suspend fun getExistingClusters(): Map<Long, Cluster> {
@@ -216,9 +219,8 @@ class ClusterManager(
             items.shuffled().take(n)
         }
     }
-    private suspend fun updateAssignmentsFromResult(clusterResult: ClusterResult, validIds: Set<Long> ) {
-        val crossRefs = clusterResult.assignments.mapNotNull {
-            if (it.key !in validIds) return@mapNotNull null
+    private suspend fun updateAssignmentsFromResult(clusterResult: ClusterResult ) {
+        val crossRefs = clusterResult.assignments.map {
             ClusterCrossRef(clusterId = it.value, mediaId = it.key)
         }
         clusterCrossRefRepository.insertClusterCrossRefs(crossRefs)

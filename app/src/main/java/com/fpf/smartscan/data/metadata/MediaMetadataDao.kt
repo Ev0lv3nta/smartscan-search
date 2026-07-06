@@ -30,6 +30,9 @@ interface MediaMetadataDao {
     @Query("SELECT * FROM media_metadata WHERE type = :type")
     suspend fun getByType(type: MediaType): List<MediaMetadata>
 
+    @Query("SELECT id FROM media_metadata WHERE id NOT IN (SELECT mediaId FROM media_cluster_crossref)")
+    suspend fun getUnclusteredItemIds(): List<Long>
+
     @Query("""
         SELECT m.*
         FROM media_metadata m
