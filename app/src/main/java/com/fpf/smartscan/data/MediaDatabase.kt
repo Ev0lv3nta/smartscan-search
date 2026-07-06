@@ -12,6 +12,7 @@ import com.fpf.smartscan.data.metadata.MediaMetadata
 import com.fpf.smartscan.data.metadata.MediaMetadataDao
 import com.fpf.smartscan.data.migrations.MIGRATION_1_2
 import com.fpf.smartscan.data.migrations.MIGRATION_2_3
+import com.fpf.smartscan.data.migrations.MIGRATION_3_4
 import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.data.tags.TagCrossRefDao
@@ -26,7 +27,7 @@ import com.fpf.smartscan.data.tags.TagDao
         Tag::class,
         TagCrossRef::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class MediaDatabase : RoomDatabase() {
@@ -63,7 +64,7 @@ abstract class MediaDatabase : RoomDatabase() {
                     MediaDatabase::class.java,
                     DB_NAME
                 ).setJournalMode(JournalMode.TRUNCATE)
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build()
 
                 INSTANCE = instance
