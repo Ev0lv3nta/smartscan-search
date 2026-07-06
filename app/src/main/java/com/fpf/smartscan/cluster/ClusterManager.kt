@@ -13,7 +13,6 @@ import com.fpf.smartscan.media.MediaItem
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.mediaIdToUri
 import com.fpf.smartscan.utils.reservoirSample
-import com.fpf.smartscansdk.core.cluster.Assignments
 import com.fpf.smartscansdk.core.cluster.Cluster
 import com.fpf.smartscansdk.core.cluster.ClusterResult
 import com.fpf.smartscansdk.core.cluster.IncrementalClusterer
@@ -65,7 +64,7 @@ class ClusterManager(
     suspend fun mergeClusters(primaryClusterId: Long, otherClusters: List<Long>){
         val otherClustersCrossRefs = clusterCrossRefRepository.getByClusterIds(otherClusters)
         val updatedClusterCrossRefs = otherClustersCrossRefs.map { it.copy(clusterId = primaryClusterId) }
-        clusterCrossRefRepository.insertClusterCrossRefs(updatedClusterCrossRefs)
+        clusterCrossRefRepository.upsertClusterCrossRefs(updatedClusterCrossRefs)
 
         // Delete clusters which are being merged (cascades all related crossrefs)
         clusterMetadataRepository.deleteMetadata(otherClusters)
@@ -73,8 +72,8 @@ class ClusterManager(
         sync(primaryClusterId)
     }
 
-    suspend fun moveItems(itemIds: List<Long>,newClusterId: Long, oldClusterId: Long){
-        clusterCrossRefRepository.updateAssignments(itemIds, newClusterId)
+    suspend fun moveItems(itemIds: List<Long>, newClusterId: Long, oldClusterId: Long){
+        clusterCrossRefRepository.upsertClusterCrossRefs(itemIds, newClusterId)
         listOf(oldClusterId, newClusterId).forEach { sync(it) }
     }
 
@@ -164,7 +163,9 @@ class ClusterManager(
 
         clusterEmbedStore.add(newEmbeds)
         clusterEmbedStore.update(existingEmbeds)
-        assign(clusterResult.assignments)
+
+        val crossRefs = clusterResult.assignments.map { ClusterCrossRef(clusterId = it.value, mediaId = it.key) }
+        clusterCrossRefRepository.upsertClusterCrossRefs(crossRefs)
     }
 
     private suspend fun createNewCluster(itemEmbeds: List<StoredEmbedding>, clusterLabel: String): Long{
@@ -198,7 +199,7 @@ class ClusterManager(
         )
         clusterEmbedStore.add(listOf(clusterEmbed))
         clusterMetadataRepository.insertMetadata(metadata)
-        clusterCrossRefRepository.updateAssignments(itemEmbeds.map { it.id }, clusterEmbed.id)
+        clusterCrossRefRepository.upsertClusterCrossRefs(itemEmbeds.map { it.id }, clusterEmbed.id)
         return clusterEmbed.id
     }
     private fun getDefaultThresholdFromSample(items: List<StoredEmbedding>, n: Int): Float{
@@ -216,12 +217,6 @@ class ClusterManager(
         } else {
             items.shuffled().take(n)
         }
-    }
-    private suspend fun assign(assignments: Assignments ) {
-        val crossRefs = assignments.map {
-            ClusterCrossRef(clusterId = it.value, mediaId = it.key)
-        }
-        clusterCrossRefRepository.insertClusterCrossRefs(crossRefs)
     }
 
     private fun computeClusterMetrics(embeddings: List<Embedding> ): Triple<Embedding, Float, Float>{
