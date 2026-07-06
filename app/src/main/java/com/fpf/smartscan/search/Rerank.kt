@@ -10,7 +10,8 @@ fun rerankItems(
     clusterToSimMap: Map<Long, Float>,
     clusterToMediaIdsMap: Map<Long, Set<Long>>,
     strictness: Float = 0f,
-    baseCutOffPercent: Float = 0.6f
+    baseCutOffPercent: Float = 0.6f,
+    maxCutOffPercent: Float = 0.85f
 ): List<Long> {
 
     val itemToCluster = buildMap {
@@ -19,20 +20,18 @@ fun rerankItems(
         }
     }
 
-    val clusterSims = itemToSimMap.keys
-        .mapNotNull { itemId ->
+    val clusterSims = itemToSimMap.keys.mapNotNull { itemId ->
             itemToCluster[itemId]?.let(clusterToSimMap::get)?.toDouble()
-        }
-        .sorted()
+        }.sorted()
 
     val itemSims = itemToSimMap.values.map { it.toDouble() }.sorted()
     val iP10 = itemSims.getOrNull((itemSims.size * 0.1).toInt()) ?: 0.0
     val iP90 = itemSims.getOrNull((itemSims.size * 0.9).toInt()) ?: 0.0
     val itemSpread = iP90 - iP10
 
-    val p10 = clusterSims.getOrNull((clusterSims.size * 0.1).toInt()) ?: 0.0
-    val p90 = clusterSims.getOrNull((clusterSims.size * 0.9).toInt()) ?: 0.0
-    val clusterSpread = p90 - p10
+    val cP10 = clusterSims.getOrNull((clusterSims.size * 0.1).toInt()) ?: 0.0
+    val cP90 = clusterSims.getOrNull((clusterSims.size * 0.9).toInt()) ?: 0.0
+    val clusterSpread = cP90 - cP10
 
     val eps = 1e-3
     val ratio = clusterSpread / itemSpread.coerceAtLeast(eps)
@@ -45,9 +44,7 @@ fun rerankItems(
     }.sortedByDescending { it.second }
 
     // Early return if only a single or no result
-    if (scoredItems.size <= 1) {
-        return scoredItems.map { it.first }
-    }
+    if (scoredItems.size <= 1) return scoredItems.map { it.first }
 
     val scores = scoredItems.map { it.second }.sorted()
     val maxScore = scores.max()
@@ -57,12 +54,11 @@ fun rerankItems(
     val stdScore = sqrt(scores.map{(it - meanScore).pow(2)}.average())
     val centrality = medianScore - minScore
     val safeStrictness = strictness.coerceIn(0f, 1f)
-    val baseCutOff = baseCutOffPercent * maxScore
+    val strictnessDamping = (maxScore - medianScore) / (maxScore).coerceAtLeast(eps)
+    val cutOffPercent = (baseCutOffPercent * (1f + strictnessDamping.toFloat() * safeStrictness)).coerceIn(baseCutOffPercent, maxCutOffPercent)
+    val baseCutOff = cutOffPercent * maxScore
     val dynamicCutOff = medianScore - stdScore - (1 - safeStrictness) * centrality.pow(1.0 + safeStrictness)
     val minAllowedScore = max(baseCutOff, dynamicCutOff)
-//    Log.d("rankitems", "max:${scores.max()}\n min: $minScore\n std: $stdScore \n median: $medianScore \n baseCutOff: $baseCutOff \nminAllowedScore: $minAllowedScore")
-
-    return scoredItems
-        .filter { it.second >= minAllowedScore }
-        .map { it.first }
+//    Log.d("rerankItems", "strictnessDamping:$strictnessDamping\ncutoff:$cutOffPercent")
+    return scoredItems.filter { it.second >= minAllowedScore }.map { it.first }
 }
