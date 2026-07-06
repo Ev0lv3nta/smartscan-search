@@ -44,7 +44,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -194,7 +193,6 @@ class CollectionItemsViewModel(
             try {
                 val selectedItems = getSelectedItems()
                 tagManager.tagItems(tag, selectedItems)
-                resetSelection()
                 val message = if(selectedItems.size == 1 ) "Tagged ${selectedItems.size} item" else "Tagged ${selectedItems.size} items"
                 _event.emit(CollectionItemEvent(CollectionItemEventType.TAG, success = true, message = message))
             }catch (e: Exception){

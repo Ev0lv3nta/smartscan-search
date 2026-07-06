@@ -372,7 +372,6 @@ class SearchViewModel(
             try {
                 val selected = getSelectedResults()
                 tagManager.tagItems(tag, selected)
-                resetSelection()
                 val message = if(selected.size == 1 ) "Tagged ${selected.size} item" else "Tagged ${selected.size} items"
                 _event.emit(SearchEvent(SearchEventType.TAG, success = true, message = message))
             }catch (e: Exception){
