@@ -121,7 +121,7 @@ class IndexWorker(context: Context, workerParams: WorkerParameters) :
                 indexMedia(applicationContext, MediaType.VIDEO, videoStore,videoIndexer, mediaMetadataRepository,appSettings.searchableVideoDirectories.map{it.toUri()})
                 embedsToCluster.addAll(videoStore.get())
             }
-            clusterManager.cluster(embedsToCluster)
+            clusterManager.cluster()
 
 
             return@withContext Result.success()

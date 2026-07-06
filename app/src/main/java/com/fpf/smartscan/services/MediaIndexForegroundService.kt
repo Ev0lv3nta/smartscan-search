@@ -140,11 +140,7 @@ class MediaIndexForegroundService : Service(), KoinComponent {
                         }
                     }
                 }
-                // Always cluster all existing media
-                val embedsToCluster = mutableListOf<StoredEmbedding>()
-                embedsToCluster.addAll(imageStore.get())
-                embedsToCluster.addAll(videoStore.get())
-                clusterManager.cluster(embedsToCluster)
+                clusterManager.cluster()
             } catch (e: CancellationException) {
                 // cancelled
             } catch (e: Exception) {
