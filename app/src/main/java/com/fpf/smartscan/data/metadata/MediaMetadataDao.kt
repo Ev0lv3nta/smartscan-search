@@ -72,7 +72,7 @@ interface MediaMetadataDao {
           AND m.type = :type
         ORDER BY m.dateAdded DESC, m.id DESC
     """)
-    suspend fun getByTag(tagId: Long, type: MediaType, ): List<MediaMetadata>
+    suspend fun getByTag(tagId: Long, type: MediaType ): List<MediaMetadata>
 
     @Query("""
     SELECT m.*
