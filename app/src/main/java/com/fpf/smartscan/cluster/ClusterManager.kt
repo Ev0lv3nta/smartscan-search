@@ -224,7 +224,7 @@ class ClusterManager(
         clusterCrossRefRepository.insertClusterCrossRefs(crossRefs)
     }
 
-    fun computeClusterMetrics(embeddings: List<Embedding> ): Triple<Embedding, Float, Float>{
+    private fun computeClusterMetrics(embeddings: List<Embedding> ): Triple<Embedding, Float, Float>{
         val prototypeEmbedding = generatePrototypeEmbedding(embeddings)
         val sims = getSimilarities(prototypeEmbedding, embeddings)
         val meanSim = sims.average().toFloat()
