@@ -50,7 +50,7 @@ class ClusterManager(
         unclusterItemEmbeds.addAll(videoEmbedStore.get(unclusteredItemIds))
         if(unclusterItemEmbeds.isEmpty()) return
 
-        val existingClusters: Map<Long, Cluster> = getExistingClusters()
+        val existingClusters: Map<Long, Cluster> = getAllClusters()
         val defaultThreshold = if(existingClusters.isEmpty()) {
             val sampleSize = (unclusterItemEmbeds.size * 0.01).toInt().coerceIn(MIN_SAMPLE_SIZE, MAX_SAMPLE_SIZE)
             getDefaultThresholdFromSample(unclusterItemEmbeds, sampleSize)
@@ -60,18 +60,6 @@ class ClusterManager(
         val clusterer = IncrementalClusterer(existingClusters = existingClusters, defaultThreshold = defaultThreshold)
         val result = clusterer.cluster(unclusterItemEmbeds.associate { it.id to it.embedding})
         updateClustersAndAssign(result, existingClusters.keys)
-    }
-
-    suspend fun getExistingClusters(): Map<Long, Cluster> {
-        return if (clusterEmbedStore.exists) {
-            val metadataMap = clusterMetadataRepository.getAllMetadataAsMap()
-
-            clusterEmbedStore.get().mapNotNull { cluster ->
-                metadataMap[cluster.id]?.let { meta ->
-                    cluster.id to Cluster(cluster.id, cluster.embedding, meta)
-                }
-            }.toMap()
-        } else emptyMap()
     }
 
     suspend fun mergeClusters(primaryClusterId: Long, otherClusters: List<Long>){
@@ -118,6 +106,18 @@ class ClusterManager(
                 )
             }
         }
+    }
+
+    private suspend fun getAllClusters(): Map<Long, Cluster> {
+        return if (clusterEmbedStore.exists) {
+            val metadataMap = clusterMetadataRepository.getAllMetadataAsMap()
+
+            clusterEmbedStore.get().mapNotNull { cluster ->
+                metadataMap[cluster.id]?.let { meta ->
+                    cluster.id to Cluster(cluster.id, cluster.embedding, meta)
+                }
+            }.toMap()
+        } else emptyMap()
     }
 
     private suspend fun updateClustersAndAssign(clusterResult: ClusterResult, existingClusterIds: Set<Long>) {
@@ -169,7 +169,7 @@ class ClusterManager(
 
     private suspend fun createNewCluster(itemEmbeds: List<StoredEmbedding>, clusterLabel: String): Long{
         val (metadata, prototype ) = if(itemEmbeds.size == 1) {
-            val defaultThreshold = getDefaultThreshold(getExistingClusters())
+            val defaultThreshold = getDefaultThreshold(getAllClusters())
             val meta = MediaClusterMetadata(
                 clusterId = System.currentTimeMillis(),
                 prototypeSize = itemEmbeds.size,
