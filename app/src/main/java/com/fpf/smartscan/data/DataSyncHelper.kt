@@ -146,6 +146,7 @@ object DataSyncHelper {
             TagCrossRef(
                 mediaId = it.imageId,
                 tagId = tagId,
+                mediaType = MediaType.IMAGE
             )
         }
 
@@ -176,6 +177,7 @@ object DataSyncHelper {
             TagCrossRef(
                 mediaId = it.videoId,
                 tagId = tagId,
+                mediaType = MediaType.VIDEO
             )
         }
 

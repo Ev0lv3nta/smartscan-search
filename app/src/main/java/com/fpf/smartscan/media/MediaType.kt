@@ -1,5 +1,6 @@
 package com.fpf.smartscan.media
 
-enum class MediaType {
-    IMAGE, VIDEO
+enum class MediaType(val code: Int) {
+    IMAGE(0),
+    VIDEO(1)
 }

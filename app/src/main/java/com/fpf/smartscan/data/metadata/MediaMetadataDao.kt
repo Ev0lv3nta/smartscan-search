@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.fpf.smartscan.data.MediaIdType
 import com.fpf.smartscan.media.MediaType
 
 @Dao
@@ -22,16 +23,23 @@ interface MediaMetadataDao {
     @Update
     suspend fun update(item: MediaMetadata)
 
-    @Query("SELECT id FROM media_metadata")
-    suspend fun getAllIds(): List<Long>
     @Query("SELECT * FROM media_metadata WHERE id IN (:mediaIds)")
     suspend fun getByIds(mediaIds: List<Long>): List<MediaMetadata>
 
     @Query("SELECT * FROM media_metadata WHERE type = :type")
     suspend fun getByType(type: MediaType): List<MediaMetadata>
 
-    @Query("SELECT id FROM media_metadata WHERE id NOT IN (SELECT mediaId FROM media_cluster_crossref)")
-    suspend fun getUnclusteredItemIds(): List<Long>
+    @Query("""
+        SELECT id, type
+        FROM media_metadata
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM media_cluster_crossref c
+            WHERE c.mediaId = media_metadata.id
+              AND c.mediaType = media_metadata.type
+        )
+    """)
+    suspend fun getUnclusteredItemIds(): List<MediaIdType>
 
     @Query("""
         SELECT m.*

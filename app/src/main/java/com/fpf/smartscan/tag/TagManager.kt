@@ -23,7 +23,7 @@ class TagManager(
         if(id == null){
             id = tagRepository.insertTags(listOf(Tag(name = tagName.trim()))).first()
         }
-        val tagEntries = items.map { TagCrossRef(mediaId = it.id, tagId = id) }
+        val tagEntries = items.map { TagCrossRef(mediaId = it.id, tagId = id, mediaType = it.type) }
         tagCrossRefRepository.insertTagCrossRefs(tagEntries)
     }
 
@@ -73,7 +73,7 @@ class TagManager(
         val tagsToMerge = tagRepository.getTagsByName(otherTags)
         val mediaToUpdate = tagsToMerge.flatMap { mediaMetadataRepository.getByTag(it.id) }
         if(primaryTag != null && mediaToUpdate.isNotEmpty()){
-            val updated = mediaToUpdate.map{ TagCrossRef(mediaId = it.id, tagId = primaryTag.id) }
+            val updated = mediaToUpdate.map{ TagCrossRef(mediaId = it.id, tagId = primaryTag.id, mediaType = it.type) }
             tagCrossRefRepository.insertTagCrossRefs(updated)
             tagRepository.deleteTags(tagsToMerge)
         }
@@ -90,7 +90,7 @@ class TagManager(
     }
 
     private suspend fun moveItems(items: Set<MediaItem>, currentTagName: String, destinationTagId: Long){
-        val updatedCrossRef = items.map{ TagCrossRef(mediaId = it.id, tagId = destinationTagId) }
+        val updatedCrossRef = items.map{ TagCrossRef(mediaId = it.id, tagId = destinationTagId, mediaType = it.type) }
         tagCrossRefRepository.insertTagCrossRefs(updatedCrossRef)
 
         val currentTag = tagRepository.getTagsByName(listOf(currentTagName)).firstOrNull()?: return

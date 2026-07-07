@@ -235,7 +235,7 @@ class CollectionItemsViewModel(
                 val selectedItems = getSelectedItems()
                 if (selectedItems.isEmpty()) return@launch
                 when(newCollection.type) {
-                    CollectionType.CLUSTER -> clusterManager.moveItems(selectedItems.map{it.id}, newCollection.id, currentCollection.id)
+                    CollectionType.CLUSTER -> clusterManager.moveItems(selectedItems, newCollection.id, currentCollection.id)
                     CollectionType.TAG -> tagManager.moveItems(selectedItems, currentCollection.name, newCollection.name)
                 }
                 resetSelection()

@@ -10,7 +10,7 @@ import com.fpf.smartscan.media.MediaType
 
 @Entity(
     tableName = "tag_crossref",
-    primaryKeys = ["mediaId", "tagId"],
+    primaryKeys = ["mediaId", "mediaType", "tagId"],
     foreignKeys = [
         ForeignKey(
             entity = Tag::class,
@@ -20,15 +20,18 @@ import com.fpf.smartscan.media.MediaType
         ),
         ForeignKey(
             entity = MediaMetadata::class,
-            parentColumns = ["id"],
-            childColumns = ["mediaId"],
+            parentColumns = ["id", "type"],
+            childColumns = ["mediaId", "mediaType"],
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("tagId")]
+    indices = [
+        Index(value = ["tagId"]),
+    ]
 )
 @TypeConverters(MediaTypeConverter::class)
 data class TagCrossRef(
     val mediaId: Long,
-    val tagId: Long,
+    val mediaType: MediaType,
+    val tagId: Long
 )

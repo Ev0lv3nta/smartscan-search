@@ -16,11 +16,6 @@ class ClusterCrossRefRepository(private val dao: ClusterCrossRefDao) {
         refreshCache = true
     }
 
-    suspend fun upsertClusterCrossRefs(itemIds: List<Long>, clusterId: Long) {
-        val crossRefs = itemIds.map { ClusterCrossRef(clusterId = clusterId, mediaId = it) }
-        upsertClusterCrossRefs(crossRefs)
-    }
-
     suspend fun deleteByClusterIds(ids: List<Long>) {
         dao.deleteByClusterIds(ids)
         refreshCache = true

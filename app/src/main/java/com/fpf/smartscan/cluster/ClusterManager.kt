@@ -41,12 +41,11 @@ class ClusterManager(
     }
 
     suspend fun cluster() {
-        val unclusteredItemIds = mediaMetadataRepository.getUnclusteredItemIds()
+        val unclusteredItemIdsMap = mediaMetadataRepository.getUnclusteredItemIds()
+        val (unclusteredImages, unclusteredVideos) = unclusteredItemIdsMap.keys.partition { unclusteredItemIdsMap[it] == MediaType.IMAGE }
         val unclusterItemEmbeds = mutableListOf<StoredEmbedding>()
-        // unclusteredItemIds includes video and image ids, each store will only return the ones that exist
-        // this is simpler than making 2 separate queries that filter by media type
-        unclusterItemEmbeds.addAll(imageEmbedStore.get(unclusteredItemIds))
-        unclusterItemEmbeds.addAll(videoEmbedStore.get(unclusteredItemIds))
+        unclusterItemEmbeds.addAll(imageEmbedStore.get(unclusteredImages))
+        unclusterItemEmbeds.addAll(videoEmbedStore.get(unclusteredVideos))
         if(unclusterItemEmbeds.isEmpty()) return
 
         val existingClusters: Map<Long, Cluster> = getAllClusters()
@@ -58,7 +57,7 @@ class ClusterManager(
         }
         val clusterer = IncrementalClusterer(existingClusters = existingClusters, defaultThreshold = defaultThreshold)
         val result = clusterer.cluster(unclusterItemEmbeds.associate { it.id to it.embedding})
-        updateClustersAndAssign(result, existingClusters.keys)
+        updateClustersAndAssign(result, existingClusters.keys, unclusteredItemIdsMap)
     }
 
     suspend fun mergeClusters(primaryClusterId: Long, otherClusters: List<Long>){
@@ -72,17 +71,19 @@ class ClusterManager(
         sync(primaryClusterId)
     }
 
-    suspend fun moveItems(itemIds: List<Long>, newClusterId: Long, oldClusterId: Long){
-        clusterCrossRefRepository.upsertClusterCrossRefs(itemIds, newClusterId)
+    suspend fun moveItems(items: Set<MediaItem>, newClusterId: Long, oldClusterId: Long){
+        val crossRefs = items.map { ClusterCrossRef(clusterId = newClusterId, mediaId = it.id, mediaType = it.type) }
+        clusterCrossRefRepository.upsertClusterCrossRefs(crossRefs)
         listOf(oldClusterId, newClusterId).forEach { sync(it) }
     }
 
     suspend fun createNewClusterAndMoveItems(items: Set<MediaItem>, newClusterLabel: String, oldClusterId: Long){
+        val itemsMap = items.associate { it.id to it.type }
         val (imageItems, videoItems) = items.partition { it.type == MediaType.IMAGE }
         val itemEmbeds = mutableListOf<StoredEmbedding>()
         itemEmbeds.addAll(imageEmbedStore.get(imageItems.map{it.id}))
         itemEmbeds.addAll(videoEmbedStore.get(videoItems.map{it.id}))
-        createNewCluster(itemEmbeds, newClusterLabel)
+        createNewCluster(itemEmbeds, newClusterLabel, itemsMap)
         sync(oldClusterId)
     }
 
@@ -119,7 +120,7 @@ class ClusterManager(
         } else emptyMap()
     }
 
-    private suspend fun updateClustersAndAssign(clusterResult: ClusterResult, existingClusterIds: Set<Long>) {
+    private suspend fun updateClustersAndAssign(clusterResult: ClusterResult, existingClusterIds: Set<Long>, mediaTypeMap: Map<Long, MediaType>) {
         val (existingClusters, newClusters) = clusterResult.clusters.values.partition { it.clusterId in existingClusterIds }
 
         val existingMetadata = existingClusters.map {
@@ -164,11 +165,14 @@ class ClusterManager(
         clusterEmbedStore.add(newEmbeds)
         clusterEmbedStore.update(existingEmbeds)
 
-        val crossRefs = clusterResult.assignments.map { ClusterCrossRef(clusterId = it.value, mediaId = it.key) }
+        val crossRefs = clusterResult.assignments.mapNotNull {
+            val mediaType =  mediaTypeMap[it.key]?: return@mapNotNull null
+            ClusterCrossRef(clusterId = it.value, mediaId = it.key, mediaType = mediaType)
+        }
         clusterCrossRefRepository.upsertClusterCrossRefs(crossRefs)
     }
 
-    private suspend fun createNewCluster(itemEmbeds: List<StoredEmbedding>, clusterLabel: String): Long{
+    private suspend fun createNewCluster(itemEmbeds: List<StoredEmbedding>, clusterLabel: String, itemsMediaTypeMap: Map<Long, MediaType>): Long{
         val (metadata, prototype ) = if(itemEmbeds.size == 1) {
             val defaultThreshold = getDefaultThreshold(getAllClusters())
             val meta = MediaClusterMetadata(
@@ -199,7 +203,12 @@ class ClusterManager(
         )
         clusterEmbedStore.add(listOf(clusterEmbed))
         clusterMetadataRepository.insertMetadata(metadata)
-        clusterCrossRefRepository.upsertClusterCrossRefs(itemEmbeds.map { it.id }, clusterEmbed.id)
+
+        val crossRefs = itemEmbeds.mapNotNull {
+            val mediaType = itemsMediaTypeMap[it.id]?: return@mapNotNull null
+            ClusterCrossRef(mediaId = it.id, clusterId = clusterEmbed.id, mediaType = mediaType)
+        }
+        clusterCrossRefRepository.upsertClusterCrossRefs(crossRefs)
         return clusterEmbed.id
     }
     private fun getDefaultThresholdFromSample(items: List<StoredEmbedding>, n: Int): Float{

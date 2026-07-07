@@ -9,15 +9,14 @@ import com.fpf.smartscan.data.MediaTypeConverter
 import com.fpf.smartscan.media.MediaType
 
 @Entity(
+    primaryKeys = ["id", "type"],
     tableName = "media_metadata",
     indices = [
         Index(value = ["dateAdded"]),
-        Index(value = ["type"]),
         Index(value = ["type", "dateAdded"])
     ])
 @TypeConverters(MediaTypeConverter::class)
 data class MediaMetadata(
-    @PrimaryKey
     val id: Long,
     val type: MediaType,
     val dateAdded: Long,
