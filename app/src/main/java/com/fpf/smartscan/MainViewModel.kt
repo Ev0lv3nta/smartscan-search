@@ -94,7 +94,7 @@ class MainViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             val appSettings = loadSettings(sharedPrefs)
 
-            DataSyncHelper.migrateToQuantEmbedStoreIfNeeded(
+            DataSyncHelper.quantEmbedStoresIfNeeded(
                 mapOf(
                     File(application.filesDir, EmbeddingStoresFiles.IMAGE) to imageStore,
                     File(application.filesDir, EmbeddingStoresFiles.VIDEO) to videoStore,
@@ -109,8 +109,6 @@ class MainViewModel(
                 allowedVideoDirs = appSettings.searchableVideoDirectories.map{it.toUri()},
                 mediaMetadataRepository = MediaMetadataRepository(db.metadataDao())
             )
-
-            DataSyncHelper.transferOldDbIfNeeded(application, db)
 
             if(!isWorkScheduled(context = application, workName = IndexWorker.TAG)) scheduleIndexWorker()
 
