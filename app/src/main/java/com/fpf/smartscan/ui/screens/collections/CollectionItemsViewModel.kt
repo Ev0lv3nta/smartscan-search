@@ -213,7 +213,7 @@ class CollectionItemsViewModel(
 
         viewModelScope.launch (Dispatchers.IO){
             try {
-                val selectedItems = getSelectedItems().map{it.id}
+                val selectedItems = getSelectedItems()
                 tagManager.removeItems(currentCollection.name, selectedItems)
                 resetSelection()
                 val message = if(selectedItems.size == 1 ) "Removed ${selectedItems.size} item" else "Removed ${selectedItems.size} items"

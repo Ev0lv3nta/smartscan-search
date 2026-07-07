@@ -3,9 +3,6 @@ package com.fpf.smartscan.data.metadata
 
 import androidx.room.Entity
 import androidx.room.Index
-import androidx.room.PrimaryKey
-import androidx.room.TypeConverters
-import com.fpf.smartscan.data.MediaTypeConverter
 import com.fpf.smartscan.media.MediaType
 
 @Entity(
@@ -15,7 +12,6 @@ import com.fpf.smartscan.media.MediaType
         Index(value = ["dateAdded"]),
         Index(value = ["type", "dateAdded"])
     ])
-@TypeConverters(MediaTypeConverter::class)
 data class MediaMetadata(
     val id: Long,
     val type: MediaType,

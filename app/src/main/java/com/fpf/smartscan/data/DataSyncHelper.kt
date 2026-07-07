@@ -220,7 +220,7 @@ object DataSyncHelper {
         // Purge stale media - Embed store used as source of truth
         val mediaToPurge = existingIdsFromEmbedStore.filterNot {it in accessibleMediaIds}
         if(mediaToPurge.isNotEmpty()){
-            removeStaleMedia(mediaToPurge, store = store, mediaMetadataRepository)
+            removeStaleMedia(mediaToPurge, mediaType, store = store, mediaMetadataRepository)
             existingIdsFromEmbedStore.removeAll(mediaToPurge)
             existingIdsFromMetadata.removeAll(mediaToPurge)
             store.save()

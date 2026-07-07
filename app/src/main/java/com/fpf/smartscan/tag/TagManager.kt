@@ -63,9 +63,11 @@ class TagManager(
         tag?.let { tagRepository.updateTags(listOf((it).copy(name = newName))) }
     }
 
-    suspend fun removeItems(tagName: String, mediaIds: List<Long>) {
+    suspend fun removeItems(tagName: String, items: Set<MediaItem>) {
         val tag = tagRepository.getTagsByName(listOf(tagName)).firstOrNull() ?: return
-        tagCrossRefRepository.deleteMediaMatchTag(mediaIds, tag.id)
+        items.groupBy { it.type }.forEach { (type, items) ->
+            tagCrossRefRepository.deleteMediaMatchTag(items.map{it.id}, tag.id, type)
+        }
     }
 
     suspend fun mergeTags(primaryTagName: String, otherTags: List<String>){
@@ -94,7 +96,9 @@ class TagManager(
         tagCrossRefRepository.insertTagCrossRefs(updatedCrossRef)
 
         val currentTag = tagRepository.getTagsByName(listOf(currentTagName)).firstOrNull()?: return
-        tagCrossRefRepository.deleteMediaMatchTag(  items.map{it.id}, currentTag.id)
+        items.groupBy { it.type }.forEach { (type, items) ->
+            tagCrossRefRepository.deleteMediaMatchTag(  items.map{it.id}, currentTag.id, type)
+        }
     }
 
     suspend fun toCollections(tags: List<TagWithCount>): List<MediaCollection> {

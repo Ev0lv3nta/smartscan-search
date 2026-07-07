@@ -1,6 +1,5 @@
 package com.fpf.smartscan.data.metadata
 
-import com.fpf.smartscan.data.MediaIdType
 import com.fpf.smartscan.media.MediaType
 
 class MediaMetadataRepository(
@@ -16,7 +15,7 @@ class MediaMetadataRepository(
 
     suspend fun getUnclusteredItemIds(): Map<Long, MediaType> = dao.getUnclusteredItemIds().associate { it.id to it.type }
 
-    suspend fun getByIds(mediaIds: List<Long>): List<MediaMetadata> = dao.getByIds(mediaIds)
+    suspend fun getByIds(mediaIds: List<Long>, type: MediaType): List<MediaMetadata> = dao.getByIds(mediaIds, type)
     suspend fun getByType(type: MediaType): List<MediaMetadata> = dao.getByType(type)
 
     suspend fun getByTag(tagId: Long): List<MediaMetadata> = dao.getByTag(tagId)
@@ -58,7 +57,7 @@ class MediaMetadataRepository(
     suspend fun deleteByTag(tagId: Long) = dao.deleteByTag(tagId)
     suspend fun deleteByCluster(clusterId: Long) = dao.deleteByCluster(clusterId)
 
-    suspend fun deleteByMediaIds(ids: List<Long>) = dao.deleteByIds(ids)
+    suspend fun deleteByMediaIds(ids: List<Long>, type: MediaType) = dao.deleteByIds(ids, type)
 
     suspend fun clear() = dao.clear()
 }

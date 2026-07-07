@@ -3,8 +3,6 @@ package com.fpf.smartscan.data.clusters
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
-import androidx.room.TypeConverters
-import com.fpf.smartscan.data.MediaTypeConverter
 import com.fpf.smartscan.data.metadata.MediaMetadata
 import com.fpf.smartscan.media.MediaType
 
@@ -29,7 +27,6 @@ import com.fpf.smartscan.media.MediaType
         Index(value = ["clusterId"])
     ]
 )
-@TypeConverters(MediaTypeConverter::class)
 data class ClusterCrossRef(
     val mediaId: Long,
     val mediaType: MediaType,
