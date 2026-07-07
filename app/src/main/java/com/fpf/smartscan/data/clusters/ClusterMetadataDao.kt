@@ -19,18 +19,9 @@ interface ClusterMetadataDao {
 
     @Query("SELECT * FROM cluster_metadata WHERE clusterId IN (:ids)")
     suspend fun get(ids: List<Long>): List<MediaClusterMetadata>
-
-    @Query("SELECT clusterId FROM cluster_metadata WHERE label = :label")
-    suspend fun getIdFromLabel(label: String): Long?
-
-    @Query("SELECT label FROM cluster_metadata WHERE label IS NOT NULL")
-    fun getLabels(): Flow<List<String>>
-
-    @Transaction
     @Insert(onConflict = OnConflictStrategy.Companion.IGNORE)
     suspend fun insert(metadatas: List<MediaClusterMetadata>): List<Long>
 
-    @Transaction
     @Update
     suspend fun update(metadatas: List<MediaClusterMetadata>)
 
@@ -40,9 +31,6 @@ interface ClusterMetadataDao {
 
     @Query("SELECT COUNT(*) FROM cluster_metadata WHERE prototypeSize >= :minSize")
     suspend fun count(minSize: Int = 1): Int
-
-    @Query("SELECT COUNT(*) FROM cluster_metadata WHERE prototypeSize = 1")
-    suspend fun countSingletons(): Int
 
     @Query("DELETE FROM cluster_metadata")
     suspend fun clear()
