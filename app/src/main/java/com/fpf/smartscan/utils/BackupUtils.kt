@@ -2,6 +2,7 @@ package com.fpf.smartscan.utils
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import com.fpf.smartscan.constants.EmbeddingStoresFilesQuant
 import com.fpf.smartscan.data.MediaDatabase
 import java.io.File
@@ -9,6 +10,8 @@ import java.io.File
 object BackupUtils {
     const val BACKUP_FILENAME = "smartscan_backup.zip"
     private const val HASH_FILENAME = "hash.txt"
+
+    private const val TAG = "BackupUtils"
     
     suspend fun backup(context: Context, outputUri: Uri){
         val indexZipFile = File(context.cacheDir, BACKUP_FILENAME)
@@ -51,6 +54,19 @@ object BackupUtils {
 
     }
 
+    fun checkCachedDb(context: Context): File?{
+        val cachedDB = File(context.filesDir, MediaDatabase.DB_NAME)
+        return if(cachedDB.exists()) cachedDB else null
+    }
+
+    fun restoreDbFromCache(context: Context, cachedDbFile: File){
+        if(!cachedDbFile.exists()) return
+        val dbPath = context.getDatabasePath(MediaDatabase.DB_NAME)
+        Log.d(TAG, "Database cache found, restoring...")
+        cachedDbFile.copyTo(dbPath, overwrite = true)
+        cachedDbFile.delete()
+    }
+
     private suspend fun isValidBackupFile(extractedFiles: List<File>): Boolean{
         val hashFile = extractedFiles.find { it.name == HASH_FILENAME }?: return false
         val hashesFromFile: List<String> = hashFile.readLines()
@@ -60,4 +76,5 @@ object BackupUtils {
         val otherFileHashes = otherFiles.map{hashFile(it)}
         return hashesFromFile.toSet() == otherFileHashes.toSet()
     }
+
 }

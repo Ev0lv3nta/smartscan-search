@@ -5,7 +5,6 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import com.fpf.smartscan.constants.EmbeddingStoresFiles
-import com.fpf.smartscan.data.MediaDatabase.Companion.DB_NAME
 import com.fpf.smartscan.data.MediaDatabase.Companion.OLD_DB_IMAGE_NAME
 import com.fpf.smartscan.data.MediaDatabase.Companion.OLD_DB_VIDEO_NAME
 import com.fpf.smartscan.data.metadata.MediaMetadata
@@ -23,10 +22,8 @@ import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.media.MediaStoreHelper
 import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.media.removeStaleMedia
-import com.fpf.smartscansdk.core.embeddings.Embedding
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
-import com.fpf.smartscansdk.core.embeddings.toQInt8
 import com.fpf.smartscansdk.core.embeddings.toQInt8Embed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -41,19 +38,6 @@ object DataSyncHelper {
             if (!it.key.exists()) return@forEach
             quantizeEmbedStore(it.key, it.value)
         }
-    }
-
-    fun checkCachedDb(application: Application): File?{
-        val cachedDB = File(application.filesDir, DB_NAME)
-        return if(cachedDB.exists()) cachedDB else null
-    }
-
-    fun restoreDbFromCache(application: Application, cachedDbFile: File){
-        if(!cachedDbFile.exists()) return
-        val dbPath = application.getDatabasePath(DB_NAME)
-        Log.d(TAG, "Database cache found, restoring...")
-        cachedDbFile.copyTo(dbPath, overwrite = true)
-        cachedDbFile.delete()
     }
 
     suspend fun sync(
