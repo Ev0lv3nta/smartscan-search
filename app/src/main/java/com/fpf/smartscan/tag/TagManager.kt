@@ -32,7 +32,7 @@ class TagManager(
         val safeEnd = substringEnd.coerceIn(0, text.length)
         val prefix = text.substring(0, safeEnd)
         // Regex: find #tag at the end of prefix
-        var pattern =  """^#([a-zA-Z0-9_]*)$"""
+        var pattern =  """^#([a-zA-Z0-9]*)$"""
         pattern = if(!startWithHashtag )  pattern.replace("#", "") else pattern
         val match = Regex(pattern).find(prefix)
         return if (match != null) {
