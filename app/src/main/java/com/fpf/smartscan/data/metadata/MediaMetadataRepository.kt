@@ -17,6 +17,7 @@ class MediaMetadataRepository(
 
     suspend fun getByIds(mediaIds: List<Long>, type: MediaType): List<MediaMetadata> = dao.getByIds(mediaIds, type)
     suspend fun getByType(type: MediaType): List<MediaMetadata> = dao.getByType(type)
+    suspend fun getIdsByType(type: MediaType): List<Long> = dao.getIdsByType(type)
 
     suspend fun getByTag(tagId: Long): List<MediaMetadata> = dao.getByTag(tagId)
 

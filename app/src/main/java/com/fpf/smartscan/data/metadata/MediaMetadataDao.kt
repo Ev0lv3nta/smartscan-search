@@ -32,6 +32,9 @@ interface MediaMetadataDao {
     @Query("SELECT * FROM media_metadata WHERE type = :type")
     suspend fun getByType(type: MediaType): List<MediaMetadata>
 
+    @Query("SELECT id FROM media_metadata WHERE type = :type")
+    suspend fun getIdsByType(type: MediaType): List<Long>
+
 
     @Query("""
         SELECT id, type

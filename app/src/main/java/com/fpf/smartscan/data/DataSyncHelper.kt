@@ -62,7 +62,7 @@ object DataSyncHelper {
         mediaType: MediaType
     ) {
         try {
-            val existingIdsFromMetadata = mediaMetadataRepository.getByType(mediaType).map { it.id }.toMutableSet()
+            val existingIdsFromMetadata = mediaMetadataRepository.getIdsByType(mediaType)
             if (existingIdsFromMetadata.isEmpty()) return
 
             val accessibleMediaIds = when (mediaType) {
@@ -74,10 +74,7 @@ object DataSyncHelper {
             if (mediaToPurge.isNotEmpty()) {
                 removeStaleMedia(mediaToPurge, mediaType, store = store, mediaMetadataRepository)
                 store.save()
-                Log.d(
-                    TAG,
-                    "${mediaType.name}: Removed ${mediaToPurge.size} stale items and saved index file"
-                )
+                Log.d(TAG, "${mediaType.name}: Removed ${mediaToPurge.size} stale items and saved index file")
             }
         }catch (e: Exception){
             Log.e(TAG, "Error syncing with MediaStore\n Type: ${mediaType.name}\nDetails: $e")
