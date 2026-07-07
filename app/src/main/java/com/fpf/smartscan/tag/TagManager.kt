@@ -23,7 +23,7 @@ class TagManager(
         if(id == null){
             id = tagRepository.insertTags(listOf(Tag(name = tagName.trim()))).first()
         }
-        val tagEntries = items.map { TagCrossRef(mediaId = it.id, tagId = id) }
+        val tagEntries = items.map { TagCrossRef(mediaId = it.id, tagId = id, mediaType = it.type) }
         tagCrossRefRepository.insertTagCrossRefs(tagEntries)
     }
 
@@ -63,9 +63,11 @@ class TagManager(
         tag?.let { tagRepository.updateTags(listOf((it).copy(name = newName))) }
     }
 
-    suspend fun removeItems(tagName: String, mediaIds: List<Long>) {
+    suspend fun removeItems(tagName: String, items: Set<MediaItem>) {
         val tag = tagRepository.getTagsByName(listOf(tagName)).firstOrNull() ?: return
-        tagCrossRefRepository.deleteMediaMatchTag(mediaIds, tag.id)
+        items.groupBy { it.type }.forEach { (type, items) ->
+            tagCrossRefRepository.deleteMediaMatchTag(items.map{it.id}, tag.id, type)
+        }
     }
 
     suspend fun mergeTags(primaryTagName: String, otherTags: List<String>){
@@ -73,7 +75,7 @@ class TagManager(
         val tagsToMerge = tagRepository.getTagsByName(otherTags)
         val mediaToUpdate = tagsToMerge.flatMap { mediaMetadataRepository.getByTag(it.id) }
         if(primaryTag != null && mediaToUpdate.isNotEmpty()){
-            val updated = mediaToUpdate.map{ TagCrossRef(mediaId = it.id, tagId = primaryTag.id) }
+            val updated = mediaToUpdate.map{ TagCrossRef(mediaId = it.id, tagId = primaryTag.id, mediaType = it.type) }
             tagCrossRefRepository.insertTagCrossRefs(updated)
             tagRepository.deleteTags(tagsToMerge)
         }
@@ -90,11 +92,13 @@ class TagManager(
     }
 
     private suspend fun moveItems(items: Set<MediaItem>, currentTagName: String, destinationTagId: Long){
-        val updatedCrossRef = items.map{ TagCrossRef(mediaId = it.id, tagId = destinationTagId) }
+        val updatedCrossRef = items.map{ TagCrossRef(mediaId = it.id, tagId = destinationTagId, mediaType = it.type) }
         tagCrossRefRepository.insertTagCrossRefs(updatedCrossRef)
 
         val currentTag = tagRepository.getTagsByName(listOf(currentTagName)).firstOrNull()?: return
-        tagCrossRefRepository.deleteMediaMatchTag(  items.map{it.id}, currentTag.id)
+        items.groupBy { it.type }.forEach { (type, items) ->
+            tagCrossRefRepository.deleteMediaMatchTag(  items.map{it.id}, currentTag.id, type)
+        }
     }
 
     suspend fun toCollections(tags: List<TagWithCount>): List<MediaCollection> {

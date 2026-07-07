@@ -315,7 +315,7 @@ class SearchViewModel(
 
     private fun purgeStaleItems(store: FileEmbeddingStore, idsToPurge: List<Long>){
         viewModelScope.launch(Dispatchers.IO) {
-            removeStaleMedia(idsToPurge, store, mediaMetadataRepository)
+            removeStaleMedia(idsToPurge, _state.value.mediaType, store, mediaMetadataRepository)
         }
     }
 
@@ -413,7 +413,7 @@ class SearchViewModel(
 
     private suspend fun getAllResults(): MutableSet<MediaItem> {
         return withContext(Dispatchers.IO) {
-            val mediaMetadataList = mediaMetadataRepository.getByIds(cachedIds)
+            val mediaMetadataList = mediaMetadataRepository.getByIds(cachedIds, _state.value.mediaType)
             mediaMetadataList.map {
                 MediaItem(
                     id = it.id,

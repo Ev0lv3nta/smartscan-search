@@ -13,11 +13,9 @@ class MediaMetadataRepository(
 
     suspend fun update(item: MediaMetadata) = dao.update(item)
 
-    suspend fun getAllIds(): List<Long> = dao.getAllIds()
+    suspend fun getUnclusteredItemIds(): Map<Long, MediaType> = dao.getUnclusteredItemIds().associate { it.id to it.type }
 
-    suspend fun getUnclusteredItemIds(): List<Long> = dao.getUnclusteredItemIds()
-
-    suspend fun getByIds(mediaIds: List<Long>): List<MediaMetadata> = dao.getByIds(mediaIds)
+    suspend fun getByIds(mediaIds: List<Long>, type: MediaType): List<MediaMetadata> = dao.getByIds(mediaIds, type)
     suspend fun getByType(type: MediaType): List<MediaMetadata> = dao.getByType(type)
 
     suspend fun getByTag(tagId: Long): List<MediaMetadata> = dao.getByTag(tagId)
@@ -59,7 +57,7 @@ class MediaMetadataRepository(
     suspend fun deleteByTag(tagId: Long) = dao.deleteByTag(tagId)
     suspend fun deleteByCluster(clusterId: Long) = dao.deleteByCluster(clusterId)
 
-    suspend fun deleteByMediaIds(ids: List<Long>) = dao.deleteByIds(ids)
+    suspend fun deleteByMediaIds(ids: List<Long>, type: MediaType) = dao.deleteByIds(ids, type)
 
     suspend fun clear() = dao.clear()
 }

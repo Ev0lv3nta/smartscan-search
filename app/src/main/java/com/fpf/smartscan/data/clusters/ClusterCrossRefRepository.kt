@@ -16,19 +16,6 @@ class ClusterCrossRefRepository(private val dao: ClusterCrossRefDao) {
         refreshCache = true
     }
 
-    suspend fun upsertClusterCrossRefs(itemIds: List<Long>, clusterId: Long) {
-        val crossRefs = itemIds.map { ClusterCrossRef(clusterId = clusterId, mediaId = it) }
-        upsertClusterCrossRefs(crossRefs)
-    }
-
-    suspend fun deleteByClusterIds(ids: List<Long>) {
-        dao.deleteByClusterIds(ids)
-        refreshCache = true
-    }
-    suspend fun deleteByMediaIds(ids: List<Long>) {
-        dao.deleteByMediaIds(ids)
-        refreshCache = true
-    }
     suspend fun clear() {
         refreshCache = false
         clusterToMediaIdsMap.clear()
@@ -37,6 +24,9 @@ class ClusterCrossRefRepository(private val dao: ClusterCrossRefDao) {
     suspend fun count() = dao.count()
     suspend fun count(clusterId: Long) = dao.countByClusterId(clusterId)
 
+    //NOTE: may require changing foreign key is now (id, type) though this may not be necessary
+    // because its only used in search and search around handles media types separate meaninng any collision between
+    // MediaStre video ids and image ids arent possible.
     suspend fun getClusterToMediaIdsMap(): Map<Long, MutableSet<Long>> {
         if(refreshCache){
             clusterToMediaIdsMap.clear()

@@ -19,10 +19,10 @@ suspend fun onMediaLoadingError( error: AsyncImagePainter.State.Error, imageEmbe
             val id = ContentUris.parseId(uri as Uri)
             val idsToRemove = listOf(id)
             if(uri.toString().startsWith(MediaStore.Images.Media.EXTERNAL_CONTENT_URI.toString())){
-               removeStaleMedia(idsToRemove, imageEmbedStore, mediaMetadataRepository)
+               removeStaleMedia(idsToRemove, MediaType.IMAGE, imageEmbedStore, mediaMetadataRepository)
                 Log.e("MediaError", "Inaccessible Image URI deleted: $uri ", throwable)
             }else if(uri.toString().startsWith(MediaStore.Video.Media.EXTERNAL_CONTENT_URI.toString())){
-                removeStaleMedia(idsToRemove, videoEmbedStore, mediaMetadataRepository)
+                removeStaleMedia(idsToRemove, MediaType.VIDEO, videoEmbedStore, mediaMetadataRepository)
                 Log.e(TAG, "Inaccessible Video URI deleted: $uri ", throwable)
             }
         }
@@ -33,9 +33,9 @@ suspend fun onMediaLoadingError( error: AsyncImagePainter.State.Error, imageEmbe
     }
 }
 
-suspend fun removeStaleMedia(idsToPurge: List<Long>, store: FileEmbeddingStore, mediaMetadataRepository:MediaMetadataRepository){
+suspend fun removeStaleMedia(idsToPurge: List<Long>, type: MediaType, store: FileEmbeddingStore, mediaMetadataRepository:MediaMetadataRepository){
     store.remove(idsToPurge)
-    mediaMetadataRepository.deleteByMediaIds(idsToPurge)
-    mediaMetadataRepository.deleteByMediaIds(idsToPurge)
+    mediaMetadataRepository.deleteByMediaIds(idsToPurge, type)
+    mediaMetadataRepository.deleteByMediaIds(idsToPurge, type)
 }
 
