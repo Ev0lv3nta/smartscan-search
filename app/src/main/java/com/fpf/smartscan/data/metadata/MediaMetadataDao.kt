@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.fpf.smartscan.data.MediaIdType
 import com.fpf.smartscan.media.MediaType
@@ -354,6 +355,7 @@ interface MediaMetadataDao {
     suspend fun deleteByCluster(clusterId: Long)
 
 
+    @Transaction
     @Query("""
         DELETE FROM media_metadata
         WHERE id IN (:mediaIds)
