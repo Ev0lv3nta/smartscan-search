@@ -24,6 +24,7 @@ import com.fpf.smartscan.index.ImageIndexListener
 import com.fpf.smartscan.index.VideoIndexListener
 import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscan.index.indexMedia
+import com.fpf.smartscan.utils.showNotification
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
@@ -140,11 +141,22 @@ class MediaIndexForegroundService : Service(), KoinComponent {
                         }
                     }
                 }
-                clusterManager.cluster()
+
+                try {
+                    clusterManager.cluster()
+                }catch (e: Exception){
+                    Log.e(TAG, "Clustering failed:", e)
+                    val title = application.getString(R.string.notif_title_index_error_service, "Media")
+                    val content = application.getString(R.string.notif_content_cluster_error_service)
+                    showNotification(application, title, content, NOTIFICATION_ID + 1)
+                }
             } catch (e: CancellationException) {
                 // cancelled
             } catch (e: Exception) {
                 Log.e(TAG, "Indexing failed:", e)
+                val title = application.getString(R.string.notif_title_index_error_service, "Media")
+                val content = application.getString(R.string.notif_content_index_error_service)
+                showNotification(application, title, content, NOTIFICATION_ID + 1)
             } finally {
                 imageEmbedder.closeSession()
                 stopForeground(STOP_FOREGROUND_REMOVE)

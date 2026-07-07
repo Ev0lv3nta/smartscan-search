@@ -42,6 +42,7 @@
     <string name="notif_content_media_index_service">Scan in progress, this can take a few minutes.</string>
     <string name="notif_title_index_error_service">%1$s scan error</string>
     <string name="notif_content_index_error_service">An error occurred during scan. Try manually re-scanning.</string>
+    <string name="notif_content_cluster_error_service">A clustering error occurred during scan. Try manually re-scanning.</string>
     <string name="notif_title_index_complete">Scan complete</string>
 
     <!--Alerts-->
