@@ -31,6 +31,7 @@ import com.fpf.smartscan.ui.components.search.AutoCompleter
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(FlowPreview::class)
 @Composable
@@ -46,11 +47,12 @@ fun TagAdder(
     var isFocused by remember { mutableStateOf(false) }
     var autoCompleteTagResults by remember { mutableStateOf<List<String>>(emptyList()) }
     val context = LocalContext.current
+    val allowedRegexPattern =  """^([a-zA-Z0-9]*)$"""
+
 
     LaunchedEffect(Unit) {
         snapshotFlow { newTag.text }
-            .debounce(50)
-//            .filter { it.isNotBlank() }
+            .debounce(50.milliseconds)
             .collectLatest { value ->
                 autoCompleteTagResults = onCheckAutoCompletion(value, value.length, false)
             }
@@ -64,10 +66,11 @@ fun TagAdder(
                 TextField(
                     value = newTag,
                     onValueChange = {
-                        if (!it.text.contains(" ")) {
+                        val regex = Regex(allowedRegexPattern)
+                        if (regex.matches(it.text)) {
                             newTag = it
                         }else{
-                            Toast.makeText(context, "Spaces are not allowed", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Character not allowed", Toast.LENGTH_SHORT).show()
                         }
                                     },
                     placeholder = { Text( "Enter new tag", style = MaterialTheme.typography.bodyLarge) },
