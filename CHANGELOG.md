@@ -1,3 +1,16 @@
+## v1.3.4 - 08/07/2026
+
+### Added
+* Add support for quantized embeddings, reducing memory usage by 4x
+
+### Changed
+* Updated `MediaMetadata` table to use composite keys (id, type) to prevent silent collision between image and video MediaStore ids, which could have resulted in some videos not be included in scans.
+* Do not reset selection after tagging to avoid having to reselect if adding multiple tags
+* Made search results more responsive to strictness
+* Remove support for backups that used old data - users must make new backup if needed (breaking)
+
+___
+
 ## v1.3.3 - 15/06/2026
 
 ### Added

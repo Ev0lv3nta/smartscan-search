@@ -19,6 +19,7 @@ import com.fpf.smartscan.media.MediaType
 import com.fpf.smartscan.search.SearchQuery
 import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscan.ui.theme.ThemeManager
+import com.fpf.smartscan.utils.BackupUtils
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -88,10 +89,10 @@ class MainActivity : ComponentActivity() {
     }
 
     fun restartApp() {
-        val cachedDb = DataSyncHelper.checkCachedDb(application)
+        val cachedDb = BackupUtils.checkCachedDb(application)
         val isRestoreRequired = cachedDb != null
         if (isRestoreRequired) {
-            DataSyncHelper.restoreDbFromCache(application, cachedDb)
+            BackupUtils.restoreDbFromCache(application, cachedDb)
         }
 
         App.resetKoin(application)

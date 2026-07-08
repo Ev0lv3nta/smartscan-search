@@ -24,14 +24,15 @@ import com.fpf.smartscan.index.ImageIndexListener
 import com.fpf.smartscan.index.VideoIndexListener
 import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscan.index.indexMedia
+import com.fpf.smartscan.utils.showNotification
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer
 import com.fpf.smartscansdk.ml.models.ModelAssetSource
-import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
-import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_X
-import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_Y
+import com.fpf.smartscansdk.ml.embeddings.clip.ClipImageEmbedder
+import com.fpf.smartscansdk.ml.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_X
+import com.fpf.smartscansdk.ml.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_Y
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -119,24 +120,43 @@ class MediaIndexForegroundService : Service(), KoinComponent {
                 mediaTypes.forEach { mediaType ->
                     when(mediaType){
                         MediaType.IMAGE -> {
-                            val imageIndexer = ImageIndexer(imageEmbedder, context=application, listener = ImageIndexListener, store = imageStore)
+                            val imageIndexer = ImageIndexer(imageEmbedder,
+                                context=application,
+                                listener = ImageIndexListener,
+                                store = imageStore,
+                                quantize = true
+                            )
                             indexMedia(application, MediaType.IMAGE, imageStore, imageIndexer, metadataRepo,appSettings.searchableImageDirectories.map{it.toUri()})
                         }
                         MediaType.VIDEO -> {
-                            val videoIndexer = VideoIndexer(imageEmbedder, context=application, listener = VideoIndexListener, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
+                            val videoIndexer = VideoIndexer(imageEmbedder,
+                                context=application,
+                                listener = VideoIndexListener,
+                                store = videoStore,
+                                quantize = true,
+                                width = IMAGE_SIZE_X,
+                                height = IMAGE_SIZE_Y
+                            )
                             indexMedia(application, MediaType.VIDEO, videoStore, videoIndexer, metadataRepo,appSettings.searchableVideoDirectories.map{it.toUri()})
                         }
                     }
                 }
-                // Always cluster all existing media
-                val embedsToCluster = mutableListOf<StoredEmbedding>()
-                embedsToCluster.addAll(imageStore.get())
-                embedsToCluster.addAll(videoStore.get())
-                clusterManager.cluster(embedsToCluster)
+
+                try {
+                    clusterManager.cluster()
+                }catch (e: Exception){
+                    Log.e(TAG, "Clustering failed:", e)
+                    val title = application.getString(R.string.notif_title_index_error_service, "Media")
+                    val content = application.getString(R.string.notif_content_cluster_error_service)
+                    showNotification(application, title, content, NOTIFICATION_ID + 1)
+                }
             } catch (e: CancellationException) {
                 // cancelled
             } catch (e: Exception) {
                 Log.e(TAG, "Indexing failed:", e)
+                val title = application.getString(R.string.notif_title_index_error_service, "Media")
+                val content = application.getString(R.string.notif_content_index_error_service)
+                showNotification(application, title, content, NOTIFICATION_ID + 1)
             } finally {
                 imageEmbedder.closeSession()
                 stopForeground(STOP_FOREGROUND_REMOVE)

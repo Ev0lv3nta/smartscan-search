@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import com.fpf.smartscan.media.MediaType
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -18,12 +19,8 @@ interface TagCrossRefDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(tags: List<TagCrossRef>)
 
-    @Query("DELETE FROM tag_crossref WHERE mediaId IN (:mediaIds)")
-    suspend fun deleteByMediaIds(mediaIds: List<Long>)
-
-    @Query("DELETE FROM tag_crossref WHERE mediaId IN (:mediaIds) AND tagId = :tagId")
-    suspend fun deleteMediaMatchingTag(mediaIds: List<Long>, tagId: Long)
-
+    @Query(""" DELETE FROM tag_crossref WHERE mediaId IN (:mediaIds) AND mediaType = :mediaType AND tagId = :tagId """)
+    suspend fun deleteMediaMatchingTag(mediaIds: List<Long>, mediaType: MediaType, tagId: Long)
     @Query("DELETE FROM tag_crossref WHERE tagId IN (:tagIds)")
     suspend fun deleteByTags(tagIds: List<Long>)
 

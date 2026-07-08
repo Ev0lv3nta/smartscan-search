@@ -23,13 +23,12 @@ import com.fpf.smartscan.index.indexMedia
 import com.fpf.smartscan.services.MediaIndexForegroundService
 import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscan.utils.isServiceRunning
-import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer
 import com.fpf.smartscansdk.ml.models.ModelAssetSource
-import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
-import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_X
-import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_Y
+import com.fpf.smartscansdk.ml.embeddings.clip.ClipImageEmbedder
+import com.fpf.smartscansdk.ml.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_X
+import com.fpf.smartscansdk.ml.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_Y
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.getValue
@@ -93,25 +92,31 @@ class IndexWorker(context: Context, workerParams: WorkerParameters) :
                 clusterMetadataRepository = clusterMetadataRepository,
                 mediaMetadataRepository = mediaMetadataRepository,
             )
-            val embedsToCluster = mutableListOf<StoredEmbedding>()
-
 
             // Prevents doing full indexes by checking if embedding stores already exist. That responsibility should be left to the foreground service
             // No listener used (may change to avoid silent errors)
             if(imageStore.exists){
-                val imageIndexer = ImageIndexer(imageEmbedder, context=applicationContext, listener = null, store = imageStore)
+                val imageIndexer = ImageIndexer(imageEmbedder,
+                    context=applicationContext,
+                    listener = null,
+                    store = imageStore,
+                    quantize = true
+                )
                 indexMedia(applicationContext, MediaType.IMAGE, imageStore, imageIndexer, mediaMetadataRepository,appSettings.searchableImageDirectories.map{it.toUri()})
-                embedsToCluster.addAll(imageStore.get())
             }
 
             if(videoStore.exists){
-                val videoIndexer = VideoIndexer(imageEmbedder, context=applicationContext, listener = null, store = videoStore, width = IMAGE_SIZE_X, height = IMAGE_SIZE_Y)
+                val videoIndexer = VideoIndexer(imageEmbedder,
+                    context=applicationContext,
+                    listener = null,
+                    store = videoStore,
+                    quantize = true,
+                    width = IMAGE_SIZE_X,
+                    height = IMAGE_SIZE_Y
+                )
                 indexMedia(applicationContext, MediaType.VIDEO, videoStore,videoIndexer, mediaMetadataRepository,appSettings.searchableVideoDirectories.map{it.toUri()})
-                embedsToCluster.addAll(videoStore.get())
             }
-            clusterManager.cluster(embedsToCluster)
-
-
+            clusterManager.cluster()
             return@withContext Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "Background indexing errors: ${e.message}", e)

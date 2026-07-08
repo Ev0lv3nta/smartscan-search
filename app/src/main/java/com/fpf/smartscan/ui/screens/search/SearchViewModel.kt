@@ -44,11 +44,12 @@ import com.fpf.smartscan.ui.state.common.SelectionState
 import com.fpf.smartscan.ui.utils.SelectionUtils
 import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
 import com.fpf.smartscansdk.core.embeddings.QueryResult
+import com.fpf.smartscansdk.core.embeddings.toQInt8Embed
 import com.fpf.smartscansdk.core.media.getBitmapFromUri
 import com.fpf.smartscansdk.ml.models.ModelAssetSource
-import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder
-import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_X
-import com.fpf.smartscansdk.ml.providers.embeddings.clip.ClipTextEmbedder
+import com.fpf.smartscansdk.ml.embeddings.clip.ClipImageEmbedder
+import com.fpf.smartscansdk.ml.embeddings.clip.ClipImageEmbedder.Companion.IMAGE_SIZE_X
+import com.fpf.smartscansdk.ml.embeddings.clip.ClipTextEmbedder
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -210,9 +211,10 @@ class SearchViewModel(
         if(!textEmbedder.isInitialized())textEmbedder.initialize()
 
         val embedding = textEmbedder.embed(actualQuery)
+        val queryEmbed = embedding.toQInt8Embed()
         val filterIds = idsMatchingTag.toSet()
-        val queryResult = store.query(embedding, Int.MAX_VALUE, TEXT_QUERY_THRESHOLD, filterIds,  startDate = startDate, endDate = endDate, includeSims = true)
-        val clusterResult = clusterStore.query(embedding, Int.MAX_VALUE, TEXT_QUERY_THRESHOLD, includeSims = true)
+        val queryResult = store.query(queryEmbed, Int.MAX_VALUE, TEXT_QUERY_THRESHOLD, filterIds,  startDate = startDate, endDate = endDate, includeSims = true)
+        val clusterResult = clusterStore.query(queryEmbed, Int.MAX_VALUE, TEXT_QUERY_THRESHOLD, includeSims = true)
         val itemToSimMap = queryResultToMap(queryResult)
         val clusterToSimMap = queryResultToMap(clusterResult)
         val reranked = rerankItems(itemToSimMap, clusterToSimMap, clusterCrossRefRepository.getClusterToMediaIdsMap(), strictness)
@@ -231,8 +233,9 @@ class SearchViewModel(
 
         val bitmap = getBitmapFromUri(getApplication(), queryImage, IMAGE_SIZE_X)
         val embedding = imageEmbedder.embed(bitmap)
-        val queryResult = store.query(embedding, Int.MAX_VALUE, IMAGE_QUERY_THRESHOLD, startDate = startDate, endDate = endDate, includeSims = true)
-        val clusterResult = clusterStore.query(embedding, Int.MAX_VALUE, IMAGE_QUERY_THRESHOLD, includeSims = true)
+        val queryEmbed= embedding.toQInt8Embed()
+        val queryResult = store.query(queryEmbed, Int.MAX_VALUE, IMAGE_QUERY_THRESHOLD, startDate = startDate, endDate = endDate, includeSims = true)
+        val clusterResult = clusterStore.query(queryEmbed, Int.MAX_VALUE, IMAGE_QUERY_THRESHOLD, includeSims = true)
         val itemToSimMap = queryResultToMap(queryResult)
         val clusterToSimMap = queryResultToMap(clusterResult)
         val reranked = rerankItems(itemToSimMap, clusterToSimMap, clusterCrossRefRepository.getClusterToMediaIdsMap(), strictness)
@@ -312,7 +315,7 @@ class SearchViewModel(
 
     private fun purgeStaleItems(store: FileEmbeddingStore, idsToPurge: List<Long>){
         viewModelScope.launch(Dispatchers.IO) {
-            removeStaleMedia(idsToPurge, store, mediaMetadataRepository)
+            removeStaleMedia(idsToPurge, _state.value.mediaType, store, mediaMetadataRepository)
         }
     }
 
@@ -369,7 +372,6 @@ class SearchViewModel(
             try {
                 val selected = getSelectedResults()
                 tagManager.tagItems(tag, selected)
-                resetSelection()
                 val message = if(selected.size == 1 ) "Tagged ${selected.size} item" else "Tagged ${selected.size} items"
                 _event.emit(SearchEvent(SearchEventType.TAG, success = true, message = message))
             }catch (e: Exception){
@@ -411,7 +413,7 @@ class SearchViewModel(
 
     private suspend fun getAllResults(): MutableSet<MediaItem> {
         return withContext(Dispatchers.IO) {
-            val mediaMetadataList = mediaMetadataRepository.getByIds(cachedIds)
+            val mediaMetadataList = mediaMetadataRepository.getByIds(cachedIds, _state.value.mediaType)
             mediaMetadataList.map {
                 MediaItem(
                     id = it.id,

@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import com.fpf.smartscan.data.clusters.ClusterCrossRef
 import com.fpf.smartscan.data.clusters.ClusterCrossRefDao
 import com.fpf.smartscan.data.clusters.MediaClusterMetadata
@@ -12,6 +13,7 @@ import com.fpf.smartscan.data.metadata.MediaMetadata
 import com.fpf.smartscan.data.metadata.MediaMetadataDao
 import com.fpf.smartscan.data.migrations.MIGRATION_1_2
 import com.fpf.smartscan.data.migrations.MIGRATION_2_3
+import com.fpf.smartscan.data.migrations.MIGRATION_3_4
 import com.fpf.smartscan.data.tags.Tag
 import com.fpf.smartscan.data.tags.TagCrossRef
 import com.fpf.smartscan.data.tags.TagCrossRefDao
@@ -26,9 +28,10 @@ import com.fpf.smartscan.data.tags.TagDao
         Tag::class,
         TagCrossRef::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
+@TypeConverters(MediaTypeConverter::class)
 abstract class MediaDatabase : RoomDatabase() {
 
     abstract fun clusterCrossRefDao(): ClusterCrossRefDao
@@ -63,7 +66,7 @@ abstract class MediaDatabase : RoomDatabase() {
                     MediaDatabase::class.java,
                     DB_NAME
                 ).setJournalMode(JournalMode.TRUNCATE)
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build()
 
                 INSTANCE = instance

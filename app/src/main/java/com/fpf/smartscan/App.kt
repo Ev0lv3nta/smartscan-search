@@ -3,7 +3,6 @@ package com.fpf.smartscan
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.util.Log
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
@@ -11,14 +10,12 @@ import coil3.disk.directory
 import coil3.memory.MemoryCache
 import coil3.request.crossfade
 import coil3.video.VideoFrameDecoder
-import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.di.dbModule
 import com.fpf.smartscan.di.embedStoreModule
 import com.fpf.smartscan.di.viewModelModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
-import java.io.File
 
 class App : Application() {
 
@@ -57,26 +54,12 @@ class App : Application() {
             channelName = getString(R.string.worker_channel_name),
             description = getString(R.string.worker_channel_description)
         )
-
-        cleanUpIfRequired()
     }
     private fun createNotificationChannel(channelId: String, channelName: String, description: String) {
         val notificationManager = getSystemService(NotificationManager::class.java)
         val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_HIGH
         ).apply { this.description = description }
         notificationManager.createNotificationChannel(channel)
-    }
-
-    private fun cleanUpIfRequired(){
-        val tagFile = File(applicationContext.filesDir, EmbeddingStoresFiles.TAGS)
-        val imageClusterFile = File(applicationContext.filesDir, EmbeddingStoresFiles.IMAGE_CLUSTER)
-        val videoClusterFile = File(applicationContext.filesDir, EmbeddingStoresFiles.VIDEO_CLUSTER)
-        val filesToRemove = listOf(tagFile, imageClusterFile, videoClusterFile)
-
-        for (file in filesToRemove.filter { it.exists() }) {
-            Log.d(TAG, "Removed old file: ${file.name}")
-            file.delete()
-        }
     }
 
 }

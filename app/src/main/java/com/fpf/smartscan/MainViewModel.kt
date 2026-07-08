@@ -2,12 +2,12 @@ package com.fpf.smartscan
 
 import android.app.Application
 import android.content.Context
-import androidx.collection.MutableIntSet
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
+import com.fpf.smartscan.constants.EmbeddingStoresFiles
 import com.fpf.smartscan.constants.PrefsKeys
 import com.fpf.smartscan.constants.PrefsNames
 import com.fpf.smartscan.data.DataSyncHelper
@@ -31,7 +31,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 class MainViewModel(
@@ -56,10 +56,10 @@ class MainViewModel(
     val videoIndexProgress = VideoIndexListener.progress
     val videoIndexStatus = VideoIndexListener.indexingStatus
 
-    private val _hasIndexedImages = MutableStateFlow(imageStore.exists)
-    private val _hasIndexedVideos = MutableStateFlow(videoStore.exists)
-    val hasIndexedImages: StateFlow<Boolean> = _hasIndexedImages
-    val hasIndexedVideos: StateFlow<Boolean> = _hasIndexedVideos
+    private val _hasIndexedImages = MutableStateFlow<Boolean?>(null)
+    private val _hasIndexedVideos = MutableStateFlow<Boolean?>(null)
+    val hasIndexedImages: StateFlow<Boolean?> = _hasIndexedImages
+    val hasIndexedVideos: StateFlow<Boolean?> = _hasIndexedVideos
     private val _runningMediaTypes = MutableStateFlow<Set<MediaType>>(setOf())
     val runningMediaTypes: StateFlow<Set<MediaType>> = _runningMediaTypes
 
@@ -83,17 +83,25 @@ class MainViewModel(
 
     fun getUpdates(): List<String> {
         return listOf(
-            application.getString(R.string.update_filter_media_types_collections),
-            application.getString(R.string.update_fixed_allowed_folders_bug),
-            application.getString(R.string.update_similarity_threshold_to_strictness),
-            application.getString(R.string.update_sync_startup_only),
-        )
+            application.getString(R.string.update_quantized_embeddings),
+            application.getString(R.string.update_tagging),
+            application.getString(R.string.update_strictness),
+            application.getString(R.string.update_fixed_mediastore_collision_bug),
+            application.getString(R.string.update_backups),
+            )
     }
 
     fun prepareApp(onAppReady: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             val appSettings = loadSettings(sharedPrefs)
 
+            DataSyncHelper.quantEmbedStoresIfNeeded(
+                mapOf(
+                    File(application.filesDir, EmbeddingStoresFiles.IMAGE) to imageStore,
+                    File(application.filesDir, EmbeddingStoresFiles.VIDEO) to videoStore,
+                    File(application.filesDir, EmbeddingStoresFiles.MEDIA_CLUSTER) to clusterStore
+                )
+            )
             // Always run on app start to handle media that may have been deleted from the device
             DataSyncHelper.sync(
                 application, imageStore = imageStore,
@@ -103,24 +111,10 @@ class MainViewModel(
                 mediaMetadataRepository = MediaMetadataRepository(db.metadataDao())
             )
 
-            val oldImageCachedDb = DataSyncHelper.checkOldCachedImageDb(application)
-            val oldVideoCachedDb = DataSyncHelper.checkOldCachedVideoDb(application)
-            val transferNeeded = oldImageCachedDb != null && oldVideoCachedDb != null
-            if (transferNeeded) {
-                DataSyncHelper.transferOldDbToNew(application, oldImageCachedDb, oldVideoCachedDb, db)
-            }
-
             if(!isWorkScheduled(context = application, workName = IndexWorker.TAG)) scheduleIndexWorker()
 
-            // Create clusters if required
-            val mediaTypes = mutableListOf<MediaType>()
-            if(!clusterStore.exists || clusterCrossRefRepository.count() == 0) {
-                if (imageStore.exists) mediaTypes.add(MediaType.IMAGE)
-                if (videoStore.exists) mediaTypes.add(MediaType.VIDEO)
-            }
-            if(mediaTypes.isNotEmpty()){
-                refreshIndex(getApplication(), mediaTypes)
-            }
+            _hasIndexedImages.update { imageStore.exists }
+            _hasIndexedVideos.update { videoStore.exists }
             onAppReady()
         }
     }

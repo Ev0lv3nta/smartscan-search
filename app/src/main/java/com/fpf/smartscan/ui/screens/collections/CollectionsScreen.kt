@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -69,8 +70,8 @@ fun CollectionsScreen(
     onTopBarChange: (TopBarState) -> Unit,
     onViewCollection: (MediaCollection) -> Unit,
     isIndexing: Boolean,
-    hasIndexedImages: Boolean,
-    hasIndexedVideos: Boolean,
+    hasIndexedImages: Boolean?,
+    hasIndexedVideos: Boolean?,
     hasStoragePermission: Boolean,
     onIndex: () -> Unit,
     viewModel: CollectionsViewModel = koinViewModel(),
@@ -163,7 +164,7 @@ fun CollectionsScreen(
     }
 
     LaunchedEffect(hasIndexedVideos, hasIndexedImages, hasStoragePermission) {
-        val firstIndexRequired = !isIndexing && !hasIndexedImages && !hasIndexedVideos
+        val firstIndexRequired = !isIndexing && hasIndexedImages == false && hasIndexedVideos == false
         if( firstIndexRequired && hasStoragePermission){
             onIndex()
         }
@@ -279,7 +280,7 @@ fun CollectionsScreen(
                 }
             }
 
-            if(state.totalCollections >= TOP_N) {
+            if(state.totalCollections > TOP_N) {
                 TextButton(
                     modifier = Modifier.align(Alignment.End),
                     onClick = {viewModel.onAction(CollectionAction.ToggleViewAllCollections)}
@@ -290,6 +291,8 @@ fun CollectionsScreen(
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
+            }else{
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
             MediaCollectionsList(

@@ -44,7 +44,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -194,7 +193,6 @@ class CollectionItemsViewModel(
             try {
                 val selectedItems = getSelectedItems()
                 tagManager.tagItems(tag, selectedItems)
-                resetSelection()
                 val message = if(selectedItems.size == 1 ) "Tagged ${selectedItems.size} item" else "Tagged ${selectedItems.size} items"
                 _event.emit(CollectionItemEvent(CollectionItemEventType.TAG, success = true, message = message))
             }catch (e: Exception){
@@ -215,7 +213,7 @@ class CollectionItemsViewModel(
 
         viewModelScope.launch (Dispatchers.IO){
             try {
-                val selectedItems = getSelectedItems().map{it.id}
+                val selectedItems = getSelectedItems()
                 tagManager.removeItems(currentCollection.name, selectedItems)
                 resetSelection()
                 val message = if(selectedItems.size == 1 ) "Removed ${selectedItems.size} item" else "Removed ${selectedItems.size} items"
@@ -237,7 +235,7 @@ class CollectionItemsViewModel(
                 val selectedItems = getSelectedItems()
                 if (selectedItems.isEmpty()) return@launch
                 when(newCollection.type) {
-                    CollectionType.CLUSTER -> clusterManager.moveItems(selectedItems.map{it.id}, newCollection.id, currentCollection.id)
+                    CollectionType.CLUSTER -> clusterManager.moveItems(selectedItems, newCollection.id, currentCollection.id)
                     CollectionType.TAG -> tagManager.moveItems(selectedItems, currentCollection.name, newCollection.name)
                 }
                 resetSelection()
