@@ -23,7 +23,6 @@ import com.fpf.smartscan.index.indexMedia
 import com.fpf.smartscan.services.MediaIndexForegroundService
 import com.fpf.smartscan.settings.loadSettings
 import com.fpf.smartscan.utils.isServiceRunning
-import com.fpf.smartscansdk.core.embeddings.StoredEmbedding
 import com.fpf.smartscansdk.core.indexers.ImageIndexer
 import com.fpf.smartscansdk.core.indexers.VideoIndexer
 import com.fpf.smartscansdk.ml.models.ModelAssetSource
@@ -93,8 +92,6 @@ class IndexWorker(context: Context, workerParams: WorkerParameters) :
                 clusterMetadataRepository = clusterMetadataRepository,
                 mediaMetadataRepository = mediaMetadataRepository,
             )
-            val embedsToCluster = mutableListOf<StoredEmbedding>()
-
 
             // Prevents doing full indexes by checking if embedding stores already exist. That responsibility should be left to the foreground service
             // No listener used (may change to avoid silent errors)
@@ -106,7 +103,6 @@ class IndexWorker(context: Context, workerParams: WorkerParameters) :
                     quantize = true
                 )
                 indexMedia(applicationContext, MediaType.IMAGE, imageStore, imageIndexer, mediaMetadataRepository,appSettings.searchableImageDirectories.map{it.toUri()})
-                embedsToCluster.addAll(imageStore.get())
             }
 
             if(videoStore.exists){
@@ -119,11 +115,8 @@ class IndexWorker(context: Context, workerParams: WorkerParameters) :
                     height = IMAGE_SIZE_Y
                 )
                 indexMedia(applicationContext, MediaType.VIDEO, videoStore,videoIndexer, mediaMetadataRepository,appSettings.searchableVideoDirectories.map{it.toUri()})
-                embedsToCluster.addAll(videoStore.get())
             }
             clusterManager.cluster()
-
-
             return@withContext Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "Background indexing errors: ${e.message}", e)
