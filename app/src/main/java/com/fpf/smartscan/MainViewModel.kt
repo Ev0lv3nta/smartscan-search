@@ -83,11 +83,12 @@ class MainViewModel(
 
     fun getUpdates(): List<String> {
         return listOf(
-            application.getString(R.string.update_filter_media_types_collections),
-            application.getString(R.string.update_fixed_allowed_folders_bug),
-            application.getString(R.string.update_similarity_threshold_to_strictness),
-            application.getString(R.string.update_sync_startup_only),
-        )
+            application.getString(R.string.update_quantized_embeddings),
+            application.getString(R.string.update_tagging),
+            application.getString(R.string.update_strictness),
+            application.getString(R.string.update_fixed_mediastore_collision_bug),
+            application.getString(R.string.update_backups),
+            )
     }
 
     fun prepareApp(onAppReady: () -> Unit) {
