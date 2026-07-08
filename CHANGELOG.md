@@ -6,7 +6,7 @@
 ### Changed
 * Updated `MediaMetadata` table to use composite keys (id, type) to prevent silent collision between image and video MediaStore ids, which could have resulted in some videos not be included in scans.
 * Do not reset selection after tagging to avoid having to reselect if adding multiple tags
-* Made reranking more responsive to strictness
+* Made search results more responsive to strictness
 * Remove support for backups that used old data - users must make new backup if needed (breaking)
 
 ___
