@@ -113,16 +113,6 @@ class MainViewModel(
 
             if(!isWorkScheduled(context = application, workName = IndexWorker.TAG)) scheduleIndexWorker()
 
-            // Create clusters if required
-            val mediaTypes = mutableListOf<MediaType>()
-            if(!clusterStore.exists || clusterCrossRefRepository.count() == 0) {
-                if (imageStore.exists) mediaTypes.add(MediaType.IMAGE)
-                if (videoStore.exists) mediaTypes.add(MediaType.VIDEO)
-            }
-            if(mediaTypes.isNotEmpty()){
-                refreshIndex(getApplication(), mediaTypes)
-            }
-
             _hasIndexedImages.update { imageStore.exists }
             _hasIndexedVideos.update { videoStore.exists }
             onAppReady()
