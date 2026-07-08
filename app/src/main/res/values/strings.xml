@@ -47,7 +47,7 @@
 
     <!--Alerts-->
     <string name="alert_space_not_allowed">Spaces are not allowed</string>
-    <string name="alert_scan_refresh_description">Update the index with new media.</string>
+    <string name="alert_scan_refresh_description">Manually update the index with new media (auto-updates daily).</string>
     <string name="alert_scan_rebuild_description">Delete and re-create the entire index.</string>
     <string name="alert_first_media_scan_content">Start the first %1$s scan. You can run it manually anytime from settings and optionally select which folders are allowed to be scanned.</string>
     <string name="alert_first_scan_content">Start the first media scan. You can run it manually anytime from settings and optionally select which folders are allowed to be scanned.</string>
