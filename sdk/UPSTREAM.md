@@ -18,3 +18,7 @@ Build scripts адаптированы к единому Android Gradle Plugin, 
 SDK не обновляется автоматическим копированием ветки `main`. Каждое обновление выполняется отдельным pull request, который указывает старую и новую revisions, перечисляет перенесённые upstream commits, объясняет локальные конфликты и проходит полный CI приложения и SDK.
 
 Локальные изменения после импорта принадлежат истории SmartScan Search и распространяются вместе с производной работой под GPLv3.
+
+## Сторонний native-код
+
+Модуль `core` включает исходники `nmslib/hnswlib`, добавленные в SmartScan SDK commit `d74acf9a377daa08a12851dbc76de85345bc5909`. Все семь vendored headers побайтово совпадают с upstream hnswlib revision `d9b3608c83d83b46c96e25088cb1d729b29dcfe9` (release 0.9.0). Hnswlib распространяется под Apache License 2.0; отдельные provenance и текст лицензии находятся в [`third_party/hnswlib`](third_party/hnswlib).
