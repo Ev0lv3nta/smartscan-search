@@ -82,7 +82,7 @@ android {
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.documentfile)
-    implementation(libs.smartscan.ml)
+    implementation(project(":sdk:ml"))
 
     implementation(platform(libs.koin.bom))
 

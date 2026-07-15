@@ -16,9 +16,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven(url = "https://jitpack.io")
     }
 }
 
 rootProject.name = "SmartScan"
-include(":app")
+include(":app", ":sdk:core", ":sdk:ml")
