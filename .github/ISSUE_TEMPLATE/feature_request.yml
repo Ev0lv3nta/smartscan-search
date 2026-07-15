@@ -1,0 +1,47 @@
+name: Предложить улучшение
+description: Новая возможность или изменение поведения
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Какая проблема решается
+      description: Опишите сценарий и существующее ограничение, а не только желаемую реализацию.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Предлагаемое поведение
+      description: Как должен выглядеть результат для пользователя или разработчика.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Альтернативы и ограничения
+      description: Укажите рассмотренные варианты и влияние на приватность, скорость, память, накопитель или батарею.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Область
+      options:
+        - Поиск и ранжирование
+        - Индексация
+        - OCR
+        - ML-модели
+        - Каталог медиатеки
+        - Интерфейс приложения
+        - Инфраструктура
+        - Другое
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Предварительная проверка
+      options:
+        - label: Я проверил, что похожего открытого issue нет.
+          required: true

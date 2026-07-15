@@ -1,0 +1,55 @@
+name: Сообщить об ошибке
+description: Воспроизводимая проблема в приложении, индексе или сборке
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: Спасибо за сообщение. Не публикуйте здесь чувствительные данные из медиатеки; для уязвимостей используйте Security Advisories.
+  - type: textarea
+    id: description
+    attributes:
+      label: Что произошло
+      description: Опишите наблюдаемое и ожидаемое поведение.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Как воспроизвести
+      placeholder: |
+        1. Открыть ...
+        2. Выполнить ...
+        3. Увидеть ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Версия или commit
+      placeholder: v0.1.0-alpha.1 или SHA
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Устройство и Android
+      placeholder: Samsung Galaxy S23+, Android 16
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Логи и дополнительные сведения
+      description: Удалите имена файлов, запросы и другие личные данные.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Предварительная проверка
+      options:
+        - label: Я проверил, что похожего открытого issue нет.
+          required: true
+        - label: В сообщении нет фотографий и других чувствительных данных.
+          required: true

@@ -16,3 +16,10 @@
 .cxx
 local.properties
 /app/release/*
+
+# Локальные проектные материалы и артефакты моделей
+/docs/
+/private/
+/models/
+*.onnx.data
+*.safetensors

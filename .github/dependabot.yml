@@ -1,0 +1,27 @@
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - area: infrastructure
+    groups:
+      android-build:
+        patterns:
+          - "com.android.*"
+          - "org.jetbrains.kotlin.*"
+      androidx:
+        patterns:
+          - "androidx.*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - area: infrastructure
