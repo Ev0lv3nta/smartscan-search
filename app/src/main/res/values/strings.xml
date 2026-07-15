@@ -1,8 +1,8 @@
 <resources>
     <!-- About -->
-    <string name="app_name">SmartScan</string>
-    <string name="copyright">© 2026 D41 Dev</string>
-    <string name="source_code_url">https://github.com/dev-diaries41/smartscan</string>
+    <string name="app_name">SmartScan Search</string>
+    <string name="copyright">© 2026 SmartScan Search contributors</string>
+    <string name="source_code_url">https://github.com/Ev0lv3nta/smartscan-search</string>
     <string name="reddit_url">https://www.reddit.com/r/SmartScan/</string>
 
     <!--___Actions___-->

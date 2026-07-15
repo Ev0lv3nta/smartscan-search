@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "SmartScan"
+rootProject.name = "SmartScanSearch"
 include(":app", ":sdk:core", ":sdk:ml")

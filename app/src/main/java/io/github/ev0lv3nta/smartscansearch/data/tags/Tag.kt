@@ -1,0 +1,13 @@
+package io.github.ev0lv3nta.smartscansearch.data.tags
+
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "media_tag", indices = [Index(value = ["name"], unique = true)])
+data class Tag(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val name: String,
+    val lastUsedAt: Long? = null,
+    )

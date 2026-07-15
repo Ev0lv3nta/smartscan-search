@@ -1,0 +1,244 @@
+package io.github.ev0lv3nta.smartscansearch.ui.screens.collections
+
+import android.app.Application
+import android.database.sqlite.SQLiteConstraintException
+import android.util.Log
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import io.github.ev0lv3nta.smartscansearch.cluster.ClusterManager
+import io.github.ev0lv3nta.smartscansearch.data.tags.TagCrossRefRepository
+import io.github.ev0lv3nta.smartscansearch.data.tags.TagRepository
+import io.github.ev0lv3nta.smartscansearch.media.MediaCollection
+import io.github.ev0lv3nta.smartscansearch.data.clusters.ClusterCrossRefRepository
+import io.github.ev0lv3nta.smartscansearch.data.clusters.ClusterMetadataRepository
+import io.github.ev0lv3nta.smartscansearch.data.metadata.MediaMetadataRepository
+import io.github.ev0lv3nta.smartscansearch.events.CollectionEvent
+import io.github.ev0lv3nta.smartscansearch.events.CollectionEventType
+import io.github.ev0lv3nta.smartscansearch.media.CollectionType
+import io.github.ev0lv3nta.smartscansearch.media.MediaType
+import io.github.ev0lv3nta.smartscansearch.index.refreshIndex
+import io.github.ev0lv3nta.smartscansearch.tag.TagManager
+import io.github.ev0lv3nta.smartscansearch.ui.action.CollectionAction
+import io.github.ev0lv3nta.smartscansearch.ui.state.CollectionsState
+import io.github.ev0lv3nta.smartscansearch.ui.utils.SelectionUtils
+import com.fpf.smartscansdk.core.embeddings.FileEmbeddingStore
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+class CollectionsViewModel( 
+    application: Application,
+    private val tagRepository: TagRepository,
+    private val tagCrossRefRepository: TagCrossRefRepository,
+    private val clusterMetadataRepository: ClusterMetadataRepository,
+    private val clusterCrossRefRepository: ClusterCrossRefRepository,
+    private val mediaMetadataRepository: MediaMetadataRepository,
+    private val imageStore: FileEmbeddingStore,
+    private val videoStore: FileEmbeddingStore,
+    private val clusterStore: FileEmbeddingStore,
+    ) : AndroidViewModel(application) {
+    companion object {
+        private const val TAG = "CollectionsViewModel"
+        const val TOP_N = 6
+    }
+
+    val tagManager = TagManager(
+        tagRepository=tagRepository,
+        tagCrossRefRepository=tagCrossRefRepository,
+        mediaMetadataRepository = mediaMetadataRepository,
+    )
+    val clusterManager = ClusterManager(
+        clusterEmbedStore = clusterStore,
+        imageEmbedStore = imageStore,
+        videoEmbedStore = videoStore,
+        clusterCrossRefRepository = clusterCrossRefRepository,
+        clusterMetadataRepository = clusterMetadataRepository,
+        mediaMetadataRepository = mediaMetadataRepository,
+    )
+
+    private val _state = MutableStateFlow(CollectionsState())
+    val state: StateFlow<CollectionsState> = _state
+
+    val clusterCollections: StateFlow<List<MediaCollection>> = combine(
+        clusterCrossRefRepository.getClustersWithCount(),
+        _state.map {  it.showAllCollections to  it.collectionType }.distinctUntilChanged()
+    ) { clusters, ( showAllCollections, collectionType) ->
+        if(collectionType == CollectionType.CLUSTER){
+            _state.update { it.copy(totalCollections = clusters.size) }
+        }
+        val filteredClusters = if (showAllCollections) clusters else clusters.take(TOP_N)
+
+        clusterManager.toCollections(filteredClusters)
+    }.flowOn(Dispatchers.IO)
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Lazily,
+            initialValue = emptyList()
+        )
+
+    val tagCollections: StateFlow<List<MediaCollection>> = combine(
+        tagCrossRefRepository.getTagsWithCounts(),
+        _state.map {  it.showAllCollections to  it.collectionType }.distinctUntilChanged()
+    ) { tagsWithCount, ( showAllCollections, collectionType) ->
+        if(collectionType == CollectionType.TAG){
+            _state.update { it.copy(totalCollections = tagsWithCount.size) }
+        }
+        val tags = if (showAllCollections) tagsWithCount else tagsWithCount.take(TOP_N)
+        tagManager.toCollections(tags)
+    }.flowOn(Dispatchers.IO)
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = emptyList()
+        )
+
+    private val _event = MutableSharedFlow<CollectionEvent>()
+    val event = _event.asSharedFlow()
+
+    fun onAction(action: CollectionAction){
+        when(action){
+            is CollectionAction.MergeCollections -> mergeCollections(action.primaryCollectionName, action.isNewMergedLabel)
+            is CollectionAction.RenameCollection -> renameCollection(action.newName)
+            is CollectionAction.ToggleSelectedCollection -> toggleSelectedCollection(action.collection)
+            is CollectionAction.SetCollectionToView -> setCollectionToView(action.collection)
+            is CollectionAction.SetCollectionType -> setCollectionType(action.type)
+            is CollectionAction.DeleteCollections -> deleteCollections()
+            is CollectionAction.ToggleViewAllCollections -> toggleViewAllCollections()
+            is CollectionAction.SetSelectAll -> setSelectAll(action.selectAll)
+            is CollectionAction.ToggleSelectionMode -> toggleSelectionMode()
+            is CollectionAction.ClearSelection -> clearSelection()
+            is CollectionAction.ResetSelection -> resetSelection()
+        }
+    }
+
+    private fun clearSelection() = _state.update{it.copy(selection = SelectionUtils.clearSelection(it.selection))}
+    private fun resetSelection() = _state.update{it.copy(selection = SelectionUtils.resetSelection(it.selection))}
+    private fun toggleSelectionMode() = _state.update { it.copy(selection = SelectionUtils.toggleSelectionMode(it.selection)) }
+
+    private fun renameCollection(newName: String){
+        viewModelScope.launch(Dispatchers.IO) {
+            try{
+                val collection = getSelectedCollections().first()
+                when (collection.type) {
+                    CollectionType.CLUSTER -> clusterManager.updateLabel(collection.id, newName)
+                    CollectionType.TAG -> tagManager.renameTag(collection.name, newName)
+                }
+                resetSelection()
+                _event.emit(CollectionEvent(CollectionEventType.RENAME, success = true))
+            } catch (_: SQLiteConstraintException){
+                _event.emit(CollectionEvent(CollectionEventType.RENAME, success = false, message = "Collection already exists"))
+            }
+            catch (e: Exception){
+                Log.e(TAG, "Error renaming collection: ${e.message}")
+                _event.emit(CollectionEvent(CollectionEventType.RENAME, success = false, message = "Error renaming collection"))
+
+            }
+        }
+    }
+
+    private fun deleteCollections(){
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val selectedCollections = getSelectedCollections()
+                tagRepository.deleteTagsByName(selectedCollections.map{it.name})
+                resetSelection()
+                val message = if(selectedCollections.size == 1 ) "Deleted ${selectedCollections.size} collection" else "Deleted ${selectedCollections.size} collections"
+                _event.emit(CollectionEvent(CollectionEventType.DELETE, success = true, message = message))
+            }catch (e: Exception){
+                val message = "Error deleting collections"
+                Log.e(TAG, "$message: ${e.message}")
+                _event.emit(CollectionEvent(CollectionEventType.DELETE, success = false, message = message))
+            }
+        }
+    }
+
+    private fun mergeCollections(primaryCollectionName: String, isNewMergedLabel: Boolean){
+        _state.update { it.copy(loading = true) }
+
+        viewModelScope.launch (Dispatchers.IO) {
+            try {
+                val selectedCollections = getSelectedCollections()
+                if(selectedCollections.size < 2 ) return@launch
+                var primaryCollection = selectedCollections.firstOrNull{it.name == primaryCollectionName}
+
+                if(isNewMergedLabel) {
+                    primaryCollection = selectedCollections.firstOrNull()
+                    primaryCollection?.let { collection ->
+                        when (collection.type) {
+                            CollectionType.CLUSTER -> clusterManager.updateLabel(collection.id, primaryCollectionName)
+                            CollectionType.TAG -> tagManager.renameTag(collection.name, primaryCollectionName)
+                        }
+                    }
+                }
+
+                val newMergedCollection = primaryCollection?: error("No primary collection selected")
+                val otherCollections = selectedCollections.filter { selectedCollection -> selectedCollection.id != newMergedCollection.id }
+                when (newMergedCollection.type) {
+                    CollectionType.CLUSTER -> clusterManager.mergeClusters(newMergedCollection.id, otherCollections.map { it.id })
+                    CollectionType.TAG -> tagManager.mergeTags(primaryCollectionName, otherCollections.map { it.name })
+                }
+
+                resetSelection()
+                _event.emit(CollectionEvent(CollectionEventType.MERGE, success = true, "Merged ${selectedCollections.size} collections"))
+            }
+            catch (_: SQLiteConstraintException){
+                _event.emit(CollectionEvent(CollectionEventType.MERGE, success = false, message = "Collection already exists"))
+            }
+            catch (e: Exception){
+                val message = "Error merging collections"
+                Log.e(TAG, "$message: ${e.message}")
+                _event.emit(CollectionEvent(CollectionEventType.MERGE, success = false, message = message))
+            }finally {
+                _state.update { it.copy(loading = false) }
+            }
+        }
+    }
+
+    private fun setCollectionType(type: CollectionType) {
+        resetSelection()
+        _state.update { it.copy(collectionType = type) }
+    }
+
+    private fun toggleViewAllCollections() = _state.update{ it.copy(showAllCollections = !it.showAllCollections)}
+    private fun setCollectionToView(collection: MediaCollection?) = _state.update { it.copy(collectToView = collection) }
+
+    private fun toggleSelectedCollection(item: MediaCollection){
+        _state.update { it.copy(selection = SelectionUtils.toggleSelectedItem(it.selection, item, it.totalCollections)) }
+    }
+
+    private fun setSelectAll(selectAll: Boolean) {
+        _state.update { it.copy(selection = SelectionUtils.setSelectAll(it.selection, selectAll, it.totalCollections))}
+    }
+    private suspend fun getSelectedCollections(): Set<MediaCollection> = SelectionUtils.getSelectedItems(_state.value.selection){getAllCollections()}
+
+    private suspend fun getAllCollections(): MutableSet<MediaCollection>{
+        val currentState = state.value
+        return when (currentState.collectionType ){
+            CollectionType.CLUSTER -> {
+                if(currentState.showAllCollections) {
+                    clusterCollections.value
+                } else {
+                    clusterManager.toCollections(clusterCrossRefRepository.getClustersWithCount().first() )
+                }
+            }
+            CollectionType.TAG -> {
+                if(currentState.showAllCollections) {
+                    tagCollections.value
+                } else {
+                    tagManager.toCollections(tagCrossRefRepository.getTagsWithCounts().first())
+                }
+            }
+        }.toMutableSet()
+    }
+}

@@ -8,8 +8,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove"/>
-<!--    <permission android:name="com.fpf.smartscan.permission.TEXT_EMBED" android:protectionLevel="signature" />-->
-<!--    <permission android:name="com.fpf.smartscan.permission.IMAGE_EMBED" android:protectionLevel="signature" />-->
+<!--    <permission android:name="io.github.ev0lv3nta.smartscansearch.permission.TEXT_EMBED" android:protectionLevel="signature" />-->
+<!--    <permission android:name="io.github.ev0lv3nta.smartscansearch.permission.IMAGE_EMBED" android:protectionLevel="signature" />-->
 
     <application
         android:name=".App"
@@ -19,34 +19,34 @@
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
-        android:label="SmartScan"
+        android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         tools:targetApi="33">
         <service
-            android:name="com.fpf.smartscan.services.MediaIndexForegroundService"
+            android:name=".services.MediaIndexForegroundService"
             android:exported="false"
             android:foregroundServiceType="dataSync"/>
 <!--        <service-->
-<!--            android:name="com.fpf.smartscan.services.TextEmbedderAidlService"-->
+<!--            android:name="io.github.ev0lv3nta.smartscansearch.services.TextEmbedderAidlService"-->
 <!--            android:exported="true"-->
-<!--            android:permission="com.fpf.smartscan.permission.TEXT_EMBED"-->
+<!--            android:permission="io.github.ev0lv3nta.smartscansearch.permission.TEXT_EMBED"-->
 <!--            >-->
 <!--            <intent-filter>-->
-<!--                <action android:name="com.fpf.smartscan.intent.TEXT_EMBED"/>-->
+<!--                <action android:name="io.github.ev0lv3nta.smartscansearch.intent.TEXT_EMBED"/>-->
 <!--            </intent-filter>-->
 <!--        </service>-->
 <!--        <service-->
-<!--            android:name="com.fpf.smartscan.services.ImageEmbedderAidlService"-->
+<!--            android:name="io.github.ev0lv3nta.smartscansearch.services.ImageEmbedderAidlService"-->
 <!--            android:exported="true"-->
-<!--            android:permission="com.fpf.smartscan.permission.IMAGE_EMBED"-->
+<!--            android:permission="io.github.ev0lv3nta.smartscansearch.permission.IMAGE_EMBED"-->
 <!--            >-->
 <!--            <intent-filter>-->
-<!--                <action android:name="com.fpf.smartscan.intent.IMAGE_EMBED"/>-->
+<!--                <action android:name="io.github.ev0lv3nta.smartscansearch.intent.IMAGE_EMBED"/>-->
 <!--            </intent-filter>-->
 <!--        </service>-->
         <activity
-            android:name="com.fpf.smartscan.MainActivity"
+            android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.SmartScan.Splash"
             >

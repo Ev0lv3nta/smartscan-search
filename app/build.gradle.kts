@@ -8,11 +8,11 @@ plugins {
 }
 
 android {
-    namespace = "com.fpf.smartscan"
+    namespace = "io.github.ev0lv3nta.smartscansearch"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.fpf.smartscan"
+        applicationId = "io.github.ev0lv3nta.smartscansearch"
         minSdk = 30
         targetSdk = 34
         versionCode = 23
@@ -77,6 +77,35 @@ android {
         }
     }
     ndkVersion = "27.0.12077973"
+}
+
+val verifyStandaloneAppIdentity by tasks.registering {
+    group = "verification"
+    description = "Проверяет, что исходный package ID приложения не вернулся в app-модуль."
+
+    val identityFiles = files(
+        layout.projectDirectory.file("build.gradle.kts"),
+        fileTree("src") {
+            include("**/*.kt", "**/*.aidl", "**/AndroidManifest.xml")
+        },
+    )
+    inputs.files(identityFiles)
+
+    doLast {
+        val legacyAppNamespace = Regex("""com\.fpf\.smartscan(?!sdk)""")
+        val violations = identityFiles.files
+            .filter { it.isFile && legacyAppNamespace.containsMatchIn(it.readText()) }
+            .map { it.relativeTo(projectDir).invariantSeparatorsPath }
+            .sorted()
+
+        check(violations.isEmpty()) {
+            "Legacy app namespace found in: ${violations.joinToString()}"
+        }
+    }
+}
+
+tasks.named("preBuild") {
+    dependsOn(verifyStandaloneAppIdentity)
 }
 
 dependencies {
