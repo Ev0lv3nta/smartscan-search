@@ -3,7 +3,7 @@
 [![Лицензия: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 [![Android CI](https://github.com/Ev0lv3nta/smartscan-search/actions/workflows/ci.yml/badge.svg)](https://github.com/Ev0lv3nta/smartscan-search/actions/workflows/ci.yml)
 
-SmartScan Search — экспериментальный Android-форк [SmartScan](https://github.com/smartscanapp/smartscan-android), сфокусированный на быстром локальном поиске по фотогалерее. Индексация, OCR и поиск должны работать на устройстве без отправки фотографий в облако.
+SmartScan Search — неофициальный экспериментальный Android-форк [SmartScan](https://github.com/smartscanapp/smartscan-android), сфокусированный на быстром локальном поиске по фотогалерее. Индексация, OCR и поиск должны работать на устройстве без отправки фотографий в облако. Проект не связан с авторами SmartScan и не поддерживается ими.
 
 > **Статус:** ранняя разработка. Ветка `main` пока сохраняет рабочую основу исходного приложения; новая поисковая архитектура будет внедряться поэтапно и с измеримыми критериями качества.
 
@@ -43,7 +43,7 @@ SmartScan Search — экспериментальный Android-форк [SmartS
 
 ## Происхождение проекта
 
-Этот репозиторий является публичным форком SmartScan. Исходная точка, внешние зависимости и правила синхронизации с upstream зафиксированы в [UPSTREAM.md](UPSTREAM.md).
+Этот репозиторий является публичным форком SmartScan. Исходная точка, внешние зависимости и правила синхронизации с upstream зафиксированы в [UPSTREAM.md](UPSTREAM.md), а уведомление об авторстве — в [NOTICE.md](NOTICE.md).
 
 ## Лицензия
 
