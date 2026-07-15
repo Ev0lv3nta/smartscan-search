@@ -1,84 +1,50 @@
-# SmartScan
+# SmartScan Search
 
-Search and organise images and videos offline with on-device AI.
+[![Лицензия: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
+[![Android CI](https://github.com/Ev0lv3nta/smartscan-search/actions/workflows/ci.yml/badge.svg)](https://github.com/Ev0lv3nta/smartscan-search/actions/workflows/ci.yml)
 
-<div align="center">
-  <img src="fastlane/metadata/android/en-US/images/featureGraphic.png" alt="Banner" style="border-radius: 20px;">
-</div>
+SmartScan Search — неофициальный экспериментальный Android-форк [SmartScan](https://github.com/smartscanapp/smartscan-android), сфокусированный на быстром локальном поиске по фотогалерее. Индексация, OCR и поиск должны работать на устройстве без отправки фотографий в облако. Проект не связан с авторами SmartScan и не поддерживается ими.
 
+> **Статус:** ранняя разработка. Ветка `main` пока сохраняет рабочую основу исходного приложения; новая поисковая архитектура будет внедряться поэтапно и с измеримыми критериями качества.
 
-| <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" alt="Screenshot 1" width="200px"> | <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" alt="Screenshot 2" width="200px"> | <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" alt="Screenshot 3" width="200px"> | <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" alt="Screenshot 4" width="200px"> |
-|------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+## Цели проекта
 
----
+- Гибридный поиск: точное совпадение текста, полнотекстовый поиск, OCR и семантические эмбеддинги в одном ранжировании.
+- Надёжная инкрементальная индексация, которая переживает остановку процесса, изменение медиатеки и обновление моделей.
+- Локальная обработка данных и предсказуемое потребление памяти, накопителя и батареи.
+- Приоритетная оптимизация под Samsung Galaxy S23+, сохраняя совместимость с Android-устройствами начиная с API 30.
+- Воспроизводимый экспорт и версионирование ML-моделей вместо неявно подготовленных бинарных артефактов.
 
-## Buy Me A Coffee
+На первом этапе новая архитектура ориентирована на фотографии. Код работы с видео, унаследованный от SmartScan, остаётся в исходной основе и будет отделён по мере развития проекта.
 
-The app is free, but if you enjoy using it and want to support project development and maintenance, consider donating using one of the options below.
+## Текущее состояние
 
-### Donate with Kofi
+Сейчас репозиторий содержит приложение SmartScan и опубликованную зависимость SmartScan ML. Ближайший этап — выделить границы приложения, поискового ядра и ML-слоя, после чего последовательно заменить каталог, индекс и ранжирование.
 
-<a href="https://ko-fi.com/d41dev/tip">
-  <img src="assets/kofi.webp" alt="kofi" style="max-width:100%;" width="200">
-</a>
+Работа разбита на проверяемые задачи в [milestone `v0.1.0-alpha.1 — фундамент`](https://github.com/Ev0lv3nta/smartscan-search/milestone/1). Архитектурные решения публикуются после проверки прототипами и бенчмарками, а не выдаются за уже готовые возможности.
 
-### Donate with crypto
+## Сборка
 
-| Wallet   | Address                                     |
-|----------|---------------------------------------------|
-| Bitcoin  | bc1qw46nxjp5gkh460ewamjd3jfeu0xv6ytq5et6xm  |
-| Ethereum | 0xa53aC18B25942C71019f85314AF67F6132E525ad  |
-| Litecoin | ltc1q2hspfea9rw5j2ymvv22hx7dmckh8c99sqk7av3 |
+Понадобятся JDK 17 и Android SDK с платформой API 36. После клонирования репозитория:
 
----
+```bash
+./gradlew :app:assembleDebug
+```
 
-## Key Features
+Проверки, которые выполняет CI:
 
-All processing is handled entirely on-device, ensuring privacy, speed, and offline functionality.
+```bash
+./gradlew testDebugUnitTest lintDebug assembleDebug
+```
 
-### Search:
-* Search images and videos
-* Search using text or images
-* Search by tag
-* Search by tag + text query
-* Search from other apps via share/intent
-* Search by pasting image in search bar
-* Hide duplicate results (near identical search results)
-* Automatically refresh image and video indexes for new content
-* Optionally configure searchable image and video folders
-* Optionally open search results in default gallery
+## Участие в разработке
 
-### Tagging:
-* Add tags to media
-* Tag autocomplete when searching or tagging
+Правила веток, коммитов и pull request описаны в [CONTRIBUTING.md](CONTRIBUTING.md). Ошибки и предложения можно оформить через [Issues](https://github.com/Ev0lv3nta/smartscan-search/issues).
 
-### Collections:
-* Auto Collections: automatically groups similar media
-* Tag Collections: manually curate collections using tags
-* Manage Collections: Merge, move, delete, add tags.
+## Происхождение проекта
 
----
+Этот репозиторий является публичным форком SmartScan. Исходная точка, внешние зависимости и правила синхронизации с upstream зафиксированы в [UPSTREAM.md](UPSTREAM.md), а уведомление об авторстве — в [NOTICE.md](NOTICE.md).
 
-## Download
+## Лицензия
 
-Go to [Releases](https://github.com/dev-diaries41/smartscan/releases/latest) and download the latest apk.
-
-
-<div style="display: flex; gap: 10px;">
-
-  <a href="https://f-droid.org/packages/com.fpf.smartscan" style="text-decoration: none;">
-
-  <img src="https://f-droid.org/badge/get-it-on.svg" alt="F-Droid" style="max-width:100%;" width=200>
-
-  </a>
-
-</div>
-
----
-
-## License
-
- * This project is licensed under the GNU General Public License, Version 3 (GPLv3).
- * See the LICENSE file for details.
-
----
+Проект распространяется на условиях [GNU General Public License v3.0](LICENSE). Производные изменения сохраняют ту же лицензию.
